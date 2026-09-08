@@ -529,6 +529,48 @@ export type Paginated<T> = {
   pageSize: number;
 };
 
+export const projectImportances = {
+  VERY_HIGH: "VERY_HIGH",
+  HIGH: "HIGH",
+  MEDIUM: "MEDIUM",
+  LOW: "LOW",
+} as const;
+
+export type ProjectImportance =
+  (typeof projectImportances)[keyof typeof projectImportances];
+
+export const projectImportanceOrder: ProjectImportance[] = [
+  projectImportances.VERY_HIGH,
+  projectImportances.HIGH,
+  projectImportances.MEDIUM,
+  projectImportances.LOW,
+];
+
+export type Project = {
+  id: string;
+  vicePresidency: string;
+  management: string;
+  unit: string;
+  systemName: string;
+  isActive: boolean;
+  companyName: string | null;
+  systemUrl: string | null;
+  launchYear: number | null;
+  isSupportActive: boolean;
+  replacementProjectId: string | null;
+  replacementProject: { id: string; systemName: string } | null;
+  description: string | null;
+  importance: ProjectImportance;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProjectLookups = {
+  vicePresidencies: string[];
+  managements: string[];
+  units: string[];
+};
+
 export type LocationSource = 'MANUAL' | 'APP' | 'STATION';
 
 export type UserLocationHistoryItem = {

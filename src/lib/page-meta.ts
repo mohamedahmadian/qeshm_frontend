@@ -68,6 +68,18 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/base-info/cities')) {
     return { titleKey: 'menus.cities', subtitleKey: 'cities.subtitle' }
   }
+  if (pathname === '/projects/new') {
+    return { titleKey: 'projects.create', subtitleKey: 'projects.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/projects/')) {
+    return { titleKey: 'projects.edit', subtitleKey: 'projects.editSubtitle' }
+  }
+  if (pathname.startsWith('/projects/')) {
+    return { titleKey: 'projects.details', subtitleKey: 'projects.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/projects')) {
+    return { titleKey: 'menus.projects', subtitleKey: 'projects.subtitle' }
+  }
   if (pathname === '/') {
     return { titleKey: 'dashboard.title', subtitleKey: 'dashboard.subtitle' }
   }

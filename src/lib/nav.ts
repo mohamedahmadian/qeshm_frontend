@@ -52,4 +52,19 @@ export const APP_NAV: NavModule[] = [
       },
     ],
   },
+  {
+    code: 'projects',
+    nameKey: 'modules.projects',
+    icon: 'folder-kanban',
+    sortOrder: 3,
+    menus: [
+      {
+        code: 'projects.list',
+        nameKey: 'menus.projects',
+        path: '/projects',
+        icon: 'folder-kanban',
+        sortOrder: 1,
+      },
+    ],
+  },
 ]

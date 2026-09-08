@@ -27,6 +27,10 @@ import { ProvinceCreatePage } from './pages/geo/ProvinceCreatePage'
 import { ProvinceDetailPage } from './pages/geo/ProvinceDetailPage'
 import { ProvinceEditPage } from './pages/geo/ProvinceEditPage'
 import { ProvincesListPage } from './pages/geo/ProvincesListPage'
+import { ProjectCreatePage } from './pages/projects/ProjectCreatePage'
+import { ProjectDetailPage } from './pages/projects/ProjectDetailPage'
+import { ProjectEditPage } from './pages/projects/ProjectEditPage'
+import { ProjectsListPage } from './pages/projects/ProjectsListPage'
 import { PublicProfilePage } from './pages/public-profile/PublicProfilePage'
 import { UserCreatePage } from './pages/users/UserCreatePage'
 import { UserDetailPage } from './pages/users/UserDetailPage'
@@ -91,6 +95,10 @@ export default function App() {
                   <Route path="/base-info/cities/new" element={<CityCreatePage />} />
                   <Route path="/base-info/cities/:id" element={<CityDetailPage />} />
                   <Route path="/base-info/cities/:id/edit" element={<CityEditPage />} />
+                  <Route path="/projects" element={<ProjectsListPage />} />
+                  <Route path="/projects/new" element={<ProjectCreatePage />} />
+                  <Route path="/projects/:id" element={<ProjectDetailPage />} />
+                  <Route path="/projects/:id/edit" element={<ProjectEditPage />} />
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
