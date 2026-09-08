@@ -4,6 +4,7 @@ import {
   CalendarRange,
   FolderKanban,
   Globe,
+  Handshake,
   Landmark,
   Link2,
   Monitor,
@@ -15,7 +16,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { LoadingState, DetailActions, EntityNameSubtitle, PageHeader, formShellClassName } from '../../components/ui/Form'
+import { Button, DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { formatNumber } from '../../lib/datetime'
@@ -140,6 +141,14 @@ export function ProjectDetailPage() {
                 queryKey: ['projects'],
                 onDeleted: () => navigate('/projects'),
               })
+            }
+            extra={
+              <Link to={`/projects/${project.id}/contractors`}>
+                <Button type="button" variant="soft">
+                  <Handshake className="size-4" aria-hidden />
+                  {t('contractors.manage')}
+                </Button>
+              </Link>
             }
           />
         </div>

@@ -1,0 +1,134 @@
+import { Building2, CalendarClock, Handshake, IdCard, Layers, ScrollText, UserRound, Users, Wallet } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Button, DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../../components/ui/Form'
+import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
+import { api } from '../../../lib/api'
+import { formatNumber } from '../../../lib/datetime'
+import type { ProjectContractor } from '../../../types/app'
+import {
+  contractorPath,
+  contractorPaymentsPath,
+  contractorPhasesPath,
+  contractorTeamPath,
+  contractorsPath,
+} from './contractor-paths'
+
+export function ContractorDetailPage() {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const { id: projectId, contractorId } = useParams()
+  const navigate = useNavigate()
+  const { confirmDelete } = useConfirmDelete()
+  const query = useQuery({
+    queryKey: ['contractor', projectId, contractorId],
+    enabled: Boolean(projectId && contractorId),
+    queryFn: async () => {
+      const { data } = await api.get<ProjectContractor>(
+        `/projects/${projectId}/contractors/${contractorId}`,
+      )
+      return data
+    },
+  })
+
+  const contractor = query.data
+  if (!contractor || !projectId || !contractorId) {
+    return <LoadingState />
+  }
+
+  return (
+    <div className={formShellClassName}>
+      <PageHeader
+        title={t('contractors.details')}
+        subtitle={<EntityNameSubtitle name={contractor.name} icon={Building2} />}
+      />
+      <FormCard icon={Building2} title={contractor.name}>
+        <div className="space-y-6 p-5 sm:p-6">
+          <FormSectionTitle icon={Handshake}>{t('contractors.section')}</FormSectionTitle>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <FormFactTile icon={Building2} label={t('contractors.name')} value={contractor.name} tone="teal" />
+            <FormFactTile
+              icon={IdCard}
+              label={t('contractors.nationalId')}
+              copyValue={contractor.nationalId}
+              tone="mint"
+            />
+            <FormFactTile icon={UserRound} label={t('contractors.ceoName')} value={contractor.ceoName || '—'} />
+            <FormFactTile
+              icon={CalendarClock}
+              label={t('contractors.timeEstimate')}
+              value={contractor.timeEstimate || '—'}
+            />
+            <FormFactTile
+              icon={Wallet}
+              label={t('contractors.costEstimate')}
+              value={
+                contractor.costEstimate != null
+                  ? formatNumber(contractor.costEstimate, locale)
+                  : '—'
+              }
+            />
+            <FormFactTile
+              icon={Users}
+              label={t('contractors.memberCount')}
+              value={formatNumber(contractor._count?.members ?? 0, locale)}
+            />
+            <FormFactTile
+              icon={Layers}
+              label={t('contractors.phaseCount')}
+              value={formatNumber(contractor._count?.phases ?? 0, locale)}
+            />
+            <FormFactTile
+              icon={Wallet}
+              label={t('contractors.paymentCount')}
+              value={formatNumber(contractor._count?.payments ?? 0, locale)}
+            />
+            <FormFactTile
+              icon={ScrollText}
+              label={t('contractors.description')}
+              value={contractor.description || '—'}
+            />
+          </div>
+          <DetailActions
+            editTo={`${contractorPath(projectId, contractorId)}/edit`}
+            editLabel={t('common.edit')}
+            deleteLabel={t('contractors.delete')}
+            onDelete={() =>
+              confirmDelete({
+                message: t('contractors.confirmDelete'),
+                successMessage: t('contractors.deleted'),
+                path: `/projects/${projectId}/contractors/${contractorId}`,
+                queryKey: ['contractors'],
+                onDeleted: () => navigate(contractorsPath(projectId)),
+              })
+            }
+            extra={
+              <>
+                <Link to={contractorTeamPath(projectId, contractorId)}>
+                  <Button type="button" variant="soft">
+                    <Users className="size-4" aria-hidden />
+                    {t('contractorTeam.manage')}
+                  </Button>
+                </Link>
+                <Link to={contractorPhasesPath(projectId, contractorId)}>
+                  <Button type="button" variant="soft">
+                    <Layers className="size-4" aria-hidden />
+                    {t('contractorPhases.manage')}
+                  </Button>
+                </Link>
+                <Link to={contractorPaymentsPath(projectId, contractorId)}>
+                  <Button type="button" variant="soft">
+                    <Wallet className="size-4" aria-hidden />
+                    {t('contractorPayments.manage')}
+                  </Button>
+                </Link>
+              </>
+            }
+          />
+        </div>
+      </FormCard>
+    </div>
+  )
+}

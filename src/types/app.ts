@@ -563,6 +563,55 @@ export type Project = {
   importance: ProjectImportance;
   createdAt: string;
   updatedAt: string;
+  _count?: { contractors: number };
+};
+
+export type ProjectContractor = {
+  id: string;
+  projectId: string;
+  name: string;
+  nationalId: string | null;
+  description: string | null;
+  ceoName: string | null;
+  timeEstimate: string | null;
+  costEstimate: number | null;
+  createdAt: string;
+  updatedAt: string;
+  project: { id: string; systemName: string };
+  _count?: { members: number; phases: number; payments: number };
+};
+
+export type ContractorMember = {
+  id: string;
+  contractorId: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  role: string | null;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContractorPhase = {
+  id: string;
+  contractorId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  goals: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContractorPayment = {
+  id: string;
+  contractorId: string;
+  paidAt: string;
+  amount: number;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ProjectLookups = {

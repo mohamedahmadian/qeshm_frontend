@@ -71,10 +71,58 @@ export function getPageMeta(pathname: string): {
   if (pathname === '/projects/new') {
     return { titleKey: 'projects.create', subtitleKey: 'projects.createSubtitle' }
   }
-  if (pathname.endsWith('/edit') && pathname.startsWith('/projects/')) {
+  if (/\/contractors\/[^/]+\/payments\/new$/.test(pathname)) {
+    return { titleKey: 'contractorPayments.create', subtitleKey: 'contractorPayments.createSubtitle' }
+  }
+  if (/\/payments\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'contractorPayments.edit', subtitleKey: 'contractorPayments.editSubtitle' }
+  }
+  if (/\/payments\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'contractorPayments.details', subtitleKey: 'contractorPayments.detailsSubtitle' }
+  }
+  if (/\/payments$/.test(pathname)) {
+    return { titleKey: 'contractorPayments.title', subtitleKey: 'contractorPayments.subtitle' }
+  }
+  if (/\/contractors\/[^/]+\/phases\/new$/.test(pathname)) {
+    return { titleKey: 'contractorPhases.create', subtitleKey: 'contractorPhases.createSubtitle' }
+  }
+  if (/\/phases\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'contractorPhases.edit', subtitleKey: 'contractorPhases.editSubtitle' }
+  }
+  if (/\/phases\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'contractorPhases.details', subtitleKey: 'contractorPhases.detailsSubtitle' }
+  }
+  if (/\/phases$/.test(pathname)) {
+    return { titleKey: 'contractorPhases.title', subtitleKey: 'contractorPhases.subtitle' }
+  }
+  if (/\/contractors\/[^/]+\/team\/new$/.test(pathname)) {
+    return { titleKey: 'contractorTeam.create', subtitleKey: 'contractorTeam.createSubtitle' }
+  }
+  if (/\/team\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'contractorTeam.edit', subtitleKey: 'contractorTeam.editSubtitle' }
+  }
+  if (/\/team\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'contractorTeam.details', subtitleKey: 'contractorTeam.detailsSubtitle' }
+  }
+  if (/\/team$/.test(pathname)) {
+    return { titleKey: 'contractorTeam.title', subtitleKey: 'contractorTeam.subtitle' }
+  }
+  if (/\/contractors\/new$/.test(pathname)) {
+    return { titleKey: 'contractors.create', subtitleKey: 'contractors.createSubtitle' }
+  }
+  if (/\/contractors\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'contractors.edit', subtitleKey: 'contractors.editSubtitle' }
+  }
+  if (/\/contractors\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'contractors.details', subtitleKey: 'contractors.detailsSubtitle' }
+  }
+  if (/\/contractors$/.test(pathname)) {
+    return { titleKey: 'contractors.title', subtitleKey: 'contractors.subtitle' }
+  }
+  if (/^\/projects\/[^/]+\/edit$/.test(pathname)) {
     return { titleKey: 'projects.edit', subtitleKey: 'projects.editSubtitle' }
   }
-  if (pathname.startsWith('/projects/')) {
+  if (/^\/projects\/[^/]+$/.test(pathname)) {
     return { titleKey: 'projects.details', subtitleKey: 'projects.detailsSubtitle' }
   }
   if (pathname.startsWith('/projects')) {

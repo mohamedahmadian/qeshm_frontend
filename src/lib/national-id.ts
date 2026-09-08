@@ -1,5 +1,13 @@
 import { parseDigitString, toLatinDigits } from './datetime'
 
+export function normalizeLegalNationalId(input: string) {
+  return parseDigitString(input)
+}
+
+export function isValidIranianLegalNationalId(input: string) {
+  return /^\d{11}$/.test(normalizeLegalNationalId(input))
+}
+
 export function normalizeNationalId(input: string) {
   const digits = parseDigitString(input)
   if (digits.length === 9) {

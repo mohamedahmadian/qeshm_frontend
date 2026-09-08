@@ -150,7 +150,16 @@ const PAGE_BACK_LEAVES = new Set([
   'history',
 ])
 
-const PAGE_BACK_NESTED_LISTS = new Set(['items', 'vouchers', 'phones', 'distribute'])
+const PAGE_BACK_NESTED_LISTS = new Set([
+  'items',
+  'vouchers',
+  'phones',
+  'distribute',
+  'contractors',
+  'team',
+  'phases',
+  'payments',
+])
 
 const UUID_SEGMENT =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

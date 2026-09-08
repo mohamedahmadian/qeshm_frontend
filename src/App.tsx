@@ -31,6 +31,28 @@ import { ProjectCreatePage } from './pages/projects/ProjectCreatePage'
 import { ProjectDetailPage } from './pages/projects/ProjectDetailPage'
 import { ProjectEditPage } from './pages/projects/ProjectEditPage'
 import { ProjectsListPage } from './pages/projects/ProjectsListPage'
+import { ContractorCreatePage } from './pages/projects/contractors/ContractorCreatePage'
+import { ContractorDetailPage } from './pages/projects/contractors/ContractorDetailPage'
+import { ContractorEditPage } from './pages/projects/contractors/ContractorEditPage'
+import { ContractorsListPage } from './pages/projects/contractors/ContractorsListPage'
+import {
+  ContractorPaymentCreatePage,
+  ContractorPaymentDetailPage,
+  ContractorPaymentEditPage,
+  ContractorPaymentListPage,
+} from './pages/projects/contractors/ContractorPaymentPages'
+import {
+  ContractorPhaseCreatePage,
+  ContractorPhaseDetailPage,
+  ContractorPhaseEditPage,
+  ContractorPhaseListPage,
+} from './pages/projects/contractors/ContractorPhasePages'
+import {
+  ContractorTeamCreatePage,
+  ContractorTeamDetailPage,
+  ContractorTeamEditPage,
+  ContractorTeamListPage,
+} from './pages/projects/contractors/ContractorTeamPages'
 import { PublicProfilePage } from './pages/public-profile/PublicProfilePage'
 import { UserCreatePage } from './pages/users/UserCreatePage'
 import { UserDetailPage } from './pages/users/UserDetailPage'
@@ -97,6 +119,22 @@ export default function App() {
                   <Route path="/base-info/cities/:id/edit" element={<CityEditPage />} />
                   <Route path="/projects" element={<ProjectsListPage />} />
                   <Route path="/projects/new" element={<ProjectCreatePage />} />
+                  <Route path="/projects/:id/contractors" element={<ContractorsListPage />} />
+                  <Route path="/projects/:id/contractors/new" element={<ContractorCreatePage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/team" element={<ContractorTeamListPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/team/new" element={<ContractorTeamCreatePage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/team/:memberId" element={<ContractorTeamDetailPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/team/:memberId/edit" element={<ContractorTeamEditPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/phases" element={<ContractorPhaseListPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/phases/new" element={<ContractorPhaseCreatePage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/phases/:phaseId" element={<ContractorPhaseDetailPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/phases/:phaseId/edit" element={<ContractorPhaseEditPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/payments" element={<ContractorPaymentListPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/payments/new" element={<ContractorPaymentCreatePage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/payments/:paymentId" element={<ContractorPaymentDetailPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/payments/:paymentId/edit" element={<ContractorPaymentEditPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId" element={<ContractorDetailPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/edit" element={<ContractorEditPage />} />
                   <Route path="/projects/:id" element={<ProjectDetailPage />} />
                   <Route path="/projects/:id/edit" element={<ProjectEditPage />} />
                 </Route>
