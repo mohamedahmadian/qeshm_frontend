@@ -182,6 +182,9 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/food-reservation/history')) {
     return { titleKey: 'menus.foodReservationHistory', subtitleKey: 'foodReservations.historySubtitle' }
   }
+  if (pathname.startsWith('/food-reservation/cost-estimate')) {
+    return { titleKey: 'menus.foodCostEstimate', subtitleKey: 'foodCostEstimate.subtitle' }
+  }
   if (pathname.startsWith('/food-reservation/report')) {
     return { titleKey: 'menus.foodReservationReport', subtitleKey: 'foodReservations.reportSubtitle' }
   }
@@ -250,6 +253,48 @@ export function getPageMeta(pathname: string): {
   }
   if (pathname.startsWith('/organization/phones')) {
     return { titleKey: 'organizationPhones.title', subtitleKey: 'organizationPhones.subtitle' }
+  }
+  if (/\/vehicles\/[^/]+\/assignments\/new$/.test(pathname)) {
+    return { titleKey: 'vehicleAssignments.create', subtitleKey: 'vehicleAssignments.createSubtitle' }
+  }
+  if (/\/vehicles\/[^/]+\/assignments\/[^/]+\/return$/.test(pathname)) {
+    return { titleKey: 'vehicleAssignments.return', subtitleKey: 'vehicleAssignments.returnSubtitle' }
+  }
+  if (/\/vehicles\/[^/]+\/assignments\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'vehicleAssignments.edit', subtitleKey: 'vehicleAssignments.editSubtitle' }
+  }
+  if (/\/vehicles\/[^/]+\/assignments\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'vehicleAssignments.details', subtitleKey: 'vehicleAssignments.detailsSubtitle' }
+  }
+  if (/\/vehicles\/[^/]+\/assignments$/.test(pathname)) {
+    return { titleKey: 'vehicleAssignments.title', subtitleKey: 'vehicleAssignments.subtitle' }
+  }
+  if (pathname.startsWith('/vehicles/reports')) {
+    return { titleKey: 'menus.vehicleReports', subtitleKey: 'vehicleReports.subtitle' }
+  }
+  if (pathname === '/vehicles/brands/new') {
+    return { titleKey: 'vehicleBrands.create', subtitleKey: 'vehicleBrands.createSubtitle' }
+  }
+  if (/\/vehicles\/brands\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'vehicleBrands.edit', subtitleKey: 'vehicleBrands.editSubtitle' }
+  }
+  if (/\/vehicles\/brands\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'vehicleBrands.details', subtitleKey: 'vehicleBrands.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/vehicles/brands')) {
+    return { titleKey: 'menus.vehicleBrands', subtitleKey: 'vehicleBrands.subtitle' }
+  }
+  if (pathname === '/vehicles/new') {
+    return { titleKey: 'vehicles.create', subtitleKey: 'vehicles.createSubtitle' }
+  }
+  if (/^\/vehicles\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'vehicles.edit', subtitleKey: 'vehicles.editSubtitle' }
+  }
+  if (/^\/vehicles\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'vehicles.details', subtitleKey: 'vehicles.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/vehicles')) {
+    return { titleKey: 'menus.vehicles', subtitleKey: 'vehicles.subtitle' }
   }
   if (pathname.startsWith('/organization')) {
     return { titleKey: 'organization.details', subtitleKey: 'organization.detailsSubtitle' }

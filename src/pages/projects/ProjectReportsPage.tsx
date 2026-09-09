@@ -55,6 +55,7 @@ export function ProjectReportsPage() {
   const vicePresidency = searchParams.get('vicePresidency') ?? ''
   const management = searchParams.get('management') ?? ''
   const unit = searchParams.get('unit') ?? ''
+  const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
   const isSupportActive = searchParams.get('isSupportActive') ?? ''
   const importance = searchParams.get('importance') ?? ''
@@ -80,6 +81,7 @@ export function ProjectReportsPage() {
       vicePresidency,
       management,
       unit,
+      companyName,
       isActive,
       isSupportActive,
       importance,
@@ -91,6 +93,7 @@ export function ProjectReportsPage() {
           ...(vicePresidency ? { vicePresidency } : {}),
           ...(management ? { management } : {}),
           ...(unit ? { unit } : {}),
+          ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
           ...(isSupportActive ? { isSupportActive } : {}),
           ...(importance ? { importance } : {}),
@@ -103,7 +106,13 @@ export function ProjectReportsPage() {
   const report = query.data
   const kpis = report?.kpis
   const filtersActive = Boolean(
-    vicePresidency || management || unit || isActive || isSupportActive || importance,
+    vicePresidency ||
+      management ||
+      unit ||
+      companyName ||
+      isActive ||
+      isSupportActive ||
+      importance,
   )
   const statusOptions = [
     { value: '', label: t('common.all') },
@@ -225,6 +234,23 @@ export function ProjectReportsPage() {
                 options={[
                   { value: '', label: t('projects.allUnits') },
                   ...withCurrent(lookups.data?.units, unit).map((item) => ({
+                    value: item,
+                    label: item,
+                  })),
+                ]}
+              />
+            </FormField>
+            <FormField icon={Filter} label={t('projects.companyName')} htmlFor="report-company">
+              <SearchSelect
+                id="report-company"
+                value={companyName}
+                placeholder={t('projects.allCompanies')}
+                onChange={(next) =>
+                  setParams({ companyName: next || undefined }, { resetPage: true })
+                }
+                options={[
+                  { value: '', label: t('projects.allCompanies') },
+                  ...withCurrent(lookups.data?.companies, companyName).map((item) => ({
                     value: item,
                     label: item,
                   })),

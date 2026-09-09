@@ -19,7 +19,7 @@ import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api } from '../../../lib/api'
 import { localizeDigits } from '../../../lib/datetime'
-import type { ManagedUser, OrganizationUnit, Paginated } from '../../../types/app'
+import type { ManagedUser, OrganizationPosition, OrganizationUnit, Paginated } from '../../../types/app'
 import { organizationEmployeePath, organizationEmployeesPath } from '../organization-paths'
 import { EmployeeForm } from './EmployeeForm'
 
@@ -30,6 +30,7 @@ export function EmployeeListPage() {
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
   const orgUnitId = searchParams.get('orgUnitId') ?? ''
+  const positionId = searchParams.get('positionId') ?? ''
 
   const units = useQuery({
     queryKey: ['organization-units', 'lookup'],
@@ -38,8 +39,15 @@ export function EmployeeListPage() {
       return data
     },
   })
+  const positions = useQuery({
+    queryKey: ['organization-positions', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<OrganizationPosition[]>('/organization/positions')
+      return data
+    },
+  })
   const query = useQuery({
-    queryKey: ['employees', q, page, orgUnitId, sortBy, sortDir],
+    queryKey: ['employees', q, page, orgUnitId, positionId, sortBy, sortDir],
     queryFn: async () => {
       const { data } = await api.get<Paginated<ManagedUser>>('/users', {
         params: {
@@ -47,6 +55,7 @@ export function EmployeeListPage() {
           employeesOnly: true,
           ...(q ? { q } : {}),
           ...(orgUnitId ? { orgUnitId } : {}),
+          ...(positionId ? { positionId } : {}),
           ...sortParams,
         },
       })
@@ -76,17 +85,28 @@ export function EmployeeListPage() {
         onSubmit={() => applySearch()}
         label={t('employees.search')}
         placeholder={t('employees.searchPlaceholder')}
-        filtersActive={Boolean(orgUnitId)}
+        filtersActive={Boolean(orgUnitId || positionId)}
         extra={
-          <SearchSelect
-            value={orgUnitId}
-            onChange={(next) => setParams({ orgUnitId: next || undefined }, { resetPage: true })}
-            placeholder={t('employees.filterUnit')}
-            options={[
-              { value: '', label: t('employees.allUnits') },
-              ...(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name })),
-            ]}
-          />
+          <>
+            <SearchSelect
+              value={positionId}
+              onChange={(next) => setParams({ positionId: next || undefined }, { resetPage: true })}
+              placeholder={t('employees.filterPosition')}
+              options={[
+                { value: '', label: t('employees.allPositions') },
+                ...(positions.data ?? []).map((item) => ({ value: item.id, label: item.name })),
+              ]}
+            />
+            <SearchSelect
+              value={orgUnitId}
+              onChange={(next) => setParams({ orgUnitId: next || undefined }, { resetPage: true })}
+              placeholder={t('employees.filterUnit')}
+              options={[
+                { value: '', label: t('employees.allUnits') },
+                ...(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name })),
+              ]}
+            />
+          </>
         }
       />
       <TableCard
@@ -99,8 +119,8 @@ export function EmployeeListPage() {
             <tr>
               <SortableTh column="fullName" label={t('users.fullName')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="phone" label={t('users.phone')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="orgUnit" label={t('users.orgUnit')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="position" label={t('users.position')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="orgUnit" label={t('users.orgUnit')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <ActionsTh />
             </tr>
           </thead>
@@ -111,8 +131,8 @@ export function EmployeeListPage() {
                 <td className="px-4 py-3">
                   {item.phone ? <span className="digit-field" dir="ltr">{localizeDigits(item.phone, locale)}</span> : '—'}
                 </td>
-                <td className="px-4 py-3">{item.orgUnit?.name || '—'}</td>
                 <td className="px-4 py-3">{item.position?.name || '—'}</td>
+                <td className="px-4 py-3">{item.orgUnit?.name || '—'}</td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
                     viewTo={organizationEmployeePath(item.id)}

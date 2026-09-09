@@ -1,6 +1,7 @@
 import {
   Building2,
   Boxes,
+  Car,
   Building,
   Calculator,
   CalendarRange,
@@ -83,6 +84,7 @@ const icons: Record<string, LucideIcon> = {
   'scan-search': ScanSearch,
   building: Building,
   'building-2': Building2,
+  car: Car,
   boxes: Boxes,
   calculator: Calculator,
   'calendar-range': CalendarRange,

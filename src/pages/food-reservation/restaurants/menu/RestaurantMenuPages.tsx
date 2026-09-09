@@ -1,4 +1,4 @@
-import { CookingPot, Filter, ImagePlus, Plus, ScrollText, Store, ToggleRight, UtensilsCrossed, Wallet } from 'lucide-react'
+import { CalendarRange, CookingPot, Filter, ImagePlus, Plus, ScrollText, Store, ToggleRight, UtensilsCrossed, Wallet } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -22,7 +22,9 @@ import {
   formShellClassName,
   listShellClassName,
 } from '../../../../components/ui/Form'
+import { DateText } from '../../../../components/ui/DateText'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../../components/ui/FormLayout'
+import { PersianDateField } from '../../../../components/ui/PersianDateField'
 import { SearchSelect } from '../../../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../../../hooks/useConfirmDelete'
 import { useListParams } from '../../../../hooks/useListParams'
@@ -58,15 +60,15 @@ function useFoods() {
   })
 }
 
-function useTakenFoodIds(restaurantId?: string, currentItemId?: string) {
+function useMenuItems(restaurantId?: string) {
   return useQuery({
-    queryKey: ['restaurant-menu', restaurantId, 'all', currentItemId],
+    queryKey: ['restaurant-menu', restaurantId, 'all'],
     enabled: Boolean(restaurantId),
     queryFn: async () => {
       const { data } = await api.get<RestaurantMenuItem[]>(
         `/restaurants/${restaurantId}/menu-items`,
       )
-      return data.filter((item) => item.id !== currentItemId).map((item) => item.foodId)
+      return data
     },
   })
 }
@@ -80,8 +82,9 @@ export function RestaurantMenuListPage() {
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
   const isActive = searchParams.get('isActive') ?? ''
+  const offeredAt = searchParams.get('offeredAt') ?? ''
   const query = useQuery({
-    queryKey: ['restaurant-menu', restaurantId, q, page, sortBy, sortDir, isActive],
+    queryKey: ['restaurant-menu', restaurantId, q, page, sortBy, sortDir, isActive, offeredAt],
     enabled: Boolean(restaurantId),
     queryFn: async () => {
       const { data } = await api.get<Paginated<RestaurantMenuItem>>(
@@ -91,6 +94,7 @@ export function RestaurantMenuListPage() {
             page,
             ...(q ? { q } : {}),
             ...(isActive ? { isActive } : {}),
+            ...(offeredAt ? { offeredAt } : {}),
             ...sortParams,
           },
         },
@@ -126,31 +130,47 @@ export function RestaurantMenuListPage() {
         onSubmit={() => applySearch()}
         label={t('restaurantMenuItems.search')}
         placeholder={t('restaurantMenuItems.searchPlaceholder')}
-        filtersActive={Boolean(isActive)}
+        filtersActive={Boolean(isActive || offeredAt)}
         extra={
-          <FormField icon={Filter} label={t('restaurantMenuItems.isActive')} htmlFor="menu-status">
-            <SearchSelect
-              id="menu-status"
-              value={isActive}
-              placeholder={t('restaurantMenuItems.allStatuses')}
-              onChange={(next) => setParams({ isActive: next || undefined }, { resetPage: true })}
-              options={[
-                { value: '', label: t('restaurantMenuItems.allStatuses') },
-                { value: 'true', label: t('geo.active') },
-                { value: 'false', label: t('geo.inactive') },
-              ]}
-            />
-          </FormField>
+          <>
+            <FormField icon={CalendarRange} label={t('restaurantMenuItems.date')} htmlFor="menu-date">
+              <PersianDateField
+                id="menu-date"
+                value={offeredAt}
+                onChange={(value) => setParams({ offeredAt: value || undefined }, { resetPage: true })}
+              />
+            </FormField>
+            <FormField icon={Filter} label={t('restaurantMenuItems.isActive')} htmlFor="menu-status">
+              <SearchSelect
+                id="menu-status"
+                value={isActive}
+                placeholder={t('restaurantMenuItems.allStatuses')}
+                onChange={(next) => setParams({ isActive: next || undefined }, { resetPage: true })}
+                options={[
+                  { value: '', label: t('restaurantMenuItems.allStatuses') },
+                  { value: 'true', label: t('geo.active') },
+                  { value: 'false', label: t('geo.inactive') },
+                ]}
+              />
+            </FormField>
+          </>
         }
       />
       <TableCard
         loading={query.isLoading}
-        empty={q || isActive ? t('restaurantMenuItems.noResults') : t('restaurantMenuItems.empty')}
+        empty={q || isActive || offeredAt ? t('restaurantMenuItems.noResults') : t('restaurantMenuItems.empty')}
         hasRows={rows.length > 0}
       >
         <table className="w-full text-sm">
           <thead className="bg-cream-50 text-ink-700">
             <tr>
+              <SortableTh
+                column="offeredAt"
+                label={t('restaurantMenuItems.date')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
               <SortableTh
                 column="food"
                 label={t('restaurantMenuItems.food')}
@@ -178,6 +198,9 @@ export function RestaurantMenuListPage() {
           <tbody>
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
+                <td className="px-4 py-3">
+                  <DateText value={item.offeredAt} />
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <EntityThumb imageId={item.food.photoId} icon={UtensilsCrossed} label={item.food.name} />
@@ -226,8 +249,8 @@ export function RestaurantMenuCreatePage() {
   const navigate = useNavigate()
   const { restaurantId, restaurant } = useRestaurant()
   const foods = useFoods()
-  const taken = useTakenFoodIds(restaurantId)
-  if (!restaurant || !restaurantId || !foods.data || !taken.data) {
+  const menuItems = useMenuItems(restaurantId)
+  if (!restaurant || !restaurantId || !foods.data || !menuItems.data) {
     return <LoadingState />
   }
   return (
@@ -238,7 +261,7 @@ export function RestaurantMenuCreatePage() {
       />
       <RestaurantMenuForm
         foods={foods.data}
-        takenFoodIds={taken.data}
+        existingItems={menuItems.data}
         onSubmit={async (payload) => {
           const { data } = await api.post<{ id: string }>(
             `/restaurants/${restaurantId}/menu-items`,
@@ -258,7 +281,7 @@ export function RestaurantMenuEditPage() {
   const navigate = useNavigate()
   const { restaurantId } = useRestaurant()
   const foods = useFoods()
-  const taken = useTakenFoodIds(restaurantId, itemId)
+  const menuItems = useMenuItems(restaurantId)
   const query = useQuery({
     queryKey: ['restaurant-menu-item', restaurantId, itemId],
     enabled: Boolean(restaurantId && itemId),
@@ -269,7 +292,7 @@ export function RestaurantMenuEditPage() {
       return data
     },
   })
-  if (!query.data || !restaurantId || !itemId || !foods.data || !taken.data) {
+  if (!query.data || !restaurantId || !itemId || !foods.data || !menuItems.data) {
     return <LoadingState />
   }
   return (
@@ -280,7 +303,7 @@ export function RestaurantMenuEditPage() {
       />
       <RestaurantMenuForm
         foods={foods.data}
-        takenFoodIds={taken.data}
+        existingItems={menuItems.data}
         initial={query.data}
         onSubmit={async (payload) => {
           await api.patch(`/restaurants/${restaurantId}/menu-items/${itemId}`, payload)
@@ -325,16 +348,21 @@ export function RestaurantMenuDetailPage() {
           <FormSectionTitle icon={CookingPot}>{t('restaurantMenuItems.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile
+              icon={CalendarRange}
+              label={t('restaurantMenuItems.date')}
+              value={<DateText value={item.offeredAt} />}
+              tone="teal"
+            />
+            <FormFactTile
               icon={UtensilsCrossed}
               label={t('restaurantMenuItems.food')}
               value={item.food.name}
-              tone="teal"
+              tone="mint"
             />
             <FormFactTile
               icon={Wallet}
               label={t('restaurantMenuItems.price')}
               value={`${formatNumber(item.price, locale)} ${t('restaurantMenuItems.toman')}`}
-              tone="mint"
             />
             <FormFactTile
               icon={ToggleRight}

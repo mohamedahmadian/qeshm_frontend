@@ -58,6 +58,7 @@ import {
   FoodReservationHistoryDetailPage,
   FoodReservationHistoryListPage,
 } from './pages/food-reservation/history/FoodReservationHistoryPages'
+import { FoodCostEstimateReportPage } from './pages/food-reservation/report/FoodCostEstimateReportPage'
 import { FoodReservationReportPage } from './pages/food-reservation/report/FoodReservationReportPage'
 import {
   FoodReserveCreatePage,
@@ -113,6 +114,26 @@ import { UserEditPage } from './pages/users/UserEditPage'
 import { UserLocationHistoryPage } from './pages/users/UserLocationHistoryPage'
 import { UserLocationPage } from './pages/users/UserLocationPage'
 import { UsersListPage } from './pages/users/UsersListPage'
+import {
+  VehicleAssignmentCreatePage,
+  VehicleAssignmentDetailPage,
+  VehicleAssignmentEditPage,
+  VehicleAssignmentListPage,
+  VehicleAssignmentReturnPage,
+} from './pages/vehicles/assignments/VehicleAssignmentPages'
+import {
+  VehicleCreatePage,
+  VehicleDetailPage,
+  VehicleEditPage,
+  VehicleListPage,
+} from './pages/vehicles/VehiclePages'
+import {
+  VehicleBrandCreatePage,
+  VehicleBrandDetailPage,
+  VehicleBrandEditPage,
+  VehicleBrandListPage,
+} from './pages/vehicles/brands/VehicleBrandPages'
+import { VehicleReportsPage } from './pages/vehicles/VehicleReportsPage'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 
 const queryClient = new QueryClient()
@@ -209,6 +230,7 @@ export default function App() {
                   <Route path="/food-reservation/history" element={<FoodReservationHistoryListPage />} />
                   <Route path="/food-reservation/history/:id" element={<FoodReservationHistoryDetailPage />} />
                   <Route path="/food-reservation/report" element={<FoodReservationReportPage />} />
+                  <Route path="/food-reservation/cost-estimate" element={<FoodCostEstimateReportPage />} />
                   <Route path="/organization" element={<OrganizationDetailPage />} />
                   <Route path="/organization/new" element={<OrganizationCreatePage />} />
                   <Route path="/organization/edit" element={<OrganizationEditPage />} />
@@ -232,6 +254,20 @@ export default function App() {
                   <Route path="/organization/employees/new" element={<EmployeeCreatePage />} />
                   <Route path="/organization/employees/:id" element={<UserDetailPage />} />
                   <Route path="/organization/employees/:id/edit" element={<UserEditPage />} />
+                  <Route path="/vehicles" element={<VehicleListPage />} />
+                  <Route path="/vehicles/reports" element={<VehicleReportsPage />} />
+                  <Route path="/vehicles/brands" element={<VehicleBrandListPage />} />
+                  <Route path="/vehicles/brands/new" element={<VehicleBrandCreatePage />} />
+                  <Route path="/vehicles/brands/:id" element={<VehicleBrandDetailPage />} />
+                  <Route path="/vehicles/brands/:id/edit" element={<VehicleBrandEditPage />} />
+                  <Route path="/vehicles/new" element={<VehicleCreatePage />} />
+                  <Route path="/vehicles/:id/assignments" element={<VehicleAssignmentListPage />} />
+                  <Route path="/vehicles/:id/assignments/new" element={<VehicleAssignmentCreatePage />} />
+                  <Route path="/vehicles/:id/assignments/:assignmentId/return" element={<VehicleAssignmentReturnPage />} />
+                  <Route path="/vehicles/:id/assignments/:assignmentId" element={<VehicleAssignmentDetailPage />} />
+                  <Route path="/vehicles/:id/assignments/:assignmentId/edit" element={<VehicleAssignmentEditPage />} />
+                  <Route path="/vehicles/:id" element={<VehicleDetailPage />} />
+                  <Route path="/vehicles/:id/edit" element={<VehicleEditPage />} />
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -78,16 +78,21 @@ export function PublicProfilePage() {
   }
 
   return (
-    <div className="min-h-svh bg-cream-50 px-4 py-8">
-      <div className="mx-auto w-full max-w-lg space-y-4">
+    <div className="flex min-h-svh items-center justify-center bg-cream-50 px-4 py-8">
+      <div className="member-card-page">
         {query.isLoading ? <LoadingState /> : null}
         {query.isError ? <FormEmptyHint>{t('publicProfile.notFound')}</FormEmptyHint> : null}
         {profile ? (
           <>
             <PublicProfileCard ref={cardRef} profile={profile} qrUrl={qrUrl} />
-            <Button type="button" className="w-full" disabled={downloading} onClick={() => void downloadCard()}>
+            <Button
+              type="button"
+              className="member-card-download"
+              disabled={downloading}
+              onClick={() => void downloadCard()}
+            >
               <Download className="size-4" aria-hidden />
-              {t('publicProfile.download')}
+              {downloading ? t('publicProfile.downloading') : t('publicProfile.download')}
             </Button>
           </>
         ) : null}

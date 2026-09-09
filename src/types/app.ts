@@ -621,6 +621,7 @@ export type ProjectLookups = {
   vicePresidencies: string[];
   managements: string[];
   units: string[];
+  companies: string[];
 };
 
 export type ProjectReportNamedCount = {
@@ -3560,6 +3561,7 @@ export type RestaurantMenuItem = {
   id: string;
   restaurantId: string;
   foodId: string;
+  offeredAt: string;
   price: number;
   isActive: boolean;
   food: Pick<Food, 'id' | 'name' | 'description' | 'photoId'>;
@@ -3662,6 +3664,62 @@ export type FoodReservationReport = Paginated<FoodReservation> & {
   summary: FoodReservationReportSummary;
   byFood: FoodReservationReportGroup[];
   byUnit: FoodReservationReportGroup[];
+};
+
+export type FoodCostEstimateGroup = {
+  id: string;
+  name: string;
+  count: number;
+  quantity: number;
+  totalPrice: number;
+};
+
+export type FoodCostEstimateFoodGroup = FoodCostEstimateGroup & {
+  avgUnitPrice: number;
+  minUnitPrice: number;
+  maxUnitPrice: number;
+};
+
+export type FoodCostEstimatePeriod = {
+  period: string;
+  count: number;
+  quantity: number;
+  totalPrice: number;
+};
+
+export type FoodCostEstimateSummary = {
+  totalCost: number;
+  confirmedCost: number;
+  pendingCost: number;
+  totalQuantity: number;
+  confirmedQuantity: number;
+  pendingQuantity: number;
+  reservationCount: number;
+  confirmedCount: number;
+  pendingCount: number;
+  avgCostPerServing: number;
+  avgCostPerReservation: number;
+  avgDailyCost: number;
+  uniqueDays: number;
+  uniqueEmployees: number;
+};
+
+export type FoodCostEstimateReport = {
+  summary: FoodCostEstimateSummary;
+  extremes: {
+    highestCostUnit: FoodCostEstimateGroup | null;
+    lowestCostUnit: FoodCostEstimateGroup | null;
+    mostExpensiveFood: FoodCostEstimateFoodGroup | null;
+    cheapestFood: FoodCostEstimateFoodGroup | null;
+    topSpendFood: FoodCostEstimateFoodGroup | null;
+    topSpendRestaurant: FoodCostEstimateGroup | null;
+  };
+  byUnit: FoodCostEstimateGroup[];
+  byFood: FoodCostEstimateFoodGroup[];
+  byRestaurant: FoodCostEstimateGroup[];
+  byDay: FoodCostEstimatePeriod[];
+  byWeek: FoodCostEstimatePeriod[];
+  byMonth: FoodCostEstimatePeriod[];
 };
 
 export type OrganizationUnitRestaurant = {
@@ -3792,6 +3850,170 @@ export type WarehouseStockResult = {
       maxServings: number;
     }>;
   }>;
+};
+
+export const vehicleTypes = {
+  SEDAN: 'SEDAN',
+  PICKUP: 'PICKUP',
+  TRUCK: 'TRUCK',
+  MINIBUS: 'MINIBUS',
+  MOTORCYCLE: 'MOTORCYCLE',
+  OTHER: 'OTHER',
+} as const;
+
+export type VehicleType = (typeof vehicleTypes)[keyof typeof vehicleTypes];
+
+export const vehicleTypeOrder: VehicleType[] = [
+  vehicleTypes.SEDAN,
+  vehicleTypes.PICKUP,
+  vehicleTypes.TRUCK,
+  vehicleTypes.MINIBUS,
+  vehicleTypes.MOTORCYCLE,
+  vehicleTypes.OTHER,
+];
+
+export const vehicleStatuses = {
+  ACTIVE: 'ACTIVE',
+  IN_REPAIR: 'IN_REPAIR',
+  SCRAPPED: 'SCRAPPED',
+  TRANSFERRED: 'TRANSFERRED',
+  MISSING: 'MISSING',
+} as const;
+
+export type VehicleStatus = (typeof vehicleStatuses)[keyof typeof vehicleStatuses];
+
+export const vehicleStatusOrder: VehicleStatus[] = [
+  vehicleStatuses.ACTIVE,
+  vehicleStatuses.IN_REPAIR,
+  vehicleStatuses.SCRAPPED,
+  vehicleStatuses.TRANSFERRED,
+  vehicleStatuses.MISSING,
+];
+
+export const vehicleAssignmentTypes = {
+  UNIT: 'UNIT',
+  PERSON: 'PERSON',
+} as const;
+
+export type VehicleAssignmentType =
+  (typeof vehicleAssignmentTypes)[keyof typeof vehicleAssignmentTypes];
+
+export const vehicleAssignmentStatuses = {
+  LENT: 'LENT',
+  RETURNED: 'RETURNED',
+} as const;
+
+export type VehicleAssignmentStatus =
+  (typeof vehicleAssignmentStatuses)[keyof typeof vehicleAssignmentStatuses];
+
+export const vehicleAssignmentStatusOrder: VehicleAssignmentStatus[] = [
+  vehicleAssignmentStatuses.LENT,
+  vehicleAssignmentStatuses.RETURNED,
+];
+
+export type VehicleBrand = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { vehicles: number };
+};
+
+export type VehicleAssignmentRef = {
+  id: string;
+  type: VehicleAssignmentType;
+  status: VehicleAssignmentStatus;
+  startDate: string;
+  endDate: string | null;
+  returnedAt: string | null;
+  organizationUnit: { id: string; name: string } | null;
+  person: { id: string; fullName: string } | null;
+};
+
+export type Vehicle = {
+  id: string;
+  assetCode: string;
+  plate: string;
+  type: VehicleType;
+  brandId: string;
+  brand: Pick<VehicleBrand, 'id' | 'name'>;
+  model: string;
+  color: string | null;
+  year: number | null;
+  chassisNumber: string | null;
+  engineNumber: string | null;
+  status: VehicleStatus;
+  description: string | null;
+  currentAssignment: VehicleAssignmentRef | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { assignments: number };
+};
+
+export type VehicleAssignment = {
+  id: string;
+  vehicleId: string;
+  organizationUnitId: string | null;
+  personId: string | null;
+  startDate: string;
+  endDate: string | null;
+  returnedAt: string | null;
+  type: VehicleAssignmentType;
+  status: VehicleAssignmentStatus;
+  description: string | null;
+  organizationUnit: { id: string; name: string } | null;
+  person: { id: string; fullName: string } | null;
+  vehicle: {
+    id: string;
+    plate: string;
+    assetCode: string;
+    brand: Pick<VehicleBrand, 'id' | 'name'>;
+    model: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type VehicleReportNamedCount = {
+  id?: string | null;
+  name: string;
+  count: number;
+};
+
+export type VehicleReportKeyCount = {
+  key: string;
+  count: number;
+};
+
+export type VehicleReportsOverview = {
+  kpis: {
+    totalVehicles: number;
+    activeVehicles: number;
+    inRepair: number;
+    scrapped: number;
+    transferred: number;
+    missing: number;
+    assigned: number;
+    unassigned: number;
+    unitAssignments: number;
+    personAssignments: number;
+    topType: string | null;
+    topTypeCount: number;
+    topModel: string | null;
+    topModelCount: number;
+    topUnit: string | null;
+    topUnitCount: number;
+    topCustodian: string | null;
+    topCustodianCount: number;
+  };
+  byType: VehicleReportKeyCount[];
+  byStatus: VehicleReportKeyCount[];
+  byAssignment: VehicleReportKeyCount[];
+  byAssignmentType: VehicleReportKeyCount[];
+  byUnit: VehicleReportNamedCount[];
+  byPerson: VehicleReportNamedCount[];
+  byBrand: VehicleReportNamedCount[];
+  byModel: VehicleReportNamedCount[];
 };
 
 

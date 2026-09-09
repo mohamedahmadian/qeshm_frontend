@@ -1,3 +1,4 @@
+import { IdCard, MapPin, Phone } from 'lucide-react'
 import { forwardRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppLogo } from '../../components/brand/AppLogo'
@@ -25,13 +26,11 @@ export const PublicProfileCard = forwardRef<
       <div className="member-card__header">
         <div className="member-card__header-pattern" aria-hidden />
         <div className="member-card__header-row">
-          <div className="member-card__header-main">
-            <div className="member-card__brand">
-              <AppLogo className="member-card__logo" decorative />
-              <div>
-                <p className="member-card__app">{t('app.name')}</p>
-                <h2 className="member-card__title">{t('publicProfile.cardTitle')}</h2>
-              </div>
+          <div className="member-card__brand">
+            <AppLogo className="member-card__logo" decorative />
+            <div className="min-w-0">
+              <p className="member-card__app">{t('app.name')}</p>
+              <h2 className="member-card__title">{t('publicProfile.cardTitle')}</h2>
             </div>
           </div>
           {qrUrl ? (
@@ -53,12 +52,37 @@ export const PublicProfileCard = forwardRef<
               </div>
             )}
           </div>
-          <div>
+          <div className="member-card__info">
             <p className="member-card__name">{profile.fullName}</p>
-            {place ? <p className="member-card__place">{place}</p> : null}
-            <div className="member-card__digits">
-              {profile.nationalId ? <CopyableDigits value={profile.nationalId} /> : null}
-              {profile.phone ? <CopyableDigits value={profile.phone} /> : null}
+            {place ? (
+              <p className="member-card__place">
+                <MapPin className="member-card__place-icon" aria-hidden />
+                <span>{place}</span>
+              </p>
+            ) : null}
+            <div className="member-card__chips">
+              {profile.nationalId ? (
+                <span className="member-card__chip">
+                  <span className="member-card__chip-icon" aria-hidden>
+                    <IdCard />
+                  </span>
+                  <span className="member-card__chip-text">
+                    <span className="member-card__chip-label">{t('users.nationalId')}</span>
+                    <CopyableDigits value={profile.nationalId} />
+                  </span>
+                </span>
+              ) : null}
+              {profile.phone ? (
+                <span className="member-card__chip member-card__chip--mint">
+                  <span className="member-card__chip-icon" aria-hidden>
+                    <Phone />
+                  </span>
+                  <span className="member-card__chip-text">
+                    <span className="member-card__chip-label">{t('users.phone')}</span>
+                    <CopyableDigits value={profile.phone} />
+                  </span>
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

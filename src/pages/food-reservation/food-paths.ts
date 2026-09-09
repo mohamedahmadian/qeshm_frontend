@@ -37,3 +37,7 @@ export function foodReservationHistoryItemPath(id: string) {
 export function foodReservationReportPath() {
   return '/food-reservation/report'
 }
+
+export function foodCostEstimatePath() {
+  return '/food-reservation/cost-estimate'
+}

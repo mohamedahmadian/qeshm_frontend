@@ -1,46 +1,72 @@
-import { CookingPot, ToggleRight, UtensilsCrossed, Wallet } from 'lucide-react'
-import { type FormEvent, useMemo, useState } from 'react'
+import { CalendarRange, CookingPot, ToggleRight, UtensilsCrossed, Wallet } from 'lucide-react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { AppForm, FormActions, FormField, ToggleField, fieldClassName } from '../../../../components/ui/Form'
 import { FormCard, formCardBodyClassName } from '../../../../components/ui/FormLayout'
+import { PersianDateField } from '../../../../components/ui/PersianDateField'
 import { SearchSelect } from '../../../../components/ui/SearchSelect'
 import { getApiErrorMessage } from '../../../../lib/api'
+import { todayIsoDate } from '../../../../lib/datetime'
 import type { Food, RestaurantMenuItem } from '../../../../types/app'
 
 export type MenuItemPayload = {
   foodId: string
+  offeredAt: string
   price: number
   isActive: boolean
 }
 
+function toIsoDate(value?: string | null) {
+  return value ? value.slice(0, 10) : ''
+}
+
 export function RestaurantMenuForm({
   foods,
-  takenFoodIds,
+  existingItems,
   initial,
   onSubmit,
 }: {
   foods: Food[]
-  takenFoodIds: string[]
-  initial?: Pick<RestaurantMenuItem, 'foodId' | 'price' | 'isActive' | 'food'>
+  existingItems: Pick<RestaurantMenuItem, 'id' | 'foodId' | 'offeredAt'>[]
+  initial?: Pick<RestaurantMenuItem, 'id' | 'foodId' | 'offeredAt' | 'price' | 'isActive' | 'food'>
   onSubmit: (payload: MenuItemPayload) => Promise<void>
 }) {
   const { t } = useTranslation()
+  const [offeredAt, setOfferedAt] = useState(toIsoDate(initial?.offeredAt) || todayIsoDate())
   const [foodId, setFoodId] = useState(initial?.foodId ?? '')
   const [price, setPrice] = useState(initial ? String(initial.price) : '')
   const [isActive, setIsActive] = useState(initial?.isActive ?? true)
   const [saving, setSaving] = useState(false)
 
+  const takenFoodIds = useMemo(
+    () =>
+      existingItems
+        .filter((item) => item.id !== initial?.id && toIsoDate(item.offeredAt) === offeredAt)
+        .map((item) => item.foodId),
+    [existingItems, initial?.id, offeredAt],
+  )
+
   const options = useMemo(
     () =>
       foods
-        .filter((food) => food.id === initial?.foodId || !takenFoodIds.includes(food.id))
+        .filter((food) => food.id === foodId || !takenFoodIds.includes(food.id))
         .map((food) => ({ value: food.id, label: food.name })),
-    [foods, initial?.foodId, takenFoodIds],
+    [foods, foodId, takenFoodIds],
   )
+
+  useEffect(() => {
+    if (foodId && takenFoodIds.includes(foodId)) {
+      setFoodId('')
+    }
+  }, [foodId, takenFoodIds])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
+    if (!offeredAt) {
+      toast.error(t('restaurantMenuItems.dateRequired'))
+      return
+    }
     const amount = Number(price)
     if (!Number.isFinite(amount) || amount < 0) {
       toast.error(t('common.error'))
@@ -48,7 +74,7 @@ export function RestaurantMenuForm({
     }
     setSaving(true)
     try {
-      await onSubmit({ foodId, price: amount, isActive })
+      await onSubmit({ foodId, offeredAt, price: amount, isActive })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
     } finally {
@@ -65,6 +91,13 @@ export function RestaurantMenuForm({
       subtitle={initial ? undefined : t('restaurantMenuItems.createSubtitle')}
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
+        <FormField icon={CalendarRange} label={t('restaurantMenuItems.date')} htmlFor="menuDate">
+          <PersianDateField
+            id="menuDate"
+            value={offeredAt}
+            onChange={(value) => setOfferedAt(value ?? '')}
+          />
+        </FormField>
         <FormField icon={UtensilsCrossed} label={t('restaurantMenuItems.food')} htmlFor="menuFood">
           <SearchSelect
             id="menuFood"

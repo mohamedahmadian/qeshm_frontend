@@ -106,12 +106,12 @@ export function FoodReserveForm({
   const [saving, setSaving] = useState(false)
 
   const menu = useQuery({
-    queryKey: ['restaurant-menu', restaurantId, 'lookup', 'active'],
-    enabled: Boolean(restaurantId),
+    queryKey: ['restaurant-menu', restaurantId, 'lookup', 'active', reservedAt],
+    enabled: Boolean(restaurantId && reservedAt),
     queryFn: async () => {
       const { data } = await api.get<RestaurantMenuItem[]>(
         `/restaurants/${restaurantId}/menu-items`,
-        { params: { isActive: true } },
+        { params: { isActive: true, offeredAt: reservedAt } },
       )
       return data
     },
@@ -199,16 +199,32 @@ export function FoodReserveForm({
             label={t('foodReservations.weekDays')}
           />
         </FormField>
-        <FormField icon={Store} label={t('foodReservations.restaurant')} htmlFor="reserveRestaurant">
-          <SearchSelect
-            id="reserveRestaurant"
-            value={restaurantId}
-            required
-            onChange={setRestaurantId}
-            placeholder={t('foodReservations.selectRestaurant')}
-            options={context.restaurants.map((item) => ({ value: item.id, label: item.name }))}
-          />
-        </FormField>
+        <div className={context.isNutritionRep ? 'grid gap-4 sm:grid-cols-2' : undefined}>
+          <FormField icon={Store} label={t('foodReservations.restaurant')} htmlFor="reserveRestaurant">
+            <SearchSelect
+              id="reserveRestaurant"
+              value={restaurantId}
+              required
+              onChange={setRestaurantId}
+              placeholder={t('foodReservations.selectRestaurant')}
+              options={context.restaurants.map((item) => ({ value: item.id, label: item.name }))}
+            />
+          </FormField>
+          {context.isNutritionRep ? (
+            <FormField icon={Hash} label={t('foodReservations.quantity')} htmlFor="reserveQuantity">
+              <input
+                id="reserveQuantity"
+                type="number"
+                min={1}
+                max={500}
+                className={fieldClassName}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                required
+              />
+            </FormField>
+          ) : null}
+        </div>
         {restaurantId && menu.isSuccess && foods.length === 0 ? (
           <FormEmptyHint>{t('foodReservations.noActiveFood')}</FormEmptyHint>
         ) : null}
@@ -221,20 +237,6 @@ export function FoodReserveForm({
               onChange={setFoodId}
               placeholder={t('foodReservations.selectFood')}
               options={foods.map((item) => ({ value: item.food.id, label: item.food.name }))}
-            />
-          </FormField>
-        ) : null}
-        {context.isNutritionRep ? (
-          <FormField icon={Hash} label={t('foodReservations.quantity')} htmlFor="reserveQuantity">
-            <input
-              id="reserveQuantity"
-              type="number"
-              min={1}
-              max={500}
-              className={fieldClassName}
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              required
             />
           </FormField>
         ) : null}

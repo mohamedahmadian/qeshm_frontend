@@ -47,38 +47,17 @@ type Slice = { name: string; value: number; color?: string }
 type NamedValue = { name: string; value: number }
 type NamedPair = { name: string; estimate: number; paid: number }
 
-function wrapLabel(name: string, maxChars = 10, maxLines = 2) {
+function shortenLabel(name: string, max = 22) {
   const text = name.trim()
-  const words = text.split(/\s+/).filter(Boolean)
-  if (words.length <= 1) {
-    if (text.length <= maxChars) return [text]
-    const lines: string[] = []
-    for (let index = 0; index < maxLines; index += 1) {
-      const start = index * maxChars
-      if (start >= text.length) break
-      const chunk = text.slice(start, start + maxChars)
-      const hasMore = text.length > (index + 1) * maxChars
-      lines.push(index === maxLines - 1 && hasMore ? `${chunk.slice(0, -1)}…` : chunk)
-    }
-    return lines
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text
+}
+
+function barPlotLayout(count: number) {
+  const slot = count >= 12 ? 78 : count >= 7 ? 88 : 104
+  return {
+    minWidth: Math.max(count * slot, 280),
+    barCategoryGap: count >= 8 ? '36%' : '28%',
   }
-  const lines: string[] = []
-  let current = ''
-  for (const word of words) {
-    const next = current ? `${current} ${word}` : word
-    if (next.length > maxChars && current) {
-      lines.push(current)
-      current = word
-    } else {
-      current = next
-    }
-  }
-  if (current) lines.push(current)
-  if (lines.length <= maxLines) return lines
-  const visible = lines.slice(0, maxLines)
-  const last = visible[maxLines - 1] ?? ''
-  visible[maxLines - 1] = last.length > maxChars ? `${last.slice(0, maxChars - 1)}…` : `${last}…`
-  return visible
 }
 
 function BarCategoryTick({
@@ -90,22 +69,39 @@ function BarCategoryTick({
   y?: number
   payload?: { value?: string }
 }) {
-  const lines = wrapLabel(String(payload?.value ?? ''))
+  const label = shortenLabel(String(payload?.value ?? ''))
   return (
     <g transform={`translate(${x},${y})`}>
-      {lines.map((line, index) => (
-        <text
-          key={`${line}-${index}`}
-          x={0}
-          y={14 + index * 13}
-          textAnchor="middle"
-          fill="#334155"
-          fontSize={11}
-        >
-          {line}
-        </text>
-      ))}
+      <title>{payload?.value ?? ''}</title>
+      <text
+        x={0}
+        y={8}
+        dy={6}
+        textAnchor="end"
+        transform="rotate(-40)"
+        fill="#334155"
+        fontSize={11}
+      >
+        {label}
+      </text>
     </g>
+  )
+}
+
+function BarPlotFrame({
+  count,
+  children,
+}: {
+  count: number
+  children: ReactNode
+}) {
+  const { minWidth } = barPlotLayout(count)
+  return (
+    <div className="overflow-x-auto">
+      <div className="h-[26rem]" style={{ minWidth }} dir="ltr">
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -227,15 +223,20 @@ export function ReportBar({
     ...item,
     label: item.name,
   }))
+  const { barCategoryGap } = barPlotLayout(rows.length)
   return (
-    <div className="h-96" dir="ltr">
+    <BarPlotFrame count={rows.length}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} margin={{ top: 28, right: 8, left: 8, bottom: 28 }}>
+        <BarChart
+          data={rows}
+          barCategoryGap={barCategoryGap}
+          margin={{ top: 28, right: 24, left: 8, bottom: 8 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#e2eeec" vertical={false} />
           <XAxis
             dataKey="label"
             interval={0}
-            height={48}
+            height={88}
             tick={<BarCategoryTick />}
             axisLine={{ stroke: '#d7e8e5' }}
             tickLine={false}
@@ -249,7 +250,7 @@ export function ReportBar({
             width={48}
           />
           <ChartTooltip locale={locale} />
-          <Bar dataKey="value" fill={reportColors.teal} radius={[8, 8, 0, 0]} maxBarSize={42}>
+          <Bar dataKey="value" fill={reportColors.teal} radius={[8, 8, 0, 0]} maxBarSize={40}>
             <LabelList
               dataKey="value"
               position="top"
@@ -260,7 +261,7 @@ export function ReportBar({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </BarPlotFrame>
   )
 }
 
@@ -276,15 +277,20 @@ export function ReportGroupedBar({
   paidLabel: string
 }) {
   const rows = data.map((item) => ({ ...item, label: item.name }))
+  const { barCategoryGap } = barPlotLayout(rows.length)
   return (
-    <div className="h-96" dir="ltr">
+    <BarPlotFrame count={rows.length}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} margin={{ top: 36, right: 8, left: 8, bottom: 28 }}>
+        <BarChart
+          data={rows}
+          barCategoryGap={barCategoryGap}
+          margin={{ top: 36, right: 24, left: 8, bottom: 8 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#e2eeec" vertical={false} />
           <XAxis
             dataKey="label"
             interval={0}
-            height={48}
+            height={88}
             tick={<BarCategoryTick />}
             axisLine={{ stroke: '#d7e8e5' }}
             tickLine={false}
@@ -322,6 +328,6 @@ export function ReportGroupedBar({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </BarPlotFrame>
   )
 }
