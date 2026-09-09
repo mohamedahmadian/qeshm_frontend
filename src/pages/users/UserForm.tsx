@@ -1,4 +1,6 @@
 import {
+  Briefcase,
+  Building2,
   Car,
   FileText,
   Flag,
@@ -54,6 +56,8 @@ import {
   type City,
   type Country,
   type ManagedUser,
+  type OrganizationPosition,
+  type OrganizationUnit,
   type Province,
   type Religion,
   type UserGender,
@@ -112,6 +116,8 @@ export type UserPayload = {
   nationalCardPhotoId: string | null
   passportPhotoId: string | null
   identityBookletPhotoId: string | null
+  orgUnitId: string | null
+  positionId: string | null
 }
 
 export function UserForm({
@@ -168,6 +174,8 @@ export function UserForm({
   const [identityBookletPhotoId, setIdentityBookletPhotoId] = useState(
     initial?.identityBookletPhotoId ?? '',
   )
+  const [orgUnitId, setOrgUnitId] = useState(initial?.orgUnitId ?? '')
+  const [positionId, setPositionId] = useState(initial?.positionId ?? '')
   const [uploading, setUploading] = useState<PhotoField>()
   const [saving, setSaving] = useState(false)
   const [checkingNationalId, setCheckingNationalId] = useState(false)
@@ -220,6 +228,20 @@ export function UserForm({
     queryKey: ['countries', 'lookup'],
     queryFn: async () => {
       const { data } = await api.get<Country[]>('/countries', { params: { activeOnly: true } })
+      return data
+    },
+  })
+  const orgUnits = useQuery({
+    queryKey: ['organization-units', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<OrganizationUnit[]>('/organization/units')
+      return data
+    },
+  })
+  const orgPositions = useQuery({
+    queryKey: ['organization-positions', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<OrganizationPosition[]>('/organization/positions')
       return data
     },
   })
@@ -548,6 +570,8 @@ export function UserForm({
         nationalCardPhotoId: emptyToNull(nationalCardPhotoId),
         passportPhotoId: emptyToNull(passportPhotoId),
         identityBookletPhotoId: emptyToNull(identityBookletPhotoId),
+        orgUnitId: emptyToNull(orgUnitId),
+        positionId: emptyToNull(positionId),
         ...(password ? { password } : {}),
       })
     } catch (error) {
@@ -694,6 +718,34 @@ export function UserForm({
                   />
                 </UniqueFieldWrap>
               </FormField>
+              {selfProfile ? null : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField icon={Building2} label={t('users.orgUnit')} htmlFor="orgUnitId">
+                    <SearchSelect
+                      id="orgUnitId"
+                      value={orgUnitId}
+                      onChange={setOrgUnitId}
+                      placeholder={t('users.selectOrgUnit')}
+                      options={[
+                        { value: '', label: t('users.selectOrgUnit') },
+                        ...(orgUnits.data ?? []).map((unit) => ({ value: unit.id, label: unit.name })),
+                      ]}
+                    />
+                  </FormField>
+                  <FormField icon={Briefcase} label={t('users.position')} htmlFor="positionId">
+                    <SearchSelect
+                      id="positionId"
+                      value={positionId}
+                      onChange={setPositionId}
+                      placeholder={t('users.selectPosition')}
+                      options={[
+                        { value: '', label: t('users.selectPosition') },
+                        ...(orgPositions.data ?? []).map((item) => ({ value: item.id, label: item.name })),
+                      ]}
+                    />
+                  </FormField>
+                </div>
+              )}
               <FormField icon={UserRound} label={t('users.gender')} htmlFor="gender">
                 <SearchSelect
                   id="gender"

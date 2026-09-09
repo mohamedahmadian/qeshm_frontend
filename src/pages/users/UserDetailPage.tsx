@@ -1,4 +1,5 @@
 import {
+  Briefcase,
   Building2,
   Calendar,
   Car,
@@ -23,7 +24,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { OpenUserPanelButton } from '../../components/auth/OpenUserPanelButton'
 import {
   Button,
@@ -49,6 +50,11 @@ import { localizeDigits } from '../../lib/datetime'
 import { publicProfilePath } from '../../lib/public-profile'
 import { useGeoName } from '../../lib/geo'
 import type { ManagedUser } from '../../types/app'
+import {
+  isOrganizationEmployeePath,
+  organizationEmployeePath,
+  organizationEmployeesPath,
+} from '../organization/organization-paths'
 
 const tabs = ['personal', 'account', 'location', 'documents', 'social', 'other'] as const
 type UserDetailTab = (typeof tabs)[number]
@@ -67,6 +73,8 @@ export function UserDetailPage() {
   const uiLocale = i18n.language.split('-')[0] ?? 'fa'
   const { id } = useParams()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const employeeView = isOrganizationEmployeePath(pathname)
   const geoName = useGeoName()
   const { confirmDelete } = useConfirmDelete()
   const [tab, setTab] = useState<UserDetailTab>('personal')
@@ -95,7 +103,7 @@ export function UserDetailPage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
-        title={t('users.details')}
+        title={employeeView ? t('employees.details') : t('users.details')}
         subtitle={<EntityNameSubtitle name={user.fullName} icon={UserRound} />}
       />
       <FormCard
@@ -141,6 +149,20 @@ export function UserDetailPage() {
                 />
                 <FormFactTile icon={IdCard} label={t('users.nationalId')} copyValue={user.nationalId} tone="teal" />
                 <FormFactTile icon={Phone} label={t('users.phone')} copyValue={user.phone} tone="mint" />
+                <FormFactTile
+                  icon={Building2}
+                  label={t('users.orgUnit')}
+                  value={user.orgUnit?.name || empty}
+                  empty={!user.orgUnit}
+                  tone="teal"
+                />
+                <FormFactTile
+                  icon={Briefcase}
+                  label={t('users.position')}
+                  value={user.position?.name || empty}
+                  empty={!user.position}
+                  tone="mint"
+                />
                 <FormFactTile
                   icon={Share2}
                   label={t('users.religion')}
@@ -346,7 +368,7 @@ export function UserDetailPage() {
           ) : null}
 
           <DetailActions
-            editTo={`/users/${user.id}/edit`}
+            editTo={employeeView ? `${organizationEmployeePath(user.id)}/edit` : `/users/${user.id}/edit`}
             editLabel={t('common.edit')}
             deleteLabel={t('users.delete')}
             onDelete={() =>
@@ -354,8 +376,8 @@ export function UserDetailPage() {
                 message: t('users.confirmDelete'),
                 successMessage: t('users.deleted'),
                 path: `/users/${user.id}`,
-                queryKey: ['users'],
-                onDeleted: () => navigate('/users'),
+                queryKey: employeeView ? ['employees'] : ['users'],
+                onDeleted: () => navigate(employeeView ? organizationEmployeesPath() : '/users'),
               })
             }
             extra={

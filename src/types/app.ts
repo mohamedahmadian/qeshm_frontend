@@ -153,6 +153,9 @@ export type AuthUser = {
   modules: NavModule[];
   impersonating?: boolean;
   impersonatedBy?: { id: string; fullName: string } | null;
+  orgUnitId?: string | null;
+  orgUnit?: { id: string; name: string } | null;
+  isNutritionRep?: boolean;
 };
 
 export type Caravan = {
@@ -620,6 +623,87 @@ export type ProjectLookups = {
   units: string[];
 };
 
+export type ProjectReportNamedCount = {
+  name: string;
+  count: number;
+};
+
+export type ProjectReportOrgRow = ProjectReportNamedCount & {
+  activeCount: number;
+  contractorCount: number;
+  estimate: number;
+  paid: number;
+};
+
+export type ProjectReportKeyCount = {
+  key: string;
+  count: number;
+};
+
+export type ProjectReportsOverview = {
+  kpis: {
+    totalProjects: number;
+    activeProjects: number;
+    inactiveProjects: number;
+    supportActive: number;
+    supportInactive: number;
+    withContractors: number;
+    withoutContractors: number;
+    withReplacement: number;
+    withoutReplacement: number;
+    withUrl: number;
+    withCompany: number;
+    withLaunchYear: number;
+    totalContractors: number;
+    totalMembers: number;
+    totalPhases: number;
+    totalPayments: number;
+    totalCostEstimate: number;
+    totalPaid: number;
+    remainingEstimate: number;
+    overspendContractors: number;
+    upcomingPhases: number;
+    ongoingPhases: number;
+    endedPhases: number;
+    avgContractorsPerProject: number;
+    avgMembersPerContractor: number;
+    avgPhaseDays: number;
+    paidRatio: number | null;
+  };
+  byImportance: ProjectReportKeyCount[];
+  byStatus: ProjectReportKeyCount[];
+  bySupport: ProjectReportKeyCount[];
+  byContractorCoverage: ProjectReportKeyCount[];
+  byPhaseStatus: ProjectReportKeyCount[];
+  byVicePresidency: ProjectReportOrgRow[];
+  byManagement: ProjectReportOrgRow[];
+  byUnit: ProjectReportOrgRow[];
+  byCompany: ProjectReportNamedCount[];
+  byLaunchYear: { year: number | null; count: number; activeCount: number }[];
+  paymentByMonth: { month: string; amount: number; count: number }[];
+  financeByVicePresidency: { name: string; estimate: number; paid: number }[];
+  topProjects: {
+    id: string;
+    name: string;
+    vicePresidency: string;
+    contractorCount: number;
+    memberCount: number;
+    phaseCount: number;
+    estimate: number;
+    paid: number;
+  }[];
+  topContractors: {
+    id: string;
+    name: string;
+    projectId: string;
+    projectName: string;
+    memberCount: number;
+    phaseCount: number;
+    estimate: number;
+    paid: number;
+  }[];
+};
+
 export type LocationSource = 'MANUAL' | 'APP' | 'STATION';
 
 export type UserLocationHistoryItem = {
@@ -707,6 +791,10 @@ export type ManagedUser = {
     name: string;
     phone: string | null;
   } | null;
+  orgUnitId?: string | null;
+  positionId?: string | null;
+  orgUnit?: { id: string; name: string } | null;
+  position?: { id: string; name: string } | null;
   photoId: string | null;
   nationalCardPhotoId: string | null;
   passportPhotoId: string | null;
@@ -3451,24 +3539,156 @@ export type Food = {
   id: string;
   name: string;
   description: string | null;
-  finalPrice: number;
-  costPrice: number;
-  ingredientsCount: number;
-  ingredients: FoodIngredientLine[];
+  photoId: string | null;
   createdAt: string;
   updatedAt: string;
+  _count?: { menuItems: number };
 };
 
 export type Restaurant = {
   id: string;
   name: string;
-  managerName: string | null;
-  managerPhone: string | null;
+  phone: string | null;
   address: string | null;
-  neshanAddress: string | null;
+  logoId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { menuItems: number };
+};
+
+export type RestaurantMenuItem = {
+  id: string;
+  restaurantId: string;
+  foodId: string;
+  price: number;
+  isActive: boolean;
+  food: Pick<Food, 'id' | 'name' | 'description' | 'photoId'>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrganizationPhone = {
+  id: string;
+  organizationId?: string;
+  title: string;
+  phone: string;
   description: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type OrganizationPosition = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { users: number };
+};
+
+export type OrganizationUnit = {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  eitaa: string | null;
+  bale: string | null;
+  rubika: string | null;
+  instagram: string | null;
+  telegram: string | null;
+  whatsapp: string | null;
+  nutritionRepId: string | null;
+  nutritionRep: { id: string; firstName: string; lastName: string; fullName: string } | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { employees: number; restaurants: number };
+};
+
+export const foodReservationStatuses = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+} as const;
+
+export type FoodReservationStatus =
+  (typeof foodReservationStatuses)[keyof typeof foodReservationStatuses];
+
+export type FoodReservation = {
+  id: string;
+  reservedAt: string;
+  restaurantId: string;
+  foodId: string;
+  userId: string;
+  orgUnitId: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  status: FoodReservationStatus;
+  restaurant: Pick<Restaurant, 'id' | 'name' | 'logoId'>;
+  food: Pick<Food, 'id' | 'name' | 'photoId'>;
+  user: { id: string; fullName: string };
+  orgUnit: { id: string; name: string };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FoodReservationContext = {
+  orgUnit: { id: string; name: string } | null;
+  isNutritionRep: boolean;
+  restaurants: Pick<Restaurant, 'id' | 'name' | 'logoId'>[];
+};
+
+export type FoodReservationReportGroup = {
+  id: string;
+  name: string;
+  count: number;
+  quantity: number;
+  totalPrice: number;
+};
+
+export type FoodReservationReportSummary = {
+  count: number;
+  quantity: number;
+  totalPrice: number;
+  pendingCount: number;
+  confirmedCount: number;
+  pendingQuantity: number;
+  confirmedQuantity: number;
+  pendingTotal: number;
+  confirmedTotal: number;
+};
+
+export type FoodReservationReport = Paginated<FoodReservation> & {
+  summary: FoodReservationReportSummary;
+  byFood: FoodReservationReportGroup[];
+  byUnit: FoodReservationReportGroup[];
+};
+
+export type OrganizationUnitRestaurant = {
+  id: string;
+  unitId: string;
+  restaurantId: string;
+  restaurant: Pick<Restaurant, 'id' | 'name' | 'phone' | 'address' | 'logoId'>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Organization = {
+  id: string;
+  name: string;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  eitaa: string | null;
+  bale: string | null;
+  rubika: string | null;
+  instagram: string | null;
+  telegram: string | null;
+  whatsapp: string | null;
+  phones?: OrganizationPhone[];
+  createdAt: string;
+  updatedAt: string;
+  _count?: { phones: number };
 };
 
 export const mealTypes = {
@@ -3489,7 +3709,7 @@ export type RestaurantMealPlan = {
   distributedServings: number;
   remainingServings: number;
   description: string | null;
-  restaurant: Pick<Restaurant, "id" | "name" | "address" | "neshanAddress">;
+  restaurant: Pick<Restaurant, "id" | "name" | "address">;
   food: Pick<Food, "id" | "name">;
   createdAt: string;
   updatedAt: string;

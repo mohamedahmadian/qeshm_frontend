@@ -159,6 +159,7 @@ const PAGE_BACK_NESTED_LISTS = new Set([
   'team',
   'phases',
   'payments',
+  'restaurants',
 ])
 
 const UUID_SEGMENT =

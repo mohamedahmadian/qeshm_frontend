@@ -138,3 +138,12 @@ export const IRAN_MAP_BOUNDS = {
 }
 
 export const IRAN_MAP_CENTER = { lat: 32.4279, lng: 53.688 }
+
+export const QESHM_MAP_CENTER = { lat: 26.9584, lng: 56.2717 }
+
+export const QESHM_MAP_BOUNDS = {
+  south: 26.52,
+  west: 55.58,
+  north: 27.05,
+  east: 56.42,
+}

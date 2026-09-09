@@ -30,6 +30,7 @@ import { ProvincesListPage } from './pages/geo/ProvincesListPage'
 import { ProjectCreatePage } from './pages/projects/ProjectCreatePage'
 import { ProjectDetailPage } from './pages/projects/ProjectDetailPage'
 import { ProjectEditPage } from './pages/projects/ProjectEditPage'
+import { ProjectReportsPage } from './pages/projects/ProjectReportsPage'
 import { ProjectsListPage } from './pages/projects/ProjectsListPage'
 import { ContractorCreatePage } from './pages/projects/contractors/ContractorCreatePage'
 import { ContractorDetailPage } from './pages/projects/contractors/ContractorDetailPage'
@@ -53,6 +54,58 @@ import {
   ContractorTeamEditPage,
   ContractorTeamListPage,
 } from './pages/projects/contractors/ContractorTeamPages'
+import {
+  FoodReservationHistoryDetailPage,
+  FoodReservationHistoryListPage,
+} from './pages/food-reservation/history/FoodReservationHistoryPages'
+import { FoodReservationReportPage } from './pages/food-reservation/report/FoodReservationReportPage'
+import {
+  FoodReserveCreatePage,
+  FoodReserveDetailPage,
+  FoodReserveListPage,
+} from './pages/food-reservation/reserve/FoodReservePages'
+import { FoodCreatePage } from './pages/food-reservation/foods/FoodCreatePage'
+import { FoodDetailPage } from './pages/food-reservation/foods/FoodDetailPage'
+import { FoodEditPage } from './pages/food-reservation/foods/FoodEditPage'
+import { FoodsListPage } from './pages/food-reservation/foods/FoodsListPage'
+import { RestaurantCreatePage } from './pages/food-reservation/restaurants/RestaurantCreatePage'
+import { RestaurantDetailPage } from './pages/food-reservation/restaurants/RestaurantDetailPage'
+import { RestaurantEditPage } from './pages/food-reservation/restaurants/RestaurantEditPage'
+import { RestaurantsListPage } from './pages/food-reservation/restaurants/RestaurantsListPage'
+import {
+  RestaurantMenuCreatePage,
+  RestaurantMenuDetailPage,
+  RestaurantMenuEditPage,
+  RestaurantMenuListPage,
+} from './pages/food-reservation/restaurants/menu/RestaurantMenuPages'
+import { EmployeeCreatePage, EmployeeListPage } from './pages/organization/employees/EmployeePages'
+import { OrganizationCreatePage } from './pages/organization/OrganizationCreatePage'
+import { OrganizationDetailPage } from './pages/organization/OrganizationDetailPage'
+import { OrganizationEditPage } from './pages/organization/OrganizationEditPage'
+import {
+  OrganizationPhoneCreatePage,
+  OrganizationPhoneDetailPage,
+  OrganizationPhoneEditPage,
+  OrganizationPhoneListPage,
+} from './pages/organization/phones/OrganizationPhonePages'
+import {
+  OrganizationPositionCreatePage,
+  OrganizationPositionDetailPage,
+  OrganizationPositionEditPage,
+  OrganizationPositionListPage,
+} from './pages/organization/positions/OrganizationPositionPages'
+import {
+  OrganizationUnitCreatePage,
+  OrganizationUnitDetailPage,
+  OrganizationUnitEditPage,
+  OrganizationUnitListPage,
+} from './pages/organization/units/OrganizationUnitPages'
+import {
+  OrganizationUnitRestaurantCreatePage,
+  OrganizationUnitRestaurantDetailPage,
+  OrganizationUnitRestaurantEditPage,
+  OrganizationUnitRestaurantListPage,
+} from './pages/organization/units/restaurants/OrganizationUnitRestaurantPages'
 import { PublicProfilePage } from './pages/public-profile/PublicProfilePage'
 import { UserCreatePage } from './pages/users/UserCreatePage'
 import { UserDetailPage } from './pages/users/UserDetailPage'
@@ -118,6 +171,7 @@ export default function App() {
                   <Route path="/base-info/cities/:id" element={<CityDetailPage />} />
                   <Route path="/base-info/cities/:id/edit" element={<CityEditPage />} />
                   <Route path="/projects" element={<ProjectsListPage />} />
+                  <Route path="/projects/reports" element={<ProjectReportsPage />} />
                   <Route path="/projects/new" element={<ProjectCreatePage />} />
                   <Route path="/projects/:id/contractors" element={<ContractorsListPage />} />
                   <Route path="/projects/:id/contractors/new" element={<ContractorCreatePage />} />
@@ -137,6 +191,47 @@ export default function App() {
                   <Route path="/projects/:id/contractors/:contractorId/edit" element={<ContractorEditPage />} />
                   <Route path="/projects/:id" element={<ProjectDetailPage />} />
                   <Route path="/projects/:id/edit" element={<ProjectEditPage />} />
+                  <Route path="/food-reservation/foods" element={<FoodsListPage />} />
+                  <Route path="/food-reservation/foods/new" element={<FoodCreatePage />} />
+                  <Route path="/food-reservation/foods/:id" element={<FoodDetailPage />} />
+                  <Route path="/food-reservation/foods/:id/edit" element={<FoodEditPage />} />
+                  <Route path="/food-reservation/restaurants" element={<RestaurantsListPage />} />
+                  <Route path="/food-reservation/restaurants/new" element={<RestaurantCreatePage />} />
+                  <Route path="/food-reservation/restaurants/:id/menu" element={<RestaurantMenuListPage />} />
+                  <Route path="/food-reservation/restaurants/:id/menu/new" element={<RestaurantMenuCreatePage />} />
+                  <Route path="/food-reservation/restaurants/:id/menu/:itemId" element={<RestaurantMenuDetailPage />} />
+                  <Route path="/food-reservation/restaurants/:id/menu/:itemId/edit" element={<RestaurantMenuEditPage />} />
+                  <Route path="/food-reservation/restaurants/:id" element={<RestaurantDetailPage />} />
+                  <Route path="/food-reservation/restaurants/:id/edit" element={<RestaurantEditPage />} />
+                  <Route path="/food-reservation/reserve" element={<FoodReserveListPage />} />
+                  <Route path="/food-reservation/reserve/new" element={<FoodReserveCreatePage />} />
+                  <Route path="/food-reservation/reserve/:id" element={<FoodReserveDetailPage />} />
+                  <Route path="/food-reservation/history" element={<FoodReservationHistoryListPage />} />
+                  <Route path="/food-reservation/history/:id" element={<FoodReservationHistoryDetailPage />} />
+                  <Route path="/food-reservation/report" element={<FoodReservationReportPage />} />
+                  <Route path="/organization" element={<OrganizationDetailPage />} />
+                  <Route path="/organization/new" element={<OrganizationCreatePage />} />
+                  <Route path="/organization/edit" element={<OrganizationEditPage />} />
+                  <Route path="/organization/phones" element={<OrganizationPhoneListPage />} />
+                  <Route path="/organization/phones/new" element={<OrganizationPhoneCreatePage />} />
+                  <Route path="/organization/phones/:phoneId" element={<OrganizationPhoneDetailPage />} />
+                  <Route path="/organization/phones/:phoneId/edit" element={<OrganizationPhoneEditPage />} />
+                  <Route path="/organization/positions" element={<OrganizationPositionListPage />} />
+                  <Route path="/organization/positions/new" element={<OrganizationPositionCreatePage />} />
+                  <Route path="/organization/positions/:id" element={<OrganizationPositionDetailPage />} />
+                  <Route path="/organization/positions/:id/edit" element={<OrganizationPositionEditPage />} />
+                  <Route path="/organization/units" element={<OrganizationUnitListPage />} />
+                  <Route path="/organization/units/new" element={<OrganizationUnitCreatePage />} />
+                  <Route path="/organization/units/:id/restaurants" element={<OrganizationUnitRestaurantListPage />} />
+                  <Route path="/organization/units/:id/restaurants/new" element={<OrganizationUnitRestaurantCreatePage />} />
+                  <Route path="/organization/units/:id/restaurants/:linkId" element={<OrganizationUnitRestaurantDetailPage />} />
+                  <Route path="/organization/units/:id/restaurants/:linkId/edit" element={<OrganizationUnitRestaurantEditPage />} />
+                  <Route path="/organization/units/:id" element={<OrganizationUnitDetailPage />} />
+                  <Route path="/organization/units/:id/edit" element={<OrganizationUnitEditPage />} />
+                  <Route path="/organization/employees" element={<EmployeeListPage />} />
+                  <Route path="/organization/employees/new" element={<EmployeeCreatePage />} />
+                  <Route path="/organization/employees/:id" element={<UserDetailPage />} />
+                  <Route path="/organization/employees/:id/edit" element={<UserEditPage />} />
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -68,6 +68,9 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/base-info/cities')) {
     return { titleKey: 'menus.cities', subtitleKey: 'cities.subtitle' }
   }
+  if (pathname.startsWith('/projects/reports')) {
+    return { titleKey: 'menus.projectReports', subtitleKey: 'projectReports.subtitle' }
+  }
   if (pathname === '/projects/new') {
     return { titleKey: 'projects.create', subtitleKey: 'projects.createSubtitle' }
   }
@@ -127,6 +130,129 @@ export function getPageMeta(pathname: string): {
   }
   if (pathname.startsWith('/projects')) {
     return { titleKey: 'menus.projects', subtitleKey: 'projects.subtitle' }
+  }
+  if (pathname === '/food-reservation/foods/new') {
+    return { titleKey: 'foods.create', subtitleKey: 'foods.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/food-reservation/foods/')) {
+    return { titleKey: 'foods.edit', subtitleKey: 'foods.editSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/foods/')) {
+    return { titleKey: 'foods.details', subtitleKey: 'foods.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/foods')) {
+    return { titleKey: 'menus.foodManagement', subtitleKey: 'foods.subtitle' }
+  }
+  if (/\/restaurants\/[^/]+\/menu\/new$/.test(pathname)) {
+    return { titleKey: 'restaurantMenuItems.create', subtitleKey: 'restaurantMenuItems.createSubtitle' }
+  }
+  if (/\/menu\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'restaurantMenuItems.edit', subtitleKey: 'restaurantMenuItems.editSubtitle' }
+  }
+  if (/\/menu\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'restaurantMenuItems.details', subtitleKey: 'restaurantMenuItems.detailsSubtitle' }
+  }
+  if (/\/menu$/.test(pathname)) {
+    return { titleKey: 'restaurantMenuItems.title', subtitleKey: 'restaurantMenuItems.subtitle' }
+  }
+  if (pathname === '/food-reservation/restaurants/new') {
+    return { titleKey: 'restaurants.create', subtitleKey: 'restaurants.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/food-reservation/restaurants/')) {
+    return { titleKey: 'restaurants.edit', subtitleKey: 'restaurants.editSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/restaurants/')) {
+    return { titleKey: 'restaurants.details', subtitleKey: 'restaurants.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/restaurants')) {
+    return { titleKey: 'menus.restaurantManagement', subtitleKey: 'restaurants.subtitle' }
+  }
+  if (pathname === '/food-reservation/reserve/new') {
+    return { titleKey: 'foodReservations.create', subtitleKey: 'foodReservations.createSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/reserve/')) {
+    return { titleKey: 'foodReservations.details', subtitleKey: 'foodReservations.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/reserve')) {
+    return { titleKey: 'menus.foodReserve', subtitleKey: 'foodReservations.subtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/history/')) {
+    return { titleKey: 'foodReservations.details', subtitleKey: 'foodReservations.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/history')) {
+    return { titleKey: 'menus.foodReservationHistory', subtitleKey: 'foodReservations.historySubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/report')) {
+    return { titleKey: 'menus.foodReservationReport', subtitleKey: 'foodReservations.reportSubtitle' }
+  }
+  if (pathname === '/organization/positions/new') {
+    return { titleKey: 'organizationPositions.create', subtitleKey: 'organizationPositions.createSubtitle' }
+  }
+  if (/\/organization\/positions\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'organizationPositions.edit', subtitleKey: 'organizationPositions.editSubtitle' }
+  }
+  if (/\/organization\/positions\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'organizationPositions.details', subtitleKey: 'organizationPositions.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/organization/positions')) {
+    return { titleKey: 'menus.organizationPositions', subtitleKey: 'organizationPositions.subtitle' }
+  }
+  if (/\/organization\/units\/[^/]+\/restaurants\/new$/.test(pathname)) {
+    return { titleKey: 'organizationUnitRestaurants.create', subtitleKey: 'organizationUnitRestaurants.createSubtitle' }
+  }
+  if (/\/organization\/units\/[^/]+\/restaurants\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'organizationUnitRestaurants.edit', subtitleKey: 'organizationUnitRestaurants.editSubtitle' }
+  }
+  if (/\/organization\/units\/[^/]+\/restaurants\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'organizationUnitRestaurants.details', subtitleKey: 'organizationUnitRestaurants.detailsSubtitle' }
+  }
+  if (/\/organization\/units\/[^/]+\/restaurants$/.test(pathname)) {
+    return { titleKey: 'organizationUnitRestaurants.title', subtitleKey: 'organizationUnitRestaurants.subtitle' }
+  }
+  if (pathname === '/organization/units/new') {
+    return { titleKey: 'organizationUnits.create', subtitleKey: 'organizationUnits.createSubtitle' }
+  }
+  if (/\/organization\/units\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'organizationUnits.edit', subtitleKey: 'organizationUnits.editSubtitle' }
+  }
+  if (/\/organization\/units\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'organizationUnits.details', subtitleKey: 'organizationUnits.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/organization/units')) {
+    return { titleKey: 'menus.organizationUnits', subtitleKey: 'organizationUnits.subtitle' }
+  }
+  if (pathname === '/organization/employees/new') {
+    return { titleKey: 'employees.create', subtitleKey: 'employees.createSubtitle' }
+  }
+  if (/\/organization\/employees\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'employees.edit', subtitleKey: 'employees.editSubtitle' }
+  }
+  if (/\/organization\/employees\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'employees.details', subtitleKey: 'employees.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/organization/employees')) {
+    return { titleKey: 'menus.organizationEmployees', subtitleKey: 'employees.subtitle' }
+  }
+  if (pathname === '/organization/new') {
+    return { titleKey: 'organization.create', subtitleKey: 'organization.createSubtitle' }
+  }
+  if (pathname === '/organization/edit') {
+    return { titleKey: 'organization.edit', subtitleKey: 'organization.editSubtitle' }
+  }
+  if (pathname === '/organization/phones/new') {
+    return { titleKey: 'organizationPhones.create', subtitleKey: 'organizationPhones.createSubtitle' }
+  }
+  if (/\/organization\/phones\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'organizationPhones.edit', subtitleKey: 'organizationPhones.editSubtitle' }
+  }
+  if (/\/organization\/phones\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'organizationPhones.details', subtitleKey: 'organizationPhones.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/organization/phones')) {
+    return { titleKey: 'organizationPhones.title', subtitleKey: 'organizationPhones.subtitle' }
+  }
+  if (pathname.startsWith('/organization')) {
+    return { titleKey: 'organization.details', subtitleKey: 'organization.detailsSubtitle' }
   }
   if (pathname === '/') {
     return { titleKey: 'dashboard.title', subtitleKey: 'dashboard.subtitle' }
