@@ -22,7 +22,7 @@ jobs:
 
             echo "🚀 Starting Qeshm Frontend deployment..."
 
-            cd /var/www/qeshm-frontend
+            cd /var/www/frontend
 
             echo "📌 Current commit:"
             OLD_COMMIT=$(git rev-parse HEAD)
