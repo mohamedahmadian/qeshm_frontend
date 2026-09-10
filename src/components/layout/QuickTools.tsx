@@ -35,8 +35,8 @@ export function QuickToolsProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [])
 
-  const registerFocus = useCallback(() => undefined, [])
-  const registerFileFocus = useCallback(() => undefined, [])
+  const registerFocus = useCallback((_fn: () => void) => () => {}, [])
+  const registerFileFocus = useCallback((_fn: () => void) => () => {}, [])
   const value = useMemo(
     () => ({ registerFocus, registerFileFocus }),
     [registerFocus, registerFileFocus],

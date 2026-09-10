@@ -199,7 +199,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
 
   const onMenuSearchKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLInputElement>) => {
-      if (!searching || event.isComposing) return
+      if (!searching || event.nativeEvent.isComposing) return
       const count = visibleMenus.length
       if (!count) return
       if (event.key === 'ArrowDown') {

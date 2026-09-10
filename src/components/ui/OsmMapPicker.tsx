@@ -400,7 +400,9 @@ export function OsmMapPicker({
       }
     }
     function syncProjectLabels() {
-      const zoom = map.getZoom()
+      const current = mapRef.current
+      if (!current) return
+      const zoom = current.getZoom()
       for (const item of projectPins) {
         item.pin.setIcon(overlayMarkerIcon(item.marker, zoom))
       }

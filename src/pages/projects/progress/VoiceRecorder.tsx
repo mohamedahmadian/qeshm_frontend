@@ -86,7 +86,7 @@ export function VoiceRecorder({
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const startedAtRef = useRef(0)
-  const timerRef = useRef<number>()
+  const timerRef = useRef<number | undefined>(undefined)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const finalsRef = useRef('')
   const mimeRef = useRef('')

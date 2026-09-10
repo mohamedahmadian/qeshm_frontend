@@ -107,7 +107,7 @@ function DatePickerActions({
   )
 }
 
-function CalendarLegend() {
+function CalendarLegend(_props: { position?: string }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const otherLabel = usesJalaliCalendar(locale)

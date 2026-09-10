@@ -51,5 +51,5 @@ export function sanitizeUsername(value: string) {
 export function preferEnglishKeyboard(input: HTMLInputElement) {
   input.lang = 'en'
   input.dir = 'ltr'
-  input.style.imeMode = 'disabled'
+  input.style.setProperty('ime-mode', 'disabled')
 }
