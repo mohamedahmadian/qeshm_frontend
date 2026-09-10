@@ -1,8 +1,8 @@
 import { Flag, Hash, Languages, Map, MapPinned, Plane, TrainFront } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { LoadingState, Button, DetailActions, EntityNameSubtitle, PageHeader, formShellClassName } from '../../components/ui/Form'
+import { useNavigate, useParams } from 'react-router-dom'
+import { LoadingState, DetailActions, EntityNameSubtitle, PageHeader, formShellClassName } from '../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { formatNumber } from '../../lib/datetime'
@@ -68,14 +68,13 @@ export function ProvinceDetailPage() {
                 onDeleted: () => navigate('/base-info/provinces'),
               })
             }
-            extra={
-              <Link to={`/base-info/cities?countryId=${province.countryId}&provinceId=${province.id}`}>
-                <Button type="button" variant="soft">
-                  <MapPinned className="size-4" aria-hidden />
-                  {t('menus.cities')}
-                </Button>
-              </Link>
-            }
+            extraItems={[
+              {
+                to: `/base-info/cities?countryId=${province.countryId}&provinceId=${province.id}`,
+                icon: MapPinned,
+                label: t('menus.cities'),
+              },
+            ]}
           />
         </div>
       </FormCard>

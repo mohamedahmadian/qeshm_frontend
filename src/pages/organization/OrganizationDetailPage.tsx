@@ -1,8 +1,7 @@
 import { Landmark, MapPin, MessageCircle, Phone, Send, Share2, Type } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import {
-  Button,
   DetailActions,
   EntityNameSubtitle,
   LoadingState,
@@ -137,14 +136,13 @@ export function OrganizationDetailPage() {
           <DetailActions
             editTo={organizationEditPath()}
             editLabel={t('common.edit')}
-            extra={
-              <Link to={organizationPhonesPath()}>
-                <Button type="button" variant="soft">
-                  <Phone className="size-4" aria-hidden />
-                  {t('organizationPhones.manage')}
-                </Button>
-              </Link>
-            }
+            extraItems={[
+              {
+                to: organizationPhonesPath(),
+                icon: Phone,
+                label: t('organizationPhones.manage'),
+              },
+            ]}
           />
         </div>
       </FormCard>

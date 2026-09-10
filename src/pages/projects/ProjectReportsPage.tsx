@@ -5,8 +5,10 @@ import {
   ChartColumn,
   Filter,
   FolderKanban,
+  Gauge,
   Handshake,
   Layers3,
+  Percent,
   ShieldCheck,
   TriangleAlert,
   UsersRound,
@@ -30,6 +32,7 @@ import { api } from '../../lib/api'
 import { formatGroupedNumber, formatGroupedQuantity, formatNumber } from '../../lib/datetime'
 import {
   projectImportanceOrder,
+  projectStatusOrder,
   type ProjectLookups,
   type ProjectReportsOverview,
 } from '../../types/app'
@@ -57,6 +60,7 @@ export function ProjectReportsPage() {
   const unit = searchParams.get('unit') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
+  const lifecycle = searchParams.get('status') ?? ''
   const isSupportActive = searchParams.get('isSupportActive') ?? ''
   const importance = searchParams.get('importance') ?? ''
 
@@ -83,6 +87,7 @@ export function ProjectReportsPage() {
       unit,
       companyName,
       isActive,
+      lifecycle,
       isSupportActive,
       importance,
     ],
@@ -95,6 +100,7 @@ export function ProjectReportsPage() {
           ...(unit ? { unit } : {}),
           ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
+          ...(lifecycle ? { status: lifecycle } : {}),
           ...(isSupportActive ? { isSupportActive } : {}),
           ...(importance ? { importance } : {}),
         },
@@ -111,6 +117,7 @@ export function ProjectReportsPage() {
       unit ||
       companyName ||
       isActive ||
+      lifecycle ||
       isSupportActive ||
       importance,
   )
@@ -123,6 +130,21 @@ export function ProjectReportsPage() {
     name: item.key === 'active' ? t('geo.active') : t('geo.inactive'),
     value: item.count,
     color: item.key === 'active' ? reportColors.teal : reportColors.ink,
+  }))
+  const lifecycleColors: Record<string, string> = {
+    NOT_STARTED: reportColors.ink,
+    IN_PROGRESS: reportColors.teal,
+    SUSPENDED: reportColors.tealSoft,
+    COMPLETED: reportColors.mint,
+    unset: reportColors.tealDark,
+  }
+  const lifecycleSlices = (report?.byLifecycleStatus ?? []).map((item) => ({
+    name:
+      item.key === 'unset'
+        ? t('projectReports.unsetStatus')
+        : t(`projects.statuses.${item.key}`),
+    value: item.count,
+    color: lifecycleColors[item.key] ?? reportColors.teal,
   }))
   const supportSlices = (report?.bySupport ?? []).map((item) => ({
     name: item.key === 'active' ? t('geo.active') : t('geo.inactive'),
@@ -264,6 +286,21 @@ export function ProjectReportsPage() {
                 placeholder={t('common.all')}
                 onChange={(next) => setParams({ isActive: next || undefined }, { resetPage: true })}
                 options={statusOptions}
+              />
+            </FormField>
+            <FormField icon={Filter} label={t('projects.status')} htmlFor="report-lifecycle">
+              <SearchSelect
+                id="report-lifecycle"
+                value={lifecycle}
+                placeholder={t('projects.allStatuses')}
+                onChange={(next) => setParams({ status: next || undefined }, { resetPage: true })}
+                options={[
+                  { value: '', label: t('projects.allStatuses') },
+                  ...projectStatusOrder.map((item) => ({
+                    value: item,
+                    label: t(`projects.statuses.${item}`),
+                  })),
+                ]}
               />
             </FormField>
             <FormField icon={Filter} label={t('projects.isSupportActive')} htmlFor="report-support">
@@ -418,6 +455,12 @@ export function ProjectReportsPage() {
                   tone="mint"
                 />
                 <FormFactTile
+                  icon={Percent}
+                  label={t('projectReports.avgProgress')}
+                  value={`${formatGroupedQuantity(kpis.avgProgressPercent, locale, 1)}٪`}
+                  compact
+                />
+                <FormFactTile
                   icon={Building2}
                   label={t('projectReports.withCompany')}
                   value={money(kpis.withCompany, locale)}
@@ -442,6 +485,13 @@ export function ProjectReportsPage() {
                 empty={statusSlices.every((item) => item.value === 0)}
               >
                 <ReportDonut data={statusSlices} locale={locale} />
+              </ChartPanel>
+              <ChartPanel
+                icon={Gauge}
+                title={t('projectReports.byLifecycleStatus')}
+                empty={lifecycleSlices.every((item) => item.value === 0)}
+              >
+                <ReportDonut data={lifecycleSlices} locale={locale} />
               </ChartPanel>
               <ChartPanel
                 icon={TriangleAlert}

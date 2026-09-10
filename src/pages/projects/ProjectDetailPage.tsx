@@ -2,12 +2,17 @@ import {
   Building,
   Building2,
   CalendarRange,
+  ClipboardList,
   FolderKanban,
+  Gauge,
   Globe,
+  Flag,
   Handshake,
   Landmark,
   Link2,
+  MapPin,
   Monitor,
+  Percent,
   ScrollText,
   Shield,
   Store,
@@ -16,13 +21,21 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Button, DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../components/ui/Form'
+import { DateText } from '../../components/ui/DateText'
+import { DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
+import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
-import { formatNumber } from '../../lib/datetime'
+import { formatNumber, localizeDigits } from '../../lib/datetime'
 import { api } from '../../lib/api'
 import type { Project } from '../../types/app'
-import { ProjectImportanceBadge, ProjectStatus, ProjectUrl } from './ProjectShared'
+import {
+  ProjectImportanceBadge,
+  ProjectLifecycleBadge,
+  ProjectProgress,
+  ProjectStatus,
+  ProjectUrl,
+} from './ProjectShared'
 
 export function ProjectDetailPage() {
   const { t, i18n } = useTranslation()
@@ -43,6 +56,11 @@ export function ProjectDetailPage() {
   if (!project) {
     return <LoadingState />
   }
+
+  const coords =
+    project.latitude != null && project.longitude != null
+      ? localizeDigits(`${project.latitude}, ${project.longitude}`, locale)
+      : '—'
 
   return (
     <div className={formShellClassName}>
@@ -77,6 +95,12 @@ export function ProjectDetailPage() {
               tone="teal"
             />
             <FormFactTile
+              icon={Tags}
+              label={t('projects.code')}
+              value={project.code}
+              tone="mint"
+            />
+            <FormFactTile
               icon={Store}
               label={t('projects.companyName')}
               value={project.companyName || '—'}
@@ -96,6 +120,12 @@ export function ProjectDetailPage() {
               icon={Monitor}
               label={t('projects.isActive')}
               value={<ProjectStatus active={project.isActive} />}
+            />
+            <FormFactTile
+              icon={Gauge}
+              label={t('projects.status')}
+              value={<ProjectLifecycleBadge value={project.status} />}
+              tone="mint"
             />
             <FormFactTile
               icon={Shield}
@@ -129,30 +159,87 @@ export function ProjectDetailPage() {
               value={project.description || '—'}
             />
           </div>
-          <DetailActions
-            editTo={`/projects/${project.id}/edit`}
-            editLabel={t('common.edit')}
-            deleteLabel={t('projects.delete')}
-            onDelete={() =>
-              confirmDelete({
-                message: t('projects.confirmDelete'),
-                successMessage: t('projects.deleted'),
-                path: `/projects/${project.id}`,
-                queryKey: ['projects'],
-                onDeleted: () => navigate('/projects'),
-              })
-            }
-            extra={
-              <Link to={`/projects/${project.id}/contractors`}>
-                <Button type="button" variant="soft">
-                  <Handshake className="size-4" aria-hidden />
-                  {t('contractors.manage')}
-                </Button>
-              </Link>
-            }
+          <FormSectionTitle icon={CalendarRange}>{t('projects.timelineSection')}</FormSectionTitle>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <FormFactTile
+              icon={CalendarRange}
+              label={t('projects.startDate')}
+              value={project.startDate ? <DateText value={project.startDate} /> : '—'}
+              empty={!project.startDate}
+              tone="teal"
+            />
+            <FormFactTile
+              icon={CalendarRange}
+              label={t('projects.endDate')}
+              value={project.endDate ? <DateText value={project.endDate} /> : '—'}
+              empty={!project.endDate}
+              tone="mint"
+            />
+            <FormFactTile
+              icon={Percent}
+              label={t('projects.progress')}
+              value={<ProjectProgress value={project.progressPercent} />}
+              empty={project.progressPercent == null}
+            />
+            <FormFactTile
+              icon={Flag}
+              label={t('projects.phaseCount')}
+              value={formatNumber(project._count?.phases ?? 0, locale)}
+              tone="mint"
+            />
+          </div>
+          <FormSectionTitle icon={MapPin}>{t('projects.locationSection')}</FormSectionTitle>
+          <FormFactTile
+            icon={MapPin}
+            label={t('projects.coordinates')}
+            value={coords}
+            empty={project.latitude == null || project.longitude == null}
           />
+          {project.latitude != null && project.longitude != null ? (
+            <div className="overflow-hidden rounded-2xl ring-1 ring-teal-100">
+              <OsmMapPicker
+                variant="always"
+                readOnly
+                latitude={String(project.latitude)}
+                longitude={String(project.longitude)}
+                onChange={() => undefined}
+                heightClass="h-56"
+              />
+            </div>
+          ) : null}
         </div>
       </FormCard>
+      <DetailActions
+        editTo={`/projects/${project.id}/edit`}
+        editLabel={t('common.edit')}
+        deleteLabel={t('projects.delete')}
+        onDelete={() =>
+          confirmDelete({
+            message: t('projects.confirmDelete'),
+            successMessage: t('projects.deleted'),
+            path: `/projects/${project.id}`,
+            queryKey: ['projects'],
+            onDeleted: () => navigate('/projects'),
+          })
+        }
+        extraItems={[
+          {
+            to: `/projects/${project.id}/progress`,
+            icon: ClipboardList,
+            label: t('projectProgress.manage'),
+          },
+          {
+            to: `/projects/${project.id}/phases`,
+            icon: Flag,
+            label: t('projectPhases.manage'),
+          },
+          {
+            to: `/projects/${project.id}/contractors`,
+            icon: Handshake,
+            label: t('contractors.manage'),
+          },
+        ]}
+      />
     </div>
   )
 }

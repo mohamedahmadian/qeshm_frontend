@@ -20,6 +20,10 @@ export function getImageUrl(id: string): string {
   return `${apiBaseUrl}/images/${id}`
 }
 
+export function getFileUrl(id: string): string {
+  return `${apiBaseUrl}/files/${id}`
+}
+
 export function isApiServerError(error: unknown): boolean {
   if (!axios.isAxiosError(error)) {
     return false

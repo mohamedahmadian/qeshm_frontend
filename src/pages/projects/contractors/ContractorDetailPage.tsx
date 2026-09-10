@@ -1,8 +1,8 @@
 import { Building2, CalendarClock, Handshake, IdCard, Layers, ScrollText, UserRound, Users, Wallet } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Button, DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../../components/ui/Form'
+import { useNavigate, useParams } from 'react-router-dom'
+import { DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { api } from '../../../lib/api'
@@ -91,44 +91,39 @@ export function ContractorDetailPage() {
               value={contractor.description || '—'}
             />
           </div>
-          <DetailActions
-            editTo={`${contractorPath(projectId, contractorId)}/edit`}
-            editLabel={t('common.edit')}
-            deleteLabel={t('contractors.delete')}
-            onDelete={() =>
-              confirmDelete({
-                message: t('contractors.confirmDelete'),
-                successMessage: t('contractors.deleted'),
-                path: `/projects/${projectId}/contractors/${contractorId}`,
-                queryKey: ['contractors'],
-                onDeleted: () => navigate(contractorsPath(projectId)),
-              })
-            }
-            extra={
-              <>
-                <Link to={contractorTeamPath(projectId, contractorId)}>
-                  <Button type="button" variant="soft">
-                    <Users className="size-4" aria-hidden />
-                    {t('contractorTeam.manage')}
-                  </Button>
-                </Link>
-                <Link to={contractorPhasesPath(projectId, contractorId)}>
-                  <Button type="button" variant="soft">
-                    <Layers className="size-4" aria-hidden />
-                    {t('contractorPhases.manage')}
-                  </Button>
-                </Link>
-                <Link to={contractorPaymentsPath(projectId, contractorId)}>
-                  <Button type="button" variant="soft">
-                    <Wallet className="size-4" aria-hidden />
-                    {t('contractorPayments.manage')}
-                  </Button>
-                </Link>
-              </>
-            }
-          />
         </div>
       </FormCard>
+      <DetailActions
+        editTo={`${contractorPath(projectId, contractorId)}/edit`}
+        editLabel={t('common.edit')}
+        deleteLabel={t('contractors.delete')}
+        onDelete={() =>
+          confirmDelete({
+            message: t('contractors.confirmDelete'),
+            successMessage: t('contractors.deleted'),
+            path: `/projects/${projectId}/contractors/${contractorId}`,
+            queryKey: ['contractors'],
+            onDeleted: () => navigate(contractorsPath(projectId)),
+          })
+        }
+        extraItems={[
+          {
+            to: contractorTeamPath(projectId, contractorId),
+            icon: Users,
+            label: t('contractorTeam.manage'),
+          },
+          {
+            to: contractorPhasesPath(projectId, contractorId),
+            icon: Layers,
+            label: t('contractorPhases.manage'),
+          },
+          {
+            to: contractorPaymentsPath(projectId, contractorId),
+            icon: Wallet,
+            label: t('contractorPayments.manage'),
+          },
+        ]}
+      />
     </div>
   )
 }

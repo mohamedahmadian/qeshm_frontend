@@ -346,15 +346,16 @@ export function VehicleAssignmentDetailPage() {
                 onDeleted: () => navigate(vehicleAssignmentsPath(vehicleId)),
               })
             }
-            extra={
-              item.status === 'LENT' ? (
-                <Link to={vehicleAssignmentReturnPath(vehicleId, assignmentId)}>
-                  <Button type="button" variant="soft">
-                    <Undo2 className="size-4" aria-hidden />
-                    {t('vehicleAssignments.return')}
-                  </Button>
-                </Link>
-              ) : undefined
+            extraItems={
+              item.status === 'LENT'
+                ? [
+                    {
+                      to: vehicleAssignmentReturnPath(vehicleId, assignmentId),
+                      icon: Undo2,
+                      label: t('vehicleAssignments.return'),
+                    },
+                  ]
+                : undefined
             }
           />
         </div>

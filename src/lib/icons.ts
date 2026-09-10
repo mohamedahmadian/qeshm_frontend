@@ -56,6 +56,7 @@ import {
   Wallet,
   Wheat,
   Newspaper,
+  Radio,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -114,6 +115,7 @@ const icons: Record<string, LucideIcon> = {
   store: Store,
   ticket: Ticket,
   newspaper: Newspaper,
+  radio: Radio,
   'user-round': UserRound,
   wallet: Wallet,
   wheat: Wheat,

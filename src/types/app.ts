@@ -549,13 +549,37 @@ export const projectImportanceOrder: ProjectImportance[] = [
   projectImportances.LOW,
 ];
 
+export const projectStatuses = {
+  NOT_STARTED: "NOT_STARTED",
+  IN_PROGRESS: "IN_PROGRESS",
+  SUSPENDED: "SUSPENDED",
+  COMPLETED: "COMPLETED",
+} as const;
+
+export type ProjectStatus =
+  (typeof projectStatuses)[keyof typeof projectStatuses];
+
+export const projectStatusOrder: ProjectStatus[] = [
+  projectStatuses.NOT_STARTED,
+  projectStatuses.IN_PROGRESS,
+  projectStatuses.SUSPENDED,
+  projectStatuses.COMPLETED,
+];
+
 export type Project = {
   id: string;
   vicePresidency: string;
   management: string;
   unit: string;
   systemName: string;
+  code: string;
   isActive: boolean;
+  status: ProjectStatus | null;
+  progressPercent: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  latitude: number | null;
+  longitude: number | null;
   companyName: string | null;
   systemUrl: string | null;
   launchYear: number | null;
@@ -566,7 +590,75 @@ export type Project = {
   importance: ProjectImportance;
   createdAt: string;
   updatedAt: string;
-  _count?: { contractors: number };
+  _count?: { contractors: number; phases: number; progressEntries?: number };
+};
+
+export type ProjectPhase = {
+  id: string;
+  projectId: string;
+  name: string;
+  startDate: string | null;
+  endDate: string | null;
+  status: ProjectStatus | null;
+  progressPercent: number | null;
+  createdAt: string;
+  updatedAt: string;
+  project: { id: string; systemName: string };
+};
+
+export const projectProgressProcessingModes = {
+  IMMEDIATE: "IMMEDIATE",
+  DEFERRED: "DEFERRED",
+} as const;
+
+export type ProjectProgressProcessingMode =
+  (typeof projectProgressProcessingModes)[keyof typeof projectProgressProcessingModes];
+
+export const projectProgressTranscriptionStatuses = {
+  NONE: "NONE",
+  PENDING: "PENDING",
+  PROCESSING: "PROCESSING",
+  READY: "READY",
+  FAILED: "FAILED",
+} as const;
+
+export type ProjectProgressTranscriptionStatus =
+  (typeof projectProgressTranscriptionStatuses)[keyof typeof projectProgressTranscriptionStatuses];
+
+export const projectProgressTranscriptionStatusOrder: ProjectProgressTranscriptionStatus[] =
+  [
+    projectProgressTranscriptionStatuses.PENDING,
+    projectProgressTranscriptionStatuses.PROCESSING,
+    projectProgressTranscriptionStatuses.READY,
+    projectProgressTranscriptionStatuses.FAILED,
+    projectProgressTranscriptionStatuses.NONE,
+  ];
+
+export type ProjectProgressAudio = {
+  id: string;
+  mimeType: string;
+  byteSize: number;
+  originalName: string | null;
+  durationMs: number | null;
+};
+
+export type ProjectProgressEntry = {
+  id: string;
+  projectId: string;
+  occurredAt: string;
+  body: string | null;
+  transcript: string | null;
+  summary: string | null;
+  progressPercent: number | null;
+  processingMode: ProjectProgressProcessingMode;
+  transcriptionStatus: ProjectProgressTranscriptionStatus;
+  transcriptionError: string | null;
+  audioId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  project: { id: string; systemName: string };
+  audio: ProjectProgressAudio | null;
+  images: { id: string; imageId: string; sortOrder: number }[];
 };
 
 export type ProjectContractor = {
@@ -615,6 +707,38 @@ export type ContractorPayment = {
   description: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ProjectLiveBoardContractor = {
+  id: string;
+  name: string;
+};
+
+export type ProjectLiveBoardActivity = {
+  id: string;
+  occurredAt: string;
+  title: string;
+  excerpt: string;
+};
+
+export type ProjectLiveBoardItem = Project & {
+  mainContractor: ProjectLiveBoardContractor | null;
+  contractors: ProjectLiveBoardContractor[];
+  activityCount: number;
+  lastActivity: ProjectLiveBoardActivity | null;
+};
+
+export type ProjectLiveBoardStats = {
+  total: number;
+  withLocation: number;
+  withoutLocation: number;
+  avgProgressPercent: number | null;
+  byStatus: ProjectReportKeyCount[];
+};
+
+export type ProjectLiveBoard = {
+  items: ProjectLiveBoardItem[];
+  stats: ProjectLiveBoardStats;
 };
 
 export type ProjectLookups = {
@@ -669,9 +793,11 @@ export type ProjectReportsOverview = {
     avgContractorsPerProject: number;
     avgMembersPerContractor: number;
     avgPhaseDays: number;
+    avgProgressPercent: number;
     paidRatio: number | null;
   };
   byImportance: ProjectReportKeyCount[];
+  byLifecycleStatus: ProjectReportKeyCount[];
   byStatus: ProjectReportKeyCount[];
   bySupport: ProjectReportKeyCount[];
   byContractorCoverage: ProjectReportKeyCount[];

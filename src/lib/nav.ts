@@ -72,6 +72,13 @@ export const APP_NAV: NavModule[] = [
         icon: 'chart-column',
         sortOrder: 2,
       },
+      {
+        code: 'projects.liveBoard',
+        nameKey: 'menus.digitalTransformationLiveBoard',
+        path: '/projects/live-board',
+        icon: 'radio',
+        sortOrder: 3,
+      },
     ],
   },
   {

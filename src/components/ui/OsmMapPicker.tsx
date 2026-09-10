@@ -38,21 +38,61 @@ const IRAN_BOUNDS: MapBounds = {
   east: 63.33,
 }
 
+export type MapOverlayMarkerTone =
+  | 'not-started'
+  | 'in-progress'
+  | 'suspended'
+  | 'completed'
+  | 'unset'
+
 export type MapOverlayMarker = {
   id: string
   lat: number
   lng: number
-  kind: 'previous' | 'current' | 'next' | 'history' | 'station'
+  kind: 'previous' | 'current' | 'next' | 'history' | 'station' | 'project'
+  tone?: MapOverlayMarkerTone
   badge: string
   title: string
+  farTitle?: string
+  nearTitle?: string
+  nearZoom?: number
+  selected?: boolean
   popupHtml?: string
 }
 
-function overlayMarkerHtml(marker: MapOverlayMarker) {
+function markerVisibleTitle(marker: MapOverlayMarker, zoom: number) {
+  const nearZoom = marker.nearZoom ?? 14
+  if (marker.farTitle && zoom < nearZoom) return marker.farTitle
+  return marker.nearTitle ?? marker.title
+}
+
+function projectPinHtml(marker: MapOverlayMarker, zoom: number) {
+  const label = markerVisibleTitle(marker, zoom)
+  const selected = marker.selected ? ' eskan-project-pin-selected' : ''
+  return `<span class="eskan-project-pin${selected}"><span class="eskan-project-pin-dot"></span><span class="eskan-project-pin-label">${label}</span></span>`
+}
+
+function overlayMarkerHtml(marker: MapOverlayMarker, zoom = 12) {
   if (marker.kind === 'history') {
     return `<span class="eskan-history-pin">${marker.badge}</span>`
   }
+  if (marker.kind === 'project') {
+    return projectPinHtml(marker, zoom)
+  }
   return `<span class="eskan-route-pin"><span class="eskan-route-pin-badge">${marker.badge}</span><span class="eskan-route-pin-title">${marker.title}</span></span>`
+}
+
+function overlayMarkerIcon(marker: MapOverlayMarker, zoom: number) {
+  const isHistory = marker.kind === 'history'
+  const isProject = marker.kind === 'project'
+  return L.divIcon({
+    className: `eskan-route-pin-wrap eskan-route-pin-${marker.kind}${
+      marker.tone ? ` eskan-route-pin-tone-${marker.tone}` : ''
+    }`,
+    html: overlayMarkerHtml(marker, zoom),
+    iconSize: isHistory ? [28, 28] : isProject ? [120, 42] : [132, 52],
+    iconAnchor: isHistory ? [14, 14] : isProject ? [60, 10] : [66, 50],
+  })
 }
 
 export type MapOverlayClickPoint = {
@@ -144,6 +184,7 @@ export function OsmMapPicker({
   fill = false,
   keepInView = null,
   onMarkerClick,
+  onMapClick,
   onGeolocate,
   onGeoError,
   onGeoOutside,
@@ -166,6 +207,7 @@ export function OsmMapPicker({
     padding: { top: number; right: number; bottom: number; left: number }
   } | null
   onMarkerClick?: (id: string, point: MapOverlayClickPoint) => void
+  onMapClick?: () => void
   onGeolocate?: (latitude: string, longitude: string) => void
   onGeoError?: (kind: GeoErrorKind) => void
   onGeoOutside?: () => void
@@ -185,6 +227,7 @@ export function OsmMapPicker({
   const onGeoErrorRef = useRef(onGeoError)
   const onGeoOutsideRef = useRef(onGeoOutside)
   const onMarkerClickRef = useRef(onMarkerClick)
+  const onMapClickRef = useRef(onMapClick)
   const maxBoundsRef = useRef(maxBounds)
   const autoGeoDoneRef = useRef(false)
   const stopGeoRef = useRef<(() => void) | null>(null)
@@ -193,6 +236,7 @@ export function OsmMapPicker({
   onGeoErrorRef.current = onGeoError
   onGeoOutsideRef.current = onGeoOutside
   onMarkerClickRef.current = onMarkerClick
+  onMapClickRef.current = onMapClick
   overlaysRef.current = overlays
   maxBoundsRef.current = maxBounds
 
@@ -253,6 +297,10 @@ export function OsmMapPicker({
       map.on('click', (event: L.LeafletMouseEvent) => {
         placeMarker(map, event.latlng, true)
         onChangeRef.current(formatCoord(event.latlng.lat), formatCoord(event.latlng.lng))
+      })
+    } else {
+      map.on('click', () => {
+        onMapClickRef.current?.()
       })
     }
 
@@ -327,20 +375,16 @@ export function OsmMapPicker({
         },
       ).addTo(layer)
     }
+    const projectPins: { marker: MapOverlayMarker; pin: L.Marker }[] = []
     for (const marker of overlays.markers) {
       const isHistory = marker.kind === 'history'
-      const icon = L.divIcon({
-        className: `eskan-route-pin-wrap eskan-route-pin-${marker.kind}`,
-        html: overlayMarkerHtml(marker),
-        iconSize: isHistory ? [28, 28] : [132, 52],
-        iconAnchor: isHistory ? [14, 14] : [66, 50],
-      })
       const pin = L.marker([marker.lat, marker.lng], {
-        icon,
-        zIndexOffset: marker.kind === 'current' ? 500 : isHistory ? 420 : 400,
+        icon: overlayMarkerIcon(marker, map.getZoom()),
+        zIndexOffset: marker.selected || marker.kind === 'current' ? 500 : isHistory ? 420 : 400,
         keyboard: false,
       }).addTo(layer)
       pin.on('click', (event: L.LeafletMouseEvent) => {
+        L.DomEvent.stopPropagation(event)
         const point = map.latLngToContainerPoint(event.latlng)
         onMarkerClickRef.current?.(marker.id, { x: point.x, y: point.y })
       })
@@ -351,7 +395,17 @@ export function OsmMapPicker({
           autoClose: false,
         })
       }
+      if (marker.kind === 'project') {
+        projectPins.push({ marker, pin })
+      }
     }
+    function syncProjectLabels() {
+      const zoom = map.getZoom()
+      for (const item of projectPins) {
+        item.pin.setIcon(overlayMarkerIcon(item.marker, zoom))
+      }
+    }
+    map.on('zoomend', syncProjectLabels)
     if (overlays.fit) {
       const here = parseLatLng(latitude, longitude)
       const points = overlayFitLatLngs(overlays, here)
@@ -364,6 +418,7 @@ export function OsmMapPicker({
       overlayFitKeyRef.current = ''
     }
     return () => {
+      map.off('zoomend', syncProjectLabels)
       layer.remove()
       if (overlayLayerRef.current === layer) overlayLayerRef.current = null
     }

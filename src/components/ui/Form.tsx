@@ -1,12 +1,16 @@
-import { ArrowRight, Check, type LucideIcon, Pencil, Trash2, X } from 'lucide-react'
+import { ArrowRight, Check, Ellipsis, type LucideIcon, Pencil, Trash2, X } from 'lucide-react'
 import {
+  useCallback,
   useEffect,
+  useId,
   useRef,
+  useState,
   type ButtonHTMLAttributes,
   type KeyboardEvent,
   type FormHTMLAttributes,
   type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { CopyableDigits } from './CopyableDigits'
@@ -24,8 +28,8 @@ const variants = {
 export const cardClassName =
   'rounded-[22px] border border-white bg-white shadow-[0_10px_30px_rgba(20,40,40,0.05)]'
 
-export const formShellClassName = 'mx-auto w-full max-w-2xl'
-export const userFormShellClassName = 'mx-auto w-full max-w-3xl'
+export const formShellClassName = 'mx-auto w-full min-w-0 max-w-6xl'
+export const userFormShellClassName = 'mx-auto w-full min-w-0 max-w-6xl'
 export const listShellClassName = 'mx-auto w-full min-w-0 max-w-6xl'
 
 export function Button({
@@ -159,6 +163,7 @@ const PAGE_BACK_NESTED_LISTS = new Set([
   'team',
   'phases',
   'payments',
+  'progress',
   'restaurants',
 ])
 
@@ -440,40 +445,261 @@ export function FormActions({
   )
 }
 
+export type DetailActionExtraItem = {
+  to?: string
+  onClick?: () => void
+  label: string
+  icon: LucideIcon
+  variant?: 'soft' | 'ghost'
+}
+
+function DetailActionSheetRow({
+  icon: Icon,
+  label,
+  tone = 'teal',
+  to,
+  onClick,
+}: {
+  icon: LucideIcon
+  label: string
+  tone?: 'teal' | 'mint' | 'danger'
+  to?: string
+  onClick?: () => void
+}) {
+  const toneClass =
+    tone === 'danger' ? 'text-red-700 hover:bg-red-50' : 'text-ink-800 hover:bg-teal-50'
+  const iconWrap =
+    tone === 'danger' ? 'bg-red-600 text-white' : tone === 'mint' ? 'bg-mint-500 text-white' : 'bg-teal-500 text-white'
+  const className = `flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-2xl px-2 py-2 text-start text-sm font-medium ${toneClass}`
+  const content = (
+    <>
+      <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${iconWrap}`}>
+        <Icon className="size-4" aria-hidden />
+      </span>
+      {label}
+    </>
+  )
+  if (to) {
+    return (
+      <Link to={to} className={className} onClick={onClick}>
+        {content}
+      </Link>
+    )
+  }
+  return (
+    <button type="button" className={className} onClick={onClick}>
+      {content}
+    </button>
+  )
+}
+
+function DetailActionsSheet({
+  titleId,
+  title,
+  closeLabel,
+  editTo,
+  editLabel,
+  deleteLabel,
+  extraItems,
+  onClose,
+  onDelete,
+}: {
+  titleId: string
+  title: string
+  closeLabel: string
+  editTo: string
+  editLabel: string
+  deleteLabel?: string
+  extraItems: DetailActionExtraItem[]
+  onClose: () => void
+  onDelete?: () => void
+}) {
+  const sheetRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const first = sheetRef.current?.querySelector<HTMLElement>('[data-sheet-actions] a, [data-sheet-actions] button')
+    first?.focus()
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
+  return createPortal(
+    <div className="fixed inset-0 z-[80]" data-enter-ignore>
+      <button
+        type="button"
+        className="absolute inset-0 bg-ink-900/30"
+        aria-label={closeLabel}
+        onClick={onClose}
+      />
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="fixed inset-x-0 bottom-0 z-10 mx-auto flex max-h-[min(32rem,85dvh)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-line bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-16px_40px_rgba(20,40,40,0.14)]"
+      >
+        <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-line" aria-hidden />
+        <div className="flex items-center justify-between gap-3 px-4 pb-2 pt-3">
+          <h2 id={titleId} className="text-sm font-semibold text-ink-900">
+            {title}
+          </h2>
+          <Button type="button" variant="ghost" icon className="size-9" onClick={onClose} aria-label={closeLabel}>
+            <X className="size-4" aria-hidden />
+          </Button>
+        </div>
+        <div data-sheet-actions className="min-h-0 overflow-y-auto px-3 pb-1">
+          {extraItems.length ? (
+            <div className="flex flex-col gap-1">
+              {extraItems.map((item) => (
+                <DetailActionSheetRow
+                  key={`${item.label}-${item.to ?? 'action'}`}
+                  icon={item.icon}
+                  label={item.label}
+                  tone={item.variant === 'ghost' ? 'teal' : 'mint'}
+                  to={item.to}
+                  onClick={() => {
+                    onClose()
+                    item.onClick?.()
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
+          {extraItems.length ? <div className="mx-2 my-2 border-t border-line" /> : null}
+          <div className="flex flex-col gap-1">
+            <DetailActionSheetRow icon={Pencil} label={editLabel} to={editTo} onClick={onClose} />
+            {onDelete && deleteLabel ? (
+              <DetailActionSheetRow
+                icon={Trash2}
+                label={deleteLabel}
+                tone="danger"
+                onClick={() => {
+                  onClose()
+                  onDelete()
+                }}
+              />
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+function renderDetailExtraButtons(items: DetailActionExtraItem[]) {
+  return items.map((item) => {
+    const button = (
+      <Button
+        type="button"
+        variant={item.variant ?? 'soft'}
+        onClick={item.to ? undefined : item.onClick}
+      >
+        <item.icon className="size-4" aria-hidden />
+        {item.label}
+      </Button>
+    )
+    if (item.to) {
+      return (
+        <Link key={`${item.label}-${item.to}`} to={item.to}>
+          {button}
+        </Link>
+      )
+    }
+    return <span key={item.label}>{button}</span>
+  })
+}
+
 export function DetailActions({
   editTo,
   editLabel,
   deleteLabel,
   onDelete,
-  extra,
+  extraItems,
   className = 'mt-6',
 }: {
   editTo: string
   editLabel: string
   deleteLabel?: string
   onDelete?: () => void
-  extra?: ReactNode
+  extraItems?: DetailActionExtraItem[]
   className?: string
 }) {
+  const { t } = useTranslation()
+  const titleId = useId()
+  const [open, setOpen] = useState(false)
+  const closeSheet = useCallback(() => setOpen(false), [])
+  const extras = extraItems ?? []
+  const hasExtra = extras.length > 0
+
+  const coreButtons = (
+    <>
+      <Link to={editTo}>
+        <Button type="button" className="w-full md:w-auto">
+          <Pencil className="size-4" aria-hidden />
+          {editLabel}
+        </Button>
+      </Link>
+      {onDelete && deleteLabel ? (
+        <Button type="button" variant="danger" className="w-full md:w-auto" onClick={onDelete}>
+          <Trash2 className="size-4" aria-hidden />
+          {deleteLabel}
+        </Button>
+      ) : null}
+    </>
+  )
+
   return (
     <div
-      className={`flex flex-wrap items-center gap-3 ${extra ? 'justify-between' : ''} ${className}`}
+      className={`rounded-2xl border border-teal-100 bg-gradient-to-b from-teal-50/70 to-white p-4 sm:p-5 ${className}`}
     >
-      <div className="flex flex-wrap gap-3">
-        <Link to={editTo}>
-          <Button type="button">
-            <Pencil className="size-4" aria-hidden />
-            {editLabel}
+      {hasExtra ? (
+        <div className="md:hidden">
+          <Button
+            type="button"
+            variant="soft"
+            className="w-full"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            onClick={() => setOpen(true)}
+          >
+            <Ellipsis className="size-4" aria-hidden />
+            {t('common.actions')}
           </Button>
-        </Link>
-        {onDelete && deleteLabel ? (
-          <Button type="button" variant="danger" onClick={onDelete}>
-            <Trash2 className="size-4" aria-hidden />
-            {deleteLabel}
-          </Button>
-        ) : null}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 md:hidden">{coreButtons}</div>
+      )}
+      <div
+        className={`hidden items-center gap-3 md:flex md:flex-wrap ${hasExtra ? 'justify-between' : ''}`}
+      >
+        <div className="flex flex-wrap gap-3">{coreButtons}</div>
+        {hasExtra ? <div className="flex flex-wrap gap-3">{renderDetailExtraButtons(extras)}</div> : null}
       </div>
-      {extra ? <div className="flex flex-wrap gap-3">{extra}</div> : null}
+      {open && hasExtra ? (
+        <DetailActionsSheet
+          titleId={titleId}
+          title={t('common.actions')}
+          closeLabel={t('common.close')}
+          editTo={editTo}
+          editLabel={editLabel}
+          deleteLabel={deleteLabel}
+          extraItems={extras}
+          onClose={closeSheet}
+          onDelete={onDelete}
+        />
+      ) : null}
     </div>
   )
 }

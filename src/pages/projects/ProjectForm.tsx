@@ -3,30 +3,41 @@ import {
   Building2,
   CalendarRange,
   FolderKanban,
+  Gauge,
   Globe,
+  Hash,
   Landmark,
   Link2,
+  MapPin,
   Monitor,
+  Percent,
   ScrollText,
   Shield,
   Store,
   Tags,
   ToggleRight,
 } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type CSSProperties, type FormEvent, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { AppForm, FormField, FormActions, ToggleField, fieldClassName } from '../../components/ui/Form'
 import { FormCard, FormSectionTitle, formCardBodyClassName } from '../../components/ui/FormLayout'
+import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
+import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { getApiErrorMessage, api } from '../../lib/api'
+import { formatNumber } from '../../lib/datetime'
+import { QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
 import {
   projectImportanceOrder,
   projectImportances,
+  projectStatusOrder,
+  projectStatuses,
   type Project,
   type ProjectImportance,
   type ProjectLookups,
+  type ProjectStatus,
 } from '../../types/app'
 import { withCurrent } from './ProjectShared'
 
@@ -35,7 +46,14 @@ export type ProjectPayload = {
   management: string
   unit: string
   systemName: string
+  code: string
   isActive: boolean
+  status: ProjectStatus
+  progressPercent: number | null
+  startDate: string | null
+  endDate: string | null
+  latitude: number | null
+  longitude: number | null
   companyName: string | null
   systemUrl: string | null
   launchYear: number | null
@@ -43,6 +61,21 @@ export type ProjectPayload = {
   replacementProjectId: string | null
   description: string | null
   importance: ProjectImportance
+}
+
+function toCoordString(value: number | null | undefined) {
+  return value == null ? '' : String(value)
+}
+
+function suggestProjectCode(name: string) {
+  return name.trim().split(/\s+/).filter(Boolean).slice(0, 2).join(' ').slice(0, 40)
+}
+
+function toOptionalNumber(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 export function ProjectForm({
@@ -54,12 +87,23 @@ export function ProjectForm({
   excludeId?: string
   onSubmit: (payload: ProjectPayload) => Promise<void>
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   const [vicePresidency, setVicePresidency] = useState(initial?.vicePresidency ?? '')
   const [management, setManagement] = useState(initial?.management ?? '')
   const [unit, setUnit] = useState(initial?.unit ?? '')
   const [systemName, setSystemName] = useState(initial?.systemName ?? '')
+  const [code, setCode] = useState(initial?.code ?? '')
+  const [codeTouched, setCodeTouched] = useState(Boolean(initial?.code))
   const [isActive, setIsActive] = useState(initial?.isActive ?? true)
+  const [status, setStatus] = useState<string>(initial?.status ?? projectStatusOrder[0])
+  const [progressPercent, setProgressPercent] = useState<number | null>(
+    initial?.progressPercent ?? null,
+  )
+  const [startDate, setStartDate] = useState(initial?.startDate ?? '')
+  const [endDate, setEndDate] = useState(initial?.endDate ?? '')
+  const [latitude, setLatitude] = useState(toCoordString(initial?.latitude))
+  const [longitude, setLongitude] = useState(toCoordString(initial?.longitude))
   const [companyName, setCompanyName] = useState(initial?.companyName ?? '')
   const [systemUrl, setSystemUrl] = useState(initial?.systemUrl ?? '')
   const [launchYear, setLaunchYear] = useState(
@@ -98,8 +142,28 @@ export function ProjectForm({
     },
   })
 
+  const hasPin = toOptionalNumber(latitude) != null && toOptionalNumber(longitude) != null
+  const focus = useMemo(() => {
+    if (hasPin) return null
+    return {
+      lat: QESHM_MAP_CENTER.lat,
+      lng: QESHM_MAP_CENTER.lng,
+      zoom: 12,
+      bounds: QESHM_MAP_BOUNDS,
+    }
+  }, [hasPin])
+
   async function submit(event: FormEvent) {
     event.preventDefault()
+    if (startDate && endDate && endDate < startDate) {
+      toast.error(t('projects.rangeInvalid'))
+      return
+    }
+    const progressChanged =
+      Boolean(initial) && progressPercent !== (initial?.progressPercent ?? null)
+    const nextStatus = progressChanged
+      ? projectStatuses.IN_PROGRESS
+      : ((status || projectStatusOrder[0]) as ProjectStatus)
     setSaving(true)
     try {
       await onSubmit({
@@ -107,7 +171,14 @@ export function ProjectForm({
         management: management.trim(),
         unit: unit.trim(),
         systemName: systemName.trim(),
+        code: code.trim(),
         isActive,
+        status: nextStatus,
+        progressPercent,
+        startDate: emptyToNull(startDate),
+        endDate: emptyToNull(endDate),
+        latitude: toOptionalNumber(latitude),
+        longitude: toOptionalNumber(longitude),
         companyName: emptyToNull(companyName),
         systemUrl: emptyToNull(systemUrl),
         launchYear: toOptionalYear(launchYear),
@@ -178,9 +249,28 @@ export function ProjectForm({
             id="systemName"
             className={fieldClassName}
             value={systemName}
-            onChange={(e) => setSystemName(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value
+              setSystemName(next)
+              if (!codeTouched) setCode(suggestProjectCode(next))
+            }}
             required
             minLength={2}
+          />
+        </FormField>
+        <FormField icon={Hash} label={t('projects.code')} htmlFor="projectCode">
+          <input
+            id="projectCode"
+            className={fieldClassName}
+            value={code}
+            onChange={(e) => {
+              setCodeTouched(true)
+              setCode(e.target.value)
+            }}
+            required
+            minLength={1}
+            maxLength={40}
+            placeholder={t('projects.codeHint')}
           />
         </FormField>
         <FormField icon={ToggleRight} label={t('projects.isActive')} htmlFor="isActive">
@@ -190,6 +280,19 @@ export function ProjectForm({
             onChange={setIsActive}
             onLabel={t('geo.active')}
             offLabel={t('geo.inactive')}
+          />
+        </FormField>
+        <FormField icon={Gauge} label={t('projects.status')} htmlFor="status">
+          <SearchSelect
+            id="status"
+            value={status}
+            required
+            onChange={setStatus}
+            placeholder={t(`projects.statuses.${projectStatusOrder[0]}`)}
+            options={projectStatusOrder.map((item) => ({
+              value: item,
+              label: t(`projects.statuses.${item}`),
+            }))}
           />
         </FormField>
         <FormField icon={Store} label={t('projects.companyName')} htmlFor="companyName">
@@ -265,6 +368,65 @@ export function ProjectForm({
             onChange={(e) => setDescription(e.target.value)}
           />
         </FormField>
+
+        <FormSectionTitle icon={CalendarRange}>{t('projects.timelineSection')}</FormSectionTitle>
+        <FormField icon={CalendarRange} label={t('projects.startDate')} htmlFor="startDate">
+          <PersianDateField
+            id="startDate"
+            value={startDate}
+            maxDate={endDate || undefined}
+            onChange={(value) => setStartDate(value ?? '')}
+          />
+        </FormField>
+        <FormField icon={CalendarRange} label={t('projects.endDate')} htmlFor="endDate">
+          <PersianDateField
+            id="endDate"
+            value={endDate}
+            minDate={startDate || undefined}
+            onChange={(value) => setEndDate(value ?? '')}
+          />
+        </FormField>
+        <FormField icon={Percent} label={t('projects.progress')} htmlFor="progressPercent">
+          <div className="space-y-1.5">
+            <input
+              id="progressPercent"
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              dir="ltr"
+              className="progress-slider"
+              style={{ '--slider-fill': `${progressPercent ?? 0}%` } as CSSProperties}
+              value={progressPercent ?? 0}
+              onChange={(e) => {
+                const next = Number(e.target.value)
+                setProgressPercent(next)
+                if (initial && next !== (initial.progressPercent ?? 0)) {
+                  setStatus(projectStatuses.IN_PROGRESS)
+                }
+              }}
+            />
+            <p className="text-center text-sm tabular-nums text-ink-700">
+              {progressPercent == null ? '—' : `${formatNumber(progressPercent, locale)}٪`}
+            </p>
+          </div>
+        </FormField>
+
+        <FormSectionTitle icon={MapPin}>{t('projects.locationSection')}</FormSectionTitle>
+        <div className="space-y-2">
+          <p className="text-xs leading-6 text-ink-500">{t('projects.mapHint')}</p>
+          <OsmMapPicker
+            variant="always"
+            latitude={latitude}
+            longitude={longitude}
+            focus={focus}
+            heightClass="h-72 sm:h-80"
+            onChange={(nextLat, nextLng) => {
+              setLatitude(nextLat)
+              setLongitude(nextLng)
+            }}
+          />
+        </div>
         <FormActions
           submitLabel={t('projects.save')}
           cancelLabel={t('projects.cancel')}

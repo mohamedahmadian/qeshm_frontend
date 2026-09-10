@@ -307,22 +307,18 @@ export function OrganizationUnitDetailPage() {
                 onDeleted: () => navigate(organizationUnitsPath()),
               })
             }
-            extra={
-              <>
-                <Link to={organizationUnitRestaurantsPath(id)}>
-                  <Button type="button" variant="soft">
-                    <Store className="size-4" aria-hidden />
-                    {t('organizationUnitRestaurants.manage')}
-                  </Button>
-                </Link>
-                <Link to={`${organizationEmployeesPath()}?orgUnitId=${id}`}>
-                  <Button type="button" variant="soft">
-                    <Users className="size-4" aria-hidden />
-                    {t('employees.manage')}
-                  </Button>
-                </Link>
-              </>
-            }
+            extraItems={[
+              {
+                to: organizationUnitRestaurantsPath(id),
+                icon: Store,
+                label: t('organizationUnitRestaurants.manage'),
+              },
+              {
+                to: `${organizationEmployeesPath()}?orgUnitId=${id}`,
+                icon: Users,
+                label: t('employees.manage'),
+              },
+            ]}
           />
         </div>
       </FormCard>

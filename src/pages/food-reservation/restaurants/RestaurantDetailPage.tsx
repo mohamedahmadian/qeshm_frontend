@@ -1,9 +1,8 @@
 import { CookingPot, ImagePlus, MapPin, Phone, Store, Type, UtensilsCrossed } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
-  Button,
   DetailActions,
   EntityNameSubtitle,
   LoadingState,
@@ -82,14 +81,13 @@ export function RestaurantDetailPage() {
                 onDeleted: () => navigate(restaurantsPath()),
               })
             }
-            extra={
-              <Link to={restaurantMenuPath(restaurant.id)}>
-                <Button type="button" variant="soft">
-                  <CookingPot className="size-4" aria-hidden />
-                  {t('restaurantMenuItems.manage')}
-                </Button>
-              </Link>
-            }
+            extraItems={[
+              {
+                to: restaurantMenuPath(restaurant.id),
+                icon: CookingPot,
+                label: t('restaurantMenuItems.manage'),
+              },
+            ]}
           />
         </div>
       </FormCard>

@@ -24,10 +24,9 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { OpenUserPanelButton } from '../../components/auth/OpenUserPanelButton'
 import {
-  Button,
   DetailActions,
   EntityNameSubtitle,
   LoadingState,
@@ -380,22 +379,19 @@ export function UserDetailPage() {
                 onDeleted: () => navigate(employeeView ? organizationEmployeesPath() : '/users'),
               })
             }
-            extra={
-              <div className="flex flex-wrap gap-2">
-                <Link to={`/users/${user.id}/location`}>
-                  <Button type="button" variant="soft">
-                    <MapPin className="size-4" aria-hidden />
-                    {t('location.register')}
-                  </Button>
-                </Link>
-                <Link to={publicProfilePath(user.id)}>
-                  <Button type="button" variant="ghost">
-                    <IdCard className="size-4" aria-hidden />
-                    {t('nav.publicCard')}
-                  </Button>
-                </Link>
-              </div>
-            }
+            extraItems={[
+              {
+                to: `/users/${user.id}/location`,
+                icon: MapPin,
+                label: t('location.register'),
+              },
+              {
+                to: publicProfilePath(user.id),
+                icon: IdCard,
+                label: t('nav.publicCard'),
+                variant: 'ghost',
+              },
+            ]}
           />
         </div>
       </FormCard>

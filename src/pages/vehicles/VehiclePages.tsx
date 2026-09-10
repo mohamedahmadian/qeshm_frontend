@@ -425,14 +425,13 @@ export function VehicleDetailPage() {
                 onDeleted: () => navigate(vehiclesPath()),
               })
             }
-            extra={
-              <Link to={vehicleAssignmentsPath(id)}>
-                <Button type="button" variant="soft">
-                  <Handshake className="size-4" aria-hidden />
-                  {t('vehicleAssignments.manage')}
-                </Button>
-              </Link>
-            }
+            extraItems={[
+              {
+                to: vehicleAssignmentsPath(id),
+                icon: Handshake,
+                label: t('vehicleAssignments.manage'),
+              },
+            ]}
           />
         </div>
       </FormCard>

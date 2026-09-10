@@ -15,16 +15,25 @@ import { Button, FormField, PageHeader, listShellClassName } from '../../compone
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
+import { DateText } from '../../components/ui/DateText'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
 import {
   projectImportanceOrder,
+  projectStatusOrder,
   type Paginated,
   type Project,
   type ProjectLookups,
 } from '../../types/app'
-import { ProjectImportanceBadge, ProjectStatus, ProjectUrl, withCurrent } from './ProjectShared'
+import {
+  ProjectImportanceBadge,
+  ProjectLifecycleBadge,
+  ProjectProgress,
+  ProjectStatus,
+  ProjectUrl,
+  withCurrent,
+} from './ProjectShared'
 
 export function ProjectsListPage() {
   const { t, i18n } = useTranslation()
@@ -38,6 +47,7 @@ export function ProjectsListPage() {
   const unit = searchParams.get('unit') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
+  const status = searchParams.get('status') ?? ''
   const isSupportActive = searchParams.get('isSupportActive') ?? ''
   const importance = searchParams.get('importance') ?? ''
 
@@ -65,6 +75,7 @@ export function ProjectsListPage() {
       unit,
       companyName,
       isActive,
+      status,
       isSupportActive,
       importance,
       sortBy,
@@ -80,6 +91,7 @@ export function ProjectsListPage() {
           ...(unit ? { unit } : {}),
           ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
+          ...(status ? { status } : {}),
           ...(isSupportActive ? { isSupportActive } : {}),
           ...(importance ? { importance } : {}),
           ...sortParams,
@@ -96,6 +108,7 @@ export function ProjectsListPage() {
       unit ||
       companyName ||
       isActive ||
+      status ||
       isSupportActive ||
       importance,
   )
@@ -215,6 +228,21 @@ export function ProjectsListPage() {
                 options={statusOptions}
               />
             </FormField>
+            <FormField icon={Filter} label={t('projects.status')} htmlFor="project-status">
+              <SearchSelect
+                id="project-status"
+                value={status}
+                placeholder={t('projects.allStatuses')}
+                onChange={(next) => setParams({ status: next || undefined }, { resetPage: true })}
+                options={[
+                  { value: '', label: t('projects.allStatuses') },
+                  ...projectStatusOrder.map((item) => ({
+                    value: item,
+                    label: t(`projects.statuses.${item}`),
+                  })),
+                ]}
+              />
+            </FormField>
             <FormField icon={Filter} label={t('projects.isSupportActive')} htmlFor="project-support">
               <SearchSelect
                 id="project-support"
@@ -258,6 +286,13 @@ export function ProjectsListPage() {
                 onSort={onSort}
               />
               <SortableTh
+                column="code"
+                label={t('projects.code')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
                 column="vicePresidency"
                 label={t('projects.vicePresidency')}
                 sortBy={sortBy}
@@ -281,6 +316,34 @@ export function ProjectsListPage() {
               <SortableTh
                 column="isActive"
                 label={t('projects.isActive')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
+                column="status"
+                label={t('projects.status')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
+                column="progressPercent"
+                label={t('projects.progress')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
+                column="startDate"
+                label={t('projects.startDate')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
+                column="endDate"
+                label={t('projects.endDate')}
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
@@ -327,11 +390,24 @@ export function ProjectsListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{item.systemName}</td>
+                <td className="px-4 py-3">{item.code}</td>
                 <td className="px-4 py-3">{item.vicePresidency}</td>
                 <td className="px-4 py-3">{item.management}</td>
                 <td className="px-4 py-3">{item.unit}</td>
                 <td className="px-4 py-3">
                   <ProjectStatus active={item.isActive} />
+                </td>
+                <td className="px-4 py-3">
+                  <ProjectLifecycleBadge value={item.status} />
+                </td>
+                <td className="px-4 py-3">
+                  <ProjectProgress value={item.progressPercent} />
+                </td>
+                <td className="px-4 py-3">
+                  {item.startDate ? <DateText value={item.startDate} /> : '—'}
+                </td>
+                <td className="px-4 py-3">
+                  {item.endDate ? <DateText value={item.endDate} /> : '—'}
                 </td>
                 <td className="px-4 py-3">{item.companyName || '—'}</td>
                 <td className="px-4 py-3">

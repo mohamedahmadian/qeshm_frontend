@@ -22,6 +22,7 @@ import { AdminFooter } from './AdminFooter'
 import { HeaderToday } from './HeaderToday'
 import { ImpersonationBanner } from './ImpersonationBanner'
 import { PageBreadcrumb } from './PageBreadcrumb'
+import { ProjectHeaderProgressButton } from './ProjectHeaderProgressButton'
 import { QuickToolsProvider } from './QuickTools'
 import { UserMenu } from './UserMenu'
 
@@ -355,6 +356,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
               <PageBreadcrumb pathname={location.pathname} modules={navModules} />
               <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                 <HeaderToday />
+                <ProjectHeaderProgressButton />
                 <UserMenu />
               </div>
             </header>
