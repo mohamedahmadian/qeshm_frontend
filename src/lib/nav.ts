@@ -14,49 +14,13 @@ export const APP_NAV: NavModule[] = [
         icon: 'layout-dashboard',
         sortOrder: 1,
       },
-      {
-        code: 'dashboard.users',
-        nameKey: 'menus.users',
-        path: '/users',
-        icon: 'users',
-        sortOrder: 2,
-      },
-    ],
-  },
-  {
-    code: 'base-info',
-    nameKey: 'modules.baseInfo',
-    icon: 'globe',
-    sortOrder: 2,
-    menus: [
-      {
-        code: 'base-info.countries',
-        nameKey: 'menus.countries',
-        path: '/base-info/countries',
-        icon: 'globe',
-        sortOrder: 1,
-      },
-      {
-        code: 'base-info.provinces',
-        nameKey: 'menus.provinces',
-        path: '/base-info/provinces',
-        icon: 'map',
-        sortOrder: 2,
-      },
-      {
-        code: 'base-info.cities',
-        nameKey: 'menus.cities',
-        path: '/base-info/cities',
-        icon: 'map-pin',
-        sortOrder: 3,
-      },
     ],
   },
   {
     code: 'projects',
     nameKey: 'modules.projects',
     icon: 'folder-kanban',
-    sortOrder: 3,
+    sortOrder: 2,
     menus: [
       {
         code: 'projects.list',
@@ -85,7 +49,7 @@ export const APP_NAV: NavModule[] = [
     code: 'food-reservation',
     nameKey: 'modules.foodReservation',
     icon: 'cooking-pot',
-    sortOrder: 4,
+    sortOrder: 3,
     menus: [
       {
         code: 'food-reservation.foods',
@@ -135,7 +99,7 @@ export const APP_NAV: NavModule[] = [
     code: 'qeshm-organization',
     nameKey: 'modules.qeshmOrganization',
     icon: 'landmark',
-    sortOrder: 5,
+    sortOrder: 4,
     menus: [
       {
         code: 'qeshm-organization.info',
@@ -171,7 +135,7 @@ export const APP_NAV: NavModule[] = [
     code: 'light-assets',
     nameKey: 'modules.lightAssets',
     icon: 'car',
-    sortOrder: 6,
+    sortOrder: 5,
     menus: [
       {
         code: 'light-assets.vehicles',
@@ -193,6 +157,57 @@ export const APP_NAV: NavModule[] = [
         path: '/vehicles/reports',
         icon: 'chart-column',
         sortOrder: 3,
+      },
+    ],
+  },
+  {
+    code: 'base-info',
+    nameKey: 'modules.baseInfo',
+    icon: 'globe',
+    sortOrder: 6,
+    menus: [
+      {
+        code: 'base-info.countries',
+        nameKey: 'menus.countries',
+        path: '/base-info/countries',
+        icon: 'globe',
+        sortOrder: 1,
+      },
+      {
+        code: 'base-info.provinces',
+        nameKey: 'menus.provinces',
+        path: '/base-info/provinces',
+        icon: 'map',
+        sortOrder: 2,
+      },
+      {
+        code: 'base-info.cities',
+        nameKey: 'menus.cities',
+        path: '/base-info/cities',
+        icon: 'map-pin',
+        sortOrder: 3,
+      },
+    ],
+  },
+  {
+    code: 'management',
+    nameKey: 'modules.management',
+    icon: 'user-cog',
+    sortOrder: 7,
+    menus: [
+      {
+        code: 'management.users',
+        nameKey: 'menus.users',
+        path: '/users',
+        icon: 'users',
+        sortOrder: 1,
+      },
+      {
+        code: 'management.roles',
+        nameKey: 'menus.roles',
+        path: '/base-info/roles',
+        icon: 'shield',
+        sortOrder: 2,
       },
     ],
   },

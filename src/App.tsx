@@ -27,6 +27,10 @@ import { ProvinceCreatePage } from './pages/geo/ProvinceCreatePage'
 import { ProvinceDetailPage } from './pages/geo/ProvinceDetailPage'
 import { ProvinceEditPage } from './pages/geo/ProvinceEditPage'
 import { ProvincesListPage } from './pages/geo/ProvincesListPage'
+import { RoleCreatePage } from './pages/roles/RoleCreatePage'
+import { RoleDetailPage } from './pages/roles/RoleDetailPage'
+import { RoleEditPage } from './pages/roles/RoleEditPage'
+import { RolesListPage } from './pages/roles/RolesListPage'
 import { ProjectCreatePage } from './pages/projects/ProjectCreatePage'
 import { ProjectDetailPage } from './pages/projects/ProjectDetailPage'
 import { ProjectEditPage } from './pages/projects/ProjectEditPage'
@@ -204,6 +208,10 @@ export default function App() {
                   <Route path="/base-info/cities/new" element={<CityCreatePage />} />
                   <Route path="/base-info/cities/:id" element={<CityDetailPage />} />
                   <Route path="/base-info/cities/:id/edit" element={<CityEditPage />} />
+                  <Route path="/base-info/roles" element={<RolesListPage />} />
+                  <Route path="/base-info/roles/new" element={<RoleCreatePage />} />
+                  <Route path="/base-info/roles/:id" element={<RoleDetailPage />} />
+                  <Route path="/base-info/roles/:id/edit" element={<RoleEditPage />} />
                   <Route path="/projects" element={<ProjectsListPage />} />
                   <Route path="/projects/reports" element={<ProjectReportsPage />} />
                   <Route path="/projects/live-board" element={<ProjectLiveBoardPage />} />

@@ -17,6 +17,7 @@ import {
   MessageCircle,
   Phone,
   Share2,
+  Shield,
   ToggleRight,
   UserRound,
   type LucideIcon,
@@ -34,6 +35,7 @@ import {
   userFormShellClassName,
 } from '../../components/ui/Form'
 import { DateText } from '../../components/ui/DateText'
+import { RoleBadges } from '../../components/ui/RoleBadges'
 import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
 import {
   FormCard,
@@ -200,6 +202,13 @@ export function UserDetailPage() {
                   label={t('users.updatedAt')}
                   value={<DateText value={user.updatedAt} withTime />}
                   tone="teal"
+                />
+                <FormFactTile
+                  icon={Shield}
+                  label={t('users.roles')}
+                  value={user.roles?.length ? <RoleBadges roles={user.roles} /> : empty}
+                  empty={!user.roles?.length}
+                  className="sm:col-span-2"
                 />
               </div>
             </section>

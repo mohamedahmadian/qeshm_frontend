@@ -20,7 +20,7 @@ const fallbackClass = 'bg-cream-100 text-ink-500 ring-line'
 export function RoleBadges({
   roles,
 }: {
-  roles: Pick<RoleOption, 'code' | 'nameKey'>[] | undefined
+  roles: Pick<RoleOption, 'code' | 'name' | 'nameKey'>[] | undefined
 }) {
   const { t } = useTranslation()
   if (!roles?.length) return null
@@ -32,7 +32,7 @@ export function RoleBadges({
           key={role.code}
           className={`${chipClass} ${roleClass[role.code] ?? fallbackClass}`}
         >
-          {t(role.nameKey)}
+          {role.name || (role.nameKey ? t(role.nameKey) : role.code)}
         </span>
       ))}
     </span>

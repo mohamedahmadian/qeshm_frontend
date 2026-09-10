@@ -129,7 +129,20 @@ export type NavModule = {
 export type RoleOption = {
   id: string;
   code: string;
-  nameKey: string;
+  name: string;
+  nameKey?: string;
+};
+
+export type AppRole = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  permissionCodes: string[];
+  createdAt: string;
+  updatedAt: string;
+  _count?: { users: number };
 };
 
 export type AuthUser = {
@@ -146,7 +159,9 @@ export type AuthUser = {
     name: string;
     phone: string | null;
   } | null;
-  roles: Pick<RoleOption, "code" | "nameKey">[];
+  roles: RoleOption[];
+  isAdmin?: boolean;
+  permissionCodes?: string[];
   hasGroup?: boolean;
   managesAccommodation?: boolean;
   honoraryServices?: HonoraryServiceSummary[];
@@ -3185,7 +3200,7 @@ export type ReceptionMatch = {
   gender: UserGender | null;
   status: UserStatus;
   city?: ReceptionGeo | null;
-  roles: Pick<RoleOption, "code" | "nameKey">[];
+  roles: Pick<RoleOption, "code" | "name" | "nameKey">[];
   kinds: ReceptionKind[];
   hasHonoraryService?: boolean;
 };

@@ -68,6 +68,18 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/base-info/cities')) {
     return { titleKey: 'menus.cities', subtitleKey: 'cities.subtitle' }
   }
+  if (pathname === '/base-info/roles/new') {
+    return { titleKey: 'accessRoles.create', subtitleKey: 'accessRoles.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/base-info/roles/')) {
+    return { titleKey: 'accessRoles.edit', subtitleKey: 'accessRoles.editSubtitle' }
+  }
+  if (pathname.startsWith('/base-info/roles/')) {
+    return { titleKey: 'accessRoles.details', subtitleKey: 'accessRoles.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/base-info/roles')) {
+    return { titleKey: 'menus.roles', subtitleKey: 'accessRoles.subtitle' }
+  }
   if (pathname.startsWith('/projects/live-board')) {
     return {
       titleKey: 'menus.digitalTransformationLiveBoard',

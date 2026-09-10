@@ -15,6 +15,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { getNavIcon } from '../../lib/icons'
 import { APP_NAV } from '../../lib/nav'
 import { isSidebarMenuActive } from '../../lib/nav-path'
+import { filterNavByAccess } from '../../lib/roles'
 import type { NavMenu, NavModule } from '../../types/app'
 import { AppLogo } from '../brand/AppLogo'
 import { PageTransition } from '../ui/PageTransition'
@@ -153,7 +154,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
     writeSidebarNavScroll(nav.scrollTop)
   }, [])
 
-  const navModules = APP_NAV
+  const navModules = useMemo(() => filterNavByAccess(APP_NAV, user), [user])
 
   const modules = useMemo(() => {
     const needle = query.trim()
@@ -353,7 +354,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
               >
                 <Menu className="size-5" />
               </button>
-              <PageBreadcrumb pathname={location.pathname} modules={navModules} />
+              <PageBreadcrumb pathname={location.pathname} modules={APP_NAV} />
               <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                 <HeaderToday />
                 <ProjectHeaderProgressButton />

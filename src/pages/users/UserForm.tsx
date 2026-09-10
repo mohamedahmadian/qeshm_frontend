@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Phone,
   Share2,
+  Shield,
   ToggleRight,
   UserRound,
   UserRoundPlus,
@@ -23,6 +24,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { CheckboxField } from '../../components/ui/CheckboxField'
 import { FileDropField } from '../../components/ui/FileDropField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import {
@@ -56,6 +58,7 @@ import {
   type City,
   type Country,
   type ManagedUser,
+  type AppRole,
   type OrganizationPosition,
   type OrganizationUnit,
   type Province,
@@ -118,6 +121,7 @@ export type UserPayload = {
   identityBookletPhotoId: string | null
   orgUnitId: string | null
   positionId: string | null
+  roleIds: string[]
 }
 
 export function UserForm({
@@ -176,6 +180,7 @@ export function UserForm({
   )
   const [orgUnitId, setOrgUnitId] = useState(initial?.orgUnitId ?? '')
   const [positionId, setPositionId] = useState(initial?.positionId ?? '')
+  const [roleIds, setRoleIds] = useState<string[]>(initial?.roles?.map((role) => role.id) ?? [])
   const [uploading, setUploading] = useState<PhotoField>()
   const [saving, setSaving] = useState(false)
   const [checkingNationalId, setCheckingNationalId] = useState(false)
@@ -242,6 +247,14 @@ export function UserForm({
     queryKey: ['organization-positions', 'lookup'],
     queryFn: async () => {
       const { data } = await api.get<OrganizationPosition[]>('/organization/positions')
+      return data
+    },
+  })
+  const roles = useQuery({
+    queryKey: ['roles', 'lookup'],
+    enabled: !selfProfile,
+    queryFn: async () => {
+      const { data } = await api.get<AppRole[]>('/roles')
       return data
     },
   })
@@ -540,6 +553,10 @@ export function UserForm({
       if (tab !== 'account') setTab('account')
       return
     }
+    if (!selfProfile && roleIds.length === 0) {
+      failField('account', 'roleIds', t('users.rolesRequired'))
+      return
+    }
 
     setSaving(true)
     try {
@@ -572,6 +589,7 @@ export function UserForm({
         identityBookletPhotoId: emptyToNull(identityBookletPhotoId),
         orgUnitId: emptyToNull(orgUnitId),
         positionId: emptyToNull(positionId),
+        roleIds,
         ...(password ? { password } : {}),
       })
     } catch (error) {
@@ -853,6 +871,28 @@ export function UserForm({
                 {!requirePassword ? (
                   <p className="text-xs text-ink-500">{t('users.passwordOptional')}</p>
                 ) : null}
+              </FormField>
+            )}
+            {selfProfile ? null : (
+              <FormField icon={Shield} label={t('users.roles')} htmlFor="roleIds" error={fieldErrors.roleIds}>
+                <div id="roleIds" className="grid gap-2">
+                  {(roles.data ?? []).map((role) => (
+                    <CheckboxField
+                      key={role.id}
+                      id={`user-role-${role.id}`}
+                      checked={roleIds.includes(role.id)}
+                      label={role.name}
+                      onChange={(checked) => {
+                        setRoleIds((current) =>
+                          checked
+                            ? [...current, role.id]
+                            : current.filter((item) => item !== role.id),
+                        )
+                        clearError('roleIds')
+                      }}
+                    />
+                  ))}
+                </div>
               </FormField>
             )}
           </div>

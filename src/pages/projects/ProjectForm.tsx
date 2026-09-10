@@ -206,211 +206,221 @@ export function ProjectForm({
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
         <FormSectionTitle icon={Landmark}>{t('projects.orgSection')}</FormSectionTitle>
-        <FormField icon={Landmark} label={t('projects.vicePresidency')} htmlFor="vicePresidency">
-          <SearchSelect
-            id="vicePresidency"
-            value={vicePresidency}
-            required
-            onChange={setVicePresidency}
-            onCreate={setVicePresidency}
-            createLabel={(name) => t('projects.addNamed', { name })}
-            placeholder={t('projects.vicePresidency')}
-            options={viceOptions.map((item) => ({ value: item, label: item }))}
-          />
-        </FormField>
-        <FormField icon={Building} label={t('projects.management')} htmlFor="management">
-          <SearchSelect
-            id="management"
-            value={management}
-            required
-            onChange={setManagement}
-            onCreate={setManagement}
-            createLabel={(name) => t('projects.addNamed', { name })}
-            placeholder={t('projects.management')}
-            options={managementOptions.map((item) => ({ value: item, label: item }))}
-          />
-        </FormField>
-        <FormField icon={Building2} label={t('projects.unit')} htmlFor="unit">
-          <SearchSelect
-            id="unit"
-            value={unit}
-            required
-            onChange={setUnit}
-            onCreate={setUnit}
-            createLabel={(name) => t('projects.addNamed', { name })}
-            placeholder={t('projects.unit')}
-            options={unitOptions.map((item) => ({ value: item, label: item }))}
-          />
-        </FormField>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <FormField icon={Landmark} label={t('projects.vicePresidency')} htmlFor="vicePresidency">
+            <SearchSelect
+              id="vicePresidency"
+              value={vicePresidency}
+              required
+              onChange={setVicePresidency}
+              onCreate={setVicePresidency}
+              createLabel={(name) => t('projects.addNamed', { name })}
+              placeholder={t('projects.vicePresidency')}
+              options={viceOptions.map((item) => ({ value: item, label: item }))}
+            />
+          </FormField>
+          <FormField icon={Building} label={t('projects.management')} htmlFor="management">
+            <SearchSelect
+              id="management"
+              value={management}
+              required
+              onChange={setManagement}
+              onCreate={setManagement}
+              createLabel={(name) => t('projects.addNamed', { name })}
+              placeholder={t('projects.management')}
+              options={managementOptions.map((item) => ({ value: item, label: item }))}
+            />
+          </FormField>
+          <FormField icon={Building2} label={t('projects.unit')} htmlFor="unit">
+            <SearchSelect
+              id="unit"
+              value={unit}
+              required
+              onChange={setUnit}
+              onCreate={setUnit}
+              createLabel={(name) => t('projects.addNamed', { name })}
+              placeholder={t('projects.unit')}
+              options={unitOptions.map((item) => ({ value: item, label: item }))}
+            />
+          </FormField>
+        </div>
 
         <FormSectionTitle icon={Monitor}>{t('projects.systemSection')}</FormSectionTitle>
-        <FormField icon={Monitor} label={t('projects.systemName')} htmlFor="systemName">
-          <input
-            id="systemName"
-            className={fieldClassName}
-            value={systemName}
-            onChange={(e) => {
-              const next = e.target.value
-              setSystemName(next)
-              if (!codeTouched) setCode(suggestProjectCode(next))
-            }}
-            required
-            minLength={2}
-          />
-        </FormField>
-        <FormField icon={Hash} label={t('projects.code')} htmlFor="projectCode">
-          <input
-            id="projectCode"
-            className={fieldClassName}
-            value={code}
-            onChange={(e) => {
-              setCodeTouched(true)
-              setCode(e.target.value)
-            }}
-            required
-            minLength={1}
-            maxLength={40}
-            placeholder={t('projects.codeHint')}
-          />
-        </FormField>
-        <FormField icon={ToggleRight} label={t('projects.isActive')} htmlFor="isActive">
-          <ToggleField
-            id="isActive"
-            checked={isActive}
-            onChange={setIsActive}
-            onLabel={t('geo.active')}
-            offLabel={t('geo.inactive')}
-          />
-        </FormField>
-        <FormField icon={Gauge} label={t('projects.status')} htmlFor="status">
-          <SearchSelect
-            id="status"
-            value={status}
-            required
-            onChange={setStatus}
-            placeholder={t(`projects.statuses.${projectStatusOrder[0]}`)}
-            options={projectStatusOrder.map((item) => ({
-              value: item,
-              label: t(`projects.statuses.${item}`),
-            }))}
-          />
-        </FormField>
-        <FormField icon={Store} label={t('projects.companyName')} htmlFor="companyName">
-          <input
-            id="companyName"
-            className={fieldClassName}
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-          />
-        </FormField>
-        <FormField icon={Globe} label={t('projects.systemUrl')} htmlFor="systemUrl">
-          <input
-            id="systemUrl"
-            dir="ltr"
-            className={`${fieldClassName} text-start`}
-            value={systemUrl}
-            onChange={(e) => setSystemUrl(e.target.value)}
-          />
-        </FormField>
-        <FormField icon={CalendarRange} label={t('projects.launchYear')} htmlFor="launchYear">
-          <input
-            id="launchYear"
-            type="number"
-            min={1300}
-            max={1600}
-            className={fieldClassName}
-            value={launchYear}
-            onChange={(e) => setLaunchYear(e.target.value)}
-          />
-        </FormField>
-        <FormField icon={Shield} label={t('projects.isSupportActive')} htmlFor="isSupportActive">
-          <ToggleField
-            id="isSupportActive"
-            checked={isSupportActive}
-            onChange={setIsSupportActive}
-            onLabel={t('geo.active')}
-            offLabel={t('geo.inactive')}
-          />
-        </FormField>
-        <FormField icon={Link2} label={t('projects.replacement')} htmlFor="replacementProjectId">
-          <SearchSelect
-            id="replacementProjectId"
-            value={replacementProjectId}
-            onChange={setReplacementProjectId}
-            placeholder={t('projects.none')}
-            options={[
-              { value: '', label: t('projects.none') },
-              ...(replacements.data ?? []).map((item) => ({
-                value: item.id,
-                label: item.systemName,
-              })),
-            ]}
-          />
-        </FormField>
-        <FormField icon={Tags} label={t('projects.importance')} htmlFor="importance">
-          <SearchSelect
-            id="importance"
-            value={importance}
-            required
-            onChange={(next) => setImportance(next as ProjectImportance)}
-            options={projectImportanceOrder.map((item) => ({
-              value: item,
-              label: t(`projects.importances.${item}`),
-            }))}
-          />
-        </FormField>
-        <FormField icon={ScrollText} label={t('projects.description')} htmlFor="description">
-          <textarea
-            id="description"
-            className={fieldClassName}
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </FormField>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField icon={Monitor} label={t('projects.systemName')} htmlFor="systemName">
+            <input
+              id="systemName"
+              className={fieldClassName}
+              value={systemName}
+              onChange={(e) => {
+                const next = e.target.value
+                setSystemName(next)
+                if (!codeTouched) setCode(suggestProjectCode(next))
+              }}
+              required
+              minLength={2}
+            />
+          </FormField>
+          <FormField icon={Hash} label={t('projects.code')} htmlFor="projectCode">
+            <input
+              id="projectCode"
+              className={fieldClassName}
+              value={code}
+              onChange={(e) => {
+                setCodeTouched(true)
+                setCode(e.target.value)
+              }}
+              required
+              minLength={1}
+              maxLength={40}
+              placeholder={t('projects.codeHint')}
+            />
+          </FormField>
+          <FormField icon={ToggleRight} label={t('projects.isActive')} htmlFor="isActive">
+            <ToggleField
+              id="isActive"
+              checked={isActive}
+              onChange={setIsActive}
+              onLabel={t('geo.active')}
+              offLabel={t('geo.inactive')}
+            />
+          </FormField>
+          <FormField icon={Gauge} label={t('projects.status')} htmlFor="status">
+            <SearchSelect
+              id="status"
+              value={status}
+              required
+              onChange={setStatus}
+              placeholder={t(`projects.statuses.${projectStatusOrder[0]}`)}
+              options={projectStatusOrder.map((item) => ({
+                value: item,
+                label: t(`projects.statuses.${item}`),
+              }))}
+            />
+          </FormField>
+          <FormField icon={Store} label={t('projects.companyName')} htmlFor="companyName">
+            <input
+              id="companyName"
+              className={fieldClassName}
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+            />
+          </FormField>
+          <FormField icon={Globe} label={t('projects.systemUrl')} htmlFor="systemUrl">
+            <input
+              id="systemUrl"
+              dir="ltr"
+              className={`${fieldClassName} text-start`}
+              value={systemUrl}
+              onChange={(e) => setSystemUrl(e.target.value)}
+            />
+          </FormField>
+          <FormField icon={CalendarRange} label={t('projects.launchYear')} htmlFor="launchYear">
+            <input
+              id="launchYear"
+              type="number"
+              min={1300}
+              max={1600}
+              className={fieldClassName}
+              value={launchYear}
+              onChange={(e) => setLaunchYear(e.target.value)}
+            />
+          </FormField>
+          <FormField icon={Tags} label={t('projects.importance')} htmlFor="importance">
+            <SearchSelect
+              id="importance"
+              value={importance}
+              required
+              onChange={(next) => setImportance(next as ProjectImportance)}
+              options={projectImportanceOrder.map((item) => ({
+                value: item,
+                label: t(`projects.importances.${item}`),
+              }))}
+            />
+          </FormField>
+          <FormField icon={Shield} label={t('projects.isSupportActive')} htmlFor="isSupportActive">
+            <ToggleField
+              id="isSupportActive"
+              checked={isSupportActive}
+              onChange={setIsSupportActive}
+              onLabel={t('geo.active')}
+              offLabel={t('geo.inactive')}
+            />
+          </FormField>
+          <FormField icon={Link2} label={t('projects.replacement')} htmlFor="replacementProjectId">
+            <SearchSelect
+              id="replacementProjectId"
+              value={replacementProjectId}
+              onChange={setReplacementProjectId}
+              placeholder={t('projects.none')}
+              options={[
+                { value: '', label: t('projects.none') },
+                ...(replacements.data ?? []).map((item) => ({
+                  value: item.id,
+                  label: item.systemName,
+                })),
+              ]}
+            />
+          </FormField>
+          <div className="sm:col-span-2">
+            <FormField icon={ScrollText} label={t('projects.description')} htmlFor="description">
+              <textarea
+                id="description"
+                className={fieldClassName}
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </FormField>
+          </div>
+        </div>
 
         <FormSectionTitle icon={CalendarRange}>{t('projects.timelineSection')}</FormSectionTitle>
-        <FormField icon={CalendarRange} label={t('projects.startDate')} htmlFor="startDate">
-          <PersianDateField
-            id="startDate"
-            value={startDate}
-            maxDate={endDate || undefined}
-            onChange={(value) => setStartDate(value ?? '')}
-          />
-        </FormField>
-        <FormField icon={CalendarRange} label={t('projects.endDate')} htmlFor="endDate">
-          <PersianDateField
-            id="endDate"
-            value={endDate}
-            minDate={startDate || undefined}
-            onChange={(value) => setEndDate(value ?? '')}
-          />
-        </FormField>
-        <FormField icon={Percent} label={t('projects.progress')} htmlFor="progressPercent">
-          <div className="space-y-1.5">
-            <input
-              id="progressPercent"
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              dir="ltr"
-              className="progress-slider"
-              style={{ '--slider-fill': `${progressPercent ?? 0}%` } as CSSProperties}
-              value={progressPercent ?? 0}
-              onChange={(e) => {
-                const next = Number(e.target.value)
-                setProgressPercent(next)
-                if (initial && next !== (initial.progressPercent ?? 0)) {
-                  setStatus(projectStatuses.IN_PROGRESS)
-                }
-              }}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField icon={CalendarRange} label={t('projects.startDate')} htmlFor="startDate">
+            <PersianDateField
+              id="startDate"
+              value={startDate}
+              maxDate={endDate || undefined}
+              onChange={(value) => setStartDate(value ?? '')}
             />
-            <p className="text-center text-sm tabular-nums text-ink-700">
-              {progressPercent == null ? '—' : `${formatNumber(progressPercent, locale)}٪`}
-            </p>
+          </FormField>
+          <FormField icon={CalendarRange} label={t('projects.endDate')} htmlFor="endDate">
+            <PersianDateField
+              id="endDate"
+              value={endDate}
+              minDate={startDate || undefined}
+              onChange={(value) => setEndDate(value ?? '')}
+            />
+          </FormField>
+          <div className="sm:col-span-2">
+            <FormField icon={Percent} label={t('projects.progress')} htmlFor="progressPercent">
+              <div className="space-y-1.5">
+                <input
+                  id="progressPercent"
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  dir="ltr"
+                  className="progress-slider"
+                  style={{ '--slider-fill': `${progressPercent ?? 0}%` } as CSSProperties}
+                  value={progressPercent ?? 0}
+                  onChange={(e) => {
+                    const next = Number(e.target.value)
+                    setProgressPercent(next)
+                    if (initial && next !== (initial.progressPercent ?? 0)) {
+                      setStatus(projectStatuses.IN_PROGRESS)
+                    }
+                  }}
+                />
+                <p className="text-center text-sm tabular-nums text-ink-700">
+                  {progressPercent == null ? '—' : `${formatNumber(progressPercent, locale)}٪`}
+                </p>
+              </div>
+            </FormField>
           </div>
-        </FormField>
+        </div>
 
         <FormSectionTitle icon={MapPin}>{t('projects.locationSection')}</FormSectionTitle>
         <div className="space-y-2">
@@ -420,7 +430,7 @@ export function ProjectForm({
             latitude={latitude}
             longitude={longitude}
             focus={focus}
-            heightClass="h-72 sm:h-80"
+            heightClass="h-56 sm:h-64"
             onChange={(nextLat, nextLng) => {
               setLatitude(nextLat)
               setLongitude(nextLng)

@@ -19,7 +19,8 @@ import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
 import { localizeDigits } from '../../lib/datetime'
 import { useGeoName } from '../../lib/geo'
-import { userStatuses, type ManagedUser, type Paginated } from '../../types/app'
+import { RoleBadges } from '../../components/ui/RoleBadges'
+import { userStatuses, type AppRole, type ManagedUser, type Paginated } from '../../types/app'
 import { GeoStatus } from '../geo/GeoShared'
 
 export function UsersListPage() {
@@ -31,15 +32,25 @@ export function UsersListPage() {
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
   const status = searchParams.get('status') ?? ''
+  const roleId = searchParams.get('roleId') ?? ''
+
+  const roles = useQuery({
+    queryKey: ['roles', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<AppRole[]>('/roles')
+      return data
+    },
+  })
 
   const query = useQuery({
-    queryKey: ['users', 'list', q, page, status, sortBy, sortDir],
+    queryKey: ['users', 'list', q, page, status, roleId, sortBy, sortDir],
     queryFn: async () => {
       const { data } = await api.get<Paginated<ManagedUser>>('/users', {
         params: {
           q: q || undefined,
           page,
           ...(status ? { status } : {}),
+          ...(roleId ? { roleId } : {}),
           ...sortParams,
         },
       })
@@ -48,7 +59,7 @@ export function UsersListPage() {
   })
 
   const rows = query.data?.items ?? []
-  const filtersActive = Boolean(status)
+  const filtersActive = Boolean(status || roleId)
 
   return (
     <div className={listShellClassName}>
@@ -72,16 +83,30 @@ export function UsersListPage() {
         placeholder={t('users.searchPlaceholder')}
         filtersActive={filtersActive}
         extra={
-          <SearchSelect
-            value={status}
-            onChange={(next) => setParams({ status: next || undefined }, { resetPage: true })}
-            placeholder={t('users.status')}
-            options={[
-              { value: '', label: t('common.all') },
-              { value: userStatuses.ACTIVE, label: t('geo.active') },
-              { value: userStatuses.INACTIVE, label: t('geo.inactive') },
-            ]}
-          />
+          <>
+            <SearchSelect
+              value={status}
+              onChange={(next) => setParams({ status: next || undefined }, { resetPage: true })}
+              placeholder={t('users.status')}
+              options={[
+                { value: '', label: t('common.all') },
+                { value: userStatuses.ACTIVE, label: t('geo.active') },
+                { value: userStatuses.INACTIVE, label: t('geo.inactive') },
+              ]}
+            />
+            <SearchSelect
+              value={roleId}
+              onChange={(next) => setParams({ roleId: next || undefined }, { resetPage: true })}
+              placeholder={t('users.filterRoles')}
+              options={[
+                { value: '', label: t('users.allRoles') },
+                ...(roles.data ?? []).map((role) => ({
+                  value: role.id,
+                  label: role.name,
+                })),
+              ]}
+            />
+          </>
         }
       />
       <TableCard
@@ -98,6 +123,7 @@ export function UsersListPage() {
               <SortableTh column="phone" label={t('users.phone')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="city" label={t('geo.city')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="status" label={t('users.status')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <th className="px-4 py-3 text-start font-medium">{t('users.roles')}</th>
               <ActionsTh />
             </tr>
           </thead>
@@ -115,6 +141,9 @@ export function UsersListPage() {
                 <td className="px-4 py-3">{item.city ? geoName(item.city) : '—'}</td>
                 <td className="px-4 py-3">
                   <GeoStatus active={item.status === userStatuses.ACTIVE} />
+                </td>
+                <td className="px-4 py-3">
+                  {item.roles?.length ? <RoleBadges roles={item.roles} /> : '—'}
                 </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
