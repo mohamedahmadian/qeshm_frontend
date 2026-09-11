@@ -1,4 +1,4 @@
-import { Filter, Plus, FolderKanban } from 'lucide-react'
+import { Filter, Plus, FolderKanban, Landmark } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -15,51 +15,49 @@ import { Button, FormField, PageHeader, listShellClassName } from '../../compone
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
-import { DateText } from '../../components/ui/DateText'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
-import { formatNumber } from '../../lib/datetime'
 import {
   projectImportanceOrder,
   projectStatusOrder,
+  type OrganizationUnit,
   type Paginated,
   type Project,
   type ProjectLookups,
 } from '../../types/app'
 import {
-  ProjectImportanceBadge,
   ProjectLifecycleBadge,
+  ProjectOperatorsCell,
   ProjectProgress,
-  ProjectStatus,
   ProjectUrl,
   withCurrent,
 } from './ProjectShared'
 
 export function ProjectsListPage() {
-  const { t, i18n } = useTranslation()
-  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const { t } = useTranslation()
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
     useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
-  const vicePresidency = searchParams.get('vicePresidency') ?? ''
-  const management = searchParams.get('management') ?? ''
-  const unit = searchParams.get('unit') ?? ''
+  const operatorUnitId = searchParams.get('operatorUnitId') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
   const status = searchParams.get('status') ?? ''
   const isSupportActive = searchParams.get('isSupportActive') ?? ''
   const importance = searchParams.get('importance') ?? ''
 
-  const lookups = useQuery({
-    queryKey: ['projects', 'lookups', vicePresidency, management],
+  const orgUnits = useQuery({
+    queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
-      const { data } = await api.get<ProjectLookups>('/projects/lookups', {
-        params: {
-          ...(vicePresidency ? { vicePresidency } : {}),
-          ...(management ? { management } : {}),
-        },
-      })
+      const { data } = await api.get<OrganizationUnit[]>('/organization/units')
+      return data
+    },
+  })
+
+  const lookups = useQuery({
+    queryKey: ['projects', 'lookups'],
+    queryFn: async () => {
+      const { data } = await api.get<ProjectLookups>('/projects/lookups')
       return data
     },
   })
@@ -70,9 +68,7 @@ export function ProjectsListPage() {
       'list',
       q,
       page,
-      vicePresidency,
-      management,
-      unit,
+      operatorUnitId,
       companyName,
       isActive,
       status,
@@ -86,9 +82,7 @@ export function ProjectsListPage() {
         params: {
           page,
           ...(q ? { q } : {}),
-          ...(vicePresidency ? { vicePresidency } : {}),
-          ...(management ? { management } : {}),
-          ...(unit ? { unit } : {}),
+          ...(operatorUnitId ? { operatorUnitId } : {}),
           ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
           ...(status ? { status } : {}),
@@ -103,9 +97,7 @@ export function ProjectsListPage() {
 
   const rows = query.data?.items ?? []
   const filtersActive = Boolean(
-    vicePresidency ||
-      management ||
-      unit ||
+    operatorUnitId ||
       companyName ||
       isActive ||
       status ||
@@ -144,61 +136,19 @@ export function ProjectsListPage() {
         extraClassName="sm:grid-cols-2 xl:grid-cols-3"
         extra={
           <>
-            <FormField icon={Filter} label={t('projects.vicePresidency')} htmlFor="project-vice">
+            <FormField icon={Landmark} label={t('projects.operators')} htmlFor="project-operator">
               <SearchSelect
-                id="project-vice"
-                value={vicePresidency}
-                placeholder={t('projects.allVicePresidencies')}
+                id="project-operator"
+                value={operatorUnitId}
+                placeholder={t('projects.allOperators')}
                 onChange={(next) =>
-                  setParams(
-                    {
-                      vicePresidency: next || undefined,
-                      management: undefined,
-                      unit: undefined,
-                    },
-                    { resetPage: true },
-                  )
+                  setParams({ operatorUnitId: next || undefined }, { resetPage: true })
                 }
                 options={[
-                  { value: '', label: t('projects.allVicePresidencies') },
-                  ...withCurrent(lookups.data?.vicePresidencies, vicePresidency).map((item) => ({
-                    value: item,
-                    label: item,
-                  })),
-                ]}
-              />
-            </FormField>
-            <FormField icon={Filter} label={t('projects.management')} htmlFor="project-management">
-              <SearchSelect
-                id="project-management"
-                value={management}
-                placeholder={t('projects.allManagements')}
-                onChange={(next) =>
-                  setParams(
-                    { management: next || undefined, unit: undefined },
-                    { resetPage: true },
-                  )
-                }
-                options={[
-                  { value: '', label: t('projects.allManagements') },
-                  ...withCurrent(lookups.data?.managements, management).map((item) => ({
-                    value: item,
-                    label: item,
-                  })),
-                ]}
-              />
-            </FormField>
-            <FormField icon={Filter} label={t('projects.unit')} htmlFor="project-unit">
-              <SearchSelect
-                id="project-unit"
-                value={unit}
-                placeholder={t('projects.allUnits')}
-                onChange={(next) => setParams({ unit: next || undefined }, { resetPage: true })}
-                options={[
-                  { value: '', label: t('projects.allUnits') },
-                  ...withCurrent(lookups.data?.units, unit).map((item) => ({
-                    value: item,
-                    label: item,
+                  { value: '', label: t('projects.allOperators') },
+                  ...(orgUnits.data ?? []).map((item) => ({
+                    value: item.id,
+                    label: item.pathLabel || item.name,
                   })),
                 ]}
               />
@@ -287,43 +237,8 @@ export function ProjectsListPage() {
                 onSort={onSort}
               />
               <SortableTh
-                column="code"
-                label={t('projects.code')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="vicePresidency"
-                label={t('projects.vicePresidency')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="management"
-                label={t('projects.management')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="unit"
-                label={t('projects.unit')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="isActive"
-                label={t('projects.isActive')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="status"
-                label={t('projects.status')}
+                column="operators"
+                label={t('projects.operators')}
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
@@ -331,20 +246,6 @@ export function ProjectsListPage() {
               <SortableTh
                 column="progressPercent"
                 label={t('projects.progress')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="startDate"
-                label={t('projects.startDate')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="endDate"
-                label={t('projects.endDate')}
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
@@ -364,22 +265,8 @@ export function ProjectsListPage() {
                 onSort={onSort}
               />
               <SortableTh
-                column="launchYear"
-                label={t('projects.launchYear')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="isSupportActive"
-                label={t('projects.isSupportActive')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="importance"
-                label={t('projects.importance')}
+                column="status"
+                label={t('projects.status')}
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
@@ -391,37 +278,18 @@ export function ProjectsListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{item.systemName}</td>
-                <td className="px-4 py-3">{item.code}</td>
-                <td className="px-4 py-3">{item.vicePresidency}</td>
-                <td className="px-4 py-3">{item.management}</td>
-                <td className="px-4 py-3">{item.unit}</td>
                 <td className="px-4 py-3">
-                  <ProjectStatus active={item.isActive} />
-                </td>
-                <td className="px-4 py-3">
-                  <ProjectLifecycleBadge value={item.status} />
+                  <ProjectOperatorsCell operators={item.operators} />
                 </td>
                 <td className="px-4 py-3">
                   <ProjectProgress value={item.progressPercent} />
-                </td>
-                <td className="px-4 py-3">
-                  {item.startDate ? <DateText value={item.startDate} /> : '—'}
-                </td>
-                <td className="px-4 py-3">
-                  {item.endDate ? <DateText value={item.endDate} /> : '—'}
                 </td>
                 <td className="px-4 py-3">{item.companyName || '—'}</td>
                 <td className="px-4 py-3">
                   <ProjectUrl value={item.systemUrl} />
                 </td>
                 <td className="px-4 py-3">
-                  {item.launchYear != null ? formatNumber(item.launchYear, locale) : '—'}
-                </td>
-                <td className="px-4 py-3">
-                  <ProjectStatus active={item.isSupportActive} />
-                </td>
-                <td className="px-4 py-3">
-                  <ProjectImportanceBadge value={item.importance} />
+                  <ProjectLifecycleBadge value={item.status} />
                 </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions

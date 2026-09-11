@@ -35,9 +35,7 @@ export function ProjectEditPage() {
       <ProjectForm
         excludeId={query.data.id}
         initial={{
-          vicePresidency: query.data.vicePresidency,
-          management: query.data.management,
-          unit: query.data.unit,
+          operatorIds: (query.data.operators ?? []).map((item) => item.id),
           systemName: query.data.systemName,
           code: query.data.code,
           isActive: query.data.isActive,

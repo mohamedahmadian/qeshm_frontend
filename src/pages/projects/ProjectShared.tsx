@@ -8,6 +8,33 @@ import {
   type ProjectStatus as ProjectLifecycle,
 } from '../../types/app'
 
+export function projectOperatorsText(operators?: { name: string }[]) {
+  if (!operators?.length) return ''
+  return operators.map((item) => item.name).join('، ')
+}
+
+export function ProjectOperatorsCell({
+  operators,
+}: {
+  operators?: { id: string; name: string }[]
+}) {
+  if (!operators?.length) {
+    return '—'
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {operators.map((item) => (
+        <span
+          key={item.id}
+          className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-800"
+        >
+          {item.name}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export function withCurrent(values: string[] | undefined, current: string) {
   const next = new Set(values ?? [])
   const trimmed = current.trim()

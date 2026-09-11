@@ -104,12 +104,12 @@ export function ToggleField({
   id?: string
   checked: boolean
   onChange: (checked: boolean) => void
-  onLabel: string
-  offLabel: string
+  onLabel: ReactNode
+  offLabel: ReactNode
   disabled?: boolean
 }) {
   const segmentClass = (active: boolean) =>
-    `rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+    `inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
       active ? 'bg-teal-500 text-white shadow-sm' : 'text-ink-600 hover:bg-white'
     } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`
 
@@ -118,7 +118,7 @@ export function ToggleField({
       id={id}
       data-toggle
       role="group"
-      className="inline-flex rounded-2xl border border-line bg-cream-50 p-1"
+      className="inline-flex shrink-0 rounded-2xl border border-line bg-cream-50 p-1"
     >
       <button
         type="button"
@@ -164,6 +164,7 @@ const PAGE_BACK_NESTED_LISTS = new Set([
   'phases',
   'payments',
   'progress',
+  'projects',
   'restaurants',
 ])
 

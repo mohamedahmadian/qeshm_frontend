@@ -86,6 +86,24 @@ export function getPageMeta(pathname: string): {
       subtitleKey: 'projectLiveBoard.subtitle',
     }
   }
+  if (pathname === '/projects/contractors/new') {
+    return { titleKey: 'contractors.create', subtitleKey: 'contractors.createSubtitle' }
+  }
+  if (/^\/projects\/contractors\/[^/]+\/projects\/new$/.test(pathname)) {
+    return { titleKey: 'contractorProjects.create', subtitleKey: 'contractorProjects.createSubtitle' }
+  }
+  if (/^\/projects\/contractors\/[^/]+\/projects$/.test(pathname)) {
+    return { titleKey: 'contractorProjects.title', subtitleKey: 'contractorProjects.subtitle' }
+  }
+  if (/^\/projects\/contractors\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'contractors.edit', subtitleKey: 'contractors.editSubtitle' }
+  }
+  if (/^\/projects\/contractors\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'contractors.details', subtitleKey: 'contractors.detailsSubtitle' }
+  }
+  if (pathname === '/projects/contractors') {
+    return { titleKey: 'menus.contractorManagement', subtitleKey: 'contractors.globalSubtitle' }
+  }
   if (pathname.startsWith('/projects/reports')) {
     return { titleKey: 'menus.projectReports', subtitleKey: 'projectReports.subtitle' }
   }
@@ -241,6 +259,18 @@ export function getPageMeta(pathname: string): {
   }
   if (pathname.startsWith('/organization/positions')) {
     return { titleKey: 'menus.organizationPositions', subtitleKey: 'organizationPositions.subtitle' }
+  }
+  if (pathname === '/organization/unit-kinds/new') {
+    return { titleKey: 'organizationUnitKinds.create', subtitleKey: 'organizationUnitKinds.createSubtitle' }
+  }
+  if (/\/organization\/unit-kinds\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'organizationUnitKinds.edit', subtitleKey: 'organizationUnitKinds.editSubtitle' }
+  }
+  if (/\/organization\/unit-kinds\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'organizationUnitKinds.details', subtitleKey: 'organizationUnitKinds.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/organization/unit-kinds')) {
+    return { titleKey: 'menus.organizationUnitKinds', subtitleKey: 'organizationUnitKinds.subtitle' }
   }
   if (/\/organization\/units\/[^/]+\/restaurants\/new$/.test(pathname)) {
     return { titleKey: 'organizationUnitRestaurants.create', subtitleKey: 'organizationUnitRestaurants.createSubtitle' }

@@ -42,6 +42,16 @@ import { ContractorDetailPage } from './pages/projects/contractors/ContractorDet
 import { ContractorEditPage } from './pages/projects/contractors/ContractorEditPage'
 import { ContractorsListPage } from './pages/projects/contractors/ContractorsListPage'
 import {
+  GlobalContractorCreatePage,
+  GlobalContractorDetailPage,
+  GlobalContractorEditPage,
+  GlobalContractorsListPage,
+} from './pages/projects/contractors/GlobalContractorPages'
+import {
+  ContractorProjectCreatePage,
+  ContractorProjectListPage,
+} from './pages/projects/contractors/ContractorProjectPages'
+import {
   ContractorPaymentCreatePage,
   ContractorPaymentDetailPage,
   ContractorPaymentEditPage,
@@ -112,6 +122,12 @@ import {
   OrganizationPositionEditPage,
   OrganizationPositionListPage,
 } from './pages/organization/positions/OrganizationPositionPages'
+import {
+  OrganizationUnitKindCreatePage,
+  OrganizationUnitKindDetailPage,
+  OrganizationUnitKindEditPage,
+  OrganizationUnitKindListPage,
+} from './pages/organization/unit-kinds/OrganizationUnitKindPages'
 import {
   OrganizationUnitCreatePage,
   OrganizationUnitDetailPage,
@@ -215,6 +231,12 @@ export default function App() {
                   <Route path="/projects" element={<ProjectsListPage />} />
                   <Route path="/projects/reports" element={<ProjectReportsPage />} />
                   <Route path="/projects/live-board" element={<ProjectLiveBoardPage />} />
+                  <Route path="/projects/contractors" element={<GlobalContractorsListPage />} />
+                  <Route path="/projects/contractors/new" element={<GlobalContractorCreatePage />} />
+                  <Route path="/projects/contractors/:contractorId/projects" element={<ContractorProjectListPage />} />
+                  <Route path="/projects/contractors/:contractorId/projects/new" element={<ContractorProjectCreatePage />} />
+                  <Route path="/projects/contractors/:contractorId/edit" element={<GlobalContractorEditPage />} />
+                  <Route path="/projects/contractors/:contractorId" element={<GlobalContractorDetailPage />} />
                   <Route path="/projects/new" element={<ProjectCreatePage />} />
                   <Route path="/projects/:id/progress" element={<ProjectProgressListPage />} />
                   <Route path="/projects/:id/progress/new" element={<ProjectProgressCreatePage />} />
@@ -272,6 +294,10 @@ export default function App() {
                   <Route path="/organization/positions/new" element={<OrganizationPositionCreatePage />} />
                   <Route path="/organization/positions/:id" element={<OrganizationPositionDetailPage />} />
                   <Route path="/organization/positions/:id/edit" element={<OrganizationPositionEditPage />} />
+                  <Route path="/organization/unit-kinds" element={<OrganizationUnitKindListPage />} />
+                  <Route path="/organization/unit-kinds/new" element={<OrganizationUnitKindCreatePage />} />
+                  <Route path="/organization/unit-kinds/:id" element={<OrganizationUnitKindDetailPage />} />
+                  <Route path="/organization/unit-kinds/:id/edit" element={<OrganizationUnitKindEditPage />} />
                   <Route path="/organization/units" element={<OrganizationUnitListPage />} />
                   <Route path="/organization/units/new" element={<OrganizationUnitCreatePage />} />
                   <Route path="/organization/units/:id/restaurants" element={<OrganizationUnitRestaurantListPage />} />

@@ -170,6 +170,7 @@ export function SearchBar({
   label,
   placeholder,
   extra,
+  endExtra,
   beside,
   filtersActive = false,
   extraClassName = 'sm:grid-cols-2',
@@ -184,6 +185,8 @@ export function SearchBar({
   label: string
   placeholder: string
   extra?: ReactNode
+  /** Sits next to the filter button (inline-end of the search row). */
+  endExtra?: ReactNode
   beside?: ReactNode
   filtersActive?: boolean
   extraClassName?: string
@@ -251,6 +254,13 @@ export function SearchBar({
       />
     </Button>
   ) : null
+  const endSlot =
+    endExtra || filterButton ? (
+      <div className="flex flex-wrap items-center gap-2 sm:ms-auto">
+        {endExtra}
+        {filterButton}
+      </div>
+    ) : null
 
   return (
     <AppForm
@@ -269,7 +279,7 @@ export function SearchBar({
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
           {searchInput}
           {hideSubmit ? null : searchButton}
-          {filterButton ? <div className="sm:ms-auto">{filterButton}</div> : null}
+          {endSlot}
         </div>
       )}
       {extra ? (

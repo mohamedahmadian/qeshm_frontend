@@ -21,18 +21,12 @@ import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { api, getApiErrorMessage } from '../../../lib/api'
 import { toLatinDigits } from '../../../lib/datetime'
 import { QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../../lib/geo'
-import {
-  organizationUnitKindOrder,
-  organizationUnitKinds,
-  type ManagedUser,
-  type OrganizationUnit,
-  type OrganizationUnitKind,
-} from '../../../types/app'
+import type { ManagedUser, OrganizationUnit, OrganizationUnitKind } from '../../../types/app'
 import { descendantUnitIds, organizationUnitPathLabel } from '../organization-unit-label'
 
 export type OrganizationUnitPayload = {
   name: string
-  kind: OrganizationUnitKind
+  kindId: string
   parentId: string | null
   phone: string | null
   address: string | null
@@ -72,9 +66,7 @@ export function OrganizationUnitForm({
 }) {
   const { t } = useTranslation()
   const [name, setName] = useState(initial?.name ?? '')
-  const [kind, setKind] = useState<OrganizationUnitKind>(
-    initial?.kind ?? organizationUnitKinds.DEPARTMENT,
-  )
+  const [kindId, setKindId] = useState(initial?.kindId ?? '')
   const [parentId, setParentId] = useState(initial?.parentId ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
   const [address, setAddress] = useState(initial?.address ?? '')
@@ -93,6 +85,13 @@ export function OrganizationUnitForm({
     queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
       const { data } = await api.get<OrganizationUnit[]>('/organization/units')
+      return data
+    },
+  })
+  const kinds = useQuery({
+    queryKey: ['organization-unit-kinds', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<OrganizationUnitKind[]>('/organization/unit-kinds')
       return data
     },
   })
@@ -133,7 +132,7 @@ export function OrganizationUnitForm({
     try {
       await onSubmit({
         name: name.trim(),
-        kind,
+        kindId,
         parentId: emptyToNull(parentId),
         phone: digits || null,
         address: emptyToNull(address),
@@ -162,17 +161,27 @@ export function OrganizationUnitForm({
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
         <FormSectionTitle icon={Building2}>{t('organizationUnits.section')}</FormSectionTitle>
+        <FormField icon={Type} label={t('organizationUnits.name')} htmlFor="unitName">
+          <input
+            id="unitName"
+            className={fieldClassName}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            minLength={2}
+          />
+        </FormField>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField icon={Tags} label={t('organizationUnits.kind')} htmlFor="unitKind">
             <SearchSelect
               id="unitKind"
-              value={kind}
+              value={kindId}
               required
-              onChange={(next) => setKind(next as OrganizationUnitKind)}
+              onChange={setKindId}
               placeholder={t('organizationUnits.selectKind')}
-              options={organizationUnitKindOrder.map((item) => ({
-                value: item,
-                label: t(`organizationUnits.kinds.${item}`),
+              options={(kinds.data ?? []).map((item) => ({
+                value: item.id,
+                label: item.name,
               }))}
             />
           </FormField>
@@ -192,16 +201,6 @@ export function OrganizationUnitForm({
             />
           </FormField>
         </div>
-        <FormField icon={Type} label={t('organizationUnits.name')} htmlFor="unitName">
-          <input
-            id="unitName"
-            className={fieldClassName}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            minLength={2}
-          />
-        </FormField>
         <FormField icon={Phone} label={t('organizationUnits.phone')} htmlFor="unitPhone">
           <input
             id="unitPhone"

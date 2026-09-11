@@ -7,6 +7,7 @@ import {
   FolderKanban,
   Gauge,
   Handshake,
+  Landmark,
   Layers3,
   Percent,
   ShieldCheck,
@@ -33,6 +34,7 @@ import { formatGroupedNumber, formatGroupedQuantity, formatNumber } from '../../
 import {
   projectImportanceOrder,
   projectStatusOrder,
+  type OrganizationUnit,
   type ProjectLookups,
   type ProjectReportsOverview,
 } from '../../types/app'
@@ -55,24 +57,25 @@ export function ProjectReportsPage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { q, term, setTerm, applySearch, searchParams, setParams } = useListParams()
-  const vicePresidency = searchParams.get('vicePresidency') ?? ''
-  const management = searchParams.get('management') ?? ''
-  const unit = searchParams.get('unit') ?? ''
+  const operatorUnitId = searchParams.get('operatorUnitId') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
   const lifecycle = searchParams.get('status') ?? ''
   const isSupportActive = searchParams.get('isSupportActive') ?? ''
   const importance = searchParams.get('importance') ?? ''
 
-  const lookups = useQuery({
-    queryKey: ['projects', 'lookups', vicePresidency, management],
+  const orgUnits = useQuery({
+    queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
-      const { data } = await api.get<ProjectLookups>('/projects/lookups', {
-        params: {
-          ...(vicePresidency ? { vicePresidency } : {}),
-          ...(management ? { management } : {}),
-        },
-      })
+      const { data } = await api.get<OrganizationUnit[]>('/organization/units')
+      return data
+    },
+  })
+
+  const lookups = useQuery({
+    queryKey: ['projects', 'lookups'],
+    queryFn: async () => {
+      const { data } = await api.get<ProjectLookups>('/projects/lookups')
       return data
     },
   })
@@ -82,9 +85,7 @@ export function ProjectReportsPage() {
       'projects',
       'reports',
       q,
-      vicePresidency,
-      management,
-      unit,
+      operatorUnitId,
       companyName,
       isActive,
       lifecycle,
@@ -95,9 +96,7 @@ export function ProjectReportsPage() {
       const { data } = await api.get<ProjectReportsOverview>('/projects/reports', {
         params: {
           ...(q ? { q } : {}),
-          ...(vicePresidency ? { vicePresidency } : {}),
-          ...(management ? { management } : {}),
-          ...(unit ? { unit } : {}),
+          ...(operatorUnitId ? { operatorUnitId } : {}),
           ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
           ...(lifecycle ? { status: lifecycle } : {}),
@@ -112,9 +111,7 @@ export function ProjectReportsPage() {
   const report = query.data
   const kpis = report?.kpis
   const filtersActive = Boolean(
-    vicePresidency ||
-      management ||
-      unit ||
+    operatorUnitId ||
       companyName ||
       isActive ||
       lifecycle ||
@@ -206,58 +203,19 @@ export function ProjectReportsPage() {
         extraClassName="sm:grid-cols-2 xl:grid-cols-3"
         extra={
           <>
-            <FormField icon={Filter} label={t('projects.vicePresidency')} htmlFor="report-vice">
+            <FormField icon={Landmark} label={t('projects.operators')} htmlFor="report-operator">
               <SearchSelect
-                id="report-vice"
-                value={vicePresidency}
-                placeholder={t('projects.allVicePresidencies')}
+                id="report-operator"
+                value={operatorUnitId}
+                placeholder={t('projects.allOperators')}
                 onChange={(next) =>
-                  setParams(
-                    {
-                      vicePresidency: next || undefined,
-                      management: undefined,
-                      unit: undefined,
-                    },
-                    { resetPage: true },
-                  )
+                  setParams({ operatorUnitId: next || undefined }, { resetPage: true })
                 }
                 options={[
-                  { value: '', label: t('projects.allVicePresidencies') },
-                  ...withCurrent(lookups.data?.vicePresidencies, vicePresidency).map((item) => ({
-                    value: item,
-                    label: item,
-                  })),
-                ]}
-              />
-            </FormField>
-            <FormField icon={Filter} label={t('projects.management')} htmlFor="report-management">
-              <SearchSelect
-                id="report-management"
-                value={management}
-                placeholder={t('projects.allManagements')}
-                onChange={(next) =>
-                  setParams({ management: next || undefined, unit: undefined }, { resetPage: true })
-                }
-                options={[
-                  { value: '', label: t('projects.allManagements') },
-                  ...withCurrent(lookups.data?.managements, management).map((item) => ({
-                    value: item,
-                    label: item,
-                  })),
-                ]}
-              />
-            </FormField>
-            <FormField icon={Filter} label={t('projects.unit')} htmlFor="report-unit">
-              <SearchSelect
-                id="report-unit"
-                value={unit}
-                placeholder={t('projects.allUnits')}
-                onChange={(next) => setParams({ unit: next || undefined }, { resetPage: true })}
-                options={[
-                  { value: '', label: t('projects.allUnits') },
-                  ...withCurrent(lookups.data?.units, unit).map((item) => ({
-                    value: item,
-                    label: item,
+                  { value: '', label: t('projects.allOperators') },
+                  ...(orgUnits.data ?? []).map((item) => ({
+                    value: item.id,
+                    label: item.pathLabel || item.name,
                   })),
                 ]}
               />
@@ -528,38 +486,15 @@ export function ProjectReportsPage() {
             <div className={`${formCardBodyClassName} grid gap-4 xl:grid-cols-2`}>
               <ChartPanel
                 icon={Building2}
-                title={t('projectReports.byVicePresidency')}
-                empty={report.byVicePresidency.length === 0}
+                title={t('projectReports.byOperator')}
+                empty={(report.byOperator ?? []).length === 0}
               >
                 <ReportBar
                   locale={locale}
-                  data={report.byVicePresidency.map((item) => ({
+                  data={(report.byOperator ?? []).map((item) => ({
                     name: item.name,
                     value: item.count,
                   }))}
-                />
-              </ChartPanel>
-              <ChartPanel
-                icon={Building2}
-                title={t('projectReports.byManagement')}
-                empty={report.byManagement.length === 0}
-              >
-                <ReportBar
-                  locale={locale}
-                  data={report.byManagement.map((item) => ({
-                    name: item.name,
-                    value: item.count,
-                  }))}
-                />
-              </ChartPanel>
-              <ChartPanel
-                icon={Building2}
-                title={t('projectReports.byUnit')}
-                empty={report.byUnit.length === 0}
-              >
-                <ReportBar
-                  locale={locale}
-                  data={report.byUnit.map((item) => ({ name: item.name, value: item.count }))}
                 />
               </ChartPanel>
               <ChartPanel
@@ -586,11 +521,11 @@ export function ProjectReportsPage() {
             <div className={`${formCardBodyClassName} grid gap-4 xl:grid-cols-2`}>
               <ChartPanel
                 icon={Wallet}
-                title={t('projectReports.financeByVice')}
-                empty={report.financeByVicePresidency.length === 0}
+                title={t('projectReports.financeByOperator')}
+                empty={(report.financeByOperator ?? []).length === 0}
               >
                 <ReportGroupedBar
-                  data={report.financeByVicePresidency}
+                  data={report.financeByOperator ?? []}
                   locale={locale}
                   estimateLabel={t('projectReports.estimate')}
                   paidLabel={t('projectReports.paid')}
@@ -618,7 +553,7 @@ export function ProjectReportsPage() {
                   rows={report.topProjects.map((item) => ({
                     key: item.id,
                     title: item.name,
-                    subtitle: item.vicePresidency,
+                    subtitle: item.operators || '—',
                     to: `/projects/${item.id}`,
                     estimate: item.estimate,
                     paid: item.paid,

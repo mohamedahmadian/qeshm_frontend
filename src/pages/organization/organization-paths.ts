@@ -26,6 +26,14 @@ export function organizationPositionPath(id: string) {
   return `${organizationPositionsPath()}/${id}`
 }
 
+export function organizationUnitKindsPath() {
+  return `${organizationPath()}/unit-kinds`
+}
+
+export function organizationUnitKindPath(id: string) {
+  return `${organizationUnitKindsPath()}/${id}`
+}
+
 export function organizationUnitsPath() {
   return `${organizationPath()}/units`
 }

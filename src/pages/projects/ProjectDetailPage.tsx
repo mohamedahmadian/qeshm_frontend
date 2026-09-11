@@ -1,6 +1,4 @@
 import {
-  Building,
-  Building2,
   CalendarRange,
   ClipboardList,
   FolderKanban,
@@ -15,7 +13,6 @@ import {
   Percent,
   ScrollText,
   Shield,
-  Store,
   Tags,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -73,19 +70,19 @@ export function ProjectDetailPage() {
         <div className="space-y-6 p-5 sm:p-6">
           <FormSectionTitle icon={Landmark}>{t('projects.orgSection')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-            <FormFactTile
-              icon={Landmark}
-              label={t('projects.vicePresidency')}
-              value={project.vicePresidency}
-              tone="teal"
-            />
-            <FormFactTile
-              icon={Building}
-              label={t('projects.management')}
-              value={project.management}
-              tone="mint"
-            />
-            <FormFactTile icon={Building2} label={t('projects.unit')} value={project.unit} />
+            {(project.operators ?? []).length ? (
+              (project.operators ?? []).map((item, index) => (
+                <FormFactTile
+                  key={item.id}
+                  icon={Landmark}
+                  label={item.kind.name || t('projects.operators')}
+                  value={item.pathLabel || item.name}
+                  tone={index % 2 === 0 ? 'teal' : 'mint'}
+                />
+              ))
+            ) : (
+              <FormFactTile icon={Landmark} label={t('projects.operators')} value="—" empty />
+            )}
           </div>
           <FormSectionTitle icon={Monitor}>{t('projects.systemSection')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
@@ -102,7 +99,7 @@ export function ProjectDetailPage() {
               tone="mint"
             />
             <FormFactTile
-              icon={Store}
+              icon={Handshake}
               label={t('projects.companyName')}
               value={project.companyName || '—'}
               tone="mint"

@@ -1,5 +1,8 @@
 import {
   Building2,
+  ChevronDown,
+  ChevronRight,
+  CornerDownLeft,
   Filter,
   MapPin,
   MessageCircle,
@@ -9,12 +12,13 @@ import {
   Send,
   Share2,
   Store,
+  Table2,
   Tags,
   Type,
   Users,
   UtensilsCrossed,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -35,6 +39,7 @@ import {
   FormField,
   LoadingState,
   PageHeader,
+  ToggleField,
   listShellClassName,
   userFormShellClassName,
 } from '../../../components/ui/Form'
@@ -46,14 +51,18 @@ import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api } from '../../../lib/api'
 import { formatNumber, localizeDigits } from '../../../lib/datetime'
+import type { OrganizationUnit, OrganizationUnitKind, Paginated } from '../../../types/app'
 import {
-  organizationUnitKindOrder,
-  type OrganizationUnit,
-  type Paginated,
-} from '../../../types/app'
-import { organizationUnitPathLabel } from '../organization-unit-label'
+  buildOrganizationUnitForest,
+  findOrganizationUnitSubtree,
+  flattenOrganizationUnitForest,
+  organizationUnitMatches,
+  organizationUnitPathLabel,
+  pruneOrganizationUnitForest,
+} from '../organization-unit-label'
 import {
   organizationEmployeesPath,
+  organizationUnitKindsPath,
   organizationUnitPath,
   organizationUnitRestaurantsPath,
   organizationUnitsPath,
@@ -67,6 +76,40 @@ const unitDetailTabs = [
 
 type UnitDetailTab = (typeof unitDetailTabs)[number]['id']
 
+function treeRowClassName(depth: number) {
+  if (depth === 0) return 'border-t border-line bg-white'
+  if (depth % 2 === 1) {
+    return 'border-t border-line !bg-teal-50/90 hover:!bg-teal-100/80 focus:!bg-teal-100/80 focus-visible:!bg-teal-100/80'
+  }
+  return 'border-t border-line !bg-mint-50/85 hover:!bg-mint-100/75 focus:!bg-mint-100/75 focus-visible:!bg-mint-100/75'
+}
+
+function UnitRowActions({
+  item,
+  onDelete,
+}: {
+  item: OrganizationUnit
+  onDelete: (item: OrganizationUnit) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <EntityRowActions
+      viewTo={organizationUnitPath(item.id)}
+      showView={false}
+      extra={
+        <Link to={`${organizationEmployeesPath()}?orgUnitId=${item.id}`}>
+          <Button type="button" variant="soft">
+            <Users className="size-4" aria-hidden />
+            {t('employees.manage')}
+          </Button>
+        </Link>
+      }
+      editTo={`${organizationUnitPath(item.id)}/edit`}
+      onDelete={() => onDelete(item)}
+    />
+  )
+}
+
 export function OrganizationUnitListPage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
@@ -75,7 +118,9 @@ export function OrganizationUnitListPage() {
   const { confirmDelete } = useConfirmDelete()
   const kind = searchParams.get('kind') ?? ''
   const parentId = searchParams.get('parentId') ?? ''
+  const treeView = searchParams.get('view') === 'tree'
   const filtersActive = Boolean(kind || parentId)
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
   const lookups = useQuery({
     queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
@@ -83,14 +128,22 @@ export function OrganizationUnitListPage() {
       return data
     },
   })
+  const kinds = useQuery({
+    queryKey: ['organization-unit-kinds', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<OrganizationUnitKind[]>('/organization/unit-kinds')
+      return data
+    },
+  })
   const query = useQuery({
     queryKey: ['organization-units', q, page, kind, parentId, sortBy, sortDir],
+    enabled: !treeView,
     queryFn: async () => {
       const { data } = await api.get<Paginated<OrganizationUnit>>('/organization/units', {
         params: {
           page,
           ...(q ? { q } : {}),
-          ...(kind ? { kind } : {}),
+          ...(kind ? { kindId: kind } : {}),
           ...(parentId ? { parentId } : {}),
           ...sortParams,
         },
@@ -98,8 +151,47 @@ export function OrganizationUnitListPage() {
       return data
     },
   })
+  const forest = useMemo(() => {
+    const tree = buildOrganizationUnitForest(lookups.data ?? [], locale)
+    const rooted = parentId
+      ? (() => {
+          const subtree = findOrganizationUnitSubtree(tree, parentId)
+          return subtree ? [subtree] : []
+        })()
+      : tree
+    if (!q && !kind) return rooted
+    return pruneOrganizationUnitForest(rooted, (unit) => organizationUnitMatches(unit, q, kind), Boolean(q))
+  }, [kind, locale, lookups.data, parentId, q])
+  const treeRows = useMemo(
+    () => flattenOrganizationUnitForest(forest, collapsed),
+    [collapsed, forest],
+  )
+
+  useEffect(() => {
+    setCollapsed(new Set())
+  }, [kind, parentId, q])
+
   const rows = query.data?.items ?? []
   const base = organizationUnitsPath()
+  const emptyMessage = q || filtersActive ? t('organizationUnits.noResults') : t('organizationUnits.empty')
+
+  function deleteUnit(item: OrganizationUnit) {
+    confirmDelete({
+      message: t('organizationUnits.confirmDelete'),
+      successMessage: t('organizationUnits.deleted'),
+      path: `/organization/units/${item.id}`,
+      queryKey: ['organization-units'],
+    })
+  }
+
+  function toggleCollapsed(id: string) {
+    setCollapsed((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   return (
     <div className={listShellClassName}>
@@ -108,12 +200,20 @@ export function OrganizationUnitListPage() {
         title={t('menus.organizationUnits')}
         subtitle={t('organizationUnits.subtitle')}
         action={
-          <Link to={`${base}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('organizationUnits.create')}
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link to={organizationUnitKindsPath()}>
+              <Button type="button" variant="soft">
+                <Tags className="size-4" aria-hidden />
+                {t('organizationUnitKinds.manage')}
+              </Button>
+            </Link>
+            <Link to={`${base}/new`}>
+              <Button>
+                <Plus className="size-4" />
+                {t('organizationUnits.create')}
+              </Button>
+            </Link>
+          </div>
         }
       />
       <SearchBar
@@ -124,6 +224,24 @@ export function OrganizationUnitListPage() {
         placeholder={t('organizationUnits.searchPlaceholder')}
         filtersActive={filtersActive}
         extraClassName="sm:grid-cols-2"
+        endExtra={
+          <ToggleField
+            checked={!treeView}
+            onChange={(table) => setParams({ view: table ? undefined : 'tree' })}
+            onLabel={
+              <>
+                <Table2 className="size-4" aria-hidden />
+                {t('organizationUnits.tableView')}
+              </>
+            }
+            offLabel={
+              <>
+                <Network className="size-4" aria-hidden />
+                {t('organizationUnits.treeView')}
+              </>
+            }
+          />
+        }
         extra={
           <>
             <FormField icon={Filter} label={t('organizationUnits.kind')} htmlFor="unit-kind">
@@ -134,9 +252,9 @@ export function OrganizationUnitListPage() {
                 placeholder={t('organizationUnits.allKinds')}
                 options={[
                   { value: '', label: t('organizationUnits.allKinds') },
-                  ...organizationUnitKindOrder.map((item) => ({
-                    value: item,
-                    label: t(`organizationUnits.kinds.${item}`),
+                  ...(kinds.data ?? []).map((item) => ({
+                    value: item.id,
+                    label: item.name,
                   })),
                 ]}
               />
@@ -159,90 +277,156 @@ export function OrganizationUnitListPage() {
           </>
         }
       />
-      <TableCard
-        loading={query.isLoading}
-        empty={q || filtersActive ? t('organizationUnits.noResults') : t('organizationUnits.empty')}
-        hasRows={rows.length > 0}
-      >
-        <table className="w-full text-sm">
-          <thead className="bg-cream-50 text-ink-700">
-            <tr>
-              <SortableTh column="name" label={t('organizationUnits.name')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="kind" label={t('organizationUnits.kind')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="parent" label={t('organizationUnits.parent')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="phone" label={t('organizationUnits.phone')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh
-                column="nutritionRep"
-                label={t('organizationUnits.nutritionRep')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="employeeCount"
-                label={t('organizationUnits.employeeCount')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="restaurantCount"
-                label={t('organizationUnits.restaurantCount')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <ActionsTh />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((item) => (
-              <tr key={item.id} className="border-t border-line">
-                <td className="px-4 py-3">{item.name}</td>
-                <td className="px-4 py-3">{t(`organizationUnits.kinds.${item.kind}`)}</td>
-                <td className="px-4 py-3">{item.parent?.name || '—'}</td>
-                <td className="px-4 py-3">
-                  {item.phone ? <span className="digit-field" dir="ltr">{localizeDigits(item.phone, locale)}</span> : '—'}
-                </td>
-                <td className="px-4 py-3">{item.nutritionRep?.fullName || '—'}</td>
-                <td className="px-4 py-3">{formatNumber(item._count?.employees ?? 0, locale)}</td>
-                <td className="px-4 py-3">{formatNumber(item._count?.restaurants ?? 0, locale)}</td>
-                <td className={actionsColClassName}>
-                  <EntityRowActions
-                    viewTo={organizationUnitPath(item.id)}
-                    showView={false}
-                    extra={
-                      <Link to={`${organizationEmployeesPath()}?orgUnitId=${item.id}`}>
-                        <Button type="button" variant="soft">
-                          <Users className="size-4" aria-hidden />
-                          {t('employees.manage')}
-                        </Button>
-                      </Link>
-                    }
-                    editTo={`${organizationUnitPath(item.id)}/edit`}
-                    onDelete={() =>
-                      confirmDelete({
-                        message: t('organizationUnits.confirmDelete'),
-                        successMessage: t('organizationUnits.deleted'),
-                        path: `/organization/units/${item.id}`,
-                        queryKey: ['organization-units'],
-                      })
-                    }
-                  />
-                </td>
+      {treeView ? (
+        <TableCard loading={lookups.isLoading} empty={emptyMessage} hasRows={treeRows.length > 0}>
+          <table className="w-full text-sm">
+            <thead className="bg-cream-50 text-ink-700">
+              <tr>
+                <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.name')}</th>
+                <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.kind')}</th>
+                <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.phone')}</th>
+                <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.employeeCount')}</th>
+                <ActionsTh />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </TableCard>
-      {query.data ? (
-        <PaginationBar
-          page={query.data.page}
-          pageSize={query.data.pageSize}
-          total={query.data.total}
-          onPageChange={setPage}
-        />
-      ) : null}
+            </thead>
+            <tbody>
+              {treeRows.map(({ unit: item, depth }) => {
+                const expanded = !collapsed.has(item.id)
+                const isChild = depth > 0
+                return (
+                  <tr key={item.id} className={treeRowClassName(depth)}>
+                    <td className="relative px-4 py-3">
+                      {isChild ? (
+                        <span
+                          aria-hidden
+                          className={`absolute inset-y-1.5 w-1 rounded-full ${
+                            depth % 2 === 1 ? 'bg-teal-400' : 'bg-mint-400'
+                          }`}
+                          style={{ insetInlineStart: `${0.7 + (depth - 1) * 1.35}rem` }}
+                        />
+                      ) : null}
+                      <div
+                        className="flex items-center gap-1.5"
+                        style={{ paddingInlineStart: `${depth * 1.35}rem` }}
+                      >
+                        {item.children.length ? (
+                          <button
+                            type="button"
+                            className={`inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-xl ${
+                              isChild
+                                ? 'text-teal-700 hover:bg-white/80'
+                                : 'text-teal-700 hover:bg-teal-50'
+                            }`}
+                            aria-expanded={expanded}
+                            aria-label={
+                              expanded
+                                ? t('organizationUnits.collapseUnit')
+                                : t('organizationUnits.expandUnit')
+                            }
+                            onClick={() => toggleCollapsed(item.id)}
+                          >
+                            {expanded ? (
+                              <ChevronDown className="size-4" aria-hidden />
+                            ) : (
+                              <ChevronRight className="size-4 rtl:rotate-180" aria-hidden />
+                            )}
+                          </button>
+                        ) : (
+                          <span className="inline-block size-7 shrink-0" aria-hidden />
+                        )}
+                        {isChild ? (
+                          <>
+                            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-xl bg-white text-teal-600 ring-1 ring-teal-200">
+                              <CornerDownLeft className="size-3.5 rtl:-scale-x-100" aria-hidden />
+                            </span>
+                            <span className="rounded-xl bg-white px-2.5 py-1 font-medium text-ink-800 ring-1 ring-teal-100">
+                              {item.name}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-xl bg-teal-500 text-white shadow-sm">
+                              <Building2 className="size-3.5" aria-hidden />
+                            </span>
+                            <span className="font-semibold text-ink-900">{item.name}</span>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">{item.kind.name}</td>
+                    <td className="px-4 py-3">
+                      {item.phone ? (
+                        <span className="digit-field" dir="ltr">
+                          {localizeDigits(item.phone, locale)}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-3">{formatNumber(item._count?.employees ?? 0, locale)}</td>
+                    <td className={actionsColClassName}>
+                      <UnitRowActions item={item} onDelete={deleteUnit} />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </TableCard>
+      ) : (
+        <>
+          <TableCard loading={query.isLoading} empty={emptyMessage} hasRows={rows.length > 0}>
+            <table className="w-full text-sm">
+              <thead className="bg-cream-50 text-ink-700">
+                <tr>
+                  <SortableTh column="name" label={t('organizationUnits.name')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                  <SortableTh column="kind" label={t('organizationUnits.kind')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                  <SortableTh column="parent" label={t('organizationUnits.parent')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                  <SortableTh column="phone" label={t('organizationUnits.phone')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                  <SortableTh
+                    column="employeeCount"
+                    label={t('organizationUnits.employeeCount')}
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    onSort={onSort}
+                  />
+                  <ActionsTh />
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((item) => (
+                  <tr key={item.id} className="border-t border-line">
+                    <td className="px-4 py-3">{item.name}</td>
+                    <td className="px-4 py-3">{item.kind.name}</td>
+                    <td className="px-4 py-3">{item.parent?.name || '—'}</td>
+                    <td className="px-4 py-3">
+                      {item.phone ? (
+                        <span className="digit-field" dir="ltr">
+                          {localizeDigits(item.phone, locale)}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-3">{formatNumber(item._count?.employees ?? 0, locale)}</td>
+                    <td className={actionsColClassName}>
+                      <UnitRowActions item={item} onDelete={deleteUnit} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableCard>
+          {query.data ? (
+            <PaginationBar
+              page={query.data.page}
+              pageSize={query.data.pageSize}
+              total={query.data.total}
+              onPageChange={setPage}
+            />
+          ) : null}
+        </>
+      )}
     </div>
   )
 }
@@ -361,7 +545,7 @@ export function OrganizationUnitDetailPage() {
                 <FormFactTile
                   icon={Tags}
                   label={t('organizationUnits.kind')}
-                  value={t(`organizationUnits.kinds.${item.kind}`)}
+                  value={item.kind.name}
                   tone="mint"
                 />
                 <FormFactTile

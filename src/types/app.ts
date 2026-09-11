@@ -581,11 +581,17 @@ export const projectStatusOrder: ProjectStatus[] = [
   projectStatuses.COMPLETED,
 ];
 
+export type ProjectOperator = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  pathLabel: string;
+  kind: { id: string; name: string };
+};
+
 export type Project = {
   id: string;
-  vicePresidency: string;
-  management: string;
-  unit: string;
+  operators: ProjectOperator[];
   systemName: string;
   code: string;
   isActive: boolean;
@@ -688,7 +694,17 @@ export type ProjectContractor = {
   createdAt: string;
   updatedAt: string;
   project: { id: string; systemName: string };
-  _count?: { members: number; phases: number; payments: number };
+  _count?: { members: number; phases: number; payments: number; projectLinks?: number };
+};
+
+export type ContractorProject = {
+  id: string;
+  systemName: string;
+  code: string;
+  isActive: boolean;
+  status: ProjectStatus | null;
+  progressPercent: number | null;
+  operators: ProjectOperator[];
 };
 
 export type ContractorMember = {
@@ -757,9 +773,6 @@ export type ProjectLiveBoard = {
 };
 
 export type ProjectLookups = {
-  vicePresidencies: string[];
-  managements: string[];
-  units: string[];
   companies: string[];
 };
 
@@ -817,17 +830,15 @@ export type ProjectReportsOverview = {
   bySupport: ProjectReportKeyCount[];
   byContractorCoverage: ProjectReportKeyCount[];
   byPhaseStatus: ProjectReportKeyCount[];
-  byVicePresidency: ProjectReportOrgRow[];
-  byManagement: ProjectReportOrgRow[];
-  byUnit: ProjectReportOrgRow[];
+  byOperator: ProjectReportOrgRow[];
   byCompany: ProjectReportNamedCount[];
   byLaunchYear: { year: number | null; count: number; activeCount: number }[];
   paymentByMonth: { month: string; amount: number; count: number }[];
-  financeByVicePresidency: { name: string; estimate: number; paid: number }[];
+  financeByOperator: { name: string; estimate: number; paid: number }[];
   topProjects: {
     id: string;
     name: string;
-    vicePresidency: string;
+    operators: string;
     contractorCount: number;
     memberCount: number;
     phaseCount: number;
@@ -3728,33 +3739,21 @@ export type OrganizationPosition = {
   _count?: { users: number };
 };
 
-export const organizationUnitKinds = {
-  BOARD: 'BOARD',
-  ADVISORS: 'ADVISORS',
-  OFFICE: 'OFFICE',
-  VICE: 'VICE',
-  MANAGEMENT: 'MANAGEMENT',
-  DEPARTMENT: 'DEPARTMENT',
-} as const;
-
-export type OrganizationUnitKind =
-  (typeof organizationUnitKinds)[keyof typeof organizationUnitKinds];
-
-export const organizationUnitKindOrder: OrganizationUnitKind[] = [
-  organizationUnitKinds.BOARD,
-  organizationUnitKinds.ADVISORS,
-  organizationUnitKinds.OFFICE,
-  organizationUnitKinds.VICE,
-  organizationUnitKinds.MANAGEMENT,
-  organizationUnitKinds.DEPARTMENT,
-];
+export type OrganizationUnitKind = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { units: number };
+};
 
 export type OrganizationUnit = {
   id: string;
   name: string;
-  kind: OrganizationUnitKind;
+  kindId: string;
+  kind: Pick<OrganizationUnitKind, 'id' | 'name'>;
   parentId: string | null;
-  parent: { id: string; name: string; kind: OrganizationUnitKind } | null;
+  parent: { id: string; name: string; kind?: Pick<OrganizationUnitKind, 'id' | 'name'> } | null;
   pathLabel: string;
   phone: string | null;
   address: string | null;

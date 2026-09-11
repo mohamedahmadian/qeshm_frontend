@@ -1,10 +1,9 @@
 import {
-  Building,
-  Building2,
   CalendarRange,
   FolderKanban,
   Gauge,
   Globe,
+  Handshake,
   Hash,
   Landmark,
   Link2,
@@ -13,7 +12,6 @@ import {
   Percent,
   ScrollText,
   Shield,
-  Store,
   Tags,
   ToggleRight,
 } from 'lucide-react'
@@ -23,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { AppForm, FormField, FormActions, ToggleField, fieldClassName } from '../../components/ui/Form'
 import { FormCard, FormSectionTitle, formCardBodyClassName } from '../../components/ui/FormLayout'
+import { OrgUnitTreeSelect } from '../../components/ui/OrgUnitTreeSelect'
 import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
 import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
@@ -34,17 +33,14 @@ import {
   projectImportances,
   projectStatusOrder,
   projectStatuses,
+  type OrganizationUnit,
   type Project,
   type ProjectImportance,
-  type ProjectLookups,
   type ProjectStatus,
 } from '../../types/app'
-import { withCurrent } from './ProjectShared'
 
 export type ProjectPayload = {
-  vicePresidency: string
-  management: string
-  unit: string
+  operatorIds: string[]
   systemName: string
   code: string
   isActive: boolean
@@ -89,9 +85,7 @@ export function ProjectForm({
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
-  const [vicePresidency, setVicePresidency] = useState(initial?.vicePresidency ?? '')
-  const [management, setManagement] = useState(initial?.management ?? '')
-  const [unit, setUnit] = useState(initial?.unit ?? '')
+  const [operatorIds, setOperatorIds] = useState(initial?.operatorIds ?? [])
   const [systemName, setSystemName] = useState(initial?.systemName ?? '')
   const [code, setCode] = useState(initial?.code ?? '')
   const [codeTouched, setCodeTouched] = useState(Boolean(initial?.code))
@@ -119,15 +113,10 @@ export function ProjectForm({
   )
   const [saving, setSaving] = useState(false)
 
-  const lookups = useQuery({
-    queryKey: ['projects', 'lookups', vicePresidency, management],
+  const orgUnits = useQuery({
+    queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
-      const { data } = await api.get<ProjectLookups>('/projects/lookups', {
-        params: {
-          ...(vicePresidency ? { vicePresidency } : {}),
-          ...(management ? { management } : {}),
-        },
-      })
+      const { data } = await api.get<OrganizationUnit[]>('/organization/units')
       return data
     },
   })
@@ -155,6 +144,10 @@ export function ProjectForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault()
+    if (!operatorIds.length) {
+      toast.error(t('projects.operatorRequired'))
+      return
+    }
     if (startDate && endDate && endDate < startDate) {
       toast.error(t('projects.rangeInvalid'))
       return
@@ -167,9 +160,7 @@ export function ProjectForm({
     setSaving(true)
     try {
       await onSubmit({
-        vicePresidency: vicePresidency.trim(),
-        management: management.trim(),
-        unit: unit.trim(),
+        operatorIds,
         systemName: systemName.trim(),
         code: code.trim(),
         isActive,
@@ -194,10 +185,6 @@ export function ProjectForm({
     }
   }
 
-  const viceOptions = withCurrent(lookups.data?.vicePresidencies, vicePresidency)
-  const managementOptions = withCurrent(lookups.data?.managements, management)
-  const unitOptions = withCurrent(lookups.data?.units, unit)
-
   return (
     <FormCard
       icon={FolderKanban}
@@ -206,44 +193,17 @@ export function ProjectForm({
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
         <FormSectionTitle icon={Landmark}>{t('projects.orgSection')}</FormSectionTitle>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <FormField icon={Landmark} label={t('projects.vicePresidency')} htmlFor="vicePresidency">
-            <SearchSelect
-              id="vicePresidency"
-              value={vicePresidency}
-              required
-              onChange={setVicePresidency}
-              onCreate={setVicePresidency}
-              createLabel={(name) => t('projects.addNamed', { name })}
-              placeholder={t('projects.vicePresidency')}
-              options={viceOptions.map((item) => ({ value: item, label: item }))}
-            />
-          </FormField>
-          <FormField icon={Building} label={t('projects.management')} htmlFor="management">
-            <SearchSelect
-              id="management"
-              value={management}
-              required
-              onChange={setManagement}
-              onCreate={setManagement}
-              createLabel={(name) => t('projects.addNamed', { name })}
-              placeholder={t('projects.management')}
-              options={managementOptions.map((item) => ({ value: item, label: item }))}
-            />
-          </FormField>
-          <FormField icon={Building2} label={t('projects.unit')} htmlFor="unit">
-            <SearchSelect
-              id="unit"
-              value={unit}
-              required
-              onChange={setUnit}
-              onCreate={setUnit}
-              createLabel={(name) => t('projects.addNamed', { name })}
-              placeholder={t('projects.unit')}
-              options={unitOptions.map((item) => ({ value: item, label: item }))}
-            />
-          </FormField>
-        </div>
+        <FormField icon={Landmark} label={t('projects.operators')} htmlFor="projectOperators-search">
+          <p className="mb-2 text-xs leading-6 text-ink-500">{t('projects.operatorHint')}</p>
+          <OrgUnitTreeSelect
+            id="projectOperators"
+            value={operatorIds}
+            onChange={setOperatorIds}
+            units={orgUnits.data ?? []}
+            loading={orgUnits.isLoading}
+            required
+          />
+        </FormField>
 
         <FormSectionTitle icon={Monitor}>{t('projects.systemSection')}</FormSectionTitle>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -298,7 +258,7 @@ export function ProjectForm({
               }))}
             />
           </FormField>
-          <FormField icon={Store} label={t('projects.companyName')} htmlFor="companyName">
+          <FormField icon={Handshake} label={t('projects.companyName')} htmlFor="companyName">
             <input
               id="companyName"
               className={fieldClassName}

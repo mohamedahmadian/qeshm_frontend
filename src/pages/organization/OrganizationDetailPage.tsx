@@ -1,4 +1,4 @@
-import { Landmark, MapPin, MessageCircle, Phone, Send, Share2, Type } from 'lucide-react'
+import { Building2, Landmark, MapPin, MessageCircle, Phone, Send, Share2, Type } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router-dom'
 import {
@@ -11,7 +11,12 @@ import {
 import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
 import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
 import { formatNumber, localizeDigits } from '../../lib/datetime'
-import { organizationEditPath, organizationNewPath, organizationPhonesPath } from './organization-paths'
+import {
+  organizationEditPath,
+  organizationNewPath,
+  organizationPhonesPath,
+  organizationUnitsPath,
+} from './organization-paths'
 import { useOrganization } from './useOrganization'
 
 export function OrganizationDetailPage() {
@@ -142,6 +147,11 @@ export function OrganizationDetailPage() {
                 to: organizationPhonesPath(),
                 icon: Phone,
                 label: t('organizationPhones.manage'),
+              },
+              {
+                to: organizationUnitsPath(),
+                icon: Building2,
+                label: t('organizationUnits.manage'),
               },
             ]}
           />

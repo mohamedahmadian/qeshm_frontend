@@ -64,6 +64,7 @@ import { projectProgressEntryPath } from './progress/progress-paths'
 import {
   projectImportanceOrder,
   projectStatusOrder,
+  type OrganizationUnit,
   type ProjectLiveBoard,
   type ProjectLiveBoardActivity,
   type ProjectLiveBoardItem,
@@ -73,9 +74,11 @@ import {
 import {
   ProjectImportanceBadge,
   ProjectLifecycleBadge,
+  ProjectOperatorsCell,
   ProjectProgress,
   ProjectStatus as ProjectActiveBadge,
   ProjectUrl,
+  projectOperatorsText,
   withCurrent,
 } from './ProjectShared'
 
@@ -232,24 +235,25 @@ export function ProjectLiveBoardPage() {
   const rawView = searchParams.get('view')
   const view: LiveBoardView =
     rawView === 'table' || rawView === 'cards' ? rawView : 'map'
-  const vicePresidency = searchParams.get('vicePresidency') ?? ''
-  const management = searchParams.get('management') ?? ''
-  const unit = searchParams.get('unit') ?? ''
+  const operatorUnitId = searchParams.get('operatorUnitId') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
   const status = searchParams.get('status') ?? ''
   const isSupportActive = searchParams.get('isSupportActive') ?? ''
   const importance = searchParams.get('importance') ?? ''
 
-  const lookups = useQuery({
-    queryKey: ['projects', 'lookups', vicePresidency, management],
+  const orgUnits = useQuery({
+    queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
-      const { data } = await api.get<ProjectLookups>('/projects/lookups', {
-        params: {
-          ...(vicePresidency ? { vicePresidency } : {}),
-          ...(management ? { management } : {}),
-        },
-      })
+      const { data } = await api.get<OrganizationUnit[]>('/organization/units')
+      return data
+    },
+  })
+
+  const lookups = useQuery({
+    queryKey: ['projects', 'lookups'],
+    queryFn: async () => {
+      const { data } = await api.get<ProjectLookups>('/projects/lookups')
       return data
     },
   })
@@ -259,9 +263,7 @@ export function ProjectLiveBoardPage() {
       'projects',
       'live-board',
       q,
-      vicePresidency,
-      management,
-      unit,
+      operatorUnitId,
       companyName,
       isActive,
       status,
@@ -274,9 +276,7 @@ export function ProjectLiveBoardPage() {
       const { data } = await api.get<ProjectLiveBoard>('/projects/live-board', {
         params: {
           ...(q ? { q } : {}),
-          ...(vicePresidency ? { vicePresidency } : {}),
-          ...(management ? { management } : {}),
-          ...(unit ? { unit } : {}),
+          ...(operatorUnitId ? { operatorUnitId } : {}),
           ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
           ...(status ? { status } : {}),
@@ -316,9 +316,7 @@ export function ProjectLiveBoardPage() {
   )
   const tableRows = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const filtersActive = Boolean(
-    vicePresidency ||
-      management ||
-      unit ||
+    operatorUnitId ||
       companyName ||
       isActive ||
       status ||
@@ -351,58 +349,19 @@ export function ProjectLiveBoardPage() {
         extraClassName="sm:grid-cols-2 xl:grid-cols-3"
         extra={
           <>
-            <FormField icon={Filter} label={t('projects.vicePresidency')} htmlFor="live-vice">
+            <FormField icon={Landmark} label={t('projects.operators')} htmlFor="live-operator">
               <SearchSelect
-                id="live-vice"
-                value={vicePresidency}
-                placeholder={t('projects.allVicePresidencies')}
+                id="live-operator"
+                value={operatorUnitId}
+                placeholder={t('projects.allOperators')}
                 onChange={(next) =>
-                  setParams(
-                    {
-                      vicePresidency: next || undefined,
-                      management: undefined,
-                      unit: undefined,
-                    },
-                    { resetPage: true },
-                  )
+                  setParams({ operatorUnitId: next || undefined }, { resetPage: true })
                 }
                 options={[
-                  { value: '', label: t('projects.allVicePresidencies') },
-                  ...withCurrent(lookups.data?.vicePresidencies, vicePresidency).map((item) => ({
-                    value: item,
-                    label: item,
-                  })),
-                ]}
-              />
-            </FormField>
-            <FormField icon={Filter} label={t('projects.management')} htmlFor="live-management">
-              <SearchSelect
-                id="live-management"
-                value={management}
-                placeholder={t('projects.allManagements')}
-                onChange={(next) =>
-                  setParams({ management: next || undefined, unit: undefined }, { resetPage: true })
-                }
-                options={[
-                  { value: '', label: t('projects.allManagements') },
-                  ...withCurrent(lookups.data?.managements, management).map((item) => ({
-                    value: item,
-                    label: item,
-                  })),
-                ]}
-              />
-            </FormField>
-            <FormField icon={Filter} label={t('projects.unit')} htmlFor="live-unit">
-              <SearchSelect
-                id="live-unit"
-                value={unit}
-                placeholder={t('projects.allUnits')}
-                onChange={(next) => setParams({ unit: next || undefined }, { resetPage: true })}
-                options={[
-                  { value: '', label: t('projects.allUnits') },
-                  ...withCurrent(lookups.data?.units, unit).map((item) => ({
-                    value: item,
-                    label: item,
+                  { value: '', label: t('projects.allOperators') },
+                  ...(orgUnits.data ?? []).map((item) => ({
+                    value: item.id,
+                    label: item.pathLabel || item.name,
                   })),
                 ]}
               />
@@ -614,8 +573,8 @@ export function ProjectLiveBoardPage() {
                     {t('projectLiveBoard.mainContractor')}
                   </th>
                   <SortableTh
-                    column="vicePresidency"
-                    label={t('projects.vicePresidency')}
+                    column="operators"
+                    label={t('projects.operators')}
                     sortBy={sortBy}
                     sortDir={sortDir}
                     onSort={onSort}
@@ -676,7 +635,9 @@ export function ProjectLiveBoardPage() {
                       <ProjectImportanceBadge value={item.importance} />
                     </td>
                     <td className="px-4 py-3">{item.mainContractor?.name || '—'}</td>
-                    <td className="px-4 py-3">{item.vicePresidency}</td>
+                    <td className="px-4 py-3">
+                      <ProjectOperatorsCell operators={item.operators} />
+                    </td>
                     <td className="px-4 py-3">{item.companyName || '—'}</td>
                     <td className="px-4 py-3">
                       <ProjectActiveBadge active={item.isActive} />
@@ -792,7 +753,7 @@ function ProjectBoardCard({
             <h3 className="text-base font-semibold leading-snug text-ink-900">{project.systemName}</h3>
             <p className="mt-1 text-xs font-medium text-teal-700">{project.code}</p>
             <p className="mt-1 truncate text-xs text-ink-500">
-              {[project.vicePresidency, project.unit].filter(Boolean).join(' · ')}
+              {projectOperatorsText(project.operators) || '—'}
             </p>
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               <ProjectLifecycleBadge value={project.status} />
@@ -1010,18 +971,18 @@ function ProjectMapCard({
             <Button
               type="button"
               variant="soft"
-              className="w-full px-2"
+              className="w-full gap-1.5 px-2 py-2 !text-xs"
               onClick={() => setPanel((current) => (current === 'details' ? 'none' : 'details'))}
             >
-              <Monitor className="size-4 shrink-0" aria-hidden />
+              <Monitor className="size-3.5 shrink-0" aria-hidden />
               {showDetails ? t('projectLiveBoard.hideDetails') : t('projectLiveBoard.viewDetails')}
             </Button>
             <Button
               type="button"
-              className="w-full px-2"
+              className="w-full gap-1.5 px-2 py-2 !text-xs"
               onClick={() => setPanel((current) => (current === 'progress' ? 'none' : 'progress'))}
             >
-              <Mic className="size-4 shrink-0" aria-hidden />
+              <Mic className="size-3.5 shrink-0" aria-hidden />
               {showProgress ? t('projectLiveBoard.hideProgress') : t('projectLiveBoard.addProgress')}
             </Button>
           </div>
@@ -1041,8 +1002,13 @@ function ProjectMapCard({
           {showDetails ? (
             <div className="space-y-2">
               <FormFactTile icon={Hash} label={t('projects.code')} value={project.code} compact />
-              <FormFactTile icon={Landmark} label={t('projects.vicePresidency')} value={project.vicePresidency} compact />
-              <FormFactTile icon={Handshake} label={t('projects.management')} value={project.management} compact tone="mint" />
+              <FormFactTile
+                icon={Landmark}
+                label={t('projects.operators')}
+                value={projectOperatorsText(project.operators) || '—'}
+                empty={!project.operators?.length}
+                compact
+              />
               <FormFactTile
                 icon={Tags}
                 label={t('projects.importance')}
