@@ -11,6 +11,7 @@ export function DashboardPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={LayoutDashboard}
         title={t('dashboard.title')}
         subtitle={t('dashboard.welcomeUser', { name: user?.fullName ?? '' })}
       />

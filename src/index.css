@@ -168,6 +168,24 @@ th {
   border-radius: 999px;
 }
 
+.sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-teal-200) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--color-teal-200);
+  border-radius: 999px;
+}
+
 .rmdp-container {
   width: 100%;
 }

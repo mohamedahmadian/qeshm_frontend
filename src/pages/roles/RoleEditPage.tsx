@@ -28,6 +28,7 @@ export function RoleEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Shield}
         title={t('accessRoles.edit')}
         subtitle={<EntityNameSubtitle name={query.data.name} icon={Shield} />}
       />

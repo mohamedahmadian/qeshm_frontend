@@ -35,6 +35,7 @@ export function ProvinceDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Map}
         title={t('provinces.details')}
         subtitle={<EntityNameSubtitle name={name(province)} icon={Map} />}
       />

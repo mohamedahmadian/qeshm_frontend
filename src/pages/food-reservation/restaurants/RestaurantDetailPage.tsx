@@ -40,6 +40,7 @@ export function RestaurantDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Store}
         title={t('restaurants.details')}
         subtitle={<EntityNameSubtitle name={restaurant.name} icon={Store} />}
       />

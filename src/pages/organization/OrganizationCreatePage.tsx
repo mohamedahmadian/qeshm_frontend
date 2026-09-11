@@ -1,3 +1,4 @@
+import { Landmark } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +25,7 @@ export function OrganizationCreatePage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
+        icon={Landmark}
         title={t('organization.create')}
         subtitle={t('organization.createSubtitle')}
         backTo="/"

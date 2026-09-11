@@ -195,7 +195,7 @@ export function ProjectReportsPage() {
 
   return (
     <div className={listShellClassName}>
-      <PageHeader title={t('menus.projectReports')} subtitle={t('projectReports.subtitle')} />
+      <PageHeader icon={ChartColumn} title={t('menus.projectReports')} subtitle={t('projectReports.subtitle')} />
       <SearchBar
         term={term}
         onTermChange={setTerm}

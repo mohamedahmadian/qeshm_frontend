@@ -113,6 +113,7 @@ export function RestaurantMenuListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={UtensilsCrossed}
         title={t('restaurantMenuItems.title')}
         subtitle={<EntityNameSubtitle name={restaurant.name} icon={Store} />}
         action={
@@ -256,6 +257,7 @@ export function RestaurantMenuCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={UtensilsCrossed}
         title={t('restaurantMenuItems.create')}
         subtitle={<EntityNameSubtitle name={restaurant.name} icon={Store} />}
       />
@@ -298,6 +300,7 @@ export function RestaurantMenuEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={UtensilsCrossed}
         title={t('restaurantMenuItems.edit')}
         subtitle={<EntityNameSubtitle name={query.data.food.name} icon={UtensilsCrossed} />}
       />
@@ -340,6 +343,7 @@ export function RestaurantMenuDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={UtensilsCrossed}
         title={t('restaurantMenuItems.details')}
         subtitle={<EntityNameSubtitle name={item.food.name} icon={UtensilsCrossed} />}
       />

@@ -1,3 +1,4 @@
+import { UserRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,7 +12,7 @@ export function UserCreatePage() {
 
   return (
     <div className={userFormShellClassName}>
-      <PageHeader title={t('users.create')} subtitle={t('users.createSubtitle')} />
+      <PageHeader icon={UserRound} title={t('users.create')} subtitle={t('users.createSubtitle')} />
       <UserForm
         onCancel={() => navigate('/users')}
         onSubmit={async (payload) => {

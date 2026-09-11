@@ -18,6 +18,7 @@ import { isSidebarMenuActive } from '../../lib/nav-path'
 import { filterNavByAccess } from '../../lib/roles'
 import type { NavMenu, NavModule } from '../../types/app'
 import { AppLogo } from '../brand/AppLogo'
+import { FormCardHeaderDecor } from '../ui/FormLayout'
 import { PageTransition } from '../ui/PageTransition'
 import { AdminFooter } from './AdminFooter'
 import { HeaderToday } from './HeaderToday'
@@ -242,38 +243,50 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
             />
           ) : null}
           <aside
-            className={`fixed inset-y-0 start-0 z-40 flex h-svh w-[280px] flex-col border-e border-line bg-white transition lg:static lg:h-full lg:translate-x-0 ${
+            className={`fixed inset-y-0 start-0 z-40 flex h-svh w-[280px] flex-col overflow-hidden border-e border-teal-100 bg-gradient-to-b from-white via-teal-50/70 to-cream-50 shadow-[8px_0_28px_rgba(46,189,182,0.08)] transition lg:relative lg:h-full lg:translate-x-0 ${
               open
                 ? 'translate-x-0'
                 : 'ltr:-translate-x-full rtl:translate-x-full lg:ltr:translate-x-0 lg:rtl:translate-x-0'
             }`}
           >
-            <div className="flex items-center gap-3 px-5 py-5">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <NavLink to="/" onClick={() => setOpen(false)} className="shrink-0">
-                  <AppLogo decorative className="h-10 w-auto max-w-10 shrink-0 object-contain" />
-                </NavLink>
-                <NavLink
-                  to="/"
+            <div
+              className="pointer-events-none absolute -start-16 top-24 size-44 rounded-full bg-teal-200/25 blur-2xl"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute -end-20 bottom-32 size-48 rounded-full bg-mint-100/70 blur-2xl"
+              aria-hidden
+            />
+
+            <div className="relative overflow-hidden border-b border-teal-100/80 bg-gradient-to-e from-mint-50 via-white to-teal-50 px-5 py-5">
+              <FormCardHeaderDecor />
+              <div className="relative flex items-center gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <NavLink to="/" onClick={() => setOpen(false)} className="shrink-0">
+                    <AppLogo decorative className="h-10 w-auto max-w-10 shrink-0 object-contain" />
+                  </NavLink>
+                  <NavLink
+                    to="/"
+                    onClick={() => setOpen(false)}
+                    className="block truncate font-semibold text-ink-900"
+                  >
+                    {t('nav.panel')}
+                  </NavLink>
+                </div>
+                <button
+                  type="button"
+                  className="rounded-lg p-2 text-ink-500 lg:hidden"
                   onClick={() => setOpen(false)}
-                  className="block truncate font-semibold text-ink-900"
+                  aria-label={t('nav.closeMenu')}
                 >
-                  {t('nav.panel')}
-                </NavLink>
+                  <X className="size-5" />
+                </button>
               </div>
-              <button
-                type="button"
-                className="rounded-lg p-2 text-ink-500 lg:hidden"
-                onClick={() => setOpen(false)}
-                aria-label={t('nav.closeMenu')}
-              >
-                <X className="size-5" />
-              </button>
             </div>
 
-            <div className="px-4 pb-3">
+            <div className="relative px-4 pb-3 pt-3">
               <label className="relative block">
-                <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ink-400" />
+                <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-teal-500" />
                 <input
                   ref={menuSearchRef}
                   value={query}
@@ -291,10 +304,10 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
                     highlightedMenu ? sidebarMenuItemId(highlightedMenu.code) : undefined
                   }
                   aria-describedby={menuSearchHintId}
-                  className="w-full rounded-2xl border border-line bg-cream-50 py-2.5 ps-10 pe-3 text-sm placeholder:text-ink-400"
+                  className="w-full rounded-2xl border border-teal-100 bg-white/90 py-2.5 ps-10 pe-3 text-sm shadow-[0_6px_16px_rgba(46,189,182,0.08)] placeholder:text-ink-400"
                 />
               </label>
-              <p id={menuSearchHintId} className="mt-2 px-1 text-[9px] leading-tight text-ink-300">
+              <p id={menuSearchHintId} className="mt-2 px-1 text-[9px] leading-tight text-ink-400">
                 {t('nav.searchMenuHint')}
               </p>
             </div>
@@ -302,31 +315,70 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
             <nav
               ref={navRef}
               id={menuSearchListId}
-              className="flex-1 space-y-5 overflow-y-auto [overflow-anchor:none] px-3 pb-3"
+              className="sidebar-nav relative flex-1 space-y-3 overflow-y-auto [overflow-anchor:none] px-2.5 pb-3"
               onScroll={(event) => writeSidebarNavScroll(event.currentTarget.scrollTop)}
             >
-              {modules.map((mod) => (
-                <div key={mod.code}>
-                  <p className="mb-1 px-3 text-[11px] font-medium text-ink-400">{t(mod.nameKey)}</p>
-                  <div className="space-y-1">
-                    {mod.menus.map((item) => (
-                      <SidebarMenuLink
-                        key={item.code}
-                        item={item}
-                        allMenuPaths={allMenuPaths}
-                        highlighted={highlightedMenu?.code === item.code}
-                        onHighlight={() => highlightMenu(item.code)}
-                        onNavigate={() => {
-                          rememberSidebarScroll()
-                          setOpen(false)
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
+              {modules.map((mod, index) => {
+                const ModuleIcon = getNavIcon(mod.icon)
+                const moduleActive = mod.menus.some((item) =>
+                  isSidebarMenuActive(location.pathname, item.path, allMenuPaths),
+                )
+                const mintTone = index % 2 === 1
+                return (
+                  <section
+                    key={mod.code}
+                    className={`overflow-hidden rounded-2xl border shadow-[0_8px_20px_rgba(46,189,182,0.08)] ${
+                      moduleActive
+                        ? 'border-teal-200 bg-gradient-to-b from-teal-50 to-white shadow-[0_12px_26px_rgba(46,189,182,0.16)]'
+                        : mintTone
+                          ? 'border-mint-100/90 bg-gradient-to-b from-mint-50/70 to-white'
+                          : 'border-teal-100/90 bg-gradient-to-b from-white to-teal-50/40'
+                    }`}
+                  >
+                    <header
+                      className={`flex items-center gap-2.5 border-b px-3 py-2.5 ${
+                        mintTone
+                          ? 'border-mint-100/80 bg-gradient-to-e from-mint-50 via-white to-teal-50/50'
+                          : 'border-teal-100/80 bg-gradient-to-e from-teal-50 via-white to-mint-50/50'
+                      }`}
+                    >
+                      <span
+                        className={`flex size-7 shrink-0 items-center justify-center rounded-xl text-white ${
+                          mintTone
+                            ? 'bg-mint-500 shadow-[0_6px_14px_rgba(63,214,190,0.32)]'
+                            : 'bg-teal-500 shadow-[0_6px_14px_rgba(46,189,182,0.32)]'
+                        }`}
+                      >
+                        <ModuleIcon className="size-3.5" aria-hidden />
+                      </span>
+                      <p
+                        className={`min-w-0 truncate text-[11px] font-semibold ${
+                          mintTone ? 'text-mint-800' : 'text-teal-800'
+                        }`}
+                      >
+                        {t(mod.nameKey)}
+                      </p>
+                    </header>
+                    <div className="space-y-1 p-1.5">
+                      {mod.menus.map((item) => (
+                        <SidebarMenuLink
+                          key={item.code}
+                          item={item}
+                          allMenuPaths={allMenuPaths}
+                          highlighted={highlightedMenu?.code === item.code}
+                          onHighlight={() => highlightMenu(item.code)}
+                          onNavigate={() => {
+                            rememberSidebarScroll()
+                            setOpen(false)
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )
+              })}
             </nav>
-            <div className="shrink-0 border-t border-line px-3 py-3">
+            <div className="relative shrink-0 border-t border-teal-100/80 bg-gradient-to-e from-white via-teal-50/40 to-white px-3 py-3">
               <button
                 type="button"
                 className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-red-600 transition hover:bg-red-50"
@@ -392,11 +444,6 @@ function SidebarMenuLink({
   const { pathname } = useLocation()
   const Icon = getNavIcon(item.icon)
   const isActive = isSidebarMenuActive(pathname, item.path, allMenuPaths)
-  const iconClass = isActive
-    ? 'text-white'
-    : highlighted
-      ? 'text-teal-600'
-      : 'text-ink-400'
   return (
     <Link
       id={sidebarMenuItemId(item.code)}
@@ -404,16 +451,26 @@ function SidebarMenuLink({
       onClick={onNavigate}
       onMouseEnter={onHighlight}
       aria-current={isActive ? 'page' : undefined}
-      className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition ${
+      className={`group relative flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-sm transition ${
         isActive
-          ? `bg-teal-500 text-white shadow-sm${highlighted ? ' ring-2 ring-inset ring-white/70' : ''}`
+          ? `bg-teal-500 bg-[linear-gradient(to_inline-end,var(--color-teal-500),var(--color-mint-500))] text-white shadow-[0_8px_16px_rgba(46,189,182,0.32)]${highlighted ? ' ring-2 ring-inset ring-white/70' : ''}`
           : highlighted
             ? 'bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200'
-            : 'text-ink-700 hover:bg-cream-50'
+            : 'text-ink-700 hover:bg-teal-50 hover:text-teal-800'
       }`}
     >
-      <Icon className={`size-4 ${iconClass}`} aria-hidden />
-      {item.label ?? t(item.nameKey)}
+      <span
+        className={`flex size-8 shrink-0 items-center justify-center rounded-xl transition ${
+          isActive
+            ? 'bg-white/20 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.25)]'
+            : highlighted
+              ? 'bg-teal-100 text-teal-700'
+              : 'bg-teal-50 text-teal-600 group-hover:bg-white group-hover:text-teal-700 group-hover:shadow-[0_4px_10px_rgba(46,189,182,0.16)]'
+        }`}
+      >
+        <Icon className="size-3.5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1 truncate">{item.label ?? t(item.nameKey)}</span>
     </Link>
   )
 }

@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Plus, Users } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
@@ -68,6 +68,7 @@ export function EmployeeListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Users}
         title={t('menus.organizationEmployees')}
         subtitle={t('employees.subtitle')}
         action={
@@ -169,7 +170,7 @@ export function EmployeeCreatePage() {
   const navigate = useNavigate()
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('employees.create')} subtitle={t('employees.createSubtitle')} />
+      <PageHeader icon={Users} title={t('employees.create')} subtitle={t('employees.createSubtitle')} />
       <EmployeeForm
         onSubmit={async (payload) => {
           const { data } = await api.post<{ id: string }>('/users', payload)

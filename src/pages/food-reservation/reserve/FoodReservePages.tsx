@@ -53,6 +53,7 @@ export function FoodReserveListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Ticket}
         title={t('menus.foodReserve')}
         subtitle={t('foodReservations.subtitle')}
         action={
@@ -145,6 +146,7 @@ export function FoodReserveCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Ticket}
         title={t('foodReservations.create')}
         subtitle={
           context.data.orgUnit ? (
@@ -189,6 +191,7 @@ export function FoodReserveDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Ticket}
         title={t('foodReservations.details')}
         subtitle={<EntityNameSubtitle name={item.food.name} icon={Ticket} />}
       />

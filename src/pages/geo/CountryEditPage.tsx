@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -26,7 +27,7 @@ export function CountryEditPage() {
 
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('countries.edit')} subtitle={t('countries.editSubtitle')} />
+      <PageHeader icon={Globe} title={t('countries.edit')} subtitle={t('countries.editSubtitle')} />
       <CountryForm
         initial={{
           iso2: query.data.iso2,

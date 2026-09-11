@@ -1,3 +1,4 @@
+import { Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,7 +12,7 @@ export function RoleCreatePage() {
 
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('accessRoles.create')} subtitle={t('accessRoles.createSubtitle')} />
+      <PageHeader icon={Shield} title={t('accessRoles.create')} subtitle={t('accessRoles.createSubtitle')} />
       <RoleForm
         onSubmit={async (payload) => {
           await api.post('/roles', payload)

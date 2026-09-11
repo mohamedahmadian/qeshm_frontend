@@ -35,6 +35,7 @@ export function CountryDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Globe}
         title={t('countries.details')}
         subtitle={<EntityNameSubtitle name={name(country)} icon={Globe} />}
       />

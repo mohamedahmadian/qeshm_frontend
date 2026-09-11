@@ -41,6 +41,7 @@ export function ContractorDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Building2}
         title={t('contractors.details')}
         subtitle={<EntityNameSubtitle name={contractor.name} icon={Building2} />}
       />

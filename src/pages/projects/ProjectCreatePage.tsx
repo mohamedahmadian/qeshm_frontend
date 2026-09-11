@@ -1,3 +1,4 @@
+import { FolderKanban } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,7 +12,7 @@ export function ProjectCreatePage() {
 
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('projects.create')} subtitle={t('projects.createSubtitle')} />
+      <PageHeader icon={FolderKanban} title={t('projects.create')} subtitle={t('projects.createSubtitle')} />
       <ProjectForm
         onSubmit={async (payload) => {
           await api.post('/projects', payload)

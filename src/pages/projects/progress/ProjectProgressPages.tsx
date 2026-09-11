@@ -135,6 +135,7 @@ export function ProjectProgressListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={ClipboardList}
         title={t('projectProgress.title')}
         subtitle={<EntityNameSubtitle name={project.systemName} icon={ClipboardList} />}
         action={
@@ -278,6 +279,7 @@ export function ProjectProgressCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={ClipboardList}
         title={t('projectProgress.create')}
         subtitle={<EntityNameSubtitle name={project.systemName} icon={ClipboardList} />}
       />
@@ -316,6 +318,7 @@ export function ProjectProgressEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={ClipboardList}
         title={t('projectProgress.edit')}
         subtitle={
           <EntityNameSubtitle
@@ -383,6 +386,7 @@ export function ProjectProgressDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={ClipboardList}
         title={t('projectProgress.details')}
         subtitle={<EntityNameSubtitle name={title} icon={ClipboardList} />}
       />

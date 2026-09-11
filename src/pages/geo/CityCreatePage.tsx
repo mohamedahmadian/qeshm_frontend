@@ -1,3 +1,4 @@
+import { MapPin } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -40,7 +41,7 @@ export function CityCreatePage() {
 
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('cities.create')} subtitle={t('cities.createSubtitle')} />
+      <PageHeader icon={MapPin} title={t('cities.create')} subtitle={t('cities.createSubtitle')} />
       <CityForm
         initial={
           initialProvinceId

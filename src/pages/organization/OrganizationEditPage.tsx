@@ -25,6 +25,7 @@ export function OrganizationEditPage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
+        icon={Landmark}
         title={t('organization.edit')}
         subtitle={<EntityNameSubtitle name={query.data.name} icon={Landmark} />}
       />

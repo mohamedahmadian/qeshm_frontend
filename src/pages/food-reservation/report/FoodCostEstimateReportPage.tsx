@@ -168,7 +168,7 @@ export function FoodCostEstimateReportPage() {
 
   return (
     <div className={listShellClassName}>
-      <PageHeader title={t('menus.foodCostEstimate')} subtitle={t('foodCostEstimate.subtitle')} />
+      <PageHeader icon={Wallet} title={t('menus.foodCostEstimate')} subtitle={t('foodCostEstimate.subtitle')} />
       <FormCard icon={CalendarRange} title={t('foodCostEstimate.range')} subtitle={t('foodCostEstimate.rangeHint')}>
         <div className={`${formCardBodyClassName} grid gap-4 sm:grid-cols-2`}>
           <FormField icon={CalendarRange} label={t('foodReservations.fromDate')} htmlFor="costFrom">

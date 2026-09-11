@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Plus, Shield } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -41,6 +41,7 @@ export function RolesListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Shield}
         title={t('menus.roles')}
         subtitle={t('accessRoles.subtitle')}
         action={

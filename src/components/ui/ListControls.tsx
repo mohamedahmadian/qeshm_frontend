@@ -23,7 +23,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { formatNumber } from '../../lib/datetime'
-import { AppForm, Button, FormField, cardClassName, fieldClassName } from './Form'
+import { AppForm, Button, cardClassName, fieldClassName } from './Form'
 import { LoadingState } from './LoadingState'
 
 export type SortDir = 'asc' | 'desc'
@@ -224,12 +224,13 @@ export function SearchBar({
     <input
       id={inputId}
       data-list-search=""
-      className={`${fieldClassName} min-w-0 ${beside ? 'w-full' : 'flex-1'}`}
+      className={`${fieldClassName} min-w-0 ${beside ? 'w-full' : 'w-full sm:w-1/2'}`}
       value={term}
       onChange={(e) => onTermChange(e.target.value)}
       onKeyDown={handleSearchKeyDown}
       placeholder={placeholder}
       title={t('common.searchToTable')}
+      aria-label={label}
       autoFocus={autoFocus}
     />
   )
@@ -239,6 +240,17 @@ export function SearchBar({
       {t('common.search')}
     </Button>
   )
+  const filterButton = extra ? (
+    <Button type="button" variant="ghost" aria-expanded={filtersOpen} onClick={toggleFilters}>
+      <SlidersHorizontal className="size-4" aria-hidden />
+      {t('common.filters')}
+      {filtersActive ? <span className="size-2 rounded-full bg-teal-500" aria-hidden /> : null}
+      <ChevronDown
+        className={`size-4 transition ${filtersOpen ? 'rotate-180' : ''}`}
+        aria-hidden
+      />
+    </Button>
+  ) : null
 
   return (
     <AppForm
@@ -248,52 +260,25 @@ export function SearchBar({
       className={bare ? 'mb-4' : `mb-4 p-4 ${cardClassName}`}
     >
       {beside ? (
-        <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-end">
-          <div className="min-w-0 flex-1">
-            <FormField icon={Search} label={label} htmlFor={inputId}>
-              {searchInput}
-            </FormField>
-          </div>
+        <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
+          {searchInput}
           <div className="grid grid-cols-2 gap-3 lg:contents">{beside}</div>
           {hideSubmit ? null : searchButton}
         </div>
       ) : (
-        <FormField icon={Search} label={label} htmlFor={inputId}>
-          {hideSubmit ? (
-            searchInput
-          ) : (
-            <div className="flex w-full flex-col gap-3 sm:flex-row">
-              {searchInput}
-              {searchButton}
-            </div>
-          )}
-        </FormField>
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+          {searchInput}
+          {hideSubmit ? null : searchButton}
+          {filterButton ? <div className="sm:ms-auto">{filterButton}</div> : null}
+        </div>
       )}
       {extra ? (
-        <div className="mt-3">
-          <button
-            type="button"
-            aria-expanded={filtersOpen}
-            onClick={toggleFilters}
-            className="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-cream-50"
-          >
-            <SlidersHorizontal className="size-4 text-teal-600" aria-hidden />
-            {t('common.filters')}
-            {filtersActive ? (
-              <span className="size-2 rounded-full bg-teal-500" aria-hidden />
-            ) : null}
-            <ChevronDown
-              className={`size-4 text-ink-400 transition ${filtersOpen ? 'rotate-180' : ''}`}
-              aria-hidden
-            />
-          </button>
-          <div
-            className={`mt-3 grid gap-4 border-t border-line pt-4 ${extraClassName} ${
-              filtersOpen ? '' : 'hidden'
-            }`}
-          >
-            {extra}
-          </div>
+        <div
+          className={`mt-3 grid gap-4 border-t border-line pt-3 ${extraClassName} ${
+            filtersOpen ? '' : 'hidden'
+          }`}
+        >
+          {extra}
         </div>
       ) : null}
     </AppForm>

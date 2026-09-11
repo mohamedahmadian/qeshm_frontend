@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Plus, Users } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -64,6 +64,7 @@ export function UsersListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Users}
         title={t('users.title')}
         subtitle={t('users.subtitle')}
         action={

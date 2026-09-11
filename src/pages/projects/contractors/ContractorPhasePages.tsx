@@ -72,6 +72,7 @@ export function ContractorPhaseListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Flag}
         title={t('contractorPhases.title')}
         subtitle={<EntityNameSubtitle name={contractor.name} icon={Flag} />}
         action={
@@ -151,6 +152,7 @@ export function ContractorPhaseCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Flag}
         title={t('contractorPhases.create')}
         subtitle={<EntityNameSubtitle name={contractor.name} icon={Flag} />}
       />
@@ -189,6 +191,7 @@ export function ContractorPhaseEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Flag}
         title={t('contractorPhases.edit')}
         subtitle={<EntityNameSubtitle name={query.data.name} icon={Flag} />}
       />
@@ -231,6 +234,7 @@ export function ContractorPhaseDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Flag}
         title={t('contractorPhases.details')}
         subtitle={<EntityNameSubtitle name={phase.name} icon={Flag} />}
       />

@@ -1,4 +1,4 @@
-import { UserRound } from 'lucide-react'
+import { UserRound, History } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
@@ -57,6 +57,7 @@ export function UserLocationHistoryPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={History}
         title={t('location.history')}
         subtitle={<EntityNameSubtitle name={userQuery.data.fullName} icon={UserRound} />}
         backTo={`/users/${id}/location`}

@@ -52,6 +52,7 @@ export function OrganizationPositionListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Briefcase}
         title={t('menus.organizationPositions')}
         subtitle={t('organizationPositions.subtitle')}
         action={
@@ -136,7 +137,7 @@ export function OrganizationPositionCreatePage() {
   const navigate = useNavigate()
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('organizationPositions.create')} subtitle={t('organizationPositions.createSubtitle')} />
+      <PageHeader icon={Briefcase} title={t('organizationPositions.create')} subtitle={t('organizationPositions.createSubtitle')} />
       <OrganizationPositionForm
         onSubmit={async (payload) => {
           const { data } = await api.post<{ id: string }>('/organization/positions', payload)
@@ -166,6 +167,7 @@ export function OrganizationPositionEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Briefcase}
         title={t('organizationPositions.edit')}
         subtitle={<EntityNameSubtitle name={query.data.name} icon={Briefcase} />}
       />
@@ -202,6 +204,7 @@ export function OrganizationPositionDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Briefcase}
         title={t('organizationPositions.details')}
         subtitle={<EntityNameSubtitle name={item.name} icon={Briefcase} />}
       />

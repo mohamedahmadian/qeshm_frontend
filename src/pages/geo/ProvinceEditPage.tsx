@@ -1,3 +1,4 @@
+import { Map } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -33,7 +34,7 @@ export function ProvinceEditPage() {
 
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('provinces.edit')} subtitle={t('provinces.editSubtitle')} />
+      <PageHeader icon={Map} title={t('provinces.edit')} subtitle={t('provinces.editSubtitle')} />
       <ProvinceForm
         initial={{
           countryId: query.data.countryId,

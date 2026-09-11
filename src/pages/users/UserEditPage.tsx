@@ -37,6 +37,7 @@ export function UserEditPage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
+        icon={UserRound}
         title={employeeView ? t('employees.edit') : t('users.edit')}
         subtitle={<EntityNameSubtitle name={query.data.fullName} icon={UserRound} />}
       />

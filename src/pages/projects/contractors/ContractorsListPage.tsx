@@ -1,4 +1,4 @@
-import { FolderKanban, Plus } from 'lucide-react'
+import { FolderKanban, Plus, Building2 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -59,6 +59,7 @@ export function ContractorsListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Building2}
         title={t('contractors.title')}
         subtitle={<EntityNameSubtitle name={project.data.systemName} icon={FolderKanban} />}
         action={

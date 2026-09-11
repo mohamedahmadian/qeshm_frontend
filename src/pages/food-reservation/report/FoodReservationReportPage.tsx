@@ -166,6 +166,7 @@ export function FoodReservationReportPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={ChartColumn}
         title={t('menus.foodReservationReport')}
         subtitle={t('foodReservations.reportSubtitle')}
       />

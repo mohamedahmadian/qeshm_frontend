@@ -1,4 +1,4 @@
-import { Filter, Plus } from 'lucide-react'
+import { Filter, Plus, FolderKanban } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -122,6 +122,7 @@ export function ProjectsListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={FolderKanban}
         title={t('projects.title')}
         subtitle={t('projects.subtitle')}
         action={

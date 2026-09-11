@@ -53,6 +53,7 @@ export function OrganizationUnitListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Building2}
         title={t('menus.organizationUnits')}
         subtitle={t('organizationUnits.subtitle')}
         action={
@@ -160,7 +161,7 @@ export function OrganizationUnitCreatePage() {
   const navigate = useNavigate()
   return (
     <div className={userFormShellClassName}>
-      <PageHeader title={t('organizationUnits.create')} subtitle={t('organizationUnits.createSubtitle')} />
+      <PageHeader icon={Building2} title={t('organizationUnits.create')} subtitle={t('organizationUnits.createSubtitle')} />
       <OrganizationUnitForm
         onSubmit={async (payload) => {
           const { data } = await api.post<{ id: string }>('/organization/units', payload)
@@ -190,6 +191,7 @@ export function OrganizationUnitEditPage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
+        icon={Building2}
         title={t('organizationUnits.edit')}
         subtitle={<EntityNameSubtitle name={query.data.name} icon={Building2} />}
       />
@@ -232,6 +234,7 @@ export function OrganizationUnitDetailPage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
+        icon={Building2}
         title={t('organizationUnits.details')}
         subtitle={<EntityNameSubtitle name={item.name} icon={Building2} />}
       />

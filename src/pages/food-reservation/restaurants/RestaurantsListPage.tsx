@@ -42,6 +42,7 @@ export function RestaurantsListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Store}
         title={t('menus.restaurantManagement')}
         subtitle={t('restaurants.subtitle')}
         action={

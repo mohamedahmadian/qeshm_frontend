@@ -84,6 +84,7 @@ export function VehicleAssignmentListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Handshake}
         title={t('vehicleAssignments.title')}
         subtitle={<EntityNameSubtitle name={vehicleDisplayName(vehicle)} icon={Car} />}
         action={
@@ -195,6 +196,7 @@ export function VehicleAssignmentCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Handshake}
         title={t('vehicleAssignments.create')}
         subtitle={<EntityNameSubtitle name={vehicleDisplayName(vehicle)} icon={Car} />}
       />
@@ -233,6 +235,7 @@ export function VehicleAssignmentEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Handshake}
         title={t('vehicleAssignments.edit')}
         subtitle={<EntityNameSubtitle name={assignmentTitle(query.data, query.data.vehicle.plate)} icon={Handshake} />}
       />
@@ -274,6 +277,7 @@ export function VehicleAssignmentDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Handshake}
         title={t('vehicleAssignments.details')}
         subtitle={<EntityNameSubtitle name={name} icon={Handshake} />}
       />
@@ -387,6 +391,7 @@ export function VehicleAssignmentReturnPage() {
     return (
       <div className={formShellClassName}>
         <PageHeader
+          icon={Handshake}
           title={t('vehicleAssignments.return')}
           subtitle={<EntityNameSubtitle name={assignmentTitle(query.data, vehicle.plate)} icon={Undo2} />}
         />
@@ -397,6 +402,7 @@ export function VehicleAssignmentReturnPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Handshake}
         title={t('vehicleAssignments.return')}
         subtitle={<EntityNameSubtitle name={assignmentTitle(query.data, vehicle.plate)} icon={Undo2} />}
       />

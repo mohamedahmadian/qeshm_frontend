@@ -340,7 +340,7 @@ export function ProjectLiveBoardPage() {
 
   return (
     <div className={listShellClassName}>
-      <PageHeader title={t('projectLiveBoard.title')} subtitle={t('projectLiveBoard.subtitle')} />
+      <PageHeader icon={Radio} title={t('projectLiveBoard.title')} subtitle={t('projectLiveBoard.subtitle')} />
       <SearchBar
         term={term}
         onTermChange={setTerm}

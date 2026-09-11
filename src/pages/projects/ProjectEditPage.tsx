@@ -28,6 +28,7 @@ export function ProjectEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={FolderKanban}
         title={t('projects.edit')}
         subtitle={<EntityNameSubtitle name={query.data.systemName} icon={FolderKanban} />}
       />

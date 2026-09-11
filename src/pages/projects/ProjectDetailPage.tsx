@@ -65,6 +65,7 @@ export function ProjectDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={FolderKanban}
         title={t('projects.details')}
         subtitle={<EntityNameSubtitle name={project.systemName} icon={FolderKanban} />}
       />

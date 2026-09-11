@@ -103,6 +103,7 @@ export function OrganizationUnitRestaurantListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Store}
         title={t('organizationUnitRestaurants.title')}
         subtitle={<EntityNameSubtitle name={unit.name} icon={Store} />}
         action={
@@ -204,6 +205,7 @@ export function OrganizationUnitRestaurantCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Store}
         title={t('organizationUnitRestaurants.create')}
         subtitle={<EntityNameSubtitle name={unit.name} icon={Store} />}
       />
@@ -246,6 +248,7 @@ export function OrganizationUnitRestaurantEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Store}
         title={t('organizationUnitRestaurants.edit')}
         subtitle={<EntityNameSubtitle name={query.data.restaurant.name} icon={Store} />}
       />
@@ -287,6 +290,7 @@ export function OrganizationUnitRestaurantDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Store}
         title={t('organizationUnitRestaurants.details')}
         subtitle={<EntityNameSubtitle name={item.restaurant.name} icon={Store} />}
       />

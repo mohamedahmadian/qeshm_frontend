@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { CopyableDigits, useCopyDigits } from './CopyableDigits'
-import { cardClassName } from './Form'
+
+export const cardClassName =
+  'rounded-[22px] border border-white bg-white shadow-[0_10px_30px_rgba(20,40,40,0.05)]'
 
 export type FormTone = 'teal' | 'mint' | 'ink'
 
@@ -80,26 +82,36 @@ export function FormCardHeader({
   subtitle,
   chips,
   action,
+  heading = 'h2',
+  leading,
 }: {
   icon: LucideIcon
   title: ReactNode
   subtitle?: ReactNode
   chips?: ReactNode
   action?: ReactNode
+  heading?: 'h1' | 'h2'
+  leading?: ReactNode
 }) {
+  const Heading = heading
+  const titleClass =
+    heading === 'h1'
+      ? 'text-xl font-semibold leading-snug text-ink-900 sm:text-2xl'
+      : 'text-base font-semibold leading-snug text-ink-900'
+  const subtitleClass =
+    heading === 'h1' ? 'mt-1 text-sm leading-6 text-ink-500' : 'mt-1 text-xs leading-6 text-ink-600'
   return (
     <header className="relative overflow-hidden bg-gradient-to-e from-mint-50 via-white to-teal-50 px-5 py-5 sm:px-6">
       <FormCardHeaderDecor />
       <div className="relative flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
+          {leading}
           <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-[0_10px_22px_rgba(46,189,182,0.32)]">
             <Icon className="size-6" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-semibold leading-snug text-ink-900">{title}</h2>
-            {subtitle ? (
-              <div className="mt-1 text-xs leading-6 text-ink-600">{subtitle}</div>
-            ) : null}
+            <Heading className={titleClass}>{title}</Heading>
+            {subtitle ? <div className={subtitleClass}>{subtitle}</div> : null}
             {chips ? <div className="mt-3 flex flex-wrap gap-1.5">{chips}</div> : null}
           </div>
         </div>

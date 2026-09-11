@@ -72,6 +72,7 @@ export function OrganizationPhoneListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Phone}
         title={t('organizationPhones.title')}
         subtitle={<EntityNameSubtitle name={organization.name} icon={Landmark} />}
         backTo={organizationPath()}
@@ -178,6 +179,7 @@ export function OrganizationPhoneCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Phone}
         title={t('organizationPhones.create')}
         subtitle={<EntityNameSubtitle name={organization.name} icon={Landmark} />}
       />
@@ -219,6 +221,7 @@ export function OrganizationPhoneEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Phone}
         title={t('organizationPhones.edit')}
         subtitle={<EntityNameSubtitle name={query.data.title} icon={Phone} />}
       />
@@ -263,6 +266,7 @@ export function OrganizationPhoneDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Phone}
         title={t('organizationPhones.details')}
         subtitle={<EntityNameSubtitle name={item.title} icon={Phone} />}
       />

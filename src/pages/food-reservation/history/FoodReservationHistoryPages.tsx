@@ -9,6 +9,7 @@ import {
   UserRound,
   UtensilsCrossed,
   Wallet,
+  History,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -121,6 +122,7 @@ export function FoodReservationHistoryListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={History}
         title={t('menus.foodReservationHistory')}
         subtitle={t('foodReservations.historySubtitle')}
       />
@@ -296,6 +298,7 @@ export function FoodReservationHistoryDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={History}
         title={t('foodReservations.details')}
         subtitle={<EntityNameSubtitle name={item.food.name} icon={Ticket} />}
       />

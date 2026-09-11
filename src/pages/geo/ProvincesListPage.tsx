@@ -1,4 +1,4 @@
-import { Filter, Plus } from 'lucide-react'
+import { Filter, Plus, Map } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -64,6 +64,7 @@ export function ProvincesListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Map}
         title={t('menus.provinces')}
         subtitle={t('provinces.subtitle')}
         action={

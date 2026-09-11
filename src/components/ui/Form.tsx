@@ -14,7 +14,10 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { CopyableDigits } from './CopyableDigits'
+import { cardClassName, FormCardHeader } from './FormLayout'
 import { useNavigationHistory } from '../../lib/navigation-history'
+
+export { cardClassName }
 
 const variants = {
   primary:
@@ -24,9 +27,6 @@ const variants = {
     'cursor-pointer bg-white text-ink-700 hover:bg-teal-50 border border-teal-400 shadow-[0_4px_12px_rgba(46,189,182,0.16)]',
   danger: 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-60',
 }
-
-export const cardClassName =
-  'rounded-[22px] border border-white bg-white shadow-[0_10px_30px_rgba(20,40,40,0.05)]'
 
 export const formShellClassName = 'mx-auto w-full min-w-0 max-w-6xl'
 export const userFormShellClassName = 'mx-auto w-full min-w-0 max-w-6xl'
@@ -205,11 +205,13 @@ export function PageHeader({
   subtitle,
   action,
   backTo,
+  icon,
   className = 'mb-6',
 }: {
   title: string
   subtitle?: ReactNode
   action?: ReactNode
+  icon: LucideIcon
   /** مسیر بازگشت اگر تاریخچه خالی باشد. `false` آیکون را مخفی می‌کند. */
   backTo?: string | false
   className?: string
@@ -219,31 +221,28 @@ export function PageHeader({
   const { goBack } = useNavigationHistory()
   const fallback = backTo === false ? undefined : backTo ?? resolvePageBackTo(pathname)
   const showBack = Boolean(fallback)
+  const backButton = showBack ? (
+    <button
+      type="button"
+      aria-label={t('common.back')}
+      className="inline-flex size-9 shrink-0 items-center justify-center rounded-2xl text-teal-700 transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 print:hidden"
+      onClick={() => goBack(fallback)}
+    >
+      <ArrowRight className="size-5 ltr:rotate-180" aria-hidden />
+    </button>
+  ) : null
 
   return (
-    <div className={`flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${className}`}>
-      <div>
-        <div className="flex items-center gap-2">
-          {showBack ? (
-            <button
-              type="button"
-              aria-label={t('common.back')}
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-2xl text-teal-700 transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 print:hidden"
-              onClick={() => goBack(fallback)}
-            >
-              <ArrowRight className="size-5 ltr:rotate-180" aria-hidden />
-            </button>
-          ) : null}
-          <h1 className="text-2xl font-semibold text-ink-900">{title}</h1>
-        </div>
-        {subtitle ? (
-          <div className={`mt-1 max-w-2xl text-sm text-ink-500 ${showBack ? 'ps-11' : ''}`}>
-            {subtitle}
-          </div>
-        ) : null}
-      </div>
-      {action}
-    </div>
+    <section className={`${cardClassName} overflow-hidden ${className}`}>
+      <FormCardHeader
+        icon={icon}
+        heading="h1"
+        title={title}
+        subtitle={subtitle}
+        action={action}
+        leading={backButton}
+      />
+    </section>
   )
 }
 

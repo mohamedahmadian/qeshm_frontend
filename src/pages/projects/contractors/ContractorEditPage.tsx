@@ -31,6 +31,7 @@ export function ContractorEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Building2}
         title={t('contractors.edit')}
         subtitle={<EntityNameSubtitle name={query.data.name} icon={Building2} />}
       />

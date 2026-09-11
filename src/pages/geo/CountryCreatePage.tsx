@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,7 +12,7 @@ export function CountryCreatePage() {
 
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('countries.create')} subtitle={t('countries.createSubtitle')} />
+      <PageHeader icon={Globe} title={t('countries.create')} subtitle={t('countries.createSubtitle')} />
       <CountryForm
         onSubmit={async (payload) => {
           await api.post('/countries', payload)

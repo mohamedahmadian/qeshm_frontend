@@ -1,3 +1,4 @@
+import { Store } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -12,7 +13,7 @@ export function RestaurantCreatePage() {
 
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('restaurants.create')} subtitle={t('restaurants.createSubtitle')} />
+      <PageHeader icon={Store} title={t('restaurants.create')} subtitle={t('restaurants.createSubtitle')} />
       <RestaurantForm
         onSubmit={async (payload) => {
           const { data } = await api.post<{ id: string }>('/restaurants', payload)

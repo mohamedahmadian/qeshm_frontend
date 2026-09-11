@@ -76,6 +76,7 @@ export function ContractorTeamListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Users}
         title={t('contractorTeam.title')}
         subtitle={<EntityNameSubtitle name={contractor.name} icon={Users} />}
         action={
@@ -159,6 +160,7 @@ export function ContractorTeamCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Users}
         title={t('contractorTeam.create')}
         subtitle={<EntityNameSubtitle name={contractor.name} icon={Users} />}
       />
@@ -198,6 +200,7 @@ export function ContractorTeamEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Users}
         title={t('contractorTeam.edit')}
         subtitle={<EntityNameSubtitle name={fullName} icon={UserRound} />}
       />
@@ -241,6 +244,7 @@ export function ContractorTeamDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Users}
         title={t('contractorTeam.details')}
         subtitle={<EntityNameSubtitle name={fullName} icon={UserRound} />}
       />

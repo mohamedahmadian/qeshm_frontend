@@ -34,6 +34,7 @@ export function FoodDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={UtensilsCrossed}
         title={t('foods.details')}
         subtitle={<EntityNameSubtitle name={food.name} icon={UtensilsCrossed} />}
       />

@@ -74,6 +74,7 @@ export function ContractorPaymentListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Wallet}
         title={t('contractorPayments.title')}
         subtitle={<EntityNameSubtitle name={contractor.name} icon={Wallet} />}
         action={
@@ -153,6 +154,7 @@ export function ContractorPaymentCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Wallet}
         title={t('contractorPayments.create')}
         subtitle={<EntityNameSubtitle name={contractor.name} icon={Wallet} />}
       />
@@ -192,6 +194,7 @@ export function ContractorPaymentEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Wallet}
         title={t('contractorPayments.edit')}
         subtitle={<EntityNameSubtitle name={formatDate(query.data.paidAt, locale)} icon={Wallet} />}
       />
@@ -235,6 +238,7 @@ export function ContractorPaymentDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Wallet}
         title={t('contractorPayments.details')}
         subtitle={<EntityNameSubtitle name={formatDate(payment.paidAt, locale)} icon={Wallet} />}
       />

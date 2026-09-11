@@ -42,6 +42,7 @@ export function RoleDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Shield}
         title={t('accessRoles.details')}
         subtitle={<EntityNameSubtitle name={role.name} icon={Shield} />}
       />

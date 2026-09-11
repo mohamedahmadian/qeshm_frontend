@@ -104,6 +104,7 @@ export function UserDetailPage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
+        icon={UserRound}
         title={employeeView ? t('employees.details') : t('users.details')}
         subtitle={<EntityNameSubtitle name={user.fullName} icon={UserRound} />}
       />

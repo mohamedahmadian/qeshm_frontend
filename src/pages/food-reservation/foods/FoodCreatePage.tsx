@@ -1,3 +1,4 @@
+import { UtensilsCrossed } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -12,7 +13,7 @@ export function FoodCreatePage() {
 
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('foods.create')} subtitle={t('foods.createSubtitle')} />
+      <PageHeader icon={UtensilsCrossed} title={t('foods.create')} subtitle={t('foods.createSubtitle')} />
       <FoodForm
         onSubmit={async (payload) => {
           const { data } = await api.post<{ id: string }>('/foods', payload)

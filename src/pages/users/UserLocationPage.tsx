@@ -1,4 +1,4 @@
-import { History, UserRound } from 'lucide-react'
+import { History, UserRound, MapPin } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -34,6 +34,7 @@ export function UserLocationPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={MapPin}
         title={t('location.register')}
         subtitle={<EntityNameSubtitle name={query.data.fullName} icon={UserRound} />}
         action={

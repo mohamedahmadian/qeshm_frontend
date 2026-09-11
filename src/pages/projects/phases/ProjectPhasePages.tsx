@@ -90,6 +90,7 @@ export function ProjectPhaseListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Flag}
         title={t('projectPhases.title')}
         subtitle={<EntityNameSubtitle name={project.systemName} icon={Flag} />}
         action={
@@ -229,6 +230,7 @@ export function ProjectPhaseCreatePage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Flag}
         title={t('projectPhases.create')}
         subtitle={<EntityNameSubtitle name={project.systemName} icon={Flag} />}
       />
@@ -267,6 +269,7 @@ export function ProjectPhaseEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Flag}
         title={t('projectPhases.edit')}
         subtitle={<EntityNameSubtitle name={query.data.name} icon={Flag} />}
       />
@@ -306,6 +309,7 @@ export function ProjectPhaseDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Flag}
         title={t('projectPhases.details')}
         subtitle={<EntityNameSubtitle name={phase.name} icon={Flag} />}
       />

@@ -33,6 +33,7 @@ export function CityDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={MapPin}
         title={t('cities.details')}
         subtitle={<EntityNameSubtitle name={name(city)} icon={MapPin} />}
       />

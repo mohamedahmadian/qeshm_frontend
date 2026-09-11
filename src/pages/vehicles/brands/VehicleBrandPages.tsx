@@ -52,6 +52,7 @@ export function VehicleBrandListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
+        icon={Tags}
         title={t('menus.vehicleBrands')}
         subtitle={t('vehicleBrands.subtitle')}
         action={
@@ -130,7 +131,7 @@ export function VehicleBrandCreatePage() {
   const navigate = useNavigate()
   return (
     <div className={formShellClassName}>
-      <PageHeader title={t('vehicleBrands.create')} subtitle={t('vehicleBrands.createSubtitle')} />
+      <PageHeader icon={Tags} title={t('vehicleBrands.create')} subtitle={t('vehicleBrands.createSubtitle')} />
       <VehicleBrandForm
         onSubmit={async (payload) => {
           const { data } = await api.post<{ id: string }>('/vehicle-brands', payload)
@@ -160,6 +161,7 @@ export function VehicleBrandEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Tags}
         title={t('vehicleBrands.edit')}
         subtitle={<EntityNameSubtitle name={query.data.name} icon={Tags} />}
       />
@@ -196,6 +198,7 @@ export function VehicleBrandDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
+        icon={Tags}
         title={t('vehicleBrands.details')}
         subtitle={<EntityNameSubtitle name={item.name} icon={Tags} />}
       />

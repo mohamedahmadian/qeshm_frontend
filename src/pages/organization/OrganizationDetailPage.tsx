@@ -36,6 +36,7 @@ export function OrganizationDetailPage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
+        icon={Landmark}
         title={t('organization.details')}
         subtitle={<EntityNameSubtitle name={organization.name} icon={Landmark} />}
       />

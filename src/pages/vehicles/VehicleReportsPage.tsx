@@ -115,7 +115,7 @@ export function VehicleReportsPage() {
 
   return (
     <div className={listShellClassName}>
-      <PageHeader title={t('menus.vehicleReports')} subtitle={t('vehicleReports.subtitle')} />
+      <PageHeader icon={ChartColumn} title={t('menus.vehicleReports')} subtitle={t('vehicleReports.subtitle')} />
       <SearchBar
         term={term}
         onTermChange={setTerm}
