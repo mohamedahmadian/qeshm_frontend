@@ -174,7 +174,10 @@ export function VehicleAssignmentForm({
                   setPersonId('')
                 }}
                 placeholder={t('vehicleAssignments.selectUnit')}
-                options={(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name }))}
+                options={(units.data ?? []).map((unit) => ({
+                  value: unit.id,
+                  label: unit.pathLabel || unit.name,
+                }))}
               />
             </FormField>
             <FormField icon={UserRound} label={t('vehicleAssignments.person')} htmlFor="assignmentMember">
@@ -209,7 +212,10 @@ export function VehicleAssignmentForm({
         {type === vehicleAssignmentTypes.PERSON && organizationUnitId ? (
           <p className="text-xs leading-6 text-ink-500">
             {t('vehicleAssignments.personUnitHint', {
-              unit: units.data?.find((unit) => unit.id === organizationUnitId)?.name ?? '',
+              unit: (() => {
+                const unit = units.data?.find((item) => item.id === organizationUnitId)
+                return unit?.pathLabel || unit?.name || ''
+              })(),
             })}
           </p>
         ) : null}

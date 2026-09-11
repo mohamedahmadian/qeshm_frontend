@@ -1,4 +1,15 @@
-import { Building2, MapPin, MessageCircle, Phone, Send, Share2, Type, UtensilsCrossed } from 'lucide-react'
+import {
+  Building2,
+  MapPin,
+  MessageCircle,
+  Network,
+  Phone,
+  Send,
+  Share2,
+  Tags,
+  Type,
+  UtensilsCrossed,
+} from 'lucide-react'
 import { type FormEvent, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -10,10 +21,19 @@ import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { api, getApiErrorMessage } from '../../../lib/api'
 import { toLatinDigits } from '../../../lib/datetime'
 import { QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../../lib/geo'
-import type { ManagedUser, OrganizationUnit } from '../../../types/app'
+import {
+  organizationUnitKindOrder,
+  organizationUnitKinds,
+  type ManagedUser,
+  type OrganizationUnit,
+  type OrganizationUnitKind,
+} from '../../../types/app'
+import { descendantUnitIds, organizationUnitPathLabel } from '../organization-unit-label'
 
 export type OrganizationUnitPayload = {
   name: string
+  kind: OrganizationUnitKind
+  parentId: string | null
   phone: string | null
   address: string | null
   latitude: number | null
@@ -52,6 +72,10 @@ export function OrganizationUnitForm({
 }) {
   const { t } = useTranslation()
   const [name, setName] = useState(initial?.name ?? '')
+  const [kind, setKind] = useState<OrganizationUnitKind>(
+    initial?.kind ?? organizationUnitKinds.DEPARTMENT,
+  )
+  const [parentId, setParentId] = useState(initial?.parentId ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
   const [address, setAddress] = useState(initial?.address ?? '')
   const [latitude, setLatitude] = useState(toCoordString(initial?.latitude))
@@ -65,6 +89,13 @@ export function OrganizationUnitForm({
   const [nutritionRepId, setNutritionRepId] = useState(initial?.nutritionRepId ?? '')
   const [saving, setSaving] = useState(false)
 
+  const units = useQuery({
+    queryKey: ['organization-units', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<OrganizationUnit[]>('/organization/units')
+      return data
+    },
+  })
   const employees = useQuery({
     queryKey: ['users', 'unit', initial?.id],
     enabled: Boolean(initial?.id),
@@ -75,6 +106,10 @@ export function OrganizationUnitForm({
       return data
     },
   })
+  const parentOptions = useMemo(() => {
+    const blocked = initial?.id ? descendantUnitIds(units.data ?? [], initial.id) : new Set<string>()
+    return (units.data ?? []).filter((unit) => unit.id !== initial?.id && !blocked.has(unit.id))
+  }, [initial?.id, units.data])
 
   const hasPin = toOptionalNumber(latitude) != null && toOptionalNumber(longitude) != null
   const focus = useMemo(() => {
@@ -98,6 +133,8 @@ export function OrganizationUnitForm({
     try {
       await onSubmit({
         name: name.trim(),
+        kind,
+        parentId: emptyToNull(parentId),
         phone: digits || null,
         address: emptyToNull(address),
         latitude: toOptionalNumber(latitude),
@@ -125,6 +162,36 @@ export function OrganizationUnitForm({
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
         <FormSectionTitle icon={Building2}>{t('organizationUnits.section')}</FormSectionTitle>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField icon={Tags} label={t('organizationUnits.kind')} htmlFor="unitKind">
+            <SearchSelect
+              id="unitKind"
+              value={kind}
+              required
+              onChange={(next) => setKind(next as OrganizationUnitKind)}
+              placeholder={t('organizationUnits.selectKind')}
+              options={organizationUnitKindOrder.map((item) => ({
+                value: item,
+                label: t(`organizationUnits.kinds.${item}`),
+              }))}
+            />
+          </FormField>
+          <FormField icon={Network} label={t('organizationUnits.parent')} htmlFor="unitParent">
+            <SearchSelect
+              id="unitParent"
+              value={parentId}
+              onChange={setParentId}
+              placeholder={t('organizationUnits.selectParent')}
+              options={[
+                { value: '', label: t('organizationUnits.noParent') },
+                ...parentOptions.map((unit) => ({
+                  value: unit.id,
+                  label: organizationUnitPathLabel(unit),
+                })),
+              ]}
+            />
+          </FormField>
+        </div>
         <FormField icon={Type} label={t('organizationUnits.name')} htmlFor="unitName">
           <input
             id="unitName"

@@ -178,7 +178,10 @@ export function VehicleReportsPage() {
                 placeholder={t('vehicles.filterUnit')}
                 options={[
                   { value: '', label: t('vehicles.allUnits') },
-                  ...(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name })),
+                  ...(units.data ?? []).map((unit) => ({
+                    value: unit.id,
+                    label: unit.pathLabel || unit.name,
+                  })),
                 ]}
               />
             </FormField>

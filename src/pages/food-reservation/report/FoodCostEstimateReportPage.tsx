@@ -207,7 +207,10 @@ export function FoodCostEstimateReportPage() {
                 placeholder={t('foodReservations.filterUnit')}
                 options={[
                   { value: '', label: t('foodReservations.allUnits') },
-                  ...(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name })),
+                  ...(units.data ?? []).map((unit) => ({
+                    value: unit.id,
+                    label: unit.pathLabel || unit.name,
+                  })),
                 ]}
               />
             </FormField>

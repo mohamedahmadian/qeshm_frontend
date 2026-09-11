@@ -1,5 +1,5 @@
 import { Briefcase, Building2, KeyRound, Phone, UserRound } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -34,6 +34,7 @@ export function EmployeeForm({
   const [orgUnitId, setOrgUnitId] = useState('')
   const [positionId, setPositionId] = useState('')
   const [saving, setSaving] = useState(false)
+  const passwordTouched = useRef(false)
 
   const units = useQuery({
     queryKey: ['organization-units', 'lookup'],
@@ -58,13 +59,20 @@ export function EmployeeForm({
       toast.error(t('users.phoneRequired'))
       return
     }
+    const resolvedPassword = passwordTouched.current
+      ? toLatinDigits(password)
+      : normalized
+    if (resolvedPassword.length < 8) {
+      toast.error(t('users.passwordMin'))
+      return
+    }
     setSaving(true)
     try {
       await onSubmit({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         phone: normalized,
-        password,
+        password: resolvedPassword,
         username: normalized,
         orgUnitId,
         positionId,
@@ -79,68 +87,81 @@ export function EmployeeForm({
   return (
     <FormCard icon={UserRound} title={t('employees.create')} subtitle={t('employees.createSubtitle')}>
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
-        <FormField icon={UserRound} label={t('users.firstName')} htmlFor="employeeFirstName">
-          <input
-            id="employeeFirstName"
-            className={fieldClassName}
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            required
-            minLength={1}
-          />
-        </FormField>
-        <FormField icon={UserRound} label={t('users.lastName')} htmlFor="employeeLastName">
-          <input
-            id="employeeLastName"
-            className={fieldClassName}
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            required
-            minLength={1}
-          />
-        </FormField>
-        <FormField icon={Phone} label={t('users.phone')} htmlFor="employeePhone">
-          <input
-            id="employeePhone"
-            inputMode="numeric"
-            className={`${fieldClassName} digit-field`}
-            value={phone}
-            onChange={(e) => setPhone(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 11))}
-            required
-          />
-        </FormField>
-        <FormField icon={KeyRound} label={t('employees.password')} htmlFor="employeePassword">
-          <input
-            id="employeePassword"
-            type="password"
-            className={`${fieldClassName} latin-field`}
-            dir="ltr"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-          />
-        </FormField>
-        <FormField icon={Building2} label={t('users.orgUnit')} htmlFor="employeeUnit">
-          <SearchSelect
-            id="employeeUnit"
-            value={orgUnitId}
-            required
-            onChange={setOrgUnitId}
-            placeholder={t('users.selectOrgUnit')}
-            options={(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name }))}
-          />
-        </FormField>
-        <FormField icon={Briefcase} label={t('users.position')} htmlFor="employeePosition">
-          <SearchSelect
-            id="employeePosition"
-            value={positionId}
-            required
-            onChange={setPositionId}
-            placeholder={t('users.selectPosition')}
-            options={(positions.data ?? []).map((item) => ({ value: item.id, label: item.name }))}
-          />
-        </FormField>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField icon={UserRound} label={t('users.firstName')} htmlFor="employeeFirstName">
+            <input
+              id="employeeFirstName"
+              className={fieldClassName}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+              minLength={1}
+            />
+          </FormField>
+          <FormField icon={UserRound} label={t('users.lastName')} htmlFor="employeeLastName">
+            <input
+              id="employeeLastName"
+              className={fieldClassName}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+              minLength={1}
+            />
+          </FormField>
+          <FormField icon={Phone} label={t('users.phone')} htmlFor="employeePhone">
+            <input
+              id="employeePhone"
+              inputMode="numeric"
+              className={`${fieldClassName} digit-field`}
+              value={phone}
+              onChange={(e) => {
+                const next = toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 11)
+                setPhone(next)
+                if (!passwordTouched.current) setPassword(next)
+              }}
+              required
+            />
+          </FormField>
+          <FormField icon={KeyRound} label={t('employees.password')} htmlFor="employeePassword">
+            <input
+              id="employeePassword"
+              type="password"
+              className={`${fieldClassName} latin-field`}
+              dir="ltr"
+              value={password}
+              onChange={(e) => {
+                passwordTouched.current = true
+                setPassword(e.target.value)
+              }}
+              minLength={8}
+              autoComplete="new-password"
+            />
+            <p className="text-xs text-ink-500">{t('employees.passwordHint')}</p>
+          </FormField>
+          <FormField icon={Building2} label={t('users.orgUnit')} htmlFor="employeeUnit">
+            <SearchSelect
+              id="employeeUnit"
+              value={orgUnitId}
+              required
+              onChange={setOrgUnitId}
+              placeholder={t('users.selectOrgUnit')}
+              options={(units.data ?? []).map((unit) => ({
+              value: unit.id,
+              label: unit.pathLabel || unit.name,
+            }))}
+            />
+          </FormField>
+          <FormField icon={Briefcase} label={t('users.position')} htmlFor="employeePosition">
+            <SearchSelect
+              id="employeePosition"
+              value={positionId}
+              required
+              onChange={setPositionId}
+              placeholder={t('users.selectPosition')}
+              options={(positions.data ?? []).map((item) => ({ value: item.id, label: item.name }))}
+            />
+          </FormField>
+        </div>
         <FormActions
           submitLabel={t('employees.save')}
           cancelLabel={t('employees.cancel')}

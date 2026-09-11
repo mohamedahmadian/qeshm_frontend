@@ -3728,9 +3728,34 @@ export type OrganizationPosition = {
   _count?: { users: number };
 };
 
+export const organizationUnitKinds = {
+  BOARD: 'BOARD',
+  ADVISORS: 'ADVISORS',
+  OFFICE: 'OFFICE',
+  VICE: 'VICE',
+  MANAGEMENT: 'MANAGEMENT',
+  DEPARTMENT: 'DEPARTMENT',
+} as const;
+
+export type OrganizationUnitKind =
+  (typeof organizationUnitKinds)[keyof typeof organizationUnitKinds];
+
+export const organizationUnitKindOrder: OrganizationUnitKind[] = [
+  organizationUnitKinds.BOARD,
+  organizationUnitKinds.ADVISORS,
+  organizationUnitKinds.OFFICE,
+  organizationUnitKinds.VICE,
+  organizationUnitKinds.MANAGEMENT,
+  organizationUnitKinds.DEPARTMENT,
+];
+
 export type OrganizationUnit = {
   id: string;
   name: string;
+  kind: OrganizationUnitKind;
+  parentId: string | null;
+  parent: { id: string; name: string; kind: OrganizationUnitKind } | null;
+  pathLabel: string;
   phone: string | null;
   address: string | null;
   latitude: number | null;
@@ -3745,7 +3770,7 @@ export type OrganizationUnit = {
   nutritionRep: { id: string; firstName: string; lastName: string; fullName: string } | null;
   createdAt: string;
   updatedAt: string;
-  _count?: { employees: number; restaurants: number };
+  _count?: { employees: number; restaurants: number; children: number };
 };
 
 export const foodReservationStatuses = {

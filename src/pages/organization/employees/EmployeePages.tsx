@@ -104,7 +104,10 @@ export function EmployeeListPage() {
               placeholder={t('employees.filterUnit')}
               options={[
                 { value: '', label: t('employees.allUnits') },
-                ...(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name })),
+                ...(units.data ?? []).map((unit) => ({
+                  value: unit.id,
+                  label: unit.pathLabel || unit.name,
+                })),
               ]}
             />
           </>
