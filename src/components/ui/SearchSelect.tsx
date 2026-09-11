@@ -14,8 +14,8 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { fieldClassName } from './Form'
 
-export type SearchSelectOption = {
-  value: string
+export type SearchSelectOption<T extends string = string> = {
+  value: T
   label: string
   disabled?: boolean
 }
@@ -129,7 +129,7 @@ function labelsMatch(left: string, right: string) {
   return left.trim().toLowerCase() === right.trim().toLowerCase()
 }
 
-export function SearchSelect({
+export function SearchSelect<T extends string = string>({
   id,
   name,
   value,
@@ -143,9 +143,9 @@ export function SearchSelect({
 }: {
   id?: string
   name?: string
-  value: string
-  onChange: (value: string) => void
-  options: SearchSelectOption[]
+  value: T
+  onChange: (value: T) => void
+  options: SearchSelectOption<T>[]
   placeholder?: string
   required?: boolean
   disabled?: boolean
@@ -183,7 +183,7 @@ export function SearchSelect({
 
   const listItems = useMemo(() => {
     const items: Array<
-      | { kind: 'option'; option: SearchSelectOption }
+      | { kind: 'option'; option: SearchSelectOption<T> }
       | { kind: 'create'; query: string }
     > = filtered.map((option) => ({ kind: 'option' as const, option }))
     if (canCreate) {
@@ -287,7 +287,7 @@ export function SearchSelect({
     }
   }, [open, sheet])
 
-  function selectOption(option: SearchSelectOption) {
+  function selectOption(option: SearchSelectOption<T>) {
     if (option.disabled) return
     onChange(option.value)
     setOpen(false)
