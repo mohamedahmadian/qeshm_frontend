@@ -29,7 +29,6 @@ import {
   ProjectLifecycleBadge,
   ProjectOperatorsCell,
   ProjectProgress,
-  ProjectUrl,
   withCurrent,
 } from './ProjectShared'
 
@@ -244,13 +243,6 @@ export function ProjectsListPage() {
                 onSort={onSort}
               />
               <SortableTh
-                column="progressPercent"
-                label={t('projects.progress')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
                 column="companyName"
                 label={t('projects.companyName')}
                 sortBy={sortBy}
@@ -258,8 +250,8 @@ export function ProjectsListPage() {
                 onSort={onSort}
               />
               <SortableTh
-                column="systemUrl"
-                label={t('projects.systemUrl')}
+                column="progressPercent"
+                label={t('projects.progress')}
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
@@ -281,12 +273,9 @@ export function ProjectsListPage() {
                 <td className="px-4 py-3">
                   <ProjectOperatorsCell operators={item.operators} />
                 </td>
-                <td className="px-4 py-3">
-                  <ProjectProgress value={item.progressPercent} />
-                </td>
                 <td className="px-4 py-3">{item.companyName || '—'}</td>
                 <td className="px-4 py-3">
-                  <ProjectUrl value={item.systemUrl} />
+                  <ProjectProgress value={item.progressPercent} />
                 </td>
                 <td className="px-4 py-3">
                   <ProjectLifecycleBadge value={item.status} />
