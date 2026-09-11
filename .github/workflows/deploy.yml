@@ -40,10 +40,13 @@ jobs:
             echo "📌 New commit:"
             echo "$NEW_COMMIT"
 
-            echo "♻️ Restarting Qeshm Frontend..."
-            pm2 restart qeshm-frontend
+            echo "📦 Installing dependencies..."
+            npm ci
 
-            echo "📊 PM2 status:"
-            pm2 status qeshm-frontend
+            echo "🏗️ Building frontend..."
+            npm run build
+
+            echo "📁 Checking dist..."
+            ls -lah dist
 
             echo "✅ Qeshm Frontend deployment completed successfully!"
