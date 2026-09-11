@@ -2,7 +2,7 @@ import { ChevronDown } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { languages, type AppLanguage } from '../../i18n'
+import { selectableLanguages } from '../../i18n'
 import { usePreferredLocale } from '../../hooks/usePreferredLocale'
 
 const MENU_GAP = 4
@@ -108,7 +108,7 @@ function LocaleMenu({ tone }: { tone: 'light' | 'onDark' }) {
               }}
               className="fixed z-[80] overflow-hidden rounded-2xl border border-line bg-white py-1 shadow-[0_16px_40px_rgba(20,40,40,0.12)]"
             >
-              {(Object.keys(languages) as AppLanguage[]).map((code) => {
+              {selectableLanguages().map((code) => {
                 const selected = locale === code
                 return (
                   <button

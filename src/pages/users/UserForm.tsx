@@ -38,7 +38,7 @@ import {
 } from '../../components/ui/Form'
 import { FormCard } from '../../components/ui/FormLayout'
 import { UniqueFieldWrap, type UniqueCheckStatus } from '../../components/ui/UniqueFieldStatus'
-import { languages, type AppLanguage } from '../../i18n'
+import { selectableLanguages, selectableLocale } from '../../i18n'
 import { api, getApiErrorMessage, getImageUrl } from '../../lib/api'
 import { parseDigitString, toLatinDigits } from '../../lib/datetime'
 import { useGeoName } from '../../lib/geo'
@@ -151,7 +151,7 @@ export function UserForm({
   const [firstName, setFirstName] = useState(initial?.firstName ?? '')
   const [lastName, setLastName] = useState(initial?.lastName ?? '')
   const [password, setPassword] = useState('')
-  const [locale, setLocale] = useState(initial?.locale ?? 'fa')
+  const [locale, setLocale] = useState(selectableLocale(initial?.locale))
   const [status, setStatus] = useState<UserStatus>(initial?.status ?? userStatuses.ACTIVE)
   const [gender, setGender] = useState(initial?.gender ?? '')
   const [nationalId, setNationalId] = useState(initial?.nationalId ?? '')
@@ -844,12 +844,9 @@ export function UserForm({
                 id="locale"
                 value={locale}
                 onChange={setLocale}
-                options={(Object.keys(languages) as AppLanguage[]).map((code) => ({
+                options={selectableLanguages().map((code) => ({
                   value: code,
-                  label: languages[code].enabled
-                    ? t(`languages.${code}`)
-                    : `${t(`languages.${code}`)} (${t('settings.comingSoon')})`,
-                  disabled: !languages[code].enabled,
+                  label: t(`languages.${code}`),
                 }))}
               />
             </FormField>

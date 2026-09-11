@@ -12,13 +12,13 @@ import {
 } from '../components/ui/Form'
 import { FormCard, formCardBodyClassName } from '../components/ui/FormLayout'
 import { SearchSelect } from '../components/ui/SearchSelect'
-import { languages, type AppLanguage } from '../i18n'
+import { selectableLanguages, selectableLocale } from '../i18n'
 import { api } from '../lib/api'
 
 export function SettingsPage() {
   const { t } = useTranslation()
   const { user, refresh } = useAuth()
-  const [locale, setLocale] = useState(user?.locale ?? 'fa')
+  const [locale, setLocale] = useState(selectableLocale(user?.locale))
   const [saving, setSaving] = useState(false)
 
   async function onSubmit(event: FormEvent) {
@@ -45,12 +45,9 @@ export function SettingsPage() {
               id="locale"
               value={locale}
               onChange={setLocale}
-              options={(Object.keys(languages) as AppLanguage[]).map((code) => ({
+              options={selectableLanguages().map((code) => ({
                 value: code,
-                label: languages[code].enabled
-                  ? t(`languages.${code}`)
-                  : `${t(`languages.${code}`)} (${t('settings.comingSoon')})`,
-                disabled: !languages[code].enabled,
+                label: t(`languages.${code}`),
               }))}
             />
           </FormField>

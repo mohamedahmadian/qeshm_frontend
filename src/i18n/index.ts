@@ -9,8 +9,8 @@ import ur from "./locales/ur.json";
 export const languages = {
   fa: { dir: "rtl" as const, enabled: true },
   ar: { dir: "rtl" as const, enabled: true },
-  ur: { dir: "rtl" as const, enabled: true },
-  hi: { dir: "ltr" as const, enabled: true },
+  ur: { dir: "rtl" as const, enabled: false },
+  hi: { dir: "ltr" as const, enabled: false },
   en: { dir: "ltr" as const, enabled: true },
 };
 
@@ -22,10 +22,19 @@ export function isAppLanguage(value: string): value is AppLanguage {
   return value in languages;
 }
 
+export function selectableLanguages(): AppLanguage[] {
+  return (Object.keys(languages) as AppLanguage[]).filter((code) => languages[code].enabled);
+}
+
+export function selectableLocale(value: string | null | undefined): AppLanguage {
+  if (value && isAppLanguage(value) && languages[value].enabled) return value;
+  return "fa";
+}
+
 export function getStoredPreferredLocale(): AppLanguage {
   try {
     const value = localStorage.getItem(PREFERRED_LOCALE_KEY);
-    if (value && isAppLanguage(value)) return value;
+    if (value && isAppLanguage(value) && languages[value].enabled) return value;
   } catch {
     // ignore
   }
