@@ -38,7 +38,7 @@ export function CheckboxField({
           : `gap-3 rounded-2xl border px-3 py-2.5 text-sm ${
               filled
                 ? 'border-teal-200 bg-teal-50 text-ink-900'
-                : 'border-line bg-cream-50 text-ink-800 hover:border-teal-200 hover:bg-white'
+                : 'border-teal-200 bg-white text-ink-800 shadow-[0_2px_8px_rgba(46,189,182,0.14)] hover:border-teal-300 hover:bg-white'
             }`
       } ${inactive ? 'cursor-not-allowed' : 'cursor-pointer'} ${disabled ? 'opacity-60' : ''}`}
     >
@@ -57,7 +57,7 @@ export function CheckboxField({
             ? 'border-teal-500 bg-teal-500 text-white shadow-sm'
             : indeterminate
               ? 'border-teal-400 bg-teal-100 text-teal-700'
-              : 'border-line bg-white text-transparent'
+              : 'border-teal-400 bg-white text-transparent shadow-[0_0_0_3px_rgba(94,212,206,0.28),0_2px_8px_rgba(46,189,182,0.22)]'
         }`}
         aria-hidden
       >

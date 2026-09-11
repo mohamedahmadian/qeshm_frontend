@@ -7,23 +7,35 @@ export const cardClassName =
 
 export type FormTone = 'teal' | 'mint' | 'ink'
 
-export const formToneClass: Record<FormTone, { wrap: string; icon: string }> = {
+export const formToneClass: Record<FormTone, { wrap: string; icon: string; factIcon: string }> = {
   teal: {
     wrap: 'border-teal-100 bg-gradient-to-b from-teal-50 to-white',
     icon: 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]',
+    factIcon: 'bg-teal-100 text-teal-500',
   },
   mint: {
     wrap: 'border-mint-100 bg-gradient-to-b from-mint-50 to-white',
     icon: 'bg-mint-500 text-white shadow-[0_8px_16px_rgba(63,214,190),0.24)]',
+    factIcon: 'bg-mint-100 text-mint-500',
   },
   ink: {
     wrap: 'border-line bg-gradient-to-b from-cream-50 to-white',
     icon: 'bg-ink-700 text-white',
+    factIcon: 'bg-cream-100 text-ink-500',
   },
 }
 
 /** Body padding inside FormCard (around AppForm fields). */
 export const formCardBodyClassName = 'space-y-4 p-5 sm:p-6'
+
+function isFormCardInteractiveTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) return false
+  return Boolean(
+    target.closest(
+      'a, button, input, textarea, select, [role="button"], [data-enter-ignore], .leaflet-container',
+    ),
+  )
+}
 
 /**
  * Soft admin card with teal/mint gradient header.
@@ -37,6 +49,7 @@ export function FormCard({
   action,
   children,
   className = '',
+  onDoubleClick,
 }: {
   icon: LucideIcon
   title: ReactNode
@@ -45,9 +58,20 @@ export function FormCard({
   action?: ReactNode
   children: ReactNode
   className?: string
+  onDoubleClick?: () => void
 }) {
   return (
-    <section className={`${cardClassName} overflow-hidden ${className}`}>
+    <section
+      className={`${cardClassName} overflow-hidden ${className}`}
+      onDoubleClick={
+        onDoubleClick
+          ? (event) => {
+              if (isFormCardInteractiveTarget(event.target)) return
+              onDoubleClick()
+            }
+          : undefined
+      }
+    >
       <FormCardHeader
         icon={icon}
         title={title}
@@ -199,8 +223,8 @@ export function FormFactTile({
       onClick={canCopy ? () => copyDigits(copyValue) : undefined}
     >
       <span
-        className={`flex shrink-0 items-center justify-center ${colors.icon} ${
-          compact ? 'mt-px size-8 rounded-xl' : 'mt-0.5 size-10 rounded-2xl'
+        className={`flex shrink-0 items-center justify-center ${colors.factIcon} ${
+          compact ? 'mt-px size-7 rounded-lg' : 'mt-0.5 size-8 rounded-xl'
         }`}
       >
         <Icon className={compact ? 'size-3.5' : 'size-4'} aria-hidden />

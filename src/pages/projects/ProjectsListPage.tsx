@@ -29,6 +29,7 @@ import {
   ProjectLifecycleBadge,
   ProjectOperatorsCell,
   ProjectProgress,
+  operatorsColClassName,
   withCurrent,
 } from './ProjectShared'
 
@@ -241,6 +242,7 @@ export function ProjectsListPage() {
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
+                className={operatorsColClassName}
               />
               <SortableTh
                 column="companyName"
@@ -270,7 +272,7 @@ export function ProjectsListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{item.systemName}</td>
-                <td className="px-4 py-3">
+                <td className={`px-4 py-3 align-top ${operatorsColClassName}`}>
                   <ProjectOperatorsCell operators={item.operators} />
                 </td>
                 <td className="px-4 py-3">{item.companyName || '—'}</td>

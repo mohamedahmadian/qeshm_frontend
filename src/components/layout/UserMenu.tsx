@@ -43,7 +43,10 @@ export function UserMenu() {
         <ChevronDown className="size-4 shrink-0 text-ink-400" />
       </button>
       {open ? (
-        <div className="absolute end-0 top-full z-50 mt-2 w-56 min-w-full overflow-hidden rounded-2xl border border-line bg-white shadow-lg">
+        <div
+          role="menu"
+          className="absolute end-0 top-full z-50 mt-2 w-56 min-w-full overflow-hidden rounded-2xl border border-line bg-white shadow-lg"
+        >
           {user?.impersonating ? (
             <button
               type="button"

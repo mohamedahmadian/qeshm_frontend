@@ -601,6 +601,7 @@ export type Project = {
   endDate: string | null;
   latitude: number | null;
   longitude: number | null;
+  address: string | null;
   companyName: string | null;
   systemUrl: string | null;
   launchYear: number | null;

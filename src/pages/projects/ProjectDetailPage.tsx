@@ -66,7 +66,11 @@ export function ProjectDetailPage() {
         title={t('projects.details')}
         subtitle={<EntityNameSubtitle name={project.systemName} icon={FolderKanban} />}
       />
-      <FormCard icon={FolderKanban} title={project.systemName}>
+      <FormCard
+        icon={FolderKanban}
+        title={project.systemName}
+        onDoubleClick={() => navigate(`/projects/${project.id}/edit`)}
+      >
         <div className="space-y-6 p-5 sm:p-6">
           <FormSectionTitle icon={Landmark}>{t('projects.orgSection')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
@@ -189,6 +193,12 @@ export function ProjectDetailPage() {
           <FormSectionTitle icon={MapPin}>{t('projects.locationSection')}</FormSectionTitle>
           <FormFactTile
             icon={MapPin}
+            label={t('projects.address')}
+            value={project.address || '—'}
+            empty={!project.address}
+          />
+          <FormFactTile
+            icon={MapPin}
             label={t('projects.coordinates')}
             value={coords}
             empty={project.latitude == null || project.longitude == null}
@@ -208,6 +218,7 @@ export function ProjectDetailPage() {
         </div>
       </FormCard>
       <DetailActions
+        headerIcons
         editTo={`/projects/${project.id}/edit`}
         editLabel={t('common.edit')}
         deleteLabel={t('projects.delete')}

@@ -78,6 +78,7 @@ import {
   ProjectProgress,
   ProjectStatus as ProjectActiveBadge,
   ProjectUrl,
+  operatorsColClassName,
   projectOperatorsText,
   withCurrent,
 } from './ProjectShared'
@@ -578,6 +579,7 @@ export function ProjectLiveBoardPage() {
                     sortBy={sortBy}
                     sortDir={sortDir}
                     onSort={onSort}
+                    className={operatorsColClassName}
                   />
                   <SortableTh
                     column="companyName"
@@ -635,7 +637,7 @@ export function ProjectLiveBoardPage() {
                       <ProjectImportanceBadge value={item.importance} />
                     </td>
                     <td className="px-4 py-3">{item.mainContractor?.name || '—'}</td>
-                    <td className="px-4 py-3">
+                    <td className={`px-4 py-3 align-top ${operatorsColClassName}`}>
                       <ProjectOperatorsCell operators={item.operators} />
                     </td>
                     <td className="px-4 py-3">{item.companyName || '—'}</td>
@@ -1041,6 +1043,14 @@ function ProjectMapCard({
                   icon={Globe}
                   label={t('projects.systemUrl')}
                   value={<ProjectUrl value={project.systemUrl} />}
+                  compact
+                />
+              ) : null}
+              {project.address ? (
+                <FormFactTile
+                  icon={MapPin}
+                  label={t('projects.address')}
+                  value={project.address}
                   compact
                 />
               ) : null}

@@ -13,6 +13,8 @@ export function projectOperatorsText(operators?: { name: string }[]) {
   return operators.map((item) => item.name).join('، ')
 }
 
+export const operatorsColClassName = 'w-52 max-w-52'
+
 export function ProjectOperatorsCell({
   operators,
 }: {
@@ -22,11 +24,11 @@ export function ProjectOperatorsCell({
     return '—'
   }
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex min-w-0 w-full flex-col items-stretch gap-1">
       {operators.map((item) => (
         <span
           key={item.id}
-          className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-800"
+          className="block max-w-full break-words rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium leading-5 text-teal-800"
         >
           {item.name}
         </span>

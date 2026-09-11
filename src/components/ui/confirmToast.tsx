@@ -1,5 +1,5 @@
 import { AlertTriangle, Check, StickyNote, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button, FormField, fieldClassName } from './Form'
 
@@ -73,6 +73,16 @@ function ConfirmToastCard({
   const [value, setValue] = useState('')
   const inputId = `confirm-toast-${id}`
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || event.repeat || event.isComposing) return
+      event.preventDefault()
+      toast.dismiss(id)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [id])
+
   function submit() {
     const trimmed = value.trim()
     const minLength = prompt?.minLength ?? 1
@@ -85,7 +95,10 @@ function ConfirmToastCard({
   }
 
   return (
-    <div className="w-[min(100vw-2rem,22rem)] rounded-[22px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(20,40,40,0.14)]">
+    <div
+      data-confirm-toast=""
+      className="w-[min(100vw-2rem,22rem)] rounded-[22px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(20,40,40,0.14)]"
+    >
       <div className="flex items-start gap-3">
         <div
           className={`flex size-10 shrink-0 items-center justify-center rounded-2xl ${

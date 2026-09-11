@@ -1,8 +1,11 @@
 import { ArrowRight, Check, Ellipsis, type LucideIcon, Pencil, Trash2, X } from 'lucide-react'
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -15,9 +18,13 @@ import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { CopyableDigits } from './CopyableDigits'
 import { cardClassName, FormCardHeader } from './FormLayout'
+import { useEscapeBack, useEscapeCancel } from '../../hooks/useEscapeLeave'
 import { useNavigationHistory } from '../../lib/navigation-history'
 
 export { cardClassName }
+
+const PAGE_HEADER_ACTIONS_SLOT_ID = 'page-header-actions'
+const AppFormContext = createContext<string | null>(null)
 
 const variants = {
   primary:
@@ -179,6 +186,14 @@ function joinPath(segments: string[]) {
   return `/${segments.join('/')}`
 }
 
+function isEditOrDetailsPath(pathname: string) {
+  const segments = pathname.replace(/\/+$/, '').split('/').filter(Boolean)
+  const last = segments[segments.length - 1]
+  if (!last) return false
+  if (last === 'edit' || last === 'new') return true
+  return looksLikeId(last) && segments.length > 1
+}
+
 /** مسیر مرحلهٔ قبل یا فهرست والد از روی URL فعلی */
 function resolvePageBackTo(pathname: string): string | undefined {
   const segments = pathname.replace(/\/+$/, '').split('/').filter(Boolean)
@@ -222,6 +237,9 @@ export function PageHeader({
   const { goBack } = useNavigationHistory()
   const fallback = backTo === false ? undefined : backTo ?? resolvePageBackTo(pathname)
   const showBack = Boolean(fallback)
+  useEscapeBack(showBack && isEditOrDetailsPath(pathname), () => {
+    if (fallback) goBack(fallback)
+  })
   const backButton = showBack ? (
     <button
       type="button"
@@ -240,7 +258,12 @@ export function PageHeader({
         heading="h1"
         title={title}
         subtitle={subtitle}
-        action={action}
+        action={
+          <div className="flex items-center gap-2">
+            {action}
+            <div id={PAGE_HEADER_ACTIONS_SLOT_ID} className="flex items-center gap-2" />
+          </div>
+        }
         leading={backButton}
       />
     </section>
@@ -380,12 +403,15 @@ export function AppForm({
   onSubmit,
   children,
   autoFocusFirst,
+  id,
   ...props
 }: FormHTMLAttributes<HTMLFormElement> & {
   /** Focus the first field on mount. Defaults to true on `/…/new` create routes. */
   autoFocusFirst?: boolean
 }) {
   const formRef = useRef<HTMLFormElement>(null)
+  const generatedId = useId()
+  const formId = id ?? `app-form-${generatedId.replace(/:/g, '')}`
   const location = useLocation()
   const shouldFocus = autoFocusFirst ?? isCreateFormPath(location.pathname)
 
@@ -398,21 +424,108 @@ export function AppForm({
   }, [shouldFocus, location.pathname])
 
   return (
-    <form
-      {...props}
-      ref={formRef}
-      onSubmit={(event) => {
-        event.preventDefault()
-        onSubmit?.(event)
-      }}
-      onKeyDown={(event) => {
-        onKeyDown?.(event)
-        if (event.defaultPrevented) return
-        handleFormEnter(event)
-      }}
-    >
-      {children}
-    </form>
+    <AppFormContext.Provider value={formId}>
+      <form
+        {...props}
+        id={formId}
+        ref={formRef}
+        onSubmit={(event) => {
+          event.preventDefault()
+          onSubmit?.(event)
+        }}
+        onKeyDown={(event) => {
+          onKeyDown?.(event)
+          if (event.defaultPrevented) return
+          handleFormEnter(event)
+        }}
+      >
+        {children}
+      </form>
+    </AppFormContext.Provider>
+  )
+}
+
+function PageHeaderActionsPortal({ children }: { children: ReactNode }) {
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    setSlot(document.getElementById(PAGE_HEADER_ACTIONS_SLOT_ID))
+  }, [])
+  if (!slot) return null
+  return createPortal(children, slot)
+}
+
+/** آیکون ویرایش و حذف در هدر صفحه (جزئیات) */
+export function HeaderDetailActions({
+  editTo,
+  editLabel,
+  deleteLabel,
+  onDelete,
+}: {
+  editTo: string
+  editLabel?: string
+  deleteLabel?: string
+  onDelete?: () => void
+}) {
+  const { t } = useTranslation()
+  const edit = editLabel ?? t('common.edit')
+  const remove = deleteLabel ?? t('common.delete')
+  return (
+    <div className="flex flex-nowrap items-center gap-2 print:hidden">
+      <Link to={editTo} aria-label={edit} title={edit}>
+        <Button type="button" variant="ghost" icon>
+          <Pencil className="size-4" aria-hidden />
+        </Button>
+      </Link>
+      {onDelete ? (
+        <Button
+          type="button"
+          variant="ghost"
+          icon
+          className="text-red-600 hover:bg-red-50 hover:text-red-700"
+          aria-label={remove}
+          title={remove}
+          onClick={onDelete}
+        >
+          <Trash2 className="size-4" aria-hidden />
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+/** آیکون ذخیره و انصراف در هدر صفحه (ویرایش) */
+export function HeaderFormActions({
+  form,
+  submitLabel,
+  cancelLabel,
+  submitting,
+  onCancel,
+}: {
+  form: string
+  submitLabel: string
+  cancelLabel?: string
+  submitting?: boolean
+  onCancel?: () => void
+}) {
+  return (
+    <div className="flex flex-nowrap items-center gap-2 print:hidden">
+      <Button type="submit" form={form} icon disabled={submitting} aria-label={submitLabel} title={submitLabel}>
+        <Check className="size-4" aria-hidden />
+      </Button>
+      {onCancel && cancelLabel ? (
+        <Button
+          type="button"
+          variant="ghost"
+          icon
+          data-form-cancel=""
+          aria-label={cancelLabel}
+          title={cancelLabel}
+          onClick={onCancel}
+        >
+          <X className="size-4" aria-hidden />
+        </Button>
+      ) : null}
+    </div>
   )
 }
 
@@ -422,26 +535,44 @@ export function FormActions({
   submitting,
   onCancel,
   className = '',
+  headerIcons = false,
 }: {
   submitLabel: string
   cancelLabel?: string
   submitting?: boolean
   onCancel?: () => void
   className?: string
+  /** آیکون ذخیره/انصراف در هدر صفحه تا نیاز به اسکرول تا پایین نباشد */
+  headerIcons?: boolean
 }) {
+  const formId = useContext(AppFormContext)
+  useEscapeCancel(onCancel && cancelLabel ? onCancel : undefined)
   return (
-    <div className={`flex flex-wrap gap-3 ${className}`.trim()}>
-      <Button type="submit" disabled={submitting}>
-        <Check className="size-4" aria-hidden />
-        {submitLabel}
-      </Button>
-      {onCancel && cancelLabel ? (
-        <Button type="button" variant="ghost" data-form-cancel="" onClick={onCancel}>
-          <X className="size-4" aria-hidden />
-          {cancelLabel}
+    <>
+      <div className={`flex flex-wrap gap-3 ${className}`.trim()}>
+        <Button type="submit" disabled={submitting}>
+          <Check className="size-4" aria-hidden />
+          {submitLabel}
         </Button>
+        {onCancel && cancelLabel ? (
+          <Button type="button" variant="ghost" data-form-cancel="" onClick={onCancel}>
+            <X className="size-4" aria-hidden />
+            {cancelLabel}
+          </Button>
+        ) : null}
+      </div>
+      {headerIcons && formId ? (
+        <PageHeaderActionsPortal>
+          <HeaderFormActions
+            form={formId}
+            submitLabel={submitLabel}
+            cancelLabel={cancelLabel}
+            submitting={submitting}
+            onCancel={onCancel}
+          />
+        </PageHeaderActionsPortal>
       ) : null}
-    </div>
+    </>
   )
 }
 
@@ -628,6 +759,7 @@ export function DetailActions({
   onDelete,
   extraItems,
   className = 'mt-6',
+  headerIcons = false,
 }: {
   editTo: string
   editLabel: string
@@ -635,6 +767,8 @@ export function DetailActions({
   onDelete?: () => void
   extraItems?: DetailActionExtraItem[]
   className?: string
+  /** آیکون ویرایش/حذف در هدر صفحه برای دسترسی سریع */
+  headerIcons?: boolean
 }) {
   const { t } = useTranslation()
   const titleId = useId()
@@ -699,6 +833,16 @@ export function DetailActions({
           onClose={closeSheet}
           onDelete={onDelete}
         />
+      ) : null}
+      {headerIcons ? (
+        <PageHeaderActionsPortal>
+          <HeaderDetailActions
+            editTo={editTo}
+            editLabel={editLabel}
+            deleteLabel={deleteLabel}
+            onDelete={onDelete}
+          />
+        </PageHeaderActionsPortal>
       ) : null}
     </div>
   )
