@@ -17,6 +17,7 @@ export const languages = {
 export type AppLanguage = keyof typeof languages;
 
 export const PREFERRED_LOCALE_KEY = "template_preferred_locale";
+export const PREFERRED_LOCALE_EVENT = "template-preferred-locale";
 
 export function isAppLanguage(value: string): value is AppLanguage {
   return value in languages;
@@ -49,6 +50,19 @@ export function persistPreferredLocale(lang: AppLanguage) {
   }
 }
 
+/** Stored header/settings choice wins over profile locale so /auth/me cannot revert UI language. */
+export function resolveUiLanguage(profileLocale?: string | null): AppLanguage {
+  try {
+    const stored = localStorage.getItem(PREFERRED_LOCALE_KEY);
+    if (stored && isAppLanguage(stored) && languages[stored].enabled) {
+      return stored;
+    }
+  } catch {
+    // ignore
+  }
+  return selectableLocale(profileLocale);
+}
+
 export function uiLanguageFor(preferred: AppLanguage): AppLanguage {
   return languages[preferred]?.enabled ? preferred : "fa";
 }
@@ -72,6 +86,8 @@ export function applyUiLanguage(preferred: AppLanguage) {
   applyDocumentLanguage(ui);
 }
 
+const initialLng = uiLanguageFor(getStoredPreferredLocale());
+
 void i18n.use(initReactI18next).init({
   resources: {
     fa: { translation: fa },
@@ -80,11 +96,11 @@ void i18n.use(initReactI18next).init({
     hi: { translation: hi },
     en: { translation: en },
   },
-  lng: "fa",
+  lng: initialLng,
   fallbackLng: "fa",
   interpolation: { escapeValue: false },
+}).then(() => {
+  applyDocumentLanguage(uiLanguageFor(getStoredPreferredLocale()));
 });
-
-applyUiLanguage(getStoredPreferredLocale());
 
 export default i18n;

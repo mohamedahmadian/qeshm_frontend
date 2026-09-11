@@ -12,7 +12,12 @@ import {
 } from '../components/ui/Form'
 import { FormCard, formCardBodyClassName } from '../components/ui/FormLayout'
 import { SearchSelect } from '../components/ui/SearchSelect'
-import { selectableLanguages, selectableLocale } from '../i18n'
+import {
+  applyUiLanguage,
+  persistPreferredLocale,
+  selectableLanguages,
+  selectableLocale,
+} from '../i18n'
 import { api } from '../lib/api'
 
 export function SettingsPage() {
@@ -25,7 +30,10 @@ export function SettingsPage() {
     event.preventDefault()
     setSaving(true)
     try {
-      await api.patch('/auth/settings', { locale })
+      const next = selectableLocale(locale)
+      await api.patch('/auth/settings', { locale: next })
+      persistPreferredLocale(next)
+      applyUiLanguage(next)
       await refresh()
       toast.success(t('settings.saved'))
     } catch {

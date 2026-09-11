@@ -5,10 +5,11 @@ import i18n, {
   getStoredPreferredLocale,
   languages,
   persistPreferredLocale,
+  PREFERRED_LOCALE_EVENT,
   type AppLanguage,
 } from '../i18n'
-
-const LOCALE_EVENT = 'template-preferred-locale'
+import { api } from '../lib/api'
+import { getAuthToken } from '../lib/auth-token'
 
 export function usePreferredLocale() {
   const [locale, setLocaleState] = useState<AppLanguage>(getStoredPreferredLocale)
@@ -17,10 +18,10 @@ export function usePreferredLocale() {
     function sync() {
       setLocaleState(getStoredPreferredLocale())
     }
-    window.addEventListener(LOCALE_EVENT, sync)
+    window.addEventListener(PREFERRED_LOCALE_EVENT, sync)
     window.addEventListener('storage', sync)
     return () => {
-      window.removeEventListener(LOCALE_EVENT, sync)
+      window.removeEventListener(PREFERRED_LOCALE_EVENT, sync)
       window.removeEventListener('storage', sync)
     }
   }, [])
@@ -30,7 +31,10 @@ export function usePreferredLocale() {
     persistPreferredLocale(next)
     setLocaleState(next)
     applyUiLanguage(next)
-    window.dispatchEvent(new Event(LOCALE_EVENT))
+    window.dispatchEvent(new Event(PREFERRED_LOCALE_EVENT))
+    if (getAuthToken()) {
+      void api.patch('/auth/settings', { locale: next }).catch(() => undefined)
+    }
     if (next !== previous && !languages[next].enabled) {
       toast.info(i18n.t('settings.comingSoon'))
     }

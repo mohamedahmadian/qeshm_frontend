@@ -470,7 +470,7 @@ function SidebarMenuLink({
       >
         <Icon className="size-3.5" aria-hidden />
       </span>
-      <span className="min-w-0 flex-1 truncate">{item.label ?? t(item.nameKey)}</span>
+      <span className="min-w-0 flex-1 truncate">{t(item.nameKey)}</span>
     </Link>
   )
 }

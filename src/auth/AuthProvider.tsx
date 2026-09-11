@@ -20,8 +20,10 @@ import {
   applyUiLanguage,
   getStoredPreferredLocale,
   persistPreferredLocale,
+  PREFERRED_LOCALE_EVENT,
+  resolveUiLanguage,
+  selectableLocale,
   uiLanguageFor,
-  type AppLanguage,
 } from '../i18n'
 import type { AuthUser } from '../types/app'
 
@@ -52,11 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applyUser = useCallback((next: AuthUser) => {
     setUser(next)
-    const lang = (next.locale as AppLanguage) || 'fa'
-    if (!next.impersonating && !isImpersonatingSession()) {
-      persistPreferredLocale(lang)
+    if (next.impersonating || isImpersonatingSession()) {
+      applyUiLanguage(selectableLocale(next.locale))
+      return
     }
+    const lang = resolveUiLanguage(next.locale)
+    persistPreferredLocale(lang)
     applyUiLanguage(lang)
+    window.dispatchEvent(new Event(PREFERRED_LOCALE_EVENT))
   }, [])
 
   const refresh = useCallback(async () => {
