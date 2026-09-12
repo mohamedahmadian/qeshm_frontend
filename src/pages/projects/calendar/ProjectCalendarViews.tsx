@@ -4,19 +4,17 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Form'
 import { FormCard, FormEmptyHint } from '../../../components/ui/FormLayout'
-import { formatDate, formatNumber, monthName } from '../../../lib/datetime'
+import { displayDateParts, formatDate, formatNumber, monthName } from '../../../lib/datetime'
 import {
   deadlineBucketOrder,
   groupByDeadline,
   indexProjectsByEndDate,
   monthDeadlineCounts,
   monthsWithDeadlines,
-  projectYearBar,
   projectsInDisplayMonth,
-  projectsInDisplayYear,
   projectsWithEndDate,
 } from '../../../lib/project-calendar'
-import { projectColorAlpha } from '../../../lib/project-color'
+import { projectColor, projectColorAlpha } from '../../../lib/project-color'
 import type { Project } from '../../../types/app'
 import { CalendarProjectsModal } from './CalendarProjectsModal'
 import { DeadlineGroup, MonthCalendarGrid, ProposalCardNote } from './ProjectCalendarShared'
@@ -347,9 +345,9 @@ export function TimelineProposal({
 }) {
   const { t } = useTranslation()
   const rows = useMemo(() => {
-    return projectsInDisplayYear(projectsWithEndDate(items), year, locale)
-      .map((project) => ({ project, bar: projectYearBar(project, year, locale) }))
-      .filter((row) => row.bar)
+    return projectsWithEndDate(items)
+      .map((project) => ({ project, parts: displayDateParts(project.endDate, locale) }))
+      .filter((row) => row.parts?.year === year)
       .sort((a, b) => (a.project.endDate ?? '').localeCompare(b.project.endDate ?? ''))
   }, [items, locale, year])
   return (
@@ -363,37 +361,47 @@ export function TimelineProposal({
         {!rows.length ? <FormEmptyHint>{t('projectCalendar.emptyYear')}</FormEmptyHint> : null}
         {rows.length ? (
           <div className="overflow-x-auto">
-            <div className="min-w-[40rem] space-y-2">
-              <div className="grid grid-cols-12 gap-1 px-[9.5rem] text-[10px] font-medium text-ink-400">
+            <div className="min-w-[46rem] space-y-2">
+              <div className="grid grid-cols-[9rem_repeat(12,minmax(0,1fr))] items-center gap-1 text-[10px] font-medium text-ink-400">
+                <div />
                 {Array.from({ length: 12 }, (_, index) => (
                   <div key={index} className="truncate text-center">
                     {monthName(index + 1, locale)}
                   </div>
                 ))}
               </div>
-              {rows.map(({ project, bar }) => (
-                <div key={project.id} className="flex items-center gap-3">
+              {rows.map(({ project, parts }) => (
+                <div
+                  key={project.id}
+                  className="grid grid-cols-[9rem_repeat(12,minmax(0,1fr))] items-center gap-1"
+                >
                   <Link
                     to={`/projects/${project.id}`}
-                    className="w-36 shrink-0 truncate text-xs font-semibold text-ink-800 hover:text-teal-700"
+                    className="truncate text-xs font-semibold text-ink-800 hover:text-teal-700"
                   >
                     {project.systemName}
                   </Link>
-                  <div className="relative h-8 flex-1 rounded-xl bg-cream-50">
-                    {bar ? (
-                      <Link
-                        to={`/projects/${project.id}`}
-                        className="absolute top-1 bottom-1 rounded-lg"
-                        style={{
-                          insetInlineStart: `${bar.offsetPercent}%`,
-                          width: bar.markerOnly ? '0.7rem' : `${Math.max(bar.widthPercent, 1.4)}%`,
-                          background: projectColorAlpha(project.color, 0.85),
-                          boxShadow: `0 4px 10px ${projectColorAlpha(project.color, 0.28)}`,
-                        }}
-                        title={project.systemName}
-                      />
-                    ) : null}
-                  </div>
+                  {Array.from({ length: 12 }, (_, index) => {
+                    const month = index + 1
+                    const match = parts?.month === month
+                    return (
+                      <div key={month} className="flex justify-center">
+                        {match && parts ? (
+                          <Link
+                            to={`/projects/${project.id}`}
+                            className="flex size-8 items-center justify-center rounded-lg text-xs font-bold text-white"
+                            style={{
+                              background: projectColor(project.color),
+                              boxShadow: `0 4px 10px ${projectColorAlpha(project.color, 0.28)}`,
+                            }}
+                            title={project.systemName}
+                          >
+                            {formatNumber(parts.day, locale)}
+                          </Link>
+                        ) : null}
+                      </div>
+                    )
+                  })}
                 </div>
               ))}
             </div>
