@@ -66,9 +66,11 @@ export function SingardVoiceRecorder({
       }
       recorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop())
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        const type = (recorder.mimeType || mime || 'audio/webm').split(';')[0] || 'audio/webm'
+        const ext = type.includes('mp4') || type.includes('m4a') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm'
+        const blob = new Blob(chunksRef.current, { type })
         const duration = Date.now() - startedAt.current
-        const file = new File([blob], 'singard-voice.webm', { type: blob.type })
+        const file = new File([blob], `singard-voice.${ext}`, { type })
         if (previewRef.current) URL.revokeObjectURL(previewRef.current)
         const url = URL.createObjectURL(blob)
         previewRef.current = url
@@ -79,7 +81,11 @@ export function SingardVoiceRecorder({
       startedAt.current = Date.now()
       setElapsed(0)
       setRecording(true)
-      recorder.start()
+      try {
+        recorder.start(250)
+      } catch {
+        recorder.start()
+      }
       timerRef.current = window.setInterval(() => {
         const next = Date.now() - startedAt.current
         setElapsed(next)

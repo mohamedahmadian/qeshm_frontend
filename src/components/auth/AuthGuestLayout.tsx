@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Home, LogIn, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Home, LogIn, Sparkles, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
@@ -16,7 +16,6 @@ export function AuthGuestLayout({
   fill = false,
   showAuthLinks = false,
   showHeaderLogin = false,
-  showHeaderHome = false,
 }: {
   children: ReactNode
   wide?: boolean
@@ -24,7 +23,6 @@ export function AuthGuestLayout({
   fill?: boolean
   showAuthLinks?: boolean
   showHeaderLogin?: boolean
-  showHeaderHome?: boolean
 }) {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -33,11 +31,7 @@ export function AuthGuestLayout({
   return (
     <div className={`flex flex-col bg-cream-50 ${fill ? 'h-svh overflow-hidden' : 'min-h-svh'}`}>
       <header className="z-20 shrink-0 border-b border-line/70 bg-white/90 backdrop-blur">
-        <div
-          className={`mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-8 ${
-            fill ? '' : 'max-w-5xl'
-          }`}
-        >
+        <div className="mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-8">
           <Link to="/" className="flex min-w-0 items-center gap-3">
             <AppLogo
               src={logoSrc}
@@ -55,24 +49,18 @@ export function AuthGuestLayout({
             </div>
           </Link>
           <nav
-            className="ms-1 flex min-w-0 flex-wrap items-center gap-1 sm:ms-4"
+            className="ms-1 flex min-w-0 flex-wrap items-center gap-1.5 sm:ms-4"
             aria-label={t('landing.publicNav')}
           >
-            <PublicHeaderLink to="/" end>
+            <PublicHeaderLink to="/" end icon={Home}>
               {t('landing.homePage')}
             </PublicHeaderLink>
-            <PublicHeaderLink to="/singard">{t('landing.singard')}</PublicHeaderLink>
+            <PublicHeaderLink to="/singard" icon={Sparkles}>
+              {t('landing.singard')}
+            </PublicHeaderLink>
           </nav>
           <div className="ms-auto flex items-center gap-2">
             <LocaleSwitcher />
-            {showHeaderHome ? (
-              <Link to="/">
-                <Button type="button" variant="ghost" className="gap-1.5">
-                  <Home className="size-4" aria-hidden />
-                  {t('landing.homePage')}
-                </Button>
-              </Link>
-            ) : null}
             {showHeaderLogin ? (
               <Link to={user ? '/dashboard' : '/login'}>
                 <Button type="button" variant={user ? 'soft' : 'primary'} className="gap-1.5">
@@ -87,7 +75,7 @@ export function AuthGuestLayout({
       <main
         className={
           fill
-            ? 'flex min-h-0 flex-1 flex-col'
+            ? 'flex min-h-0 flex-1 flex-col overflow-y-auto'
             : `flex flex-1 items-start justify-center px-4 py-8 ${full ? '' : 'sm:items-center'}`
         }
       >
@@ -95,7 +83,7 @@ export function AuthGuestLayout({
           className={
             fill
               ? 'flex min-h-0 flex-1 flex-col'
-              : `mx-auto w-full ${full ? 'max-w-5xl' : wide ? 'max-w-xl' : 'max-w-md'}`
+              : `mx-auto w-full ${full ? 'max-w-6xl' : wide ? 'max-w-xl' : 'max-w-md'}`
           }
         >
           {children}
@@ -130,10 +118,12 @@ export function AuthGuestLayout({
 function PublicHeaderLink({
   to,
   end,
+  icon: Icon,
   children,
 }: {
   to: string
   end?: boolean
+  icon: LucideIcon
   children: ReactNode
 }) {
   return (
@@ -141,14 +131,27 @@ function PublicHeaderLink({
       to={to}
       end={end}
       className={({ isActive }) =>
-        `inline-flex min-h-10 items-center rounded-2xl px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+        `group inline-flex min-h-10 items-center gap-2 rounded-2xl px-2 pe-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
           isActive
             ? 'bg-teal-500 bg-[linear-gradient(to_inline-end,var(--color-teal-500),var(--color-mint-500))] text-white shadow-[0_8px_18px_rgba(46,189,182,0.28)]'
-            : 'text-ink-700 hover:bg-teal-50 hover:text-teal-800'
+            : 'border border-teal-100/90 bg-white text-ink-700 shadow-[0_6px_14px_rgba(46,189,182,0.08)] hover:border-teal-200 hover:bg-teal-50 hover:text-teal-800'
         }`
       }
     >
-      {children}
+      {({ isActive }) => (
+        <>
+          <span
+            className={`flex size-7 shrink-0 items-center justify-center rounded-xl transition ${
+              isActive
+                ? 'bg-white/20 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.25)]'
+                : 'bg-teal-50 text-teal-600 group-hover:bg-white group-hover:text-teal-700 group-hover:shadow-[0_4px_10px_rgba(46,189,182,0.16)]'
+            }`}
+          >
+            <Icon className="size-3.5" aria-hidden />
+          </span>
+          <span className="truncate">{children}</span>
+        </>
+      )}
     </NavLink>
   )
 }

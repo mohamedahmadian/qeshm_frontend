@@ -233,8 +233,8 @@ export function useVoiceCapture({
         stop()
       }
       recorder.onstop = () => {
-        const type = recorder.mimeType || mimeRef.current || 'audio/webm'
-        const blob = new Blob(chunksRef.current, { type: type.split(';')[0] || type })
+        const type = (recorder.mimeType || mimeRef.current || 'audio/webm').split(';')[0] || 'audio/webm'
+        const blob = new Blob(chunksRef.current, { type })
         const duration = Date.now() - startedAtRef.current
         stopTracks()
         if (!blob.size) {

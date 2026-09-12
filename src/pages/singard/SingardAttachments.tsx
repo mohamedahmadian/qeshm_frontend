@@ -1,6 +1,7 @@
 import { ImagePlus, Mic, Video } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { getFileUrl, getImageUrl } from '../../lib/api'
+import { FileAudio, FileVideo } from '../../components/ui/FileMedia'
+import { getImageUrl } from '../../lib/api'
 import type { SingardAttachment } from '../../types/app'
 
 export function SingardAttachments({ items }: { items?: SingardAttachment[] }) {
@@ -34,7 +35,7 @@ export function SingardAttachments({ items }: { items?: SingardAttachment[] }) {
           <span className="flex size-10 items-center justify-center rounded-xl bg-teal-500 text-white">
             <Mic className="size-4" aria-hidden />
           </span>
-          <audio className="min-w-0 flex-1" controls src={getFileUrl(item.fileId!)} />
+          <FileAudio fileId={item.fileId!} className="min-w-0 flex-1" />
         </div>
       ))}
       {videos.map((item) => (
@@ -43,7 +44,7 @@ export function SingardAttachments({ items }: { items?: SingardAttachment[] }) {
             <Video className="size-4 text-teal-600" aria-hidden />
             {item.file?.originalName || t('singardWizard.video')}
           </div>
-          <video className="max-h-80 w-full bg-ink-900" controls src={getFileUrl(item.fileId!)} />
+          <FileVideo fileId={item.fileId!} className="max-h-80 w-full bg-ink-900" />
         </div>
       ))}
       {!images.length && !audios.length && !videos.length ? (

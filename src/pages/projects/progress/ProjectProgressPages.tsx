@@ -40,7 +40,8 @@ import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
-import { api, getApiErrorMessage, getFileUrl, getImageUrl } from '../../../lib/api'
+import { FileAudio } from '../../../components/ui/FileMedia'
+import { api, getApiErrorMessage, getImageUrl } from '../../../lib/api'
 import { localizeDigits } from '../../../lib/datetime'
 import {
   projectProgressTranscriptionStatusOrder,
@@ -518,7 +519,7 @@ export function ProjectProgressDetailPage() {
                     ? ` · ${formatDuration(entry.audio.durationMs, locale)}`
                     : ''}
                 </p>
-                <audio controls src={getFileUrl(entry.audioId)} className="w-full" />
+                <FileAudio fileId={entry.audioId} className="w-full" />
               </div>
             ) : (
               <p className="text-sm text-ink-400">{t('projectProgress.audio')}: —</p>

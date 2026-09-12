@@ -1,8 +1,8 @@
 import { Mic, Square, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FileAudio } from '../../../components/ui/FileMedia'
 import { Button } from '../../../components/ui/Form'
-import { getFileUrl } from '../../../lib/api'
 import { localizeDigits } from '../../../lib/datetime'
 import { type ProjectProgressProcessingMode } from '../../../types/app'
 import { useVoiceCapture } from './useVoiceCapture'
@@ -67,7 +67,6 @@ export function VoiceRecorder({
   }
 
   const hasAudio = Boolean(audioId || previewUrl)
-  const src = previewUrl || (audioId ? getFileUrl(audioId) : undefined)
   const clock = formatClock(recording ? elapsed : durationMs ?? elapsed, locale)
 
   return (
@@ -121,9 +120,13 @@ export function VoiceRecorder({
             <p className="mt-1 text-xs text-ink-400">{t('projectProgress.recordHint')}</p>
           ) : null}
         </div>
-        {hasAudio && src && !recording ? (
+        {hasAudio && !recording ? (
           <div className="w-full space-y-2 sm:space-y-3">
-            <audio controls playsInline src={src} className="w-full" />
+            {previewUrl ? (
+              <audio controls playsInline src={previewUrl} className="w-full" />
+            ) : audioId ? (
+              <FileAudio fileId={audioId} className="w-full" />
+            ) : null}
             <div className="flex flex-wrap justify-center gap-2">
               <Button
                 type="button"

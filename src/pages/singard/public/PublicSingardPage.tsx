@@ -15,8 +15,10 @@ export function PublicSingardPage() {
   })
 
   return (
-    <AuthGuestLayout full showHeaderLogin>
-      {query.isLoading || !query.data ? <LoadingState /> : <SingardWizard categories={query.data} />}
+    <AuthGuestLayout fill showHeaderLogin>
+      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-4 py-4 sm:px-8 sm:py-5">
+        {query.isLoading || !query.data ? <LoadingState /> : <SingardWizard categories={query.data} />}
+      </div>
     </AuthGuestLayout>
   )
 }
