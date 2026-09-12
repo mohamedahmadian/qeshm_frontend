@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
-export const APP_LOGO_SRC = '/favicon.svg'
+export const APP_LOGO_SRC = '/logo.png'
 
 export function AppLogo({
   className = 'h-10 w-auto object-contain',

@@ -1,11 +1,14 @@
 {
   "app": {
-    "name": "قشم‌ پلاس",
+    "name": "تجربه دیجیتال قشم",
     "tagline": "قالب مدیریت کاربران و اطلاعات پایه"
   },
   "landing": {
     "enterSystem": "ورود به سامانه",
-    "goToPanel": "ورود به پنل"
+    "goToPanel": "ورود به پنل",
+    "title": "تابلوی زنده تحول دیجیتال",
+    "subtitle": "پروژه‌های جزیره قشم را روی نقشه ببینید",
+    "liveBoardHint": "روی هر پروژه بزنید تا جزئیات آن نمایش داده شود"
   },
   "auth": {
     "loginTitle": "سامانه یکپارچه احراز هویت ",
@@ -58,7 +61,7 @@
     "changePassword": "تغییر رمز عبور",
     "openMenu": "باز کردن منو",
     "closeMenu": "بستن منو",
-    "panel": "قشم‌ پلاس",
+    "panel": "تجربه دیجیتال قشم",
     "searchMenu": "جستجوی منو...",
     "searchMenuHint": "دو بار کنترل جهت فعال‌سازی",
     "appVersion": "نسخه",
@@ -623,7 +626,9 @@
     "phaseOngoing": "جاری",
     "phaseEnded": "پایان‌یافته",
     "coverageWith": "دارای پیمانکار",
-    "coverageWithout": "بدون پیمانکار"
+    "coverageWithout": "بدون پیمانکار",
+    "moreDetails": "جزئیات بیشتر",
+    "hideMoreDetails": "بستن جزئیات"
   },
   "projectLiveBoard": {
     "title": "تابلوی زنده تحول دیجیتال",

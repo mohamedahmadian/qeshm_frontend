@@ -56,6 +56,7 @@ api.interceptors.request.use((config) => {
     token &&
     !url.includes('/public/vouchers/') &&
     !url.includes('/public/profiles/') &&
+    !url.includes('/public/projects/') &&
     !url.includes('/public/accommodations/') &&
     !url.includes('/public/walking-stations/')
   ) {

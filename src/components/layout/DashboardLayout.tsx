@@ -262,11 +262,11 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
               <FormCardHeaderDecor />
               <div className="relative flex items-center gap-3">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <NavLink to="/" onClick={() => setOpen(false)} className="shrink-0">
+                  <NavLink to="/dashboard" onClick={() => setOpen(false)} className="shrink-0">
                     <AppLogo decorative className="h-10 w-auto max-w-10 shrink-0 object-contain" />
                   </NavLink>
                   <NavLink
-                    to="/"
+                    to="/dashboard"
                     onClick={() => setOpen(false)}
                     className="block truncate font-semibold text-ink-900"
                   >
@@ -386,7 +386,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
                   const impersonating = Boolean(user?.impersonating)
                   setOpen(false)
                   logout()
-                  if (!impersonating) navigate('/login')
+                  if (!impersonating) navigate('/')
                 }}
               >
                 <LogOut className="size-4 shrink-0" aria-hidden />

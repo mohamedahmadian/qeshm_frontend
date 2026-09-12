@@ -20,6 +20,6 @@ export function withNext(path: string, next: string | null | undefined) {
   return `${path}${separator}next=${encodeURIComponent(safe)}`
 }
 
-export function afterAuthPath(next: string | null | undefined, fallback = '/') {
+export function afterAuthPath(next: string | null | undefined, fallback = '/dashboard') {
   return safeAppPath(next) ?? fallback
 }

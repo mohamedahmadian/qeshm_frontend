@@ -377,8 +377,11 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/organization')) {
     return { titleKey: 'organization.details', subtitleKey: 'organization.detailsSubtitle' }
   }
-  if (pathname === '/') {
+  if (pathname === '/dashboard') {
     return { titleKey: 'dashboard.title', subtitleKey: 'dashboard.subtitle' }
+  }
+  if (pathname === '/') {
+    return { titleKey: 'landing.title', subtitleKey: 'landing.subtitle' }
   }
   return { titleKey: 'menus.overview' }
 }

@@ -10,7 +10,7 @@ export const APP_NAV: NavModule[] = [
       {
         code: 'dashboard.home',
         nameKey: 'menus.overview',
-        path: '/',
+        path: '/dashboard',
         icon: 'layout-dashboard',
         sortOrder: 1,
       },

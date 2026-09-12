@@ -38,7 +38,7 @@ export function AccountPage() {
         requirePassword={false}
         selfProfile
         identityCheckPath="/account/identity-check"
-        onCancel={() => navigate('/')}
+        onCancel={() => navigate('/dashboard')}
         onSubmit={async (payload) => {
           const { password: _password, status: _status, ...body } = payload
           await api.patch('/account', body)

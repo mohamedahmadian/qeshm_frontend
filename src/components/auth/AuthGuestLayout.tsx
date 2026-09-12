@@ -7,17 +7,22 @@ import { useBrandDisplay } from '../../hooks/useHeadquartersSummary'
 import { AppLogo } from '../brand/AppLogo'
 import { AdminFooter } from '../layout/AdminFooter'
 import { LocaleSwitcher } from '../layout/LocaleSwitcher'
+import { Button } from '../ui/Form'
 
 export function AuthGuestLayout({
   children,
   wide = false,
   full = false,
+  fill = false,
   showAuthLinks = false,
+  showHeaderLogin = false,
 }: {
   children: ReactNode
   wide?: boolean
   full?: boolean
+  fill?: boolean
   showAuthLinks?: boolean
+  showHeaderLogin?: boolean
 }) {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -26,7 +31,11 @@ export function AuthGuestLayout({
   return (
     <div className="flex min-h-svh flex-col bg-cream-50">
       <header className="z-20 shrink-0 border-b border-line/70 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-5xl items-center gap-3 px-4 py-3 sm:px-8">
+        <div
+          className={`mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-8 ${
+            fill ? '' : 'max-w-5xl'
+          }`}
+        >
           <Link to="/" className="flex min-w-0 items-center gap-3">
             <AppLogo
               src={logoSrc}
@@ -45,13 +54,31 @@ export function AuthGuestLayout({
           </Link>
           <div className="ms-auto flex items-center gap-2">
             <LocaleSwitcher />
+            {showHeaderLogin ? (
+              <Link to={user ? '/dashboard' : '/login'}>
+                <Button type="button" variant={user ? 'soft' : 'primary'} className="gap-1.5">
+                  <LogIn className="size-4" aria-hidden />
+                  {user ? t('landing.goToPanel') : t('auth.login')}
+                </Button>
+              </Link>
+            ) : null}
           </div>
         </div>
       </header>
       <main
-        className={`flex flex-1 items-start justify-center px-4 py-8 ${full ? '' : 'sm:items-center'}`}
+        className={
+          fill
+            ? 'flex min-h-0 flex-1 flex-col'
+            : `flex flex-1 items-start justify-center px-4 py-8 ${full ? '' : 'sm:items-center'}`
+        }
       >
-        <div className={`mx-auto w-full ${full ? 'max-w-5xl' : wide ? 'max-w-xl' : 'max-w-md'}`}>
+        <div
+          className={
+            fill
+              ? 'flex min-h-0 flex-1 flex-col'
+              : `mx-auto w-full ${full ? 'max-w-5xl' : wide ? 'max-w-xl' : 'max-w-md'}`
+          }
+        >
           {children}
         </div>
       </main>
@@ -59,7 +86,7 @@ export function AuthGuestLayout({
         <div className="shrink-0 px-4 pb-5 sm:px-8">
           <div className="mx-auto flex max-w-5xl justify-center">
             <Link
-              to={user ? '/' : '/login'}
+              to={user ? '/dashboard' : '/login'}
               className="group inline-flex min-h-12 items-center gap-3 rounded-2xl bg-teal-500 px-6 py-3 text-white shadow-[0_10px_24px_rgba(46,189,182,0.28)] transition hover:-translate-y-0.5 hover:bg-teal-600 hover:shadow-[0_14px_28px_rgba(46,189,182,0.36)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               <span className="flex size-9 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/25">

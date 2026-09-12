@@ -71,7 +71,7 @@ export function canAccessPath(
 ) {
   if (!user) return false
   if (isAdmin(user)) return true
-  if (pathname === '/') return true
+  if (pathname === '/' || pathname === '/dashboard') return true
   if (ALWAYS_ALLOWED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return true
   }

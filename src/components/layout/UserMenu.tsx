@@ -100,7 +100,7 @@ export function UserMenu() {
                 className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50"
                 onClick={() => {
                   logout()
-                  navigate('/login')
+                  navigate('/')
                 }}
               >
                 <LogOut className="size-4" />

@@ -111,6 +111,13 @@ export type MapOverlayClickPoint = {
   y: number
 }
 
+export type MapSelectedContainerPoint = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export type MapOverlays = {
   markers: MapOverlayMarker[]
   path?: { lat: number; lng: number }[]
@@ -195,6 +202,7 @@ export function OsmMapPicker({
   fill = false,
   keepInView = null,
   onMarkerClick,
+  onSelectedContainerPoint,
   onMapClick,
   onGeolocate,
   onGeoError,
@@ -218,6 +226,7 @@ export function OsmMapPicker({
     padding: { top: number; right: number; bottom: number; left: number }
   } | null
   onMarkerClick?: (id: string, point: MapOverlayClickPoint) => void
+  onSelectedContainerPoint?: (point: MapSelectedContainerPoint | null) => void
   onMapClick?: () => void
   onGeolocate?: (latitude: string, longitude: string) => void
   onGeoError?: (kind: GeoErrorKind) => void
@@ -238,6 +247,7 @@ export function OsmMapPicker({
   const onGeoErrorRef = useRef(onGeoError)
   const onGeoOutsideRef = useRef(onGeoOutside)
   const onMarkerClickRef = useRef(onMarkerClick)
+  const onSelectedContainerPointRef = useRef(onSelectedContainerPoint)
   const onMapClickRef = useRef(onMapClick)
   const maxBoundsRef = useRef(maxBounds)
   const autoGeoDoneRef = useRef(false)
@@ -247,6 +257,7 @@ export function OsmMapPicker({
   onGeoErrorRef.current = onGeoError
   onGeoOutsideRef.current = onGeoOutside
   onMarkerClickRef.current = onMarkerClick
+  onSelectedContainerPointRef.current = onSelectedContainerPoint
   onMapClickRef.current = onMapClick
   overlaysRef.current = overlays
   maxBoundsRef.current = maxBounds
@@ -470,6 +481,41 @@ export function OsmMapPicker({
     }, 40)
     return () => window.clearTimeout(timer)
   }, [keepInView, open])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!open || !map || !onSelectedContainerPoint) return
+    let frame = 0
+    function report() {
+      if (frame) return
+      frame = window.requestAnimationFrame(() => {
+        frame = 0
+        const selected = overlaysRef.current?.markers.find((item) => item.selected)
+        const size = map.getSize()
+        if (!selected) {
+          onSelectedContainerPointRef.current?.(null)
+          return
+        }
+        const point = map.latLngToContainerPoint(L.latLng(selected.lat, selected.lng))
+        onSelectedContainerPointRef.current?.({
+          x: point.x,
+          y: point.y,
+          width: size.x,
+          height: size.y,
+        })
+      })
+    }
+    report()
+    map.on('move', report)
+    map.on('zoom', report)
+    map.on('resize', report)
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame)
+      map.off('move', report)
+      map.off('zoom', report)
+      map.off('resize', report)
+    }
+  }, [onSelectedContainerPoint, open, overlays])
 
   function applyPosition(lat: number, lng: number, fromGeo: boolean) {
     const map = mapRef.current

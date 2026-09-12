@@ -23,7 +23,7 @@ export function ForgotPasswordPage() {
   const [status, setStatus] = useState<ForgotStatus | null>(null)
 
   if (user) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   function onIdentify(event: FormEvent) {

@@ -65,11 +65,11 @@ export function getPageBreadcrumbs(
   modules: BreadcrumbNavModule[] = [],
 ): PageBreadcrumbItem[] {
   const path = normalizeMenuPath(pathname);
-  if (path === "/") {
+  if (path === "/" || path === "/dashboard") {
     return [{ titleKey: HOME_TITLE_KEY }];
   }
 
-  const crumbs: PageBreadcrumbItem[] = [{ to: "/", titleKey: HOME_TITLE_KEY }];
+  const crumbs: PageBreadcrumbItem[] = [{ to: "/dashboard", titleKey: HOME_TITLE_KEY }];
   const match = findLongestMenu(path, modules);
 
   if (match) {

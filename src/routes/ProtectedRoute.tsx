@@ -18,7 +18,7 @@ export function ProtectedRoute() {
   }
 
   if (!canAccessPath(user, location.pathname)) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   return <Outlet />

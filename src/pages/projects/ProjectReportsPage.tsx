@@ -3,6 +3,8 @@ import {
   Building2,
   CalendarRange,
   ChartColumn,
+  ChevronDown,
+  ChevronUp,
   Filter,
   FolderKanban,
   Gauge,
@@ -15,10 +17,11 @@ import {
   UsersRound,
   Wallet,
 } from 'lucide-react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { FormField, PageHeader, listShellClassName } from '../../components/ui/Form'
+import { Button, FormField, PageHeader, listShellClassName } from '../../components/ui/Form'
 import {
   FormCard,
   FormFactTile,
@@ -108,6 +111,7 @@ export function ProjectReportsPage() {
     },
   })
 
+  const [showMoreDetails, setShowMoreDetails] = useState(false)
   const report = query.data
   const kpis = report?.kpis
   const filtersActive = Boolean(
@@ -303,7 +307,7 @@ export function ProjectReportsPage() {
         <div className="space-y-5">
           <FormCard icon={FolderKanban} title={t('projectReports.overview')}>
             <div className={`${formCardBodyClassName} space-y-5`}>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-3">
+              <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
                 <FormFactTile
                   icon={FolderKanban}
                   label={t('projectReports.totalProjects')}
@@ -316,122 +320,145 @@ export function ProjectReportsPage() {
                   tone="mint"
                 />
                 <FormFactTile
-                  icon={ShieldCheck}
-                  label={t('projectReports.supportActive')}
-                  value={money(kpis.supportActive, locale)}
-                />
-                <FormFactTile
-                  icon={Handshake}
-                  label={t('projectReports.withContractors')}
-                  value={money(kpis.withContractors, locale)}
-                  tone="mint"
-                />
-                <FormFactTile
                   icon={Handshake}
                   label={t('projectReports.totalContractors')}
                   value={money(kpis.totalContractors, locale)}
                 />
-                <FormFactTile
-                  icon={UsersRound}
-                  label={t('projectReports.totalMembers')}
-                  value={money(kpis.totalMembers, locale)}
-                  tone="mint"
-                />
-                <FormFactTile
-                  icon={Layers3}
-                  label={t('projectReports.totalPhases')}
-                  value={money(kpis.totalPhases, locale)}
-                />
-                <FormFactTile
-                  icon={Wallet}
-                  label={t('projectReports.totalPayments')}
-                  value={money(kpis.totalPayments, locale)}
-                  tone="mint"
-                />
-                <FormFactTile
-                  icon={Wallet}
-                  label={t('projectReports.totalCostEstimate')}
-                  value={money(kpis.totalCostEstimate, locale)}
-                />
-                <FormFactTile
-                  icon={Wallet}
-                  label={t('projectReports.totalPaid')}
-                  value={money(kpis.totalPaid, locale)}
-                  tone="mint"
-                />
-                <FormFactTile
-                  icon={Wallet}
-                  label={t('projectReports.remainingEstimate')}
-                  value={money(kpis.remainingEstimate, locale)}
-                  tone={kpis.remainingEstimate < 0 ? 'ink' : 'teal'}
-                />
-                <FormFactTile
-                  icon={TriangleAlert}
-                  label={t('projectReports.overspendContractors')}
-                  value={money(kpis.overspendContractors, locale)}
-                  tone={kpis.overspendContractors > 0 ? 'ink' : 'mint'}
-                />
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 sm:gap-3">
-                <FormFactTile
-                  icon={Building2}
-                  label={t('projectReports.withReplacement')}
-                  value={money(kpis.withReplacement, locale)}
-                  compact
-                />
-                <FormFactTile
-                  icon={Handshake}
-                  label={t('projectReports.withoutContractors')}
-                  value={money(kpis.withoutContractors, locale)}
-                  compact
-                  tone="ink"
-                />
-                <FormFactTile
-                  icon={ChartColumn}
-                  label={t('projectReports.paidRatio')}
-                  value={paidRatio}
-                  compact
-                  tone="mint"
-                />
-                <FormFactTile
-                  icon={UsersRound}
-                  label={t('projectReports.avgMembers')}
-                  value={formatGroupedQuantity(kpis.avgMembersPerContractor, locale, 1)}
-                  compact
-                />
-                <FormFactTile
-                  icon={Handshake}
-                  label={t('projectReports.avgContractors')}
-                  value={formatGroupedQuantity(kpis.avgContractorsPerProject, locale, 1)}
-                  compact
-                />
-                <FormFactTile
-                  icon={CalendarRange}
-                  label={t('projectReports.avgPhaseDays')}
-                  value={formatGroupedQuantity(kpis.avgPhaseDays, locale, 1)}
-                  compact
-                  tone="mint"
-                />
-                <FormFactTile
-                  icon={Percent}
-                  label={t('projectReports.avgProgress')}
-                  value={`${formatGroupedQuantity(kpis.avgProgressPercent, locale, 1)}٪`}
-                  compact
-                />
-                <FormFactTile
-                  icon={Building2}
-                  label={t('projectReports.withCompany')}
-                  value={money(kpis.withCompany, locale)}
-                  compact
-                />
-                <FormFactTile
-                  icon={Activity}
-                  label={t('projectReports.withUrl')}
-                  value={money(kpis.withUrl, locale)}
-                  compact
-                  tone="mint"
-                />
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  aria-expanded={showMoreDetails}
+                  onClick={() => setShowMoreDetails((open) => !open)}
+                >
+                  {showMoreDetails ? (
+                    <ChevronUp className="size-4" aria-hidden />
+                  ) : (
+                    <ChevronDown className="size-4" aria-hidden />
+                  )}
+                  {showMoreDetails
+                    ? t('projectReports.hideMoreDetails')
+                    : t('projectReports.moreDetails')}
+                </Button>
               </div>
+              {showMoreDetails ? (
+                <>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-3">
+                    <FormFactTile
+                      icon={ShieldCheck}
+                      label={t('projectReports.supportActive')}
+                      value={money(kpis.supportActive, locale)}
+                    />
+                    <FormFactTile
+                      icon={Handshake}
+                      label={t('projectReports.withContractors')}
+                      value={money(kpis.withContractors, locale)}
+                      tone="mint"
+                    />
+                    <FormFactTile
+                      icon={UsersRound}
+                      label={t('projectReports.totalMembers')}
+                      value={money(kpis.totalMembers, locale)}
+                      tone="mint"
+                    />
+                    <FormFactTile
+                      icon={Layers3}
+                      label={t('projectReports.totalPhases')}
+                      value={money(kpis.totalPhases, locale)}
+                    />
+                    <FormFactTile
+                      icon={Wallet}
+                      label={t('projectReports.totalPayments')}
+                      value={money(kpis.totalPayments, locale)}
+                      tone="mint"
+                    />
+                    <FormFactTile
+                      icon={Wallet}
+                      label={t('projectReports.totalCostEstimate')}
+                      value={money(kpis.totalCostEstimate, locale)}
+                    />
+                    <FormFactTile
+                      icon={Wallet}
+                      label={t('projectReports.totalPaid')}
+                      value={money(kpis.totalPaid, locale)}
+                      tone="mint"
+                    />
+                    <FormFactTile
+                      icon={Wallet}
+                      label={t('projectReports.remainingEstimate')}
+                      value={money(kpis.remainingEstimate, locale)}
+                      tone={kpis.remainingEstimate < 0 ? 'ink' : 'teal'}
+                    />
+                    <FormFactTile
+                      icon={TriangleAlert}
+                      label={t('projectReports.overspendContractors')}
+                      value={money(kpis.overspendContractors, locale)}
+                      tone={kpis.overspendContractors > 0 ? 'ink' : 'mint'}
+                    />
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 sm:gap-3">
+                    <FormFactTile
+                      icon={Building2}
+                      label={t('projectReports.withReplacement')}
+                      value={money(kpis.withReplacement, locale)}
+                      compact
+                    />
+                    <FormFactTile
+                      icon={Handshake}
+                      label={t('projectReports.withoutContractors')}
+                      value={money(kpis.withoutContractors, locale)}
+                      compact
+                      tone="ink"
+                    />
+                    <FormFactTile
+                      icon={ChartColumn}
+                      label={t('projectReports.paidRatio')}
+                      value={paidRatio}
+                      compact
+                      tone="mint"
+                    />
+                    <FormFactTile
+                      icon={UsersRound}
+                      label={t('projectReports.avgMembers')}
+                      value={formatGroupedQuantity(kpis.avgMembersPerContractor, locale, 1)}
+                      compact
+                    />
+                    <FormFactTile
+                      icon={Handshake}
+                      label={t('projectReports.avgContractors')}
+                      value={formatGroupedQuantity(kpis.avgContractorsPerProject, locale, 1)}
+                      compact
+                    />
+                    <FormFactTile
+                      icon={CalendarRange}
+                      label={t('projectReports.avgPhaseDays')}
+                      value={formatGroupedQuantity(kpis.avgPhaseDays, locale, 1)}
+                      compact
+                      tone="mint"
+                    />
+                    <FormFactTile
+                      icon={Percent}
+                      label={t('projectReports.avgProgress')}
+                      value={`${formatGroupedQuantity(kpis.avgProgressPercent, locale, 1)}٪`}
+                      compact
+                    />
+                    <FormFactTile
+                      icon={Building2}
+                      label={t('projectReports.withCompany')}
+                      value={money(kpis.withCompany, locale)}
+                      compact
+                    />
+                    <FormFactTile
+                      icon={Activity}
+                      label={t('projectReports.withUrl')}
+                      value={money(kpis.withUrl, locale)}
+                      compact
+                      tone="mint"
+                    />
+                  </div>
+                </>
+              ) : null}
             </div>
           </FormCard>
 

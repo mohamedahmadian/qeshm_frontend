@@ -10,6 +10,7 @@ import { NavigationHistoryProvider } from './lib/navigation-history'
 import { AccountPage } from './pages/AccountPage'
 import { ChangePasswordPage } from './pages/ChangePasswordPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { PublicHomePage } from './pages/home/PublicHomePage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { ImpersonateEndedPage } from './pages/ImpersonateEndedPage'
 import { ImpersonateEntryPage } from './pages/ImpersonateEntryPage'
@@ -196,6 +197,7 @@ export default function App() {
           <NavigationHistoryProvider>
             <AppToaster />
             <Routes>
+              <Route path="/" element={<PublicHomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/impersonate" element={<ImpersonateEntryPage />} />
@@ -203,7 +205,7 @@ export default function App() {
               <Route path="/p/:id" element={<PublicProfilePage />} />
               <Route element={<ProtectedRoute />}>
                 <Route element={<DashboardLayout />}>
-                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/account" element={<AccountPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/settings/password" element={<ChangePasswordPage />} />
