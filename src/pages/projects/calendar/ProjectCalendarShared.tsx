@@ -120,6 +120,26 @@ export function ProposalCardNote({ children }: { children: ReactNode }) {
   return <p className="mb-4 text-sm leading-6 text-ink-600">{children}</p>
 }
 
+function DayProjectLabels({ items, locale }: { items: Project[]; locale: string }) {
+  const { t } = useTranslation()
+  const visible = items.slice(0, 2)
+  const extra = items.length - visible.length
+  return (
+    <div className="mt-0.5 flex w-full min-w-0 flex-col items-center gap-0.5 text-center">
+      {visible.map((item) => (
+        <span key={item.id} className="block min-w-0 max-w-full truncate font-bold leading-tight" dir="ltr">
+          {item.code}
+        </span>
+      ))}
+      {extra > 0 ? (
+        <span className="text-[10px] font-semibold text-teal-800">
+          {t('projectCalendar.moreOnDay', { count: formatNumber(extra, locale) })}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
 export function MonthCalendarGrid({
   year,
   month,
@@ -127,32 +147,34 @@ export function MonthCalendarGrid({
   byDate,
   selectedIso,
   onSelectDay,
-  compact,
+  showLabels,
 }: {
   year: number
   month: number
   locale: string
   byDate: Map<string, Project[]>
   selectedIso?: string | null
-  onSelectDay?: (iso: string) => void
-  compact?: boolean
+  onSelectDay?: (iso: string, items: Project[]) => void
+  showLabels?: boolean
 }) {
   const { t } = useTranslation()
   const grid = useMemo(() => buildMonthGrid(year, month, locale), [year, month, locale])
   const labels = useMemo(() => weekDayShortLabels(locale), [locale])
   const today = todayIsoDate()
-  const cell = compact ? 'min-h-7 text-[11px]' : 'min-h-9 text-xs'
+  const cell = showLabels
+    ? 'min-h-[3.75rem] items-center justify-center px-1 py-1 text-center text-[11px]'
+    : 'min-h-9 items-center justify-center text-xs'
 
   return (
     <div className="min-w-0">
-      <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-medium text-ink-400">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-ink-400">
         {labels.map((label, index) => (
           <div key={`${label}-${index}`} className="py-1">
             {label}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: grid.leading }, (_, index) => (
           <div key={`pad-${index}`} />
         ))}
@@ -162,21 +184,21 @@ export function MonthCalendarGrid({
           const isToday = day.iso === today
           const selected = day.iso === selectedIso
           const first = items[0]
-          const style =
-            hasDeadline && items.length === 1
-              ? {
-                  background: projectColorAlpha(first?.color, 0.18),
-                  color: projectColor(first?.color),
-                  boxShadow: `inset 0 0 0 1px ${projectColorAlpha(first?.color, 0.35)}`,
-                }
-              : undefined
-          const className = `relative flex flex-col items-center justify-center rounded-lg ${cell} ${
-            hasDeadline ? 'font-bold' : 'font-medium text-ink-600'
+          const style = hasDeadline
+            ? {
+                background: projectColorAlpha(first?.color, items.length === 1 ? 0.16 : 0.1),
+                color: items.length === 1 ? projectColor(first?.color) : undefined,
+                boxShadow: `inset 0 0 0 1px ${projectColorAlpha(first?.color, 0.32)}`,
+              }
+            : undefined
+          const clickable = Boolean(onSelectDay && hasDeadline)
+          const className = `relative flex flex-col rounded-xl ${cell} ${
+            hasDeadline ? 'font-semibold text-ink-800' : 'font-medium text-ink-500'
           } ${isToday ? 'ring-1 ring-teal-400' : ''} ${
             selected ? 'ring-2 ring-teal-500' : ''
-          } ${hasDeadline && items.length > 1 ? 'bg-teal-50 text-teal-800' : ''} ${
-            onSelectDay ? 'cursor-pointer' : ''
-          } ${onSelectDay && !hasDeadline ? 'hover:bg-cream-50' : ''}`
+          } ${hasDeadline && items.length > 1 ? 'bg-teal-50 text-teal-900' : ''} ${
+            clickable ? 'cursor-pointer hover:brightness-[0.98]' : ''
+          }`
           const label = hasDeadline
             ? t('projectCalendar.dayWithCount', {
                 day: formatNumber(day.day, locale),
@@ -185,9 +207,16 @@ export function MonthCalendarGrid({
             : formatNumber(day.day, locale)
           const content = (
             <>
-              <span className="tabular-nums">{formatNumber(day.day, locale)}</span>
-              {items.length > 1 ? (
-                <span className="mt-0.5 flex gap-0.5">
+              <span
+                className={`tabular-nums ${showLabels ? 'text-center text-xs font-bold' : ''}`}
+              >
+                {formatNumber(day.day, locale)}
+              </span>
+              {showLabels && hasDeadline ? (
+                <DayProjectLabels items={items} locale={locale} />
+              ) : null}
+              {!showLabels && items.length > 1 ? (
+                <span className="mt-0.5 flex justify-center gap-0.5">
                   {items.slice(0, 3).map((item) => (
                     <span
                       key={item.id}
@@ -199,11 +228,11 @@ export function MonthCalendarGrid({
               ) : null}
             </>
           )
-          return onSelectDay ? (
+          return clickable ? (
             <button
               key={day.iso}
               type="button"
-              onClick={() => onSelectDay(day.iso)}
+              onClick={() => onSelectDay?.(day.iso, items)}
               className={className}
               style={style}
               aria-label={label}

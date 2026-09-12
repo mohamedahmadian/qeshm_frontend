@@ -3,8 +3,8 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Form'
-import { FormCard, FormEmptyHint, FormSectionTitle } from '../../../components/ui/FormLayout'
-import { displayDateParts, formatNumber, monthName } from '../../../lib/datetime'
+import { FormCard, FormEmptyHint } from '../../../components/ui/FormLayout'
+import { formatDate, formatNumber, monthName } from '../../../lib/datetime'
 import {
   deadlineBucketOrder,
   groupByDeadline,
@@ -12,39 +12,28 @@ import {
   monthDeadlineCounts,
   monthsWithDeadlines,
   projectYearBar,
+  projectsInDisplayMonth,
   projectsInDisplayYear,
   projectsWithEndDate,
 } from '../../../lib/project-calendar'
 import { projectColor, projectColorAlpha } from '../../../lib/project-color'
 import type { Project } from '../../../types/app'
-import {
-  DeadlineGroup,
-  DeadlineProjectRow,
-  MonthCalendarGrid,
-  ProposalCardNote,
-} from './ProjectCalendarShared'
+import { CalendarProjectsModal } from './CalendarProjectsModal'
+import { DeadlineGroup, MonthCalendarGrid, ProposalCardNote } from './ProjectCalendarShared'
 
-function SelectedDayList({
-  iso,
-  items,
-  locale,
-}: {
-  iso: string | null
+type ProjectsModalState = {
+  title: string
+  subtitle?: string
   items: Project[]
-  locale: string
-}) {
-  const { t } = useTranslation()
-  if (!iso) return null
-  if (!items.length) {
-    return <FormEmptyHint>{t('projectCalendar.noDeadlineOnDay')}</FormEmptyHint>
+} | null
+
+function useProjectsModal() {
+  const [modal, setModal] = useState<ProjectsModalState>(null)
+  return {
+    modal,
+    open: setModal,
+    close: () => setModal(null),
   }
-  return (
-    <div className="space-y-2">
-      {items.map((item) => (
-        <DeadlineProjectRow key={item.id} project={item} locale={locale} />
-      ))}
-    </div>
-  )
 }
 
 export function AgendaProposal({ items, locale }: { items: Project[]; locale: string }) {
@@ -87,12 +76,14 @@ export function YearStripProposal({
   const { t } = useTranslation()
   const counts = useMemo(() => monthDeadlineCounts(items, year, locale), [items, year, locale])
   const byDate = useMemo(() => indexProjectsByEndDate(items), [items])
+  const { modal, open, close } = useProjectsModal()
   const [month, setMonth] = useState<number | null>(
     counts.findIndex((count) => count > 0) + 1 || null,
   )
-  const [selectedIso, setSelectedIso] = useState<string | null>(null)
   const selectedMonth = month && month >= 1 && month <= 12 ? month : null
-  const selectedItems = selectedIso ? (byDate.get(selectedIso) ?? []) : []
+  const monthItems = selectedMonth
+    ? projectsInDisplayMonth(items, year, selectedMonth, locale)
+    : []
 
   return (
     <FormCard
@@ -111,10 +102,7 @@ export function YearStripProposal({
               <button
                 key={value}
                 type="button"
-                onClick={() => {
-                  setMonth(value)
-                  setSelectedIso(null)
-                }}
+                onClick={() => setMonth(value)}
                 className={`cursor-pointer rounded-2xl border px-3 py-3 text-start transition ${
                   active
                     ? 'border-teal-300 bg-teal-50 shadow-[0_6px_16px_rgba(46,189,182,0.16)]'
@@ -135,22 +123,44 @@ export function YearStripProposal({
         </div>
         {selectedMonth ? (
           <div className="rounded-2xl border border-teal-50 bg-cream-50/60 p-3 sm:p-4">
-            <FormSectionTitle icon={CalendarDays}>
+            <button
+              type="button"
+              className="mb-3 cursor-pointer text-start text-sm font-semibold text-ink-800 hover:text-teal-700"
+              onClick={() =>
+                open({
+                  title: t('projectCalendar.monthModalTitle', {
+                    month: monthName(selectedMonth, locale),
+                  }),
+                  subtitle: t('projectCalendar.monthModalHint'),
+                  items: monthItems,
+                })
+              }
+            >
               {monthName(selectedMonth, locale)}
-            </FormSectionTitle>
+            </button>
             <MonthCalendarGrid
               year={year}
               month={selectedMonth}
               locale={locale}
               byDate={byDate}
-              selectedIso={selectedIso}
-              onSelectDay={setSelectedIso}
+              showLabels
+              onSelectDay={(iso, dayItems) =>
+                open({
+                  title: t('projectCalendar.dayModalTitle', { date: formatDate(iso, locale) }),
+                  items: dayItems,
+                })
+              }
             />
           </div>
         ) : null}
-        {selectedIso ? (
-          <SelectedDayList iso={selectedIso} items={selectedItems} locale={locale} />
-        ) : null}
+        <CalendarProjectsModal
+          open={Boolean(modal)}
+          title={modal?.title ?? ''}
+          subtitle={modal?.subtitle}
+          items={modal?.items ?? []}
+          locale={locale}
+          onClose={close}
+        />
       </div>
     </FormCard>
   )
@@ -172,8 +182,7 @@ export function YearGridProposal({
   const months = onlyWithDeadlines
     ? monthsWithDeadlines(items, year, locale)
     : Array.from({ length: 12 }, (_, index) => index + 1)
-  const [selectedIso, setSelectedIso] = useState<string | null>(null)
-  const selectedItems = selectedIso ? (byDate.get(selectedIso) ?? []) : []
+  const { modal, open, close } = useProjectsModal()
 
   return (
     <FormCard
@@ -197,31 +206,57 @@ export function YearGridProposal({
         </ProposalCardNote>
         {!months.length ? <FormEmptyHint>{t('projectCalendar.emptyYear')}</FormEmptyHint> : null}
         {months.length ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {months.map((month) => (
-              <article
-                key={month}
-                className="rounded-2xl border border-teal-50 bg-white p-3 shadow-[0_4px_14px_rgba(20,40,40,0.04)]"
-              >
-                <h3 className="mb-2 text-sm font-semibold text-ink-800">
-                  {monthName(month, locale)}
-                </h3>
-                <MonthCalendarGrid
-                  year={year}
-                  month={month}
-                  locale={locale}
-                  byDate={byDate}
-                  selectedIso={selectedIso}
-                  onSelectDay={setSelectedIso}
-                  compact
-                />
-              </article>
-            ))}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {months.map((month) => {
+              const monthItems = projectsInDisplayMonth(items, year, month, locale)
+              const label = monthName(month, locale)
+              return (
+                <article
+                  key={month}
+                  className="rounded-2xl border border-teal-50 bg-white p-3 shadow-[0_4px_14px_rgba(20,40,40,0.04)] sm:p-4"
+                >
+                  <button
+                    type="button"
+                    className="mb-3 cursor-pointer text-start text-sm font-semibold text-ink-800 hover:text-teal-700"
+                    onClick={() =>
+                      open({
+                        title: t('projectCalendar.monthModalTitle', { month: label }),
+                        subtitle: t('projectCalendar.monthModalHint'),
+                        items: monthItems,
+                      })
+                    }
+                    aria-label={t('projectCalendar.openMonthDetails', { month: label })}
+                  >
+                    {label}
+                  </button>
+                  <MonthCalendarGrid
+                    year={year}
+                    month={month}
+                    locale={locale}
+                    byDate={byDate}
+                    showLabels
+                    onSelectDay={(iso, dayItems) =>
+                      open({
+                        title: t('projectCalendar.dayModalTitle', {
+                          date: formatDate(iso, locale),
+                        }),
+                        items: dayItems,
+                      })
+                    }
+                  />
+                </article>
+              )
+            })}
           </div>
         ) : null}
-        {selectedIso ? (
-          <SelectedDayList iso={selectedIso} items={selectedItems} locale={locale} />
-        ) : null}
+        <CalendarProjectsModal
+          open={Boolean(modal)}
+          title={modal?.title ?? ''}
+          subtitle={modal?.subtitle}
+          items={modal?.items ?? []}
+          locale={locale}
+          onClose={close}
+        />
       </div>
     </FormCard>
   )
@@ -241,17 +276,13 @@ export function MonthAgendaProposal({
   const byDate = useMemo(() => indexProjectsByEndDate(items), [items])
   const firstBusy = counts.findIndex((count) => count > 0) + 1
   const [month, setMonth] = useState(firstBusy || 1)
-  const [selectedIso, setSelectedIso] = useState<string | null>(null)
-  const selectedItems = selectedIso ? (byDate.get(selectedIso) ?? []) : []
+  const { modal, open, close } = useProjectsModal()
   const safeMonth = month >= 1 && month <= 12 ? month : 1
   const monthItems = useMemo(
-    () =>
-      projectsWithEndDate(items).filter((item) => {
-        const parts = displayDateParts(item.endDate, locale)
-        return parts?.year === year && parts.month === safeMonth
-      }),
+    () => projectsInDisplayMonth(items, year, safeMonth, locale),
     [items, locale, safeMonth, year],
   )
+  const label = monthName(safeMonth, locale)
 
   return (
     <FormCard
@@ -266,58 +297,56 @@ export function MonthAgendaProposal({
             type="button"
             variant="ghost"
             disabled={safeMonth <= 1}
-            onClick={() => {
-              setMonth((value) => Math.max(1, value - 1))
-              setSelectedIso(null)
-            }}
+            onClick={() => setMonth((value) => Math.max(1, value - 1))}
           >
             {t('projectCalendar.prevMonth')}
           </Button>
-          <p className="min-w-28 text-center text-sm font-semibold text-ink-800">
-            {monthName(safeMonth, locale)}
-          </p>
+          <button
+            type="button"
+            className="min-w-28 cursor-pointer text-center text-sm font-semibold text-ink-800 hover:text-teal-700"
+            onClick={() =>
+              open({
+                title: t('projectCalendar.monthModalTitle', { month: label }),
+                subtitle: t('projectCalendar.monthModalHint'),
+                items: monthItems,
+              })
+            }
+            aria-label={t('projectCalendar.openMonthDetails', { month: label })}
+          >
+            {label}
+          </button>
           <Button
             type="button"
             variant="ghost"
             disabled={safeMonth >= 12}
-            onClick={() => {
-              setMonth((value) => Math.min(12, value + 1))
-              setSelectedIso(null)
-            }}
+            onClick={() => setMonth((value) => Math.min(12, value + 1))}
           >
             {t('projectCalendar.nextMonth')}
           </Button>
         </div>
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]">
-          <div className="rounded-2xl border border-teal-50 bg-cream-50/50 p-3 sm:p-4">
-            <MonthCalendarGrid
-              year={year}
-              month={safeMonth}
-              locale={locale}
-              byDate={byDate}
-              selectedIso={selectedIso}
-              onSelectDay={setSelectedIso}
-            />
-          </div>
-          <div className="min-w-0 space-y-3">
-            <FormSectionTitle icon={ListChecks}>
-              {selectedIso
-                ? t('projectCalendar.selectedDay')
-                : t('projectCalendar.monthDeadlines')}
-            </FormSectionTitle>
-            {selectedIso ? (
-              <SelectedDayList iso={selectedIso} items={selectedItems} locale={locale} />
-            ) : monthItems.length ? (
-              <div className="space-y-2">
-                {monthItems.map((item) => (
-                  <DeadlineProjectRow key={item.id} project={item} locale={locale} />
-                ))}
-              </div>
-            ) : (
-              <FormEmptyHint>{t('projectCalendar.noMonthDeadline')}</FormEmptyHint>
-            )}
-          </div>
+        <div className="rounded-2xl border border-teal-50 bg-cream-50/50 p-3 sm:p-4">
+          <MonthCalendarGrid
+            year={year}
+            month={safeMonth}
+            locale={locale}
+            byDate={byDate}
+            showLabels
+            onSelectDay={(iso, dayItems) =>
+              open({
+                title: t('projectCalendar.dayModalTitle', { date: formatDate(iso, locale) }),
+                items: dayItems,
+              })
+            }
+          />
         </div>
+        <CalendarProjectsModal
+          open={Boolean(modal)}
+          title={modal?.title ?? ''}
+          subtitle={modal?.subtitle}
+          items={modal?.items ?? []}
+          locale={locale}
+          onClose={close}
+        />
       </div>
     </FormCard>
   )

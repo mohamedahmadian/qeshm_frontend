@@ -103,6 +103,18 @@ export function projectsInDisplayYear(items: Project[], year: number, locale: st
   })
 }
 
+export function projectsInDisplayMonth(
+  items: Project[],
+  year: number,
+  month: number,
+  locale: string,
+) {
+  return projectsWithEndDate(items).filter((item) => {
+    const parts = displayDateParts(item.endDate, locale)
+    return parts?.year === year && parts.month === month
+  })
+}
+
 export function monthsWithDeadlines(items: Project[], year: number, locale: string) {
   const months = new Set<number>()
   for (const item of projectsWithEndDate(items)) {
