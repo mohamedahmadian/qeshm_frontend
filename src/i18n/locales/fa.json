@@ -704,6 +704,8 @@
     "withLocation": "دارای موقعیت روی نقشه",
     "withoutLocation": "بدون موقعیت",
     "avgProgress": "میانگین پیشرفت",
+    "maxProgress": "بیشترین پیشرفت",
+    "minProgress": "کمترین پیشرفت",
     "unsetStatus": "نامشخص",
     "mainContractor": "پیمانکار اصلی",
     "activityCount": "تعداد فعالیت‌ها",

@@ -764,9 +764,9 @@ export type ProjectLiveBoardItem = Project & {
 
 export type ProjectLiveBoardStats = {
   total: number;
-  withLocation: number;
-  withoutLocation: number;
   avgProgressPercent: number | null;
+  maxProgressPercent: number | null;
+  minProgressPercent: number | null;
   byStatus: ProjectReportKeyCount[];
 };
 

@@ -3,7 +3,6 @@ import {
   CalendarRange,
   CircleCheck,
   CircleDashed,
-  CircleHelp,
   ClipboardList,
   Eye,
   Filter,
@@ -12,12 +11,11 @@ import {
   Landmark,
   LayoutGrid,
   Map as MapIcon,
-  MapPin,
-  MapPinned,
-  PauseCircle,
   Percent,
   Radio,
   Table2,
+  TrendingDown,
+  TrendingUp,
 } from 'lucide-react'
 import { type CSSProperties, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -75,9 +73,7 @@ const statusStatMeta: Record<
 > = {
   NOT_STARTED: { icon: CircleDashed, tone: 'ink' },
   IN_PROGRESS: { icon: Activity, tone: 'teal' },
-  SUSPENDED: { icon: PauseCircle, tone: 'ink' },
   COMPLETED: { icon: CircleCheck, tone: 'mint' },
-  unset: { icon: CircleHelp, tone: 'ink' },
 }
 
 export function ProjectLiveBoardPage() {
@@ -527,25 +523,12 @@ function LiveBoardStats({
   return (
     <FormCard icon={Activity} title={t('projectLiveBoard.stats')}>
       <div className={`${formCardBodyClassName}`}>
-        <FormSectionTitle icon={FolderKanban}>{t('projectLiveBoard.totalProjects')}</FormSectionTitle>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 sm:gap-3">
           <FormFactTile
             icon={FolderKanban}
             label={t('projectLiveBoard.totalProjects')}
             value={formatNumber(stats.total, locale)}
             tone="teal"
-          />
-          <FormFactTile
-            icon={MapPinned}
-            label={t('projectLiveBoard.withLocation')}
-            value={formatNumber(stats.withLocation, locale)}
-            tone="mint"
-          />
-          <FormFactTile
-            icon={MapPin}
-            label={t('projectLiveBoard.withoutLocation')}
-            value={formatNumber(stats.withoutLocation, locale)}
-            tone="ink"
           />
           <FormFactTile
             icon={Percent}
@@ -557,21 +540,39 @@ function LiveBoardStats({
             }
             empty={stats.avgProgressPercent == null}
           />
+          <FormFactTile
+            icon={TrendingUp}
+            label={t('projectLiveBoard.maxProgress')}
+            value={
+              stats.maxProgressPercent == null
+                ? '—'
+                : `${formatNumber(stats.maxProgressPercent, locale)}٪`
+            }
+            empty={stats.maxProgressPercent == null}
+            tone="mint"
+          />
+          <FormFactTile
+            icon={TrendingDown}
+            label={t('projectLiveBoard.minProgress')}
+            value={
+              stats.minProgressPercent == null
+                ? '—'
+                : `${formatNumber(stats.minProgressPercent, locale)}٪`
+            }
+            empty={stats.minProgressPercent == null}
+            tone="ink"
+          />
         </div>
         <FormSectionTitle icon={Activity}>{t('projects.status')}</FormSectionTitle>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5 sm:gap-3">
+        <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
           {stats.byStatus.map((item) => {
-            const meta = statusStatMeta[item.key] ?? statusStatMeta.unset
+            const meta = statusStatMeta[item.key] ?? statusStatMeta.NOT_STARTED
             const Icon = meta.icon
-            const label =
-              item.key === 'unset'
-                ? t('projectLiveBoard.unsetStatus')
-                : t(`projects.statuses.${item.key}`)
             return (
               <FormFactTile
                 key={item.key}
                 icon={Icon}
-                label={label}
+                label={t(`projects.statuses.${item.key}`)}
                 value={formatNumber(item.count, locale)}
                 tone={meta.tone}
               />
