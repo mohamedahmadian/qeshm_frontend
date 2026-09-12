@@ -10,6 +10,7 @@ import {
   ScrollText,
   Sparkles,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -51,7 +52,12 @@ import {
 } from '../../../types/app'
 import { ProjectProgress } from '../ProjectShared'
 import { ProjectProgressForm } from './ProjectProgressForm'
-import { projectProgressEntryPath, projectProgressPath } from './progress-paths'
+import { ProjectProgressProjectPicker } from './ProjectProgressProjectPicker'
+import {
+  projectProgressCreatePath,
+  projectProgressEntryPath,
+  projectProgressPath,
+} from './progress-paths'
 
 function useProject() {
   const { id: projectId } = useParams()
@@ -139,7 +145,7 @@ export function ProjectProgressListPage() {
         title={t('projectProgress.title')}
         subtitle={<EntityNameSubtitle name={project.systemName} icon={ClipboardList} />}
         action={
-          <Link to={`${base}/new`}>
+          <Link to={projectProgressCreatePath(projectId)}>
             <Button>
               <Plus className="size-4" />
               {t('projectProgress.create')}
@@ -285,6 +291,69 @@ export function ProjectProgressCreatePage() {
       />
       <ProjectProgressForm
         onSubmit={async (payload) => {
+          const { data } = await api.post<{ id: string }>(
+            `/projects/${projectId}/progress`,
+            payload,
+          )
+          toast.success(t('projectProgress.created'))
+          navigate(projectProgressEntryPath(projectId, data.id))
+        }}
+      />
+    </div>
+  )
+}
+
+export function ProjectProgressCreateGlobalPage() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [projectId, setProjectId] = useState('')
+  const projects = useQuery({
+    queryKey: ['projects', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<Project[]>('/projects')
+      return data
+    },
+  })
+  const items = projects.data ?? []
+  const selected = items.find((item) => item.id === projectId)
+
+  useEffect(() => {
+    if (!projectId && items.length === 1) {
+      setProjectId(items[0].id)
+    }
+  }, [items, projectId])
+
+  if (projects.isLoading) {
+    return <LoadingState />
+  }
+
+  return (
+    <div className={formShellClassName}>
+      <PageHeader
+        icon={ClipboardList}
+        title={t('projectProgress.create')}
+        subtitle={
+          selected ? (
+            <EntityNameSubtitle name={selected.systemName} icon={ClipboardList} />
+          ) : (
+            t('projectProgress.createSubtitle')
+          )
+        }
+        backTo="/projects"
+      />
+      <ProjectProgressForm
+        leading={
+          <ProjectProgressProjectPicker
+            projects={items}
+            value={projectId}
+            onChange={setProjectId}
+          />
+        }
+        onSubmit={async (payload) => {
+          if (!projectId) {
+            toast.error(t('projectProgress.projectRequired'))
+            return
+          }
           const { data } = await api.post<{ id: string }>(
             `/projects/${projectId}/progress`,
             payload,

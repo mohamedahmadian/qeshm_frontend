@@ -1,5 +1,6 @@
 import {
   Activity,
+  CalendarClock,
   CalendarRange,
   CircleCheck,
   CircleDashed,
@@ -27,7 +28,7 @@ import {
   Tags,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { type CSSProperties, useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -57,8 +58,9 @@ import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
-import { formatGroupedQuantity, formatNumber } from '../../lib/datetime'
+import { calendarDaysUntil, formatGroupedQuantity, formatNumber } from '../../lib/datetime'
 import { QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
+import { projectColor, projectColorAlpha } from '../../lib/project-color'
 import { ProjectProgressForm } from './progress/ProjectProgressForm'
 import { projectProgressEntryPath } from './progress/progress-paths'
 import {
@@ -74,6 +76,7 @@ import {
 import {
   ProjectImportanceBadge,
   ProjectLifecycleBadge,
+  ProjectNameWithColor,
   ProjectOperatorsCell,
   ProjectProgress,
   ProjectStatus as ProjectActiveBadge,
@@ -294,7 +297,11 @@ export function ProjectLiveBoardPage() {
   const stats = query.data?.stats
   const selected = items.find((item) => item.id === selectedId) ?? null
   const located = useMemo(
-    () => items.filter((item) => item.latitude != null && item.longitude != null),
+    () =>
+      items.filter(
+        (item) =>
+          item.showOnLiveBoard !== false && item.latitude != null && item.longitude != null,
+      ),
     [items],
   )
   const overlays = useMemo(
@@ -305,6 +312,7 @@ export function ProjectLiveBoardPage() {
         lng: item.longitude as number,
         kind: 'project' as const,
         tone: item.status ? statusTone[item.status] : 'not-started',
+        color: projectColor(item.color),
         badge: '',
         title: escapeHtml(item.code),
         farTitle: escapeHtml(item.code),
@@ -625,7 +633,9 @@ export function ProjectLiveBoardPage() {
               <tbody>
                 {tableRows.map((item) => (
                   <tr key={item.id} className="border-t border-line">
-                    <td className="px-4 py-3 font-medium">{item.systemName}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <ProjectNameWithColor name={item.systemName} color={item.color} />
+                    </td>
                     <td className="px-4 py-3">{item.code}</td>
                     <td className="px-4 py-3">
                       <ProjectLifecycleBadge value={item.status} />
@@ -730,13 +740,32 @@ function ProjectBoardCard({
 }) {
   const { t } = useTranslation()
   const theme = cardStatusTheme[project.status ?? 'unset'] ?? cardStatusTheme.unset
+  const accent = projectColor(project.color)
   return (
     <Link
       to={`/projects/${project.id}`}
-      className={`${cardClassName} group relative flex h-full flex-col overflow-hidden border-teal-100/80 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(46,189,182,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400`}
+      className={`${cardClassName} group relative flex h-full flex-col overflow-hidden border-teal-100/80 shadow-[0_12px_28px_var(--project-shadow)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_var(--project-shadow-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400`}
+      style={
+        {
+          '--project-color': accent,
+          '--project-shadow': projectColorAlpha(project.color, 0.16),
+          '--project-shadow-hover': projectColorAlpha(project.color, 0.28),
+          borderInlineStartWidth: 4,
+          borderInlineStartStyle: 'solid',
+          borderInlineStartColor: accent,
+        } as CSSProperties
+      }
     >
+      <span
+        className="absolute end-3 top-2 z-10 size-3.5 rounded-full ring-2 ring-white"
+        style={{
+          background: accent,
+          boxShadow: `0 0 0 4px ${projectColorAlpha(project.color, 0.18)}, 0 6px 14px ${projectColorAlpha(project.color, 0.3)}`,
+        }}
+        aria-hidden
+      />
       <div className={`h-1.5 ${theme.bar}`} />
-      <div className="relative flex flex-1 flex-col gap-4 bg-gradient-to-b from-teal-50/40 via-white to-mint-50/30 p-5">
+      <div className="relative flex flex-1 flex-col gap-4 bg-gradient-to-b from-teal-50/40 via-white to-mint-50/30 px-5 pb-5 pt-6">
         <div
           className="pointer-events-none absolute -start-8 -top-10 size-28 rounded-full bg-teal-200/25"
           aria-hidden
@@ -915,6 +944,8 @@ function ProjectMapCard({
   const contractor = project.mainContractor?.name || project.companyName
   const showDetails = panel === 'details'
   const showProgress = panel === 'progress'
+  const remainingDays = calendarDaysUntil(project.endDate)
+  const overdue = remainingDays != null && remainingDays < 0
 
   useEffect(() => {
     setPanel('none')
@@ -922,53 +953,103 @@ function ProjectMapCard({
 
   return (
     <aside
-      className={`absolute start-3 top-3 z-[1000] flex max-h-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl border border-teal-100 bg-white shadow-[0_18px_40px_rgba(20,40,40,0.16)] ${
+      className={`absolute start-3 top-3 z-[1000] flex max-h-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl border bg-white ${
         showProgress
-          ? 'w-[min(calc(100%-1.5rem),26rem)]'
-          : 'w-[min(calc(100%-1.5rem),20.5rem)]'
+          ? 'w-[min(calc(100%-1.5rem),24rem)]'
+          : 'w-[min(calc(100%-1.5rem),19.5rem)]'
       }`}
+      style={{
+        borderColor: projectColorAlpha(project.color, 0.28),
+        borderInlineStartWidth: 4,
+        borderInlineStartStyle: 'solid',
+        borderInlineStartColor: projectColor(project.color),
+        boxShadow: `0 18px 40px ${projectColorAlpha(project.color, 0.22)}`,
+      }}
       onClick={(event) => event.stopPropagation()}
     >
       <div className={`h-1.5 ${theme.bar}`} />
-      <div className="relative min-h-0 flex-1 overflow-auto p-5">
+      <div className="relative min-h-0 flex-1 overflow-auto p-4">
         <button
           type="button"
-          className="absolute end-3 top-3 inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-teal-400 bg-white text-teal-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+          className="absolute end-2.5 top-2.5 inline-flex size-8 cursor-pointer items-center justify-center rounded-full border border-teal-400 bg-white text-teal-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
           aria-label={t('projectLiveBoard.close')}
           onClick={onClose}
         >
           <X className="size-4" aria-hidden />
         </button>
-        <p className="pe-10 text-xs font-medium text-teal-700">{project.code}</p>
-        <h2 className="mt-1 pe-10 text-xl font-bold leading-8 text-ink-900">{project.systemName}</h2>
-        <div className="mt-2">
+        <p className="pe-10 text-[11px] font-medium text-teal-700">{project.code}</p>
+        <h2 className="mt-0.5 pe-10 text-lg font-bold leading-7 text-ink-900">{project.systemName}</h2>
+        <div className="mt-1.5">
           <ProjectLifecycleBadge value={project.status} />
         </div>
-        <div className="mt-5 flex flex-col items-center gap-2">
-          <ProgressRing value={project.progressPercent} locale={locale} color={theme.ring} sizeClass="size-24" />
-          <p className="text-xs text-ink-500">{t('projects.progress')}</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-2xl border border-teal-100 bg-gradient-to-b from-teal-50 to-white px-3 py-2.5">
+            <p className="flex items-center gap-1 text-[10px] font-medium text-ink-500">
+              <Percent className="size-3 text-teal-600" aria-hidden />
+              {t('projects.progress')}
+            </p>
+            <p className="mt-1 text-[1.7rem] font-bold leading-none tabular-nums text-teal-700">
+              {project.progressPercent == null
+                ? '—'
+                : `${formatNumber(project.progressPercent, locale)}٪`}
+            </p>
+          </div>
+          <div
+            className={`rounded-2xl border px-3 py-2.5 ${
+              overdue
+                ? 'border-ink-200 bg-gradient-to-b from-cream-50 to-white'
+                : 'border-mint-100 bg-gradient-to-b from-mint-50 to-white'
+            }`}
+          >
+            <p className="flex items-center gap-1 text-[10px] font-medium text-ink-500">
+              <CalendarClock className="size-3 text-mint-600" aria-hidden />
+              {overdue ? t('projectLiveBoard.overdueDays') : t('projectLiveBoard.remainingDays')}
+            </p>
+            <p
+              className={`mt-1 text-[1.7rem] font-bold leading-none tabular-nums ${
+                overdue ? 'text-ink-700' : 'text-mint-600'
+              }`}
+            >
+              {remainingDays == null ? '—' : formatNumber(Math.abs(remainingDays), locale)}
+            </p>
+          </div>
         </div>
-        {contractor ? (
-          <div className="mt-5 rounded-2xl border border-teal-100 bg-teal-50/50 px-3 py-2.5">
+        {!showProgress && contractor ? (
+          <div className="mt-3 rounded-2xl border border-teal-100 bg-teal-50/50 px-3 py-2">
             <p className="text-[11px] font-medium text-ink-500">{t('projectLiveBoard.mainContractor')}</p>
             <p className="mt-0.5 text-sm font-semibold text-ink-900">{contractor}</p>
           </div>
         ) : null}
-        <div className="mt-4 rounded-2xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/50 px-3 py-2.5">
-          <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium text-ink-500">
-            <span className="inline-flex items-center gap-1.5">
-              <ClipboardList className="size-3.5 text-teal-600" aria-hidden />
-              {t('projectLiveBoard.lastActivity')}
-            </span>
-            {project.lastActivity ? <DateText value={project.lastActivity.occurredAt} /> : null}
+        {!showProgress ? (
+          <div className="mt-2 flex items-center gap-2 rounded-2xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/50 px-3 py-2">
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium text-ink-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <ClipboardList className="size-3.5 text-teal-600" aria-hidden />
+                  {t('projectLiveBoard.lastActivity')}
+                </span>
+                {project.lastActivity ? <DateText value={project.lastActivity.occurredAt} /> : null}
+              </div>
+              <LastActivityPreview
+                activity={project.lastActivity}
+                empty={t('projectLiveBoard.noActivity')}
+              />
+            </div>
+            {project.lastActivity ? (
+              <Link
+                to={projectProgressEntryPath(project.id, project.lastActivity.id)}
+                aria-label={t('projectLiveBoard.openActivity')}
+                className="shrink-0"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Button type="button" variant="ghost" icon>
+                  <Eye className="size-4" aria-hidden />
+                </Button>
+              </Link>
+            ) : null}
           </div>
-          <LastActivityPreview
-            projectId={project.id}
-            activity={project.lastActivity}
-            empty={t('projectLiveBoard.noActivity')}
-          />
-        </div>
-        <div className="mt-4 space-y-2">
+        ) : null}
+        <div className="mt-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"

@@ -1,5 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { peekDetailEditTo } from '../../hooks/useDetailEditTo'
 import { CopyableDigits, useCopyDigits } from './CopyableDigits'
 
 export const cardClassName =
@@ -49,6 +51,7 @@ export function FormCard({
   action,
   children,
   className = '',
+  editTo,
   onDoubleClick,
 }: {
   icon: LucideIcon
@@ -58,19 +61,23 @@ export function FormCard({
   action?: ReactNode
   children: ReactNode
   className?: string
+  /** دابل‌کلیک کارت جزئیات → ویرایش؛ اگر نیاید از `DetailActions` خوانده می‌شود */
+  editTo?: string
   onDoubleClick?: () => void
 }) {
+  const navigate = useNavigate()
   return (
     <section
       className={`${cardClassName} overflow-hidden ${className}`}
-      onDoubleClick={
-        onDoubleClick
-          ? (event) => {
-              if (isFormCardInteractiveTarget(event.target)) return
-              onDoubleClick()
-            }
-          : undefined
-      }
+      onDoubleClick={(event) => {
+        if (isFormCardInteractiveTarget(event.target)) return
+        if (onDoubleClick) {
+          onDoubleClick()
+          return
+        }
+        const to = editTo ?? peekDetailEditTo()
+        if (to) navigate(to)
+      }}
     >
       <FormCardHeader
         icon={icon}

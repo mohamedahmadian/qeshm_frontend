@@ -314,6 +314,15 @@ export function todayIsoDate() {
   return toIsoDateOnly(new DateObject({ calendar: gregorian }))
 }
 
+/** اختلاف روز تقویمی تا تاریخ هدف؛ منفی یعنی گذشته است. */
+export function calendarDaysUntil(iso?: string | null, fromIso = todayIsoDate()) {
+  if (!iso) return null
+  const start = Date.parse(`${fromIso}T12:00:00`)
+  const end = Date.parse(`${iso}T12:00:00`)
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null
+  return Math.round((end - start) / 86_400_000)
+}
+
 /** شنبهٔ هفتهٔ جاری در تقویم ایران */
 export function startOfIranWeekIso(iso = todayIsoDate()) {
   const js = new Date(`${iso}T12:00:00`)

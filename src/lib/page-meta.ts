@@ -110,6 +110,12 @@ export function getPageMeta(pathname: string): {
   if (pathname === '/projects/new') {
     return { titleKey: 'projects.create', subtitleKey: 'projects.createSubtitle' }
   }
+  if (pathname === '/projects/progress/new') {
+    return { titleKey: 'projectProgress.create', subtitleKey: 'projectProgress.createSubtitle' }
+  }
+  if (pathname === '/projects/progress') {
+    return { titleKey: 'menus.overview' }
+  }
   if (/\/contractors\/[^/]+\/payments\/new$/.test(pathname)) {
     return { titleKey: 'contractorPayments.create', subtitleKey: 'contractorPayments.createSubtitle' }
   }

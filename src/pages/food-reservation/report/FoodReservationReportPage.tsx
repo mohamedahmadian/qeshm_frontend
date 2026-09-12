@@ -273,6 +273,7 @@ export function FoodReservationReportPage() {
             </FormField>
           </div>
           <FormActions
+            headerIcons={false}
             submitLabel={t('foodReservations.showReport')}
             cancelLabel={t('foodReservations.clearFilters')}
             onCancel={clearFilters}

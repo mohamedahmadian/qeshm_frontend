@@ -76,6 +76,7 @@ import {
   ProjectPhaseListPage,
 } from './pages/projects/phases/ProjectPhasePages'
 import {
+  ProjectProgressCreateGlobalPage,
   ProjectProgressCreatePage,
   ProjectProgressDetailPage,
   ProjectProgressEditPage,
@@ -238,6 +239,7 @@ export default function App() {
                   <Route path="/projects/contractors/:contractorId/edit" element={<GlobalContractorEditPage />} />
                   <Route path="/projects/contractors/:contractorId" element={<GlobalContractorDetailPage />} />
                   <Route path="/projects/new" element={<ProjectCreatePage />} />
+                  <Route path="/projects/progress/new" element={<ProjectProgressCreateGlobalPage />} />
                   <Route path="/projects/:id/progress" element={<ProjectProgressListPage />} />
                   <Route path="/projects/:id/progress/new" element={<ProjectProgressCreatePage />} />
                   <Route path="/projects/:id/progress/:entryId" element={<ProjectProgressDetailPage />} />

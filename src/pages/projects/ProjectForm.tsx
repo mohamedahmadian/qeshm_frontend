@@ -9,7 +9,9 @@ import {
   Link2,
   MapPin,
   Monitor,
+  Palette,
   Percent,
+  Radio,
   ScrollText,
   Shield,
   Tags,
@@ -28,6 +30,7 @@ import { SearchSelect } from '../../components/ui/SearchSelect'
 import { getApiErrorMessage, api } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
 import { QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
+import { DEFAULT_PROJECT_COLOR, PROJECT_COLOR_SWATCHES, projectColor } from '../../lib/project-color'
 import {
   projectImportanceOrder,
   projectImportances,
@@ -60,6 +63,8 @@ export type ProjectPayload = {
   isSupportActive: boolean
   replacementProjectId: string | null
   description: string | null
+  color: string
+  showOnLiveBoard: boolean
   importance: ProjectImportance
 }
 
@@ -114,6 +119,8 @@ export function ProjectForm({
     initial?.replacementProjectId ?? '',
   )
   const [description, setDescription] = useState(initial?.description ?? '')
+  const [color, setColor] = useState(projectColor(initial?.color ?? DEFAULT_PROJECT_COLOR))
+  const [showOnLiveBoard, setShowOnLiveBoard] = useState(initial?.showOnLiveBoard ?? true)
   const [importance, setImportance] = useState<ProjectImportance>(
     initial?.importance ?? projectImportances.HIGH,
   )
@@ -199,6 +206,8 @@ export function ProjectForm({
         isSupportActive,
         replacementProjectId: replacementProjectId || null,
         description: emptyToNull(description),
+        color,
+        showOnLiveBoard,
         importance,
       })
     } catch (error) {
@@ -292,6 +301,45 @@ export function ProjectForm({
                   onChange={(e) => setSystemUrl(e.target.value)}
                 />
               </FormField>
+              <div className="sm:col-span-2">
+                <FormField icon={Palette} label={t('projects.color')} htmlFor="projectColor">
+                  <p className="mb-2 text-xs leading-6 text-ink-500">{t('projects.colorHint')}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {PROJECT_COLOR_SWATCHES.map((swatch) => {
+                      const selected = color === swatch
+                      return (
+                        <button
+                          key={swatch}
+                          type="button"
+                          aria-pressed={selected}
+                          aria-label={swatch}
+                          className={`size-8 cursor-pointer rounded-full border-2 transition ${
+                            selected
+                              ? 'border-ink-800 shadow-[0_0_0_3px_rgba(46,189,182,0.28)]'
+                              : 'border-white shadow-[0_2px_8px_rgba(20,40,40,0.12)] hover:scale-105'
+                          }`}
+                          style={{ background: swatch }}
+                          onClick={() => setColor(swatch)}
+                        />
+                      )
+                    })}
+                    <label
+                      className="relative inline-flex size-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-teal-400 bg-white text-[10px] font-bold text-teal-700 shadow-[0_2px_8px_rgba(46,189,182,0.16)]"
+                      title={t('projects.pickColor')}
+                    >
+                      <span aria-hidden>+</span>
+                      <input
+                        id="projectColor"
+                        type="color"
+                        value={color}
+                        aria-label={t('projects.pickColor')}
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        onChange={(e) => setColor(projectColor(e.target.value))}
+                      />
+                    </label>
+                  </div>
+                </FormField>
+              </div>
             </div>
           </div>
 
@@ -349,6 +397,15 @@ export function ProjectForm({
                   onChange={setIsSupportActive}
                   onLabel={t('geo.active')}
                   offLabel={t('geo.inactive')}
+                />
+              </FormField>
+              <FormField icon={Radio} label={t('projects.showOnLiveBoard')} htmlFor="showOnLiveBoard">
+                <ToggleField
+                  id="showOnLiveBoard"
+                  checked={showOnLiveBoard}
+                  onChange={setShowOnLiveBoard}
+                  onLabel={t('projects.showOnLiveBoardOn')}
+                  offLabel={t('projects.showOnLiveBoardOff')}
                 />
               </FormField>
               <FormField icon={Link2} label={t('projects.replacement')} htmlFor="replacementProjectId">
@@ -456,7 +513,6 @@ export function ProjectForm({
           </div>
 
           <FormActions
-            headerIcons={Boolean(initial)}
             submitLabel={t('projects.save')}
             cancelLabel={t('projects.cancel')}
             submitting={saving}

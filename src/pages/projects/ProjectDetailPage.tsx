@@ -10,7 +10,9 @@ import {
   Link2,
   MapPin,
   Monitor,
+  Palette,
   Percent,
+  Radio,
   ScrollText,
   Shield,
   Tags,
@@ -23,10 +25,12 @@ import { DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellC
 import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
 import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
-import { formatNumber, localizeDigits } from '../../lib/datetime'
 import { api } from '../../lib/api'
+import { formatNumber, localizeDigits } from '../../lib/datetime'
+import { projectColor } from '../../lib/project-color'
 import type { Project } from '../../types/app'
 import {
+  ProjectColorDot,
   ProjectImportanceBadge,
   ProjectLifecycleBadge,
   ProjectProgress,
@@ -66,11 +70,7 @@ export function ProjectDetailPage() {
         title={t('projects.details')}
         subtitle={<EntityNameSubtitle name={project.systemName} icon={FolderKanban} />}
       />
-      <FormCard
-        icon={FolderKanban}
-        title={project.systemName}
-        onDoubleClick={() => navigate(`/projects/${project.id}/edit`)}
-      >
+      <FormCard icon={FolderKanban} title={project.systemName}>
         <div className="space-y-6 p-5 sm:p-6">
           <FormSectionTitle icon={Landmark}>{t('projects.orgSection')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
@@ -135,6 +135,16 @@ export function ProjectDetailPage() {
               value={<ProjectStatus active={project.isSupportActive} />}
             />
             <FormFactTile
+              icon={Radio}
+              label={t('projects.showOnLiveBoard')}
+              value={
+                project.showOnLiveBoard
+                  ? t('projects.showOnLiveBoardOn')
+                  : t('projects.showOnLiveBoardOff')
+              }
+              tone={project.showOnLiveBoard ? 'teal' : 'ink'}
+            />
+            <FormFactTile
               icon={Link2}
               label={t('projects.replacement')}
               value={
@@ -154,6 +164,16 @@ export function ProjectDetailPage() {
               icon={Tags}
               label={t('projects.importance')}
               value={<ProjectImportanceBadge value={project.importance} />}
+            />
+            <FormFactTile
+              icon={Palette}
+              label={t('projects.color')}
+              value={
+                <span className="inline-flex items-center gap-2">
+                  <ProjectColorDot color={project.color} className="size-4" />
+                  <span dir="ltr">{projectColor(project.color)}</span>
+                </span>
+              }
             />
             <FormFactTile
               icon={ScrollText}
@@ -218,7 +238,6 @@ export function ProjectDetailPage() {
         </div>
       </FormCard>
       <DetailActions
-        headerIcons
         editTo={`/projects/${project.id}/edit`}
         editLabel={t('common.edit')}
         deleteLabel={t('projects.delete')}

@@ -1,5 +1,7 @@
 import {
   CalendarRange,
+  ChevronDown,
+  ChevronUp,
   ClipboardList,
   FileAudio,
   ImagePlus,
@@ -8,7 +10,7 @@ import {
   ScrollText,
   SlidersHorizontal,
 } from 'lucide-react'
-import { type CSSProperties, type FormEvent, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { FileDropField } from '../../../components/ui/FileDropField'
@@ -40,6 +42,7 @@ export function ProjectProgressForm({
   initial,
   onSubmit,
   embedded = false,
+  leading,
 }: {
   initial?: Pick<
     ProjectProgressEntry,
@@ -54,13 +57,14 @@ export function ProjectProgressForm({
   >
   onSubmit: (payload: ProjectProgressPayload) => Promise<void>
   embedded?: boolean
+  leading?: ReactNode
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const [occurredAt, setOccurredAt] = useState(initial?.occurredAt || todayIsoDate())
   const [body, setBody] = useState(initial?.body ?? initial?.transcript ?? '')
   const [processingMode, setProcessingMode] = useState<ProjectProgressProcessingMode>(
-    initial?.processingMode ?? projectProgressProcessingModes.DEFERRED,
+    initial?.processingMode ?? projectProgressProcessingModes.IMMEDIATE,
   )
   const [progressPercent, setProgressPercent] = useState<number | null>(
     initial?.progressPercent ?? null,
@@ -73,6 +77,14 @@ export function ProjectProgressForm({
   const [saving, setSaving] = useState(false)
   const [showAudioDrop, setShowAudioDrop] = useState(false)
   const [showImageDrop, setShowImageDrop] = useState(false)
+  const [showMoreDetails, setShowMoreDetails] = useState(() =>
+    Boolean(
+      initial &&
+        (initial.images.length > 0 ||
+          initial.progressPercent != null ||
+          initial.processingMode === projectProgressProcessingModes.DEFERRED),
+    ),
+  )
   const bodyRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -146,17 +158,114 @@ export function ProjectProgressForm({
     }
   }
 
+  const extraFields = (
+    <div className="space-y-3 rounded-2xl border border-teal-100 bg-white/80 p-3">
+      <FormField icon={SlidersHorizontal} label={t('projectProgress.processingMode')}>
+        <ProcessingModeField value={processingMode} onChange={setProcessingMode} />
+      </FormField>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {!audioId ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full sm:w-auto"
+            disabled={saving}
+            onClick={() => setShowAudioDrop((open) => !open)}
+          >
+            <FileAudio className="size-4" aria-hidden />
+            {t('projectProgress.addAudioFile')}
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full sm:w-auto"
+          disabled={saving}
+          onClick={() => setShowImageDrop((open) => !open)}
+        >
+          <ImagePlus className="size-4" aria-hidden />
+          {t('projectProgress.addImage')}
+        </Button>
+      </div>
+      {showAudioDrop && !audioId ? (
+        <FileDropField
+          accept="audio/*"
+          allowCamera={false}
+          uploading={uploadingAudio}
+          onFile={(file) => void uploadAudio(file)}
+        />
+      ) : null}
+      {showImageDrop || imageIds.length ? (
+        <div className="space-y-3">
+          {imageIds.length ? (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {imageIds.map((id) => (
+                <div key={id} className="relative">
+                  <img
+                    src={getImageUrl(id)}
+                    alt=""
+                    className="h-20 w-full rounded-xl object-cover ring-1 ring-teal-100 sm:h-24"
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-1 end-1 cursor-pointer rounded-full bg-white/90 px-2 py-0.5 text-[11px] text-teal-700 shadow-sm"
+                    onClick={() => setImageIds((current) => current.filter((item) => item !== id))}
+                  >
+                    {t('common.removeFile')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {showImageDrop ? (
+            <FileDropField
+              accept="image/*"
+              capture="environment"
+              uploading={uploadingImage}
+              onFile={(file) => void uploadImage(file)}
+            />
+          ) : null}
+        </div>
+      ) : null}
+      <FormField icon={CalendarRange} label={t('projectProgress.occurredAt')} htmlFor="progressDate">
+        <PersianDateField
+          id="progressDate"
+          value={occurredAt}
+          onChange={(value) => setOccurredAt(value ?? todayIsoDate())}
+        />
+      </FormField>
+      <FormField icon={Percent} label={t('projectProgress.progress')} htmlFor="progressPercent">
+        <div className="space-y-1.5">
+          <input
+            id="progressPercent"
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            dir="ltr"
+            className="progress-slider"
+            style={{ '--slider-fill': `${progressPercent ?? 0}%` } as CSSProperties}
+            value={progressPercent ?? 0}
+            onChange={(event) => setProgressPercent(Number(event.target.value))}
+          />
+          <p className="text-center text-sm tabular-nums text-ink-700">
+            {progressPercent == null ? '—' : `${formatNumber(progressPercent, locale)}٪`}
+          </p>
+        </div>
+      </FormField>
+    </div>
+  )
+
   const fields = (
-      <AppForm onSubmit={submit} className={embedded ? 'space-y-4' : formCardBodyClassName}>
-        <FormField icon={SlidersHorizontal} label={t('projectProgress.processingMode')}>
-          <ProcessingModeField value={processingMode} onChange={setProcessingMode} />
-        </FormField>
+      <AppForm onSubmit={submit} className={embedded ? 'space-y-3' : formCardBodyClassName}>
+        {leading}
         <FormField icon={Mic} label={t('projectProgress.record')}>
           <VoiceRecorder
             audioId={audioId || null}
             durationMs={audioDurationMs}
             processingMode={processingMode}
             liveTranscript={body}
+            compact={embedded}
             disabled={uploadingAudio || saving}
             onAudio={(file, durationMs) => void uploadAudio(file, durationMs)}
             onClear={() => {
@@ -171,102 +280,28 @@ export function ProjectProgressForm({
             id="progressBody"
             ref={bodyRef}
             className={`${fieldClassName} progress-report-field`}
-            rows={3}
+            rows={embedded ? 2 : 3}
             value={body}
             onChange={(event) => setBody(event.target.value)}
             placeholder={t('projectProgress.bodyPlaceholder')}
           />
         </FormField>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {!audioId ? (
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full sm:w-auto"
-              disabled={saving}
-              onClick={() => setShowAudioDrop((open) => !open)}
-            >
-              <FileAudio className="size-4" aria-hidden />
-              {t('projectProgress.addAudioFile')}
-            </Button>
-          ) : null}
+        <div className="flex justify-center">
           <Button
             type="button"
             variant="ghost"
-            className="w-full sm:w-auto"
-            disabled={saving}
-            onClick={() => setShowImageDrop((open) => !open)}
+            className="!rounded-xl !px-2.5 !py-1 !text-[11px]"
+            onClick={() => setShowMoreDetails((open) => !open)}
           >
-            <ImagePlus className="size-4" aria-hidden />
-            {t('projectProgress.addImage')}
+            {showMoreDetails ? (
+              <ChevronUp className="size-3.5" aria-hidden />
+            ) : (
+              <ChevronDown className="size-3.5" aria-hidden />
+            )}
+            {showMoreDetails ? t('projectProgress.hideMoreDetails') : t('projectProgress.moreDetails')}
           </Button>
         </div>
-        {showAudioDrop && !audioId ? (
-          <FileDropField
-            accept="audio/*"
-            allowCamera={false}
-            uploading={uploadingAudio}
-            onFile={(file) => void uploadAudio(file)}
-          />
-        ) : null}
-        {showImageDrop || imageIds.length ? (
-          <div className="space-y-3">
-            {imageIds.length ? (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {imageIds.map((id) => (
-                  <div key={id} className="relative">
-                    <img
-                      src={getImageUrl(id)}
-                      alt=""
-                      className="h-20 w-full rounded-xl object-cover ring-1 ring-teal-100 sm:h-24"
-                    />
-                    <button
-                      type="button"
-                      className="absolute top-1 end-1 cursor-pointer rounded-full bg-white/90 px-2 py-0.5 text-[11px] text-teal-700 shadow-sm"
-                      onClick={() => setImageIds((current) => current.filter((item) => item !== id))}
-                    >
-                      {t('common.removeFile')}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {showImageDrop ? (
-              <FileDropField
-                accept="image/*"
-                capture="environment"
-                uploading={uploadingImage}
-                onFile={(file) => void uploadImage(file)}
-              />
-            ) : null}
-          </div>
-        ) : null}
-        <FormField icon={CalendarRange} label={t('projectProgress.occurredAt')} htmlFor="progressDate">
-          <PersianDateField
-            id="progressDate"
-            value={occurredAt}
-            onChange={(value) => setOccurredAt(value ?? todayIsoDate())}
-          />
-        </FormField>
-        <FormField icon={Percent} label={t('projectProgress.progress')} htmlFor="progressPercent">
-          <div className="space-y-1.5">
-            <input
-              id="progressPercent"
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              dir="ltr"
-              className="progress-slider"
-              style={{ '--slider-fill': `${progressPercent ?? 0}%` } as CSSProperties}
-              value={progressPercent ?? 0}
-              onChange={(event) => setProgressPercent(Number(event.target.value))}
-            />
-            <p className="text-center text-sm tabular-nums text-ink-700">
-              {progressPercent == null ? '—' : `${formatNumber(progressPercent, locale)}٪`}
-            </p>
-          </div>
-        </FormField>
+        {showMoreDetails ? extraFields : null}
         <FormActions
           submitLabel={t('projectProgress.save')}
           submitting={saving || uploadingAudio || uploadingImage}

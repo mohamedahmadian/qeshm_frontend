@@ -8,6 +8,7 @@ import {
   requestBrowserGeolocation,
   type GeoErrorKind,
 } from '../../lib/geolocation'
+import { isProjectColor, projectColor, projectColorAlpha } from '../../lib/project-color'
 import { Button } from './Form'
 
 const pinIcon = L.divIcon({
@@ -57,6 +58,7 @@ export type MapOverlayMarker = {
   nearTitle?: string
   nearZoom?: number
   selected?: boolean
+  color?: string
   popupHtml?: string
 }
 
@@ -69,7 +71,16 @@ function markerVisibleTitle(marker: MapOverlayMarker, zoom: number) {
 function projectPinHtml(marker: MapOverlayMarker, zoom: number) {
   const label = markerVisibleTitle(marker, zoom)
   const selected = marker.selected ? ' eskan-project-pin-selected' : ''
-  return `<span class="eskan-project-pin${selected}"><span class="eskan-project-pin-dot"></span><span class="eskan-project-pin-label">${label}</span></span>`
+  const color = isProjectColor(marker.color) ? projectColor(marker.color) : ''
+  const fill = color
+    ? `background:${color};box-shadow:0 0 0 3px #fff,${
+        marker.selected
+          ? `0 0 0 6px ${projectColorAlpha(color, 0.38)},0 4px 12px rgba(20,40,40,0.22)`
+          : '0 2px 8px rgba(20,40,40,0.22)'
+      }`
+    : ''
+  const style = fill ? ` style="${fill}"` : ''
+  return `<span class="eskan-project-pin${selected}"><span class="eskan-project-pin-dot"${style}></span><span class="eskan-project-pin-label">${label}</span></span>`
 }
 
 function overlayMarkerHtml(marker: MapOverlayMarker, zoom = 12) {

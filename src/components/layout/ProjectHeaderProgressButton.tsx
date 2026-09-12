@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '../ui/Form'
 
-const RESERVED_PROJECT_SEGMENTS = new Set(['new', 'reports', 'live-board', 'contractors'])
+const RESERVED_PROJECT_SEGMENTS = new Set(['new', 'reports', 'live-board', 'contractors', 'progress'])
 
 function projectIdFromPath(pathname: string) {
   const match = pathname.match(/^\/projects\/([^/]+)(?:\/(.*))?$/)

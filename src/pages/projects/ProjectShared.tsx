@@ -1,12 +1,47 @@
 import { useTranslation } from 'react-i18next'
 import { GeoStatus } from '../geo/GeoShared'
 import { formatNumber } from '../../lib/datetime'
+import { projectColor, projectColorAlpha } from '../../lib/project-color'
 import {
   projectImportances,
   projectStatuses,
   type ProjectImportance,
   type ProjectStatus as ProjectLifecycle,
 } from '../../types/app'
+
+export function ProjectColorDot({
+  color,
+  className = 'size-2.5',
+}: {
+  color?: string | null
+  className?: string
+}) {
+  return (
+    <span
+      className={`inline-block shrink-0 rounded-full ${className}`}
+      style={{
+        background: projectColor(color),
+        boxShadow: `0 0 0 2px #fff, 0 2px 6px ${projectColorAlpha(color, 0.32)}`,
+      }}
+      aria-hidden
+    />
+  )
+}
+
+export function ProjectNameWithColor({
+  name,
+  color,
+}: {
+  name: string
+  color?: string | null
+}) {
+  return (
+    <span className="inline-flex min-w-0 items-center gap-2">
+      <ProjectColorDot color={color} />
+      <span className="min-w-0">{name}</span>
+    </span>
+  )
+}
 
 export function projectOperatorsText(operators?: { name: string }[]) {
   if (!operators?.length) return ''

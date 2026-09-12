@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { CopyableDigits } from './CopyableDigits'
 import { cardClassName, FormCardHeader } from './FormLayout'
+import { useRegisterDetailEditTo } from '../../hooks/useDetailEditTo'
 import { useEscapeBack, useEscapeCancel } from '../../hooks/useEscapeLeave'
 import { useNavigationHistory } from '../../lib/navigation-history'
 
@@ -192,6 +193,11 @@ function isEditOrDetailsPath(pathname: string) {
   if (!last) return false
   if (last === 'edit' || last === 'new') return true
   return looksLikeId(last) && segments.length > 1
+}
+
+function isCreateOrEditPath(pathname: string) {
+  const last = pathname.replace(/\/+$/, '').split('/').filter(Boolean).at(-1)
+  return last === 'edit' || last === 'new'
 }
 
 /** مسیر مرحلهٔ قبل یا فهرست والد از روی URL فعلی */
@@ -535,17 +541,19 @@ export function FormActions({
   submitting,
   onCancel,
   className = '',
-  headerIcons = false,
+  headerIcons,
 }: {
   submitLabel: string
   cancelLabel?: string
   submitting?: boolean
   onCancel?: () => void
   className?: string
-  /** آیکون ذخیره/انصراف در هدر صفحه تا نیاز به اسکرول تا پایین نباشد */
+  /** آیکون ذخیره/انصراف در هدر. پیش‌فرض روی مسیر ایجاد/ویرایش روشن است */
   headerIcons?: boolean
 }) {
+  const { pathname } = useLocation()
   const formId = useContext(AppFormContext)
+  const showHeaderIcons = headerIcons ?? isCreateOrEditPath(pathname)
   useEscapeCancel(onCancel && cancelLabel ? onCancel : undefined)
   return (
     <>
@@ -561,7 +569,7 @@ export function FormActions({
           </Button>
         ) : null}
       </div>
-      {headerIcons && formId ? (
+      {showHeaderIcons && formId ? (
         <PageHeaderActionsPortal>
           <HeaderFormActions
             form={formId}
@@ -759,7 +767,7 @@ export function DetailActions({
   onDelete,
   extraItems,
   className = 'mt-6',
-  headerIcons = false,
+  headerIcons = true,
 }: {
   editTo: string
   editLabel: string
@@ -771,6 +779,7 @@ export function DetailActions({
   headerIcons?: boolean
 }) {
   const { t } = useTranslation()
+  useRegisterDetailEditTo(editTo)
   const titleId = useId()
   const [open, setOpen] = useState(false)
   const closeSheet = useCallback(() => setOpen(false), [])

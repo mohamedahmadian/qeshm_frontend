@@ -10,6 +10,7 @@ import {
   Search,
   SlidersHorizontal,
   Trash2,
+  type LucideIcon,
 } from 'lucide-react'
 import {
   type FormEvent,
@@ -310,6 +311,8 @@ export function ActionsTh({ className = '' }: { className?: string }) {
 export function EntityRowActions({
   viewTo,
   showView = true,
+  viewLabel,
+  viewIcon: ViewIcon = Eye,
   extra,
   editTo,
   onDelete,
@@ -317,24 +320,27 @@ export function EntityRowActions({
 }: {
   viewTo: string
   showView?: boolean
+  viewLabel?: string
+  viewIcon?: LucideIcon
   extra?: ReactNode
   editTo?: string
   onDelete?: () => void
   canDelete?: boolean
 }) {
   const { t } = useTranslation()
+  const label = viewLabel ?? t('common.view')
   return (
     <div data-row-actions className="flex flex-nowrap items-center gap-2 whitespace-nowrap">
       {showView ? (
         <Link to={viewTo} data-row-view>
           <Button type="button" variant="ghost">
-            <Eye className="size-4" aria-hidden />
-            {t('common.view')}
+            <ViewIcon className="size-4" aria-hidden />
+            {label}
           </Button>
         </Link>
       ) : (
         <Link to={viewTo} data-row-view className="sr-only">
-          {t('common.view')}
+          {label}
         </Link>
       )}
       {extra}

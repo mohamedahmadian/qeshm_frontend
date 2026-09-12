@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../components/ui/Form'
 import { api } from '../../lib/api'
+import { DEFAULT_PROJECT_COLOR } from '../../lib/project-color'
 import type { Project } from '../../types/app'
 import { ProjectForm } from './ProjectForm'
 
@@ -52,6 +53,8 @@ export function ProjectEditPage() {
           isSupportActive: query.data.isSupportActive,
           replacementProjectId: query.data.replacementProjectId,
           description: query.data.description,
+          color: query.data.color ?? DEFAULT_PROJECT_COLOR,
+          showOnLiveBoard: query.data.showOnLiveBoard ?? true,
           importance: query.data.importance,
         }}
         onSubmit={async (payload) => {

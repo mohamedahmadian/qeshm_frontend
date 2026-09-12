@@ -1,4 +1,4 @@
-import { Filter, Plus, FolderKanban, Landmark } from 'lucide-react'
+import { ClipboardList, Filter, FolderKanban, Landmark, Plus } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -27,11 +27,16 @@ import {
 } from '../../types/app'
 import {
   ProjectLifecycleBadge,
+  ProjectNameWithColor,
   ProjectOperatorsCell,
   ProjectProgress,
   operatorsColClassName,
   withCurrent,
 } from './ProjectShared'
+import {
+  projectProgressCreateGlobalPath,
+  projectProgressCreatePath,
+} from './progress/progress-paths'
 
 export function ProjectsListPage() {
   const { t } = useTranslation()
@@ -118,12 +123,20 @@ export function ProjectsListPage() {
         title={t('projects.title')}
         subtitle={t('projects.subtitle')}
         action={
-          <Link to="/projects/new">
-            <Button>
-              <Plus className="size-4" />
-              {t('projects.create')}
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Link to={projectProgressCreateGlobalPath}>
+              <Button type="button" variant="soft">
+                <ClipboardList className="size-4" aria-hidden />
+                {t('projectProgress.create')}
+              </Button>
+            </Link>
+            <Link to="/projects/new">
+              <Button>
+                <Plus className="size-4" />
+                {t('projects.create')}
+              </Button>
+            </Link>
+          </div>
         }
       />
       <SearchBar
@@ -271,7 +284,9 @@ export function ProjectsListPage() {
           <tbody>
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
-                <td className="px-4 py-3 font-medium">{item.systemName}</td>
+                <td className="px-4 py-3 font-medium">
+                  <ProjectNameWithColor name={item.systemName} color={item.color} />
+                </td>
                 <td className={`px-4 py-3 align-top ${operatorsColClassName}`}>
                   <ProjectOperatorsCell operators={item.operators} />
                 </td>
@@ -284,7 +299,9 @@ export function ProjectsListPage() {
                 </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
-                    viewTo={`/projects/${item.id}`}
+                    viewTo={projectProgressCreatePath(item.id)}
+                    viewLabel={t('projectProgress.create')}
+                    viewIcon={ClipboardList}
                     editTo={`/projects/${item.id}/edit`}
                     onDelete={() =>
                       confirmDelete({

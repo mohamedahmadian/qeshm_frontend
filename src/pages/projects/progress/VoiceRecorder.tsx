@@ -63,6 +63,7 @@ export function VoiceRecorder({
   durationMs,
   processingMode,
   liveTranscript,
+  compact = false,
   disabled,
   onAudio,
   onClear,
@@ -72,6 +73,7 @@ export function VoiceRecorder({
   durationMs?: number | null
   processingMode: ProjectProgressProcessingMode
   liveTranscript: string
+  compact?: boolean
   disabled?: boolean
   onAudio: (file: File, durationMs: number) => void
   onClear: () => void
@@ -234,13 +236,19 @@ export function VoiceRecorder({
   const clock = formatClock(recording ? elapsed : durationMs ?? elapsed, locale)
 
   return (
-    <div className="rounded-2xl border border-teal-100 bg-gradient-to-b from-teal-50/70 to-white p-3 sm:p-5">
-      <div className="flex flex-col items-center gap-3 sm:gap-4">
+    <div
+      className={`rounded-2xl border border-teal-100 bg-gradient-to-b from-teal-50/70 to-white ${
+        compact ? 'p-2.5' : 'p-3 sm:p-5'
+      }`}
+    >
+      <div className={`flex flex-col items-center ${compact ? 'gap-2' : 'gap-3 sm:gap-4'}`}>
         <button
           type="button"
           disabled={disabled || hasAudio}
           onClick={() => (recording ? stop() : void start())}
-          className={`relative flex size-16 cursor-pointer items-center justify-center rounded-full text-white shadow-md transition sm:size-20 ${
+          className={`relative flex cursor-pointer items-center justify-center rounded-full text-white shadow-md transition ${
+            compact ? 'size-14' : 'size-16 sm:size-20'
+          } ${
             recording
               ? 'bg-red-500 hover:bg-red-600'
               : hasAudio
@@ -253,9 +261,9 @@ export function VoiceRecorder({
             <span className="absolute inset-0 animate-ping rounded-full bg-red-400/40" />
           ) : null}
           {recording ? (
-            <Square className="size-6 fill-current sm:size-7" aria-hidden />
+            <Square className={`fill-current ${compact ? 'size-5' : 'size-6 sm:size-7'}`} aria-hidden />
           ) : (
-            <Mic className="size-7 sm:size-8" aria-hidden />
+            <Mic className={compact ? 'size-6' : 'size-7 sm:size-8'} aria-hidden />
           )}
         </button>
         <div className="text-center">
@@ -266,7 +274,12 @@ export function VoiceRecorder({
                 ? t('projectProgress.audio')
                 : t('projectProgress.record')}
           </p>
-          <p className="mt-0.5 font-mono text-base tabular-nums text-teal-700 sm:mt-1 sm:text-lg" dir="ltr">
+          <p
+            className={`font-mono tabular-nums text-teal-700 ${
+              compact ? 'mt-0.5 text-sm' : 'mt-0.5 text-base sm:mt-1 sm:text-lg'
+            }`}
+            dir="ltr"
+          >
             {clock}
           </p>
           {!recording && !hasAudio ? (

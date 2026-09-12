@@ -609,6 +609,8 @@ export type Project = {
   replacementProjectId: string | null;
   replacementProject: { id: string; systemName: string } | null;
   description: string | null;
+  color: string | null;
+  showOnLiveBoard: boolean;
   importance: ProjectImportance;
   createdAt: string;
   updatedAt: string;
