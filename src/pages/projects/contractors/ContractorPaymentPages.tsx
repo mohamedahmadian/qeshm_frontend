@@ -160,12 +160,12 @@ export function ContractorPaymentCreatePage() {
       />
       <ContractorPaymentForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>(
+          await api.post(
             `/projects/${projectId}/contractors/${contractorId}/payments`,
             payload,
           )
           toast.success(t('contractorPayments.created'))
-          navigate(`${contractorPaymentsPath(projectId, contractorId)}/${data.id}`)
+          navigate(contractorPaymentsPath(projectId, contractorId))
         }}
       />
     </div>
@@ -206,7 +206,7 @@ export function ContractorPaymentEditPage() {
             payload,
           )
           toast.success(t('contractorPayments.updated'))
-          navigate(`${contractorPaymentsPath(projectId, contractorId)}/${paymentId}`)
+          navigate(contractorPaymentsPath(projectId, contractorId))
         }}
       />
     </div>

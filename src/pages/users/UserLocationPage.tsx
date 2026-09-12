@@ -52,7 +52,7 @@ export function UserLocationPage() {
           try {
             await api.patch(`/users/${id}/location`, payload)
             toast.success(t('location.saved'))
-            navigate(`/users/${id}`)
+            navigate('/users')
           } catch (error) {
             toast.error(getApiErrorMessage(error, t('common.error')))
           }

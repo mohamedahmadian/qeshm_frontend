@@ -158,12 +158,12 @@ export function ContractorPhaseCreatePage() {
       />
       <ContractorPhaseForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>(
+          await api.post(
             `/projects/${projectId}/contractors/${contractorId}/phases`,
             payload,
           )
           toast.success(t('contractorPhases.created'))
-          navigate(`${contractorPhasesPath(projectId, contractorId)}/${data.id}`)
+          navigate(contractorPhasesPath(projectId, contractorId))
         }}
       />
     </div>
@@ -203,7 +203,7 @@ export function ContractorPhaseEditPage() {
             payload,
           )
           toast.success(t('contractorPhases.updated'))
-          navigate(`${contractorPhasesPath(projectId, contractorId)}/${phaseId}`)
+          navigate(contractorPhasesPath(projectId, contractorId))
         }}
       />
     </div>

@@ -53,7 +53,7 @@ export function ProvinceEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/provinces/${id}`, payload)
           toast.success(t('provinces.updated'))
-          navigate(`/base-info/provinces/${id}`)
+          navigate('/base-info/provinces')
         }}
       />
     </div>

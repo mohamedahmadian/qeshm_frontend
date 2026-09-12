@@ -140,9 +140,9 @@ export function OrganizationUnitKindCreatePage() {
       <PageHeader icon={Tags} title={t('organizationUnitKinds.create')} subtitle={t('organizationUnitKinds.createSubtitle')} />
       <OrganizationUnitKindForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/organization/unit-kinds', payload)
+          await api.post('/organization/unit-kinds', payload)
           toast.success(t('organizationUnitKinds.created'))
-          navigate(organizationUnitKindPath(data.id))
+          navigate(organizationUnitKindsPath())
         }}
       />
     </div>
@@ -176,7 +176,7 @@ export function OrganizationUnitKindEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/organization/unit-kinds/${id}`, payload)
           toast.success(t('organizationUnitKinds.updated'))
-          navigate(organizationUnitKindPath(id))
+          navigate(organizationUnitKindsPath())
         }}
       />
     </div>

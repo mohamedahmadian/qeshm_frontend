@@ -29,7 +29,7 @@ import { api, getApiErrorMessage } from '../../lib/api'
 import { calendarDaysUntil, formatNumber, todayIsoDate } from '../../lib/datetime'
 import { QESHM_LIVE_BOARD_BOUNDS } from '../../lib/geo'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
-import { projectProgressEntryPath } from './progress/progress-paths'
+import { projectProgressEntryPath, projectProgressPath } from './progress/progress-paths'
 import { useVoiceCapture } from './progress/useVoiceCapture'
 import {
   projectImportances,
@@ -84,6 +84,7 @@ const statusTone: Record<ProjectStatus, MapOverlayMarkerTone> = {
 
 const MOBILE_VIEWPORT = '(max-width: 639.98px)'
 const WEB_DOCK_HEIGHT = '8.25rem'
+const WEB_DOCK_HEIGHT_TALL = '10.75rem'
 
 function useStickToLastLine(value: string) {
   const ref = useRef<HTMLTextAreaElement>(null)
@@ -216,6 +217,103 @@ export function LastActivityPreview({
   )
 }
 
+function activityPreviewText(activity: ProjectLiveBoardActivity) {
+  const title = activityTitle(activity.title)
+  const leftover =
+    activity.excerpt && activity.excerpt !== activity.title
+      ? activity.excerpt
+      : activity.title.replace(/\s+/g, ' ').trim().split(' ').slice(8).join(' ')
+  const excerpt = excerptPreview(leftover, 18)
+  if (title && excerpt) return `${title} ${excerpt}`
+  return title || excerpt
+}
+
+function LastActivityDockLine({
+  activity,
+  projectId,
+  size = 'compact',
+}: {
+  activity: ProjectLiveBoardActivity
+  projectId?: string
+  size?: 'compact' | 'comfortable'
+}) {
+  const { t } = useTranslation()
+  const text = activityPreviewText(activity)
+  const comfortable = size === 'comfortable'
+  const inner = (
+    <>
+      <span
+        className={`inline-flex shrink-0 items-center rounded-full bg-teal-500 font-semibold text-white ${
+          comfortable ? 'px-2 py-0.5 text-xs leading-5' : 'px-1.5 py-px text-[11px] leading-4'
+        }`}
+      >
+        <DateText value={activity.occurredAt} />
+      </span>
+      {projectId ? (
+        <ClipboardList
+          className={`shrink-0 text-teal-700 ${comfortable ? 'size-5' : 'size-4'}`}
+          aria-hidden
+        />
+      ) : null}
+      <p
+        className={`min-w-0 flex-1 font-medium text-ink-800 ${
+          comfortable ? 'text-base leading-6' : 'truncate text-sm leading-5'
+        }`}
+      >
+        {text || '—'}
+      </p>
+    </>
+  )
+  const className = comfortable
+    ? 'flex min-w-0 items-start gap-2 rounded-2xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/40 px-3 py-2.5'
+    : 'flex min-w-0 flex-[3] items-center gap-1.5 rounded-xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/40 px-2 py-1'
+  if (!projectId) {
+    return <div className={className}>{inner}</div>
+  }
+  return (
+    <Link
+      to={projectProgressPath(projectId)}
+      className={`${className} cursor-pointer hover:border-teal-200 hover:text-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400`}
+      aria-label={t('projectLiveBoard.openActivities')}
+      title={t('projectLiveBoard.openActivities')}
+      onClick={(event) => event.stopPropagation()}
+    >
+      {inner}
+    </Link>
+  )
+}
+
+function DockStatChip({
+  value,
+  label,
+  title,
+  overdue = false,
+}: {
+  value: string
+  label: string
+  title: string
+  overdue?: boolean
+}) {
+  return (
+    <div
+      className={`flex h-8 shrink-0 flex-col items-center justify-center rounded-xl border bg-white px-2 ${
+        overdue ? 'border-ink-200' : 'border-mint-200'
+      }`}
+      title={`${title} ${value}`}
+      aria-label={`${title} ${value}`}
+    >
+      <span
+        className={`text-[11px] font-bold tabular-nums leading-none ${
+          overdue ? 'text-ink-800' : 'text-mint-700'
+        }`}
+      >
+        {value}
+      </span>
+      <span className="mt-0.5 text-[8px] font-medium leading-none text-ink-500">{label}</span>
+    </div>
+  )
+}
+
 function ProjectColorLamp({ color }: { color?: string | null }) {
   const { t } = useTranslation()
   return (
@@ -323,21 +421,6 @@ function ProjectMapDetails({
   const tileClass = inline ? 'min-w-[9.5rem] max-w-[13rem] shrink-0' : undefined
   const facts = (
     <>
-      {inline && project.lastActivity ? (
-        <FormFactTile
-          icon={ClipboardList}
-          label={t('projectLiveBoard.lastActivity')}
-          value={
-            <LastActivityPreview
-              activity={project.lastActivity}
-              projectId={canManage ? project.id : undefined}
-              empty={t('projectLiveBoard.noActivity')}
-            />
-          }
-          compact
-          className="min-w-[14rem] max-w-[18rem] shrink-0"
-        />
-      ) : null}
       <FormFactTile
         icon={Landmark}
         label={t('projects.operators')}
@@ -535,6 +618,7 @@ function ProjectMapCard({
   }
 
   async function saveProgress() {
+    if (recording) stop()
     const text = body.trim()
     if (!text && !audioId) {
       toast.error(t('projectProgress.needContent'))
@@ -564,17 +648,11 @@ function ProjectMapCard({
 
   const lastActivity =
     !showDetails && project.lastActivity ? (
-      <div className="flex items-start gap-2 rounded-2xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/40 px-3 py-2.5">
-        <div className="min-w-0 flex-1">
-          <p className="mb-1 text-xs font-medium text-ink-500">{t('projectLiveBoard.lastActivity')}</p>
-          <LastActivityPreview
-            activity={project.lastActivity}
-            projectId={canManage ? project.id : undefined}
-            empty={t('projectLiveBoard.noActivity')}
-            size="comfortable"
-          />
-        </div>
-      </div>
+      <LastActivityDockLine
+        activity={project.lastActivity}
+        projectId={canManage ? project.id : undefined}
+        size="comfortable"
+      />
     ) : null
 
   const inner = (
@@ -669,16 +747,14 @@ function ProjectMapCard({
               {`${formatNumber(progressValue, locale)}٪`}
             </p>
           </div>
-          {!recording ? (
-            <Button
-              type="button"
-              disabled={saving || uploading || (!body.trim() && !audioId)}
-              onClick={() => void saveProgress()}
-            >
-              <Check className="size-4" aria-hidden />
-              {t('projectProgress.save')}
-            </Button>
-          ) : null}
+          <Button
+            type="button"
+            disabled={saving || uploading}
+            onClick={() => void saveProgress()}
+          >
+            <Check className="size-4" aria-hidden />
+            {t('projectProgress.save')}
+          </Button>
         </div>
       ) : null}
       {showDetails ? (
@@ -713,6 +789,7 @@ function ProjectMapCard({
   }
 
   const dockButtonClass = 'h-8 min-w-[7.75rem] px-2.5 py-0 text-xs'
+  const showDockSecondRow = canManage || Boolean(project.lastActivity)
 
   return (
     <aside
@@ -720,96 +797,127 @@ function ProjectMapCard({
         entered ? 'translate-y-0' : 'translate-y-full'
       }`}
       style={{
-        height: WEB_DOCK_HEIGHT,
+        height: showDockSecondRow ? WEB_DOCK_HEIGHT_TALL : WEB_DOCK_HEIGHT,
         borderColor: projectColorAlpha(project.color, 0.35),
         boxShadow: `0 -8px 22px ${projectColorAlpha(project.color, 0.16)}`,
       }}
       onClick={(event) => event.stopPropagation()}
     >
       <div className="h-0.5" style={{ background: projectColor(project.color) }} />
-      <div className="flex h-[calc(100%-2px)] items-center gap-2.5 px-3 py-2">
-        <div className="flex min-w-0 max-w-[15rem] shrink-0 items-start gap-2">
-          <ProjectColorLamp color={project.color} />
-          <div className="min-w-0">
-            <h2
-              id="live-board-project-title"
-              className="truncate text-sm font-bold leading-5 text-ink-900"
-            >
-              <button
-                type="button"
-                className="block w-full truncate cursor-pointer text-start hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-                title={showDetails ? t('projectLiveBoard.hideDetails') : t('projectLiveBoard.viewDetails')}
-                aria-pressed={showDetails}
-                onClick={() => setShowDetails((open) => !open)}
+      <div className="flex h-[calc(100%-2px)] flex-col gap-1.5 px-3 py-1.5">
+        <div className="flex min-h-0 flex-1 items-center gap-2.5">
+          <div className="flex min-w-0 max-w-[15rem] shrink-0 items-start gap-2">
+            <ProjectColorLamp color={project.color} />
+            <div className="min-w-0">
+              <h2
+                id="live-board-project-title"
+                className="truncate text-sm font-bold leading-5 text-ink-900"
               >
-                {project.systemName}
-              </button>
-            </h2>
-            <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-medium text-teal-800 ring-1 ring-teal-200">
-              <Handshake className="size-3 shrink-0 text-teal-600" aria-hidden />
-              <span className="truncate">
-                {contractor || t('projectLiveBoard.noContractors')}
+                <button
+                  type="button"
+                  className="block w-full truncate cursor-pointer text-start hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                  title={showDetails ? t('projectLiveBoard.hideDetails') : t('projectLiveBoard.viewDetails')}
+                  aria-pressed={showDetails}
+                  onClick={() => setShowDetails((open) => !open)}
+                >
+                  {project.systemName}
+                </button>
+              </h2>
+              <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-medium text-teal-800 ring-1 ring-teal-200">
+                <Handshake className="size-3 shrink-0 text-teal-600" aria-hidden />
+                <span className="truncate">
+                  {contractor || t('projectLiveBoard.noContractors')}
+                </span>
               </span>
-            </span>
+            </div>
           </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <div className="flex items-center justify-center rounded-xl border border-teal-100 bg-white p-1 shadow-[0_4px_10px_rgba(46,189,182,0.1)]">
-            <MiniProgressRing
-              value={project.progressPercent}
-              locale={locale}
-              color={theme.ring}
-              size="xs"
-            />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex items-center justify-center rounded-xl border border-teal-100 bg-white p-1 shadow-[0_4px_10px_rgba(46,189,182,0.1)]">
+              <MiniProgressRing
+                value={project.progressPercent}
+                locale={locale}
+                color={theme.ring}
+                size="xs"
+              />
+            </div>
+            <div className="flex items-center justify-center rounded-xl border border-mint-100 bg-white p-1 shadow-[0_4px_10px_rgba(63,214,190,0.1)]">
+              <MiniDaysBadge
+                daysLabel={daysLabel}
+                overdue={overdue}
+                title={daysTitle}
+                label={daysShort}
+                size="xs"
+              />
+            </div>
           </div>
-          <div className="flex items-center justify-center rounded-xl border border-mint-100 bg-white p-1 shadow-[0_4px_10px_rgba(63,214,190,0.1)]">
-            <MiniDaysBadge
-              daysLabel={daysLabel}
-              overdue={overdue}
-              title={daysTitle}
-              label={daysShort}
-              size="xs"
-            />
-          </div>
-        </div>
-        {canManage ? (
-          <Button
-            type="button"
-            className={`relative ${dockButtonClass} ${
-              recording ? '!bg-red-500 hover:!bg-red-600' : ''
-            }`}
-            variant={recording ? 'primary' : 'ghost'}
-            aria-pressed={recording}
-            onClick={() => void toggleRecord()}
-          >
-            {recording ? (
-              <span className="absolute inset-0 animate-ping rounded-2xl bg-red-400/30" aria-hidden />
-            ) : null}
-            <Mic className={`relative size-3.5 shrink-0 ${recording ? 'animate-pulse' : ''}`} aria-hidden />
-            <span className="relative">
-              {recording ? t('projectProgress.stopRecord') : t('projectProgress.record')}
-            </span>
-          </Button>
-        ) : null}
-        <div className="flex min-h-0 min-w-0 flex-1 items-center gap-2 self-stretch overflow-hidden pt-1 pe-1.5">
           {canManage ? (
-            <div className="flex min-h-0 min-w-[14rem] flex-1 flex-col justify-center gap-1.5">
+            <Button
+              type="button"
+              className={`relative ${dockButtonClass} ${
+                recording ? '!bg-red-500 hover:!bg-red-600' : ''
+              }`}
+              variant={recording ? 'primary' : 'ghost'}
+              aria-pressed={recording}
+              onClick={() => void toggleRecord()}
+            >
+              {recording ? (
+                <span className="absolute inset-0 animate-ping rounded-2xl bg-red-400/30" aria-hidden />
+              ) : null}
+              <Mic className={`relative size-3.5 shrink-0 ${recording ? 'animate-pulse' : ''}`} aria-hidden />
+              <span className="relative">
+                {recording ? t('projectProgress.stopRecord') : t('projectProgress.record')}
+              </span>
+            </Button>
+          ) : null}
+          <div className="flex min-h-0 min-w-0 flex-1 items-center gap-2 self-stretch overflow-hidden pe-1">
+            {canManage ? (
               <textarea
                 ref={reportRef}
-                className={`${fieldClassName} progress-report-field h-[3.5rem] min-h-[3.5rem] max-h-[3.5rem] w-full resize-none border-teal-200 px-3 py-2 text-xs leading-5`}
+                className={`${fieldClassName} progress-report-field h-full min-h-0 max-h-none w-full min-w-[12rem] flex-1 resize-none border-teal-200 px-3 py-2 text-xs leading-5`}
                 rows={2}
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
                 placeholder={t('projectLiveBoard.reportPlaceholder')}
               />
-              <div className="flex shrink-0 items-center gap-2">
+            ) : null}
+            {showDetails ? (
+              <div className="min-h-0 min-w-0 flex-1 self-stretch py-0.5">
+                <ProjectMapDetails
+                  project={project}
+                  locale={locale}
+                  canManage={canManage}
+                  variant="inline"
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+        {showDockSecondRow ? (
+          <div className="flex shrink-0 items-center gap-2">
+            {project.lastActivity ? (
+              <>
+                <LastActivityDockLine
+                  activity={project.lastActivity}
+                  projectId={canManage ? project.id : undefined}
+                />
+                <DockStatChip
+                  value={formatNumber(project.activityCount, locale)}
+                  label={t('projectLiveBoard.activityCountShort')}
+                  title={t('projectLiveBoard.activityCount')}
+                />
+              </>
+            ) : (
+              <div className="min-w-0 flex-1" />
+            )}
+            {canManage ? (
+              <>
                 <input
                   type="range"
                   min={0}
                   max={100}
                   step={1}
                   dir="ltr"
-                  className="progress-slider min-w-0 flex-1"
+                  className="progress-slider progress-slider-lg w-[10rem] min-w-[8rem] max-w-[11rem] shrink-0"
                   style={{ '--slider-fill': `${progressValue}%` } as CSSProperties}
                   value={progressValue}
                   onChange={(event) => setProgressValue(Number(event.target.value))}
@@ -818,31 +926,19 @@ function ProjectMapCard({
                 <span className="w-8 shrink-0 text-end text-[11px] font-semibold tabular-nums text-ink-700">
                   {`${formatNumber(progressValue, locale)}٪`}
                 </span>
-                {!recording ? (
-                  <Button
-                    type="button"
-                    className="h-8 shrink-0 px-2.5 py-0 text-xs"
-                    disabled={saving || uploading || (!body.trim() && !audioId)}
-                    onClick={() => void saveProgress()}
-                  >
-                    <Check className="size-3.5" aria-hidden />
-                    {t('projectProgress.save')}
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-          {showDetails ? (
-            <div className="min-h-0 min-w-0 flex-1 self-stretch py-1">
-              <ProjectMapDetails
-                project={project}
-                locale={locale}
-                canManage={canManage}
-                variant="inline"
-              />
-            </div>
-          ) : null}
-        </div>
+                <Button
+                  type="button"
+                  className="h-8 shrink-0 px-2.5 py-0 text-xs"
+                  disabled={saving || uploading}
+                  onClick={() => void saveProgress()}
+                >
+                  <Check className="size-3.5" aria-hidden />
+                  {t('projectProgress.save')}
+                </Button>
+              </>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </aside>
   )

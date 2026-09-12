@@ -37,7 +37,7 @@ export function RoleEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/roles/${id}`, payload)
           toast.success(t('accessRoles.updated'))
-          navigate(`/base-info/roles/${id}`)
+          navigate('/base-info/roles')
         }}
       />
     </div>

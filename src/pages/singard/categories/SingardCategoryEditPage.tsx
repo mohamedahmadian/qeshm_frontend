@@ -34,7 +34,7 @@ export function SingardCategoryEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/singard/categories/${id}`, payload)
           toast.success(t('singardCategories.updated'))
-          navigate(singardCategoriesPath(id))
+          navigate(singardCategoriesPath())
         }}
       />
     </div>

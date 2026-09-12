@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { PageHeader, formShellClassName } from '../../../components/ui/Form'
 import { api } from '../../../lib/api'
-import { foodPath } from '../food-paths'
+import { foodsPath } from '../food-paths'
 import { FoodForm } from './FoodForm'
 
 export function FoodCreatePage() {
@@ -16,9 +16,9 @@ export function FoodCreatePage() {
       <PageHeader icon={UtensilsCrossed} title={t('foods.create')} subtitle={t('foods.createSubtitle')} />
       <FoodForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/foods', payload)
+          await api.post('/foods', payload)
           toast.success(t('foods.created'))
-          navigate(foodPath(data.id))
+          navigate(foodsPath())
         }}
       />
     </div>

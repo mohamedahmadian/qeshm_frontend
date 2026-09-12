@@ -8,6 +8,7 @@ import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui
 import { api } from '../../../lib/api'
 import type { SingardFeedback } from '../../../types/app'
 import { SingardAttachments } from '../SingardAttachments'
+import { SingardLocationBlock } from '../SingardLocation'
 import { SingardKindBadge, SingardStatusBadge } from '../SingardBadges'
 
 export function SingardMineDetailPage() {
@@ -46,6 +47,7 @@ export function SingardMineDetailPage() {
               className="sm:col-span-2"
             />
           </div>
+          <SingardLocationBlock item={item} />
           <FormSectionTitle icon={MessageCircleHeart}>{t('singard.attachments')}</FormSectionTitle>
           <SingardAttachments items={item.attachments} />
           <FormSectionTitle icon={Reply}>{t('singard.reply')}</FormSectionTitle>

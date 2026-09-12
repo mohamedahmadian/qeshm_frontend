@@ -439,9 +439,9 @@ export function OrganizationUnitCreatePage() {
       <PageHeader icon={Building2} title={t('organizationUnits.create')} subtitle={t('organizationUnits.createSubtitle')} />
       <OrganizationUnitForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/organization/units', payload)
+          await api.post('/organization/units', payload)
           toast.success(t('organizationUnits.created'))
-          navigate(organizationUnitPath(data.id))
+          navigate(organizationUnitsPath())
         }}
       />
     </div>
@@ -475,7 +475,7 @@ export function OrganizationUnitEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/organization/units/${id}`, payload)
           toast.success(t('organizationUnits.updated'))
-          navigate(organizationUnitPath(id))
+          navigate(organizationUnitsPath())
         }}
       />
     </div>

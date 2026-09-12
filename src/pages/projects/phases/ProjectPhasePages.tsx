@@ -236,12 +236,9 @@ export function ProjectPhaseCreatePage() {
       />
       <ProjectPhaseForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>(
-            `/projects/${projectId}/phases`,
-            payload,
-          )
+          await api.post(`/projects/${projectId}/phases`, payload)
           toast.success(t('projectPhases.created'))
-          navigate(`${projectPhasesPath(projectId)}/${data.id}`)
+          navigate(projectPhasesPath(projectId))
         }}
       />
     </div>
@@ -278,7 +275,7 @@ export function ProjectPhaseEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/projects/${projectId}/phases/${phaseId}`, payload)
           toast.success(t('projectPhases.updated'))
-          navigate(`${projectPhasesPath(projectId)}/${phaseId}`)
+          navigate(projectPhasesPath(projectId))
         }}
       />
     </div>

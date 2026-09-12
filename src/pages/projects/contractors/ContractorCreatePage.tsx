@@ -7,7 +7,7 @@ import { EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from
 import { api } from '../../../lib/api'
 import type { Project } from '../../../types/app'
 import { ContractorForm } from './ContractorForm'
-import { contractorPath } from './contractor-paths'
+import { contractorsPath } from './contractor-paths'
 
 export function ContractorCreatePage() {
   const { t } = useTranslation()
@@ -35,12 +35,9 @@ export function ContractorCreatePage() {
       />
       <ContractorForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>(
-            `/projects/${projectId}/contractors`,
-            payload,
-          )
+          await api.post(`/projects/${projectId}/contractors`, payload)
           toast.success(t('contractors.created'))
-          navigate(contractorPath(projectId, data.id))
+          navigate(contractorsPath(projectId))
         }}
       />
     </div>

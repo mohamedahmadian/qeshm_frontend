@@ -166,12 +166,12 @@ export function ContractorTeamCreatePage() {
       />
       <ContractorMemberForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>(
+          await api.post(
             `/projects/${projectId}/contractors/${contractorId}/team`,
             payload,
           )
           toast.success(t('contractorTeam.created'))
-          navigate(`${contractorTeamPath(projectId, contractorId)}/${data.id}`)
+          navigate(contractorTeamPath(projectId, contractorId))
         }}
       />
     </div>
@@ -212,7 +212,7 @@ export function ContractorTeamEditPage() {
             payload,
           )
           toast.success(t('contractorTeam.updated'))
-          navigate(`${contractorTeamPath(projectId, contractorId)}/${memberId}`)
+          navigate(contractorTeamPath(projectId, contractorId))
         }}
       />
     </div>

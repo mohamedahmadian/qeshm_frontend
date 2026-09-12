@@ -185,10 +185,10 @@ export function OrganizationPhoneCreatePage() {
       />
       <OrganizationPhoneForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/organization/phones', payload)
+          await api.post('/organization/phones', payload)
           await queryClient.invalidateQueries({ queryKey: ['organization'] })
           toast.success(t('organizationPhones.created'))
-          navigate(organizationPhonePath(data.id))
+          navigate(organizationPhonesPath())
         }}
       />
     </div>
@@ -231,7 +231,7 @@ export function OrganizationPhoneEditPage() {
           await api.patch(`/organization/phones/${phoneId}`, payload)
           await queryClient.invalidateQueries({ queryKey: ['organization'] })
           toast.success(t('organizationPhones.updated'))
-          navigate(organizationPhonePath(phoneId))
+          navigate(organizationPhonesPath())
         }}
       />
     </div>

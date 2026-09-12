@@ -19,9 +19,9 @@ export function SingardCategoryCreatePage() {
       />
       <SingardCategoryForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/singard/categories', payload)
+          await api.post('/singard/categories', payload)
           toast.success(t('singardCategories.created'))
-          navigate(singardCategoriesPath(data.id))
+          navigate(singardCategoriesPath())
         }}
       />
     </div>

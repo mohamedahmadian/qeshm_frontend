@@ -209,9 +209,9 @@ export function GlobalContractorCreatePage() {
       <ContractorForm
         requireProject
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/contractors', payload)
+          await api.post('/contractors', payload)
           toast.success(t('contractors.created'))
-          navigate(globalContractorPath(data.id))
+          navigate(globalContractorsPath())
         }}
       />
     </div>
@@ -240,7 +240,7 @@ export function GlobalContractorEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/contractors/${contractorId}`, payload)
           toast.success(t('contractors.updated'))
-          navigate(globalContractorPath(contractorId))
+          navigate(globalContractorsPath())
         }}
       />
     </div>

@@ -148,6 +148,30 @@ th {
   box-shadow: 0 2px 6px rgba(46, 189, 182, 0.35);
 }
 
+.progress-slider-lg {
+  height: 26px;
+}
+
+.progress-slider-lg::-webkit-slider-runnable-track {
+  height: 14px;
+}
+
+.progress-slider-lg::-webkit-slider-thumb {
+  width: 24px;
+  height: 24px;
+  margin-top: -6px;
+}
+
+.progress-slider-lg::-moz-range-track,
+.progress-slider-lg::-moz-range-progress {
+  height: 14px;
+}
+
+.progress-slider-lg::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+}
+
 .progress-report-field {
   max-height: 6.5rem;
   overflow-y: auto;

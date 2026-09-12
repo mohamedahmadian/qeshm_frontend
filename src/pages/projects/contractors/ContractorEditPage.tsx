@@ -7,7 +7,7 @@ import { EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from
 import { api } from '../../../lib/api'
 import type { ProjectContractor } from '../../../types/app'
 import { ContractorForm } from './ContractorForm'
-import { contractorPath } from './contractor-paths'
+import { contractorsPath } from './contractor-paths'
 
 export function ContractorEditPage() {
   const { t } = useTranslation()
@@ -40,7 +40,7 @@ export function ContractorEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/projects/${projectId}/contractors/${contractorId}`, payload)
           toast.success(t('contractors.updated'))
-          navigate(contractorPath(projectId, contractorId))
+          navigate(contractorsPath(projectId))
         }}
       />
     </div>

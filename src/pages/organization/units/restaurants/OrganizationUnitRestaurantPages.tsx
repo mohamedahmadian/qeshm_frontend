@@ -259,7 +259,7 @@ export function OrganizationUnitRestaurantEditPage() {
         onSubmit={async (restaurantId) => {
           await api.patch(`/organization/units/${unitId}/restaurants/${linkId}`, { restaurantId })
           toast.success(t('organizationUnitRestaurants.updated'))
-          navigate(organizationUnitRestaurantPath(unitId, linkId))
+          navigate(organizationUnitRestaurantsPath(unitId))
         }}
       />
     </div>

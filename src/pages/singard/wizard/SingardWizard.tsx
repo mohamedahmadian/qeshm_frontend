@@ -7,6 +7,7 @@ import {
   HeartHandshake,
   ImagePlus,
   Lightbulb,
+  MapPin,
   MessageCircleHeart,
   Mic,
   Phone,
@@ -22,8 +23,11 @@ import { toast } from 'sonner'
 import { useAuth } from '../../../auth/AuthProvider'
 import { FileDropField } from '../../../components/ui/FileDropField'
 import { AppForm, Button, FormField, fieldClassName } from '../../../components/ui/Form'
+import { OsmMapPicker } from '../../../components/ui/OsmMapPicker'
 import { api, getApiErrorMessage, getImageUrl } from '../../../lib/api'
 import { formatNumber, localizeDigits } from '../../../lib/datetime'
+import { QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../../lib/geo'
+import { geoErrorI18nKey } from '../../../lib/geolocation'
 import { optimizeImageFile } from '../../../lib/optimize-image'
 import type { SingardCategory, SingardFeedback, SingardFeedbackKind } from '../../../types/app'
 import { singardMinePath } from '../singard-paths'
@@ -35,7 +39,14 @@ const AUDIO_MAX = 8 * 1024 * 1024
 const MAX_IMAGES = 5
 
 type IdentityMode = 'introduce' | 'anonymous' | null
-type MediaTabId = 'photo' | 'audio' | 'video'
+type MediaTabId = 'photo' | 'audio' | 'video' | 'location'
+
+function toOptionalNumber(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : null
+}
 
 const kinds: {
   value: SingardFeedbackKind
@@ -98,6 +109,10 @@ export function SingardWizard({
   const [imageIds, setImageIds] = useState<string[]>([])
   const [audioId, setAudioId] = useState<string>()
   const [videoId, setVideoId] = useState<string>()
+  const [address, setAddress] = useState('')
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
+  const [mapNonce, setMapNonce] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [mediaTab, setMediaTab] = useState<MediaTabId>('photo')
@@ -222,6 +237,9 @@ export function SingardWizard({
         lastName: identity === 'introduce' ? lastName.trim() : undefined,
         phone: identity === 'introduce' ? phone.trim() : undefined,
         body: body.trim() || null,
+        address: address.trim() || null,
+        latitude: toOptionalNumber(latitude),
+        longitude: toOptionalNumber(longitude),
         imageIds,
         audioIds: audioId ? [audioId] : [],
         videoIds: videoId ? [videoId] : [],
@@ -245,6 +263,10 @@ export function SingardWizard({
     setImageIds([])
     setAudioId(undefined)
     setVideoId(undefined)
+    setAddress('')
+    setLatitude('')
+    setLongitude('')
+    setMapNonce(0)
     setMediaTab('photo')
   }
 
@@ -429,6 +451,20 @@ export function SingardWizard({
               onClearAudio={() => setAudioId(undefined)}
               onVideo={(file) => void uploadMedia(file, 'video')}
               onClearVideo={() => setVideoId(undefined)}
+              address={address}
+              latitude={latitude}
+              longitude={longitude}
+              mapNonce={mapNonce}
+              onAddressChange={setAddress}
+              onCoordsChange={(nextLat, nextLng) => {
+                setLatitude(nextLat)
+                setLongitude(nextLng)
+              }}
+              onClearLocation={() => {
+                setLatitude('')
+                setLongitude('')
+                setMapNonce((current) => current + 1)
+              }}
             />
             <div className="px-4 pb-4 pt-5 sm:px-7 sm:pb-7">
               <Button
@@ -624,6 +660,13 @@ function MediaAttachTabs({
   onClearAudio,
   onVideo,
   onClearVideo,
+  address,
+  latitude,
+  longitude,
+  mapNonce,
+  onAddressChange,
+  onCoordsChange,
+  onClearLocation,
 }: {
   tab: MediaTabId
   onTabChange: (tab: MediaTabId) => void
@@ -637,13 +680,35 @@ function MediaAttachTabs({
   onClearAudio: () => void
   onVideo: (file: File) => void
   onClearVideo: () => void
+  address: string
+  latitude: string
+  longitude: string
+  mapNonce: number
+  onAddressChange: (value: string) => void
+  onCoordsChange: (latitude: string, longitude: string) => void
+  onClearLocation: () => void
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
+  const hasPin = toOptionalNumber(latitude) != null && toOptionalNumber(longitude) != null
+  const locationCount = hasPin || address.trim() ? 1 : 0
+  const mapFocus = useMemo(
+    () =>
+      hasPin
+        ? null
+        : {
+            lat: QESHM_MAP_CENTER.lat,
+            lng: QESHM_MAP_CENTER.lng,
+            zoom: 12,
+            bounds: QESHM_MAP_BOUNDS,
+          },
+    [hasPin],
+  )
   const tabs: { id: MediaTabId; icon: typeof ImagePlus; labelKey: string; count: number }[] = [
     { id: 'photo', icon: ImagePlus, labelKey: 'singardWizard.addPhoto', count: imageIds.length },
     { id: 'audio', icon: Mic, labelKey: 'singardWizard.addAudioFile', count: audioId ? 1 : 0 },
     { id: 'video', icon: Video, labelKey: 'singardWizard.addVideo', count: videoId ? 1 : 0 },
+    { id: 'location', icon: MapPin, labelKey: 'singardWizard.addLocation', count: locationCount },
   ]
 
   return (
@@ -651,7 +716,7 @@ function MediaAttachTabs({
       <div
         role="tablist"
         aria-label={t('singardWizard.stepContent')}
-        className="grid w-full grid-cols-3 border-y border-teal-100"
+        className="grid w-full grid-cols-2 border-y border-teal-100 sm:grid-cols-4"
       >
         {tabs.map((item) => {
           const Icon = item.icon
@@ -755,6 +820,44 @@ function MediaAttachTabs({
             onFile={onVideo}
             onClear={onClearVideo}
           />
+        </div>
+      ) : null}
+
+      {tab === 'location' ? (
+        <div
+          role="tabpanel"
+          id="singard-media-panel-location"
+          aria-labelledby="singard-media-tab-location"
+          className="space-y-4 border-t border-teal-100 bg-white px-4 py-5 sm:px-7"
+        >
+          <p className="text-xs text-ink-400">{t('singardWizard.locationHint')}</p>
+          <OsmMapPicker
+            key={mapNonce}
+            variant="always"
+            active={tab === 'location'}
+            latitude={latitude}
+            longitude={longitude}
+            focus={mapFocus}
+            heightClass="h-56 sm:h-72"
+            onChange={onCoordsChange}
+            onGeoError={(kind) => toast.error(t(geoErrorI18nKey(kind)))}
+            onGeoOutside={() => toast.error(t('location.outsideSelectedArea'))}
+          />
+          {hasPin ? (
+            <Button type="button" variant="ghost" className="w-full" onClick={onClearLocation}>
+              {t('singardWizard.clearLocation')}
+            </Button>
+          ) : null}
+          <FormField icon={MapPin} label={t('singardWizard.address')} htmlFor="sgAddress">
+            <textarea
+              id="sgAddress"
+              className={fieldClassName}
+              rows={3}
+              value={address}
+              onChange={(e) => onAddressChange(e.target.value)}
+              placeholder={t('singardWizard.addressPlaceholder')}
+            />
+          </FormField>
         </div>
       ) : null}
     </div>

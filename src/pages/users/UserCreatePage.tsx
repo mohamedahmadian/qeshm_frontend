@@ -16,9 +16,9 @@ export function UserCreatePage() {
       <UserForm
         onCancel={() => navigate('/users')}
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/users', payload)
+          await api.post('/users', payload)
           toast.success(t('users.created'))
-          navigate(`/users/${data.id}`)
+          navigate('/users')
         }}
       />
     </div>

@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../../components/ui/Form'
 import { api } from '../../../lib/api'
 import type { Food } from '../../../types/app'
-import { foodPath } from '../food-paths'
+import { foodsPath } from '../food-paths'
 import { FoodForm } from './FoodForm'
 
 export function FoodEditPage() {
@@ -38,7 +38,7 @@ export function FoodEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/foods/${id}`, payload)
           toast.success(t('foods.updated'))
-          navigate(foodPath(id))
+          navigate(foodsPath())
         }}
       />
     </div>

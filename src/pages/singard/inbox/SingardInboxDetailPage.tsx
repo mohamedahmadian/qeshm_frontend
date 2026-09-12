@@ -27,6 +27,7 @@ import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { api, getApiErrorMessage } from '../../../lib/api'
 import type { SingardFeedback, SingardFeedbackStatus } from '../../../types/app'
 import { SingardAttachments } from '../SingardAttachments'
+import { SingardLocationBlock } from '../SingardLocation'
 import { SingardKindBadge, SingardStatusBadge, SingardStatusSwitch } from '../SingardBadges'
 import { singardActivitiesPath, singardInboxPath, singardInboxReplyPath } from '../singard-paths'
 
@@ -102,6 +103,7 @@ export function SingardInboxDetailPage() {
               className="sm:col-span-2"
             />
           </div>
+          <SingardLocationBlock item={item} />
           <FormSectionTitle icon={MessageCircleHeart}>{t('singard.attachments')}</FormSectionTitle>
           <SingardAttachments items={item.attachments} />
           <FormSectionTitle icon={Reply}>{t('singard.reply')}</FormSectionTitle>

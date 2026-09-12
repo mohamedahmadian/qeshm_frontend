@@ -254,9 +254,9 @@ export function VehicleCreatePage() {
       <PageHeader icon={Car} title={t('vehicles.create')} subtitle={t('vehicles.createSubtitle')} />
       <VehicleForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/vehicles', payload)
+          await api.post('/vehicles', payload)
           toast.success(t('vehicles.created'))
-          navigate(vehiclePath(data.id))
+          navigate(vehiclesPath())
         }}
       />
     </div>
@@ -290,7 +290,7 @@ export function VehicleEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/vehicles/${id}`, payload)
           toast.success(t('vehicles.updated'))
-          navigate(vehiclePath(id))
+          navigate(vehiclesPath())
         }}
       />
     </div>

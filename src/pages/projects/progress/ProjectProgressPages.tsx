@@ -54,11 +54,7 @@ import {
 import { ProjectProgress } from '../ProjectShared'
 import { ProjectProgressForm } from './ProjectProgressForm'
 import { ProjectProgressProjectPicker } from './ProjectProgressProjectPicker'
-import {
-  projectProgressCreatePath,
-  projectProgressEntryPath,
-  projectProgressPath,
-} from './progress-paths'
+import { projectProgressCreatePath, projectProgressPath } from './progress-paths'
 
 function useProject() {
   const { id: projectId } = useParams()
@@ -292,12 +288,9 @@ export function ProjectProgressCreatePage() {
       />
       <ProjectProgressForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>(
-            `/projects/${projectId}/progress`,
-            payload,
-          )
+          await api.post(`/projects/${projectId}/progress`, payload)
           toast.success(t('projectProgress.created'))
-          navigate(projectProgressEntryPath(projectId, data.id))
+          navigate(projectProgressPath(projectId))
         }}
       />
     </div>
@@ -355,12 +348,9 @@ export function ProjectProgressCreateGlobalPage() {
             toast.error(t('projectProgress.projectRequired'))
             return
           }
-          const { data } = await api.post<{ id: string }>(
-            `/projects/${projectId}/progress`,
-            payload,
-          )
+          await api.post(`/projects/${projectId}/progress`, payload)
           toast.success(t('projectProgress.created'))
-          navigate(projectProgressEntryPath(projectId, data.id))
+          navigate(projectProgressPath(projectId))
         }}
       />
     </div>
@@ -402,7 +392,7 @@ export function ProjectProgressEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/projects/${projectId}/progress/${entryId}`, payload)
           toast.success(t('projectProgress.updated'))
-          navigate(projectProgressEntryPath(projectId, entryId))
+          navigate(projectProgressPath(projectId))
         }}
       />
     </div>

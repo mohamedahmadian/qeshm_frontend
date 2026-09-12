@@ -37,7 +37,7 @@ export function SingardReplyPage() {
     try {
       await api.post(`/singard/feedbacks/${id}/reply`, { replyBody: body.trim() })
       toast.success(t('singard.replySaved'))
-      navigate(singardInboxPath(id))
+      navigate(singardInboxPath())
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
     } finally {

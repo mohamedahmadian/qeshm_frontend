@@ -159,9 +159,9 @@ export function FoodReserveCreatePage() {
       <FoodReserveForm
         context={context.data}
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/food-reservations', payload)
+          await api.post('/food-reservations', payload)
           toast.success(t('foodReservations.created'))
-          navigate(foodReserveItemPath(data.id))
+          navigate(foodReservePath())
         }}
       />
     </div>

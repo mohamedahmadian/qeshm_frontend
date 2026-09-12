@@ -60,7 +60,7 @@ export function ProjectEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/projects/${id}`, payload)
           toast.success(t('projects.updated'))
-          navigate(`/projects/${id}`)
+          navigate('/projects')
         }}
       />
     </div>

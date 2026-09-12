@@ -140,9 +140,9 @@ export function OrganizationPositionCreatePage() {
       <PageHeader icon={Briefcase} title={t('organizationPositions.create')} subtitle={t('organizationPositions.createSubtitle')} />
       <OrganizationPositionForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/organization/positions', payload)
+          await api.post('/organization/positions', payload)
           toast.success(t('organizationPositions.created'))
-          navigate(organizationPositionPath(data.id))
+          navigate(organizationPositionsPath())
         }}
       />
     </div>
@@ -176,7 +176,7 @@ export function OrganizationPositionEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/organization/positions/${id}`, payload)
           toast.success(t('organizationPositions.updated'))
-          navigate(organizationPositionPath(id))
+          navigate(organizationPositionsPath())
         }}
       />
     </div>

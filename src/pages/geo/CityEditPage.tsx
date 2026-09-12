@@ -73,7 +73,7 @@ export function CityEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/cities/${id}`, payload)
           toast.success(t('cities.updated'))
-          navigate(`/base-info/cities/${id}`)
+          navigate('/base-info/cities')
         }}
       />
     </div>

@@ -202,12 +202,9 @@ export function VehicleAssignmentCreatePage() {
       />
       <VehicleAssignmentForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>(
-            `/vehicles/${vehicleId}/assignments`,
-            payload,
-          )
+          await api.post(`/vehicles/${vehicleId}/assignments`, payload)
           toast.success(t('vehicleAssignments.created'))
-          navigate(vehicleAssignmentPath(vehicleId, data.id))
+          navigate(vehicleAssignmentsPath(vehicleId))
         }}
       />
     </div>
@@ -244,7 +241,7 @@ export function VehicleAssignmentEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/vehicles/${vehicleId}/assignments/${assignmentId}`, payload)
           toast.success(t('vehicleAssignments.updated'))
-          navigate(vehicleAssignmentPath(vehicleId, assignmentId))
+          navigate(vehicleAssignmentsPath(vehicleId))
         }}
       />
     </div>
@@ -417,7 +414,7 @@ export function VehicleAssignmentReturnPage() {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] }),
           ])
           toast.success(t('vehicleAssignments.returned'))
-          navigate(vehicleAssignmentPath(vehicleId, assignmentId))
+          navigate(vehicleAssignmentsPath(vehicleId))
         }}
       />
     </div>

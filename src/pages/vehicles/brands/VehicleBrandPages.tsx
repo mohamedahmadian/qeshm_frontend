@@ -134,9 +134,9 @@ export function VehicleBrandCreatePage() {
       <PageHeader icon={Tags} title={t('vehicleBrands.create')} subtitle={t('vehicleBrands.createSubtitle')} />
       <VehicleBrandForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/vehicle-brands', payload)
+          await api.post('/vehicle-brands', payload)
           toast.success(t('vehicleBrands.created'))
-          navigate(vehicleBrandPath(data.id))
+          navigate(vehicleBrandsPath())
         }}
       />
     </div>
@@ -170,7 +170,7 @@ export function VehicleBrandEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/vehicle-brands/${id}`, payload)
           toast.success(t('vehicleBrands.updated'))
-          navigate(vehicleBrandPath(id))
+          navigate(vehicleBrandsPath())
         }}
       />
     </div>

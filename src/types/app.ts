@@ -4254,6 +4254,9 @@ export type SingardFeedback = {
   phone: string | null;
   submitterName: string | null;
   body: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   replyBody?: string | null;
   repliedAt: string | null;
   repliedById?: string | null;

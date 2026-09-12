@@ -41,7 +41,7 @@ export function CountryEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/countries/${id}`, payload)
           toast.success(t('countries.updated'))
-          navigate(`/base-info/countries/${id}`)
+          navigate('/base-info/countries')
         }}
       />
     </div>

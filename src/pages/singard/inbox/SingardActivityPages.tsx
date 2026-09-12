@@ -136,9 +136,9 @@ export function SingardActivityCreatePage() {
       />
       <SingardActivityForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<SingardActivity>(`/singard/feedbacks/${id}/activities`, payload)
+          await api.post(`/singard/feedbacks/${id}/activities`, payload)
           toast.success(t('singardActivities.created'))
-          navigate(singardActivitiesPath(id, data.id))
+          navigate(singardActivitiesPath(id))
         }}
       />
     </div>
@@ -170,7 +170,7 @@ export function SingardActivityEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/singard/feedbacks/${id}/activities/${activityId}`, payload)
           toast.success(t('singardActivities.updated'))
-          navigate(singardActivitiesPath(id, activityId))
+          navigate(singardActivitiesPath(id))
         }}
       />
     </div>

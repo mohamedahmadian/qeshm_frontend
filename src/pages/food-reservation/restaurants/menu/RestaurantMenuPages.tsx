@@ -265,12 +265,9 @@ export function RestaurantMenuCreatePage() {
         foods={foods.data}
         existingItems={menuItems.data}
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>(
-            `/restaurants/${restaurantId}/menu-items`,
-            payload,
-          )
+          await api.post(`/restaurants/${restaurantId}/menu-items`, payload)
           toast.success(t('restaurantMenuItems.created'))
-          navigate(`${restaurantMenuPath(restaurantId)}/${data.id}`)
+          navigate(restaurantMenuPath(restaurantId))
         }}
       />
     </div>
@@ -311,7 +308,7 @@ export function RestaurantMenuEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/restaurants/${restaurantId}/menu-items/${itemId}`, payload)
           toast.success(t('restaurantMenuItems.updated'))
-          navigate(`${restaurantMenuPath(restaurantId)}/${itemId}`)
+          navigate(restaurantMenuPath(restaurantId))
         }}
       />
     </div>

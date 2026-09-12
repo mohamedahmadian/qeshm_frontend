@@ -176,9 +176,9 @@ export function EmployeeCreatePage() {
       <PageHeader icon={Users} title={t('employees.create')} subtitle={t('employees.createSubtitle')} />
       <EmployeeForm
         onSubmit={async (payload) => {
-          const { data } = await api.post<{ id: string }>('/users', payload)
+          await api.post('/users', payload)
           toast.success(t('employees.created'))
-          navigate(organizationEmployeePath(data.id))
+          navigate(organizationEmployeesPath())
         }}
       />
     </div>
