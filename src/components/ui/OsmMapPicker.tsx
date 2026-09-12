@@ -490,13 +490,15 @@ export function OsmMapPicker({
       if (frame) return
       frame = window.requestAnimationFrame(() => {
         frame = 0
+        const leafletMap = mapRef.current
+        if (!leafletMap) return
         const selected = overlaysRef.current?.markers.find((item) => item.selected)
-        const size = map.getSize()
+        const size = leafletMap.getSize()
         if (!selected) {
           onSelectedContainerPointRef.current?.(null)
           return
         }
-        const point = map.latLngToContainerPoint(L.latLng(selected.lat, selected.lng))
+        const point = leafletMap.latLngToContainerPoint(L.latLng(selected.lat, selected.lng))
         onSelectedContainerPointRef.current?.({
           x: point.x,
           y: point.y,
