@@ -212,6 +212,68 @@ th {
   cursor: pointer;
 }
 
+.live-board-map-shell {
+  display: flex;
+  flex-direction: column;
+  padding: 1.1rem;
+  background:
+    radial-gradient(92% 70% at 50% 0%, rgba(63, 214, 190, 0.2), transparent 58%),
+    linear-gradient(180deg, #e7f7f5 0%, #f6fbfa 100%);
+}
+
+.live-board-map-ring {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 2px;
+  border-radius: 1.35rem;
+  background: linear-gradient(135deg, #2ebdb6 0%, #3fd6be 52%, #8aebd8 100%);
+  box-shadow:
+    0 0 0 1px rgba(46, 189, 182, 0.16),
+    0 16px 34px rgba(46, 189, 182, 0.2),
+    0 4px 12px rgba(20, 40, 40, 0.05);
+  animation:
+    live-board-map-enter 700ms ease-out both,
+    live-board-map-glow 2.8s ease-in-out 0.65s 2;
+}
+
+.live-board-map-frame {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  border-radius: 1.2rem;
+  background: #e8eef0;
+}
+
+@keyframes live-board-map-enter {
+  from {
+    opacity: 0.5;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes live-board-map-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(46, 189, 182, 0.16),
+      0 16px 34px rgba(46, 189, 182, 0.2),
+      0 4px 12px rgba(20, 40, 40, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px rgba(46, 189, 182, 0.16),
+      0 20px 44px rgba(46, 189, 182, 0.3),
+      0 4px 12px rgba(20, 40, 40, 0.05);
+  }
+}
+
 .eskan-iran-map.leaflet-container {
   font-family: var(--font-sans);
   z-index: 0;
@@ -359,62 +421,179 @@ th {
   color: #3f3a34;
 }
 
+.eskan-route-pin-project {
+  overflow: visible;
+}
+
+.eskan-route-pin-project:hover,
+.eskan-route-pin-project.eskan-project-pin-selected {
+  z-index: 1200 !important;
+}
+
 .eskan-project-pin {
+  position: relative;
   display: flex;
+  width: 80px;
+  height: 54px;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  filter: drop-shadow(0 6px 12px rgba(20, 40, 40, 0.16));
+  justify-content: flex-start;
+  padding-top: 2px;
 }
 
-.eskan-project-pin-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 9999px;
-  background: #2ebdb6;
-  box-shadow: 0 0 0 3px #fff, 0 2px 8px rgba(20, 40, 40, 0.22);
-}
-
-.eskan-project-pin-label {
-  max-width: 7.2rem;
+.eskan-project-pin-code {
+  z-index: 1;
+  max-width: 4.6rem;
   overflow: hidden;
+  margin-top: 3px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1d2a28;
   text-overflow: ellipsis;
   white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(20, 40, 40, 0.14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.eskan-project-pin-glyph {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
   border-radius: 9999px;
-  background: #fff;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #3f3a34;
-  box-shadow: 0 0 0 1px rgba(46, 189, 182, 0.16);
-}
-
-.eskan-route-pin-tone-not-started .eskan-project-pin-dot {
-  background: #fff;
-  box-shadow: 0 0 0 2px #c5d0ce, 0 0 0 4px #fff, 0 2px 8px rgba(20, 40, 40, 0.18);
-}
-
-.eskan-route-pin-tone-in-progress .eskan-project-pin-dot {
   background: #2ebdb6;
+  color: #2ebdb6;
+  transition: transform 180ms ease;
 }
 
-.eskan-route-pin-tone-completed .eskan-project-pin-dot {
-  background: #22c55e;
+.eskan-project-pin-selected .eskan-project-pin-glyph {
+  transform: scale(1.12);
 }
 
-.eskan-route-pin-tone-suspended .eskan-project-pin-dot,
-.eskan-route-pin-tone-unset .eskan-project-pin-dot {
-  background: #7c8684;
+.eskan-project-pin-pulse-ring {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  color: inherit;
+  opacity: 0;
+  pointer-events: none;
+  translate: -50% 0;
 }
 
-.eskan-project-pin-selected .eskan-project-pin-dot {
-  transform: scale(1.2);
-  box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(46, 189, 182, 0.35), 0 4px 12px rgba(20, 40, 40, 0.22);
+.eskan-project-pin-pulse .eskan-project-pin-pulse-ring {
+  animation: eskan-pin-pulse 2.1s ease-out infinite;
 }
 
-.eskan-project-pin-selected .eskan-project-pin-label {
+.eskan-project-pin-pulse-strong .eskan-project-pin-pulse-ring {
+  animation-duration: 1.55s;
+}
+
+@keyframes eskan-pin-pulse {
+  0% {
+    transform: scale(0.72);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+}
+
+.eskan-project-pin-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  min-width: 10.5rem;
+  max-width: 14rem;
+  translate: -50% 4px;
+  flex-direction: column;
+  gap: 2px;
+  direction: rtl;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.58);
+  padding: 8px 10px;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  box-shadow: 0 12px 28px rgba(12, 28, 28, 0.22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    opacity 160ms ease,
+    translate 160ms ease,
+    visibility 160ms ease;
+}
+
+.eskan-project-pin-tip::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  translate: -50% -5px;
+  rotate: 45deg;
+  border-inline-end: 1px solid rgba(255, 255, 255, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.58);
+  content: '';
+}
+
+.eskan-project-pin:hover .eskan-project-pin-tip {
+  translate: -50% 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+.eskan-project-pin-selected .eskan-project-pin-tip {
+  display: none;
+}
+
+.eskan-project-pin-tip-title {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #1d2a28;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eskan-project-pin-tip-meta {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #4b5b58;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.eskan-project-pin-tip-footer {
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
   color: #148f8a;
-  box-shadow: 0 0 0 1px rgba(46, 189, 182, 0.35);
 }
 
 .eskan-history-pin {
@@ -677,7 +856,9 @@ th {
   .animate-page-fade-in,
   .admin-footer-open-btn,
   .animate-loading-spin,
-  .animate-loading-pulse {
+  .animate-loading-pulse,
+  .eskan-project-pin-pulse .eskan-project-pin-pulse-ring,
+  .live-board-map-ring {
     animation: none;
   }
 }

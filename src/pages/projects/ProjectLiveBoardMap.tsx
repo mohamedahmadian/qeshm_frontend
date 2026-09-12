@@ -1,5 +1,4 @@
 import {
-  CalendarClock,
   CalendarRange,
   ClipboardList,
   ExternalLink,
@@ -30,14 +29,15 @@ import {
 } from '../../components/ui/OsmMapPicker'
 import { api } from '../../lib/api'
 import { calendarDaysUntil, formatNumber } from '../../lib/datetime'
-import { QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
+import { QESHM_LIVE_BOARD_BOUNDS } from '../../lib/geo'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
 import { ProjectProgressForm } from './progress/ProjectProgressForm'
 import { projectProgressEntryPath } from './progress/progress-paths'
-import type {
-  ProjectLiveBoardActivity,
-  ProjectLiveBoardItem,
-  ProjectStatus,
+import {
+  projectImportances,
+  type ProjectLiveBoardActivity,
+  type ProjectLiveBoardItem,
+  type ProjectStatus,
 } from '../../types/app'
 import {
   ProjectImportanceBadge,
@@ -83,10 +83,7 @@ const statusTone: Record<ProjectStatus, MapOverlayMarkerTone> = {
   COMPLETED: 'completed',
 }
 
-function mapSheetWidth(mapWidth: number) {
-  if (mapWidth <= 0) return 0
-  return Math.min(mapWidth * 0.5, Math.max(mapWidth - 24, 0))
-}
+const MAP_SHEET_WIDTH = 420
 
 function escapeHtml(value: string) {
   return value
@@ -117,100 +114,61 @@ function activityTitle(text: string) {
 
 function mapSheetLeft(anchor: MapSelectedContainerPoint | null) {
   const mapWidth = anchor?.width ?? 0
-  const width = mapSheetWidth(mapWidth)
-  if (!anchor || mapWidth < 440) return 12
-  return Math.min(Math.max(anchor.x - width / 2, 12), Math.max(mapWidth - width - 12, 12))
-}
-
-function MapProgressRing({
-  value,
-  locale,
-  color,
-}: {
-  value: number | null
-  locale: string
-  color: string
-}) {
-  const pct = Math.min(100, Math.max(0, value ?? 0))
-  return (
-    <div
-      className="relative size-[5.5rem] shrink-0 rounded-full p-[5px] shadow-[0_10px_22px_rgba(46,189,182,0.2)]"
-      style={{
-        background: `conic-gradient(${color} ${pct * 3.6}deg, #e8f4f2 0deg)`,
-      }}
-    >
-      <div className="flex size-full flex-col items-center justify-center rounded-full bg-white text-center">
-        <span className="text-lg font-bold tabular-nums leading-none text-ink-900">
-          {value == null ? '—' : `${formatNumber(value, locale)}٪`}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function MapDaysBadge({
-  days,
-  overdue,
-  locale,
-}: {
-  days: number | null
-  overdue: boolean
-  locale: string
-}) {
-  const label = days == null ? '—' : formatNumber(Math.abs(days), locale)
-  return (
-    <div
-      className={`flex size-[5.5rem] shrink-0 flex-col items-center justify-center rounded-full border-[3px] text-center shadow-[0_10px_22px_rgba(46,189,182,0.16)] ${
-        overdue
-          ? 'border-ink-300 bg-gradient-to-b from-ink-50 to-white'
-          : 'border-mint-400 bg-gradient-to-b from-mint-50 to-white'
-      }`}
-    >
-      <CalendarClock
-        className={`mb-1 size-4 ${overdue ? 'text-ink-600' : 'text-mint-600'}`}
-        aria-hidden
-      />
-      <span className="text-lg font-bold tabular-nums leading-none text-ink-900">{label}</span>
-    </div>
-  )
+  const width = Math.min(MAP_SHEET_WIDTH, Math.max(mapWidth - 24, 0) || MAP_SHEET_WIDTH)
+  if (!anchor || mapWidth < 500) return 12
+  return Math.min(Math.max(anchor.x - width / 2, 12), mapWidth - width - 12)
 }
 
 export function LastActivityPreview({
   activity,
   projectId,
   empty = '—',
-  size = 'sm',
+  size = 'compact',
 }: {
   activity: ProjectLiveBoardActivity | null
   projectId?: string
   empty?: string
-  size?: 'sm' | 'md'
+  size?: 'compact' | 'comfortable'
 }) {
   const { t } = useTranslation()
-  const large = size === 'md'
+  const comfortable = size === 'comfortable'
   if (!activity) {
-    return <span className={large ? 'text-sm text-ink-400' : 'text-[11px] text-ink-400'}>{empty}</span>
+    return (
+      <span className={comfortable ? 'text-sm text-ink-400' : 'text-[11px] text-ink-400'}>
+        {empty}
+      </span>
+    )
   }
   const title = activityTitle(activity.title)
   const leftover =
     activity.excerpt && activity.excerpt !== activity.title
       ? activity.excerpt
       : activity.title.replace(/\s+/g, ' ').trim().split(' ').slice(8).join(' ')
-  const excerpt = excerptPreview(leftover)
+  const excerpt = excerptPreview(leftover, comfortable ? 16 : 22)
   const body =
     !title && !excerpt ? (
-      <span className={large ? 'text-sm text-ink-500' : 'text-[11px] text-ink-500'}>
+      <span className={comfortable ? 'text-sm text-ink-500' : 'text-[11px] text-ink-500'}>
         <DateText value={activity.occurredAt} />
       </span>
     ) : (
-      <div className="min-w-0 space-y-0.5">
+      <div className={comfortable ? 'min-w-0 space-y-1' : 'min-w-0 space-y-0.5'}>
         {title ? (
-          <p className={large ? 'text-sm font-medium leading-5 text-ink-900' : 'text-[11px] font-medium leading-4 text-ink-900'}>
+          <p
+            className={
+              comfortable
+                ? 'text-sm font-semibold leading-5 text-ink-900'
+                : 'text-[11px] font-medium leading-4 text-ink-900'
+            }
+          >
             {title}
           </p>
         ) : null}
         {excerpt ? (
-          <p className={large ? 'text-xs leading-5 text-ink-500' : 'text-[10px] leading-4 text-ink-500'}>
+          <p
+            className={
+              comfortable ? 'text-xs leading-5 text-ink-500' : 'text-[10px] leading-4 text-ink-500'
+            }
+          >
             {excerpt}
           </p>
         ) : null}
@@ -235,8 +193,72 @@ export function LastActivityPreview({
       }}
     >
       <span className="min-w-0 flex-1">{body}</span>
-      <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-teal-600" aria-hidden />
+      <ExternalLink
+        className={`mt-0.5 shrink-0 text-teal-600 ${comfortable ? 'size-4' : 'size-3.5'}`}
+        aria-hidden
+      />
     </button>
+  )
+}
+
+function MiniProgressRing({
+  value,
+  locale,
+  color,
+}: {
+  value: number | null
+  locale: string
+  color: string
+}) {
+  const { t } = useTranslation()
+  const pct = Math.min(100, Math.max(0, value ?? 0))
+  const label = value == null ? '—' : `${formatNumber(value, locale)}٪`
+  return (
+    <div
+      className="relative size-11 shrink-0 rounded-full p-[2.5px]"
+      style={{ background: `conic-gradient(${color} ${pct * 3.6}deg, #e8f4f2 0deg)` }}
+      title={`${t('projects.progress')} ${label}`}
+      aria-label={`${t('projects.progress')} ${label}`}
+    >
+      <div className="flex size-full items-center justify-center rounded-full bg-white">
+        <span className="px-0.5 text-[10px] font-bold tabular-nums leading-none text-ink-900">
+          {label}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function MiniDaysBadge({
+  daysLabel,
+  overdue,
+  title,
+  label,
+}: {
+  daysLabel: string
+  overdue: boolean
+  title: string
+  label: string
+}) {
+  return (
+    <div
+      className={`flex size-11 shrink-0 flex-col items-center justify-center rounded-full border bg-white text-center ${
+        overdue
+          ? 'border-ink-300 shadow-[0_4px_10px_rgba(20,40,40,0.08)]'
+          : 'border-mint-200 shadow-[0_4px_10px_rgba(63,214,190,0.18)]'
+      }`}
+      title={`${title} ${daysLabel}`}
+      aria-label={`${title} ${daysLabel}`}
+    >
+      <span
+        className={`text-[12px] font-bold tabular-nums leading-none ${
+          overdue ? 'text-ink-800' : 'text-mint-700'
+        }`}
+      >
+        {daysLabel}
+      </span>
+      <span className="mt-0.5 text-[9px] font-medium leading-none text-ink-500">{label}</span>
+    </div>
   )
 }
 
@@ -263,7 +285,12 @@ function ProjectMapCard({
   const showProgress = panel === 'progress'
   const remainingDays = calendarDaysUntil(project.endDate)
   const overdue = remainingDays != null && remainingDays < 0
-  const fullBleed = (anchor?.width ?? 800) < 440
+  const fullBleed = (anchor?.width ?? 800) < 500
+  const daysLabel = remainingDays == null ? '—' : formatNumber(Math.abs(remainingDays), locale)
+  const daysTitle = overdue ? t('projectLiveBoard.overdueDays') : t('projectLiveBoard.remainingDays')
+  const daysShort = overdue
+    ? t('projectLiveBoard.overdueDaysShort')
+    : t('projectLiveBoard.remainingDaysShort')
 
   useEffect(() => {
     setPanel('none')
@@ -277,9 +304,9 @@ function ProjectMapCard({
   return (
     <aside
       className={`absolute bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-3xl border-x border-t bg-white transition-transform duration-300 ease-out ${
-        fullBleed ? 'inset-x-3' : 'w-1/2'
+        fullBleed ? 'inset-x-3' : 'w-[min(calc(100%-1.5rem),26.25rem)]'
       } ${entered ? 'translate-y-0' : 'translate-y-full'} ${
-        showProgress || showDetails ? 'max-h-[min(82%,40rem)]' : 'max-h-[min(58%,30rem)]'
+        showProgress || showDetails ? 'max-h-[min(82%,36rem)]' : ''
       }`}
       style={{
         ...(fullBleed ? {} : { left: mapSheetLeft(anchor) }),
@@ -287,59 +314,64 @@ function ProjectMapCard({
         borderInlineStartWidth: 4,
         borderInlineStartStyle: 'solid',
         borderInlineStartColor: projectColor(project.color),
+        borderTopWidth: 4,
+        borderTopStyle: 'solid',
+        borderTopColor: projectColor(project.color),
         boxShadow: `0 -12px 32px ${projectColorAlpha(project.color, 0.2)}`,
       }}
       onClick={(event) => event.stopPropagation()}
     >
-      <div className={`h-1.5 ${theme.bar}`} />
-      <div className="relative min-h-0 flex-1 overflow-auto px-5 py-4">
-        <div className="flex items-start gap-3">
+      <div className="h-1.5 shrink-0" style={{ background: projectColor(project.color) }} />
+      <div
+        className={`relative flex-1 px-4 py-3.5 ${
+          showProgress || showDetails ? 'min-h-0 overflow-auto' : 'overflow-hidden'
+        }`}
+      >
+        <div className="flex items-start gap-2.5">
           <div className="min-w-0 flex-1 pe-1">
-            <h2 className="text-lg font-bold leading-6 text-ink-900">{project.systemName}</h2>
+            <h2 className="text-base font-bold leading-6 text-ink-900">{project.systemName}</h2>
+            {contractor ? (
+              <p className="mt-1 flex min-w-0 items-center gap-1 text-xs text-ink-600">
+                <Handshake className="size-3.5 shrink-0 text-teal-600" aria-hidden />
+                <span className="truncate">{contractor}</span>
+              </p>
+            ) : null}
           </div>
-          <button
-            type="button"
-            className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-teal-400 bg-white text-teal-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-            aria-label={t('projectLiveBoard.close')}
-            onClick={onClose}
-          >
-            <X className="size-4" aria-hidden />
-          </button>
-        </div>
-        <div className="mt-4 flex items-start justify-center gap-6">
-          <div className="flex flex-col items-center gap-1.5">
-            <MapProgressRing
+          <div className="flex shrink-0 items-center gap-1.5">
+            <MiniProgressRing
               value={project.progressPercent}
               locale={locale}
               color={theme.ring}
             />
-            <p className="text-center text-sm font-medium text-ink-600">{t('projects.progress')}</p>
-          </div>
-          <div className="flex flex-col items-center gap-1.5">
-            <MapDaysBadge days={remainingDays} overdue={overdue} locale={locale} />
-            <p className="text-center text-sm font-medium text-ink-600">
-              {overdue ? t('projectLiveBoard.overdueDays') : t('projectLiveBoard.remainingDays')}
-            </p>
+            <MiniDaysBadge
+              daysLabel={daysLabel}
+              overdue={overdue}
+              title={daysTitle}
+              label={daysShort}
+            />
+            {canManage ? (
+              <button
+                type="button"
+                className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-teal-400 bg-white text-teal-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                aria-label={t('projectLiveBoard.close')}
+                onClick={onClose}
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            ) : null}
           </div>
         </div>
-        {contractor ? (
-          <div className="mt-4 flex justify-center">
-            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-teal-100 bg-teal-50/80 px-3.5 py-1.5 text-sm text-ink-800">
-              <Handshake className="size-4 shrink-0 text-teal-600" aria-hidden />
-              <span className="truncate font-medium">{contractor}</span>
-            </div>
-          </div>
-        ) : null}
-        {!showProgress ? (
-          <div className="mt-3 flex items-start gap-2">
+        {!showProgress && project.lastActivity ? (
+          <div className="mt-3 flex items-start gap-2 rounded-2xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/40 px-3 py-2.5">
             <div className="min-w-0 flex-1">
+              <p className="mb-1 text-xs font-medium text-ink-500">{t('projectLiveBoard.lastActivity')}</p>
               <LastActivityPreview
                 activity={project.lastActivity}
                 empty={t('projectLiveBoard.noActivity')}
-                size="md"
+                size="comfortable"
               />
             </div>
-            {canManage && project.lastActivity ? (
+            {canManage ? (
               <Link
                 to={projectProgressEntryPath(project.id, project.lastActivity.id)}
                 aria-label={t('projectLiveBoard.openActivity')}
@@ -353,27 +385,27 @@ function ProjectMapCard({
             ) : null}
           </div>
         ) : null}
-        <div className="mt-2 space-y-2">
-          <div className={`grid gap-2 ${canManage ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            <Button
-              type="button"
-              variant="soft"
-              className="w-full gap-1.5 px-3 py-2 text-sm"
-              onClick={() => setPanel((current) => (current === 'details' ? 'none' : 'details'))}
-            >
-              <Monitor className="size-4 shrink-0" aria-hidden />
-              {showDetails ? t('projectLiveBoard.hideDetails') : t('projectLiveBoard.viewDetails')}
-            </Button>
+        <div className="mt-3 space-y-2.5">
+          <div className={canManage ? 'grid grid-cols-2 gap-2' : 'flex justify-center'}>
             {canManage ? (
               <Button
                 type="button"
-                className="w-full gap-1.5 px-3 py-2 text-sm"
+                className="w-full gap-1.5 px-3 py-2.5 text-sm"
                 onClick={() => setPanel((current) => (current === 'progress' ? 'none' : 'progress'))}
               >
                 <Mic className="size-4 shrink-0" aria-hidden />
                 {showProgress ? t('projectLiveBoard.hideProgress') : t('projectLiveBoard.addProgress')}
               </Button>
             ) : null}
+            <Button
+              type="button"
+              variant="soft"
+              className={`gap-1.5 px-3 py-2 text-sm ${canManage ? 'w-full' : 'w-auto'}`}
+              onClick={() => setPanel((current) => (current === 'details' ? 'none' : 'details'))}
+            >
+              <Monitor className="size-4 shrink-0" aria-hidden />
+              {showDetails ? t('projectLiveBoard.hideDetails') : t('projectLiveBoard.viewDetails')}
+            </Button>
           </div>
           {canManage && showProgress ? (
             <div className="rounded-2xl border border-teal-100 bg-cream-50/70 p-3">
@@ -390,41 +422,47 @@ function ProjectMapCard({
             </div>
           ) : null}
           {showDetails ? (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <FormFactTile
                 icon={Landmark}
                 label={t('projects.operators')}
                 value={projectOperatorsText(project.operators) || '—'}
                 empty={!project.operators?.length}
+                compact
               />
               <FormFactTile
                 icon={Tags}
                 label={t('projects.importance')}
                 value={<ProjectImportanceBadge value={project.importance} />}
+                compact
               />
               <FormFactTile
                 icon={CalendarRange}
                 label={t('projects.startDate')}
                 value={project.startDate ? <DateText value={project.startDate} /> : '—'}
                 empty={!project.startDate}
+                compact
               />
               <FormFactTile
                 icon={CalendarRange}
                 label={t('projects.endDate')}
                 value={project.endDate ? <DateText value={project.endDate} /> : '—'}
                 empty={!project.endDate}
+                compact
                 tone="mint"
               />
               <FormFactTile
                 icon={ClipboardList}
                 label={t('projectLiveBoard.activityCount')}
                 value={formatNumber(project.activityCount, locale)}
+                compact
               />
               {project.systemUrl ? (
                 <FormFactTile
                   icon={Globe}
                   label={t('projects.systemUrl')}
                   value={<ProjectUrl value={project.systemUrl} />}
+                  compact
                 />
               ) : null}
               {project.address ? (
@@ -432,6 +470,7 @@ function ProjectMapCard({
                   icon={MapPin}
                   label={t('projects.address')}
                   value={project.address}
+                  compact
                 />
               ) : null}
               {project.description ? (
@@ -439,6 +478,7 @@ function ProjectMapCard({
                   icon={ScrollText}
                   label={t('projects.description')}
                   value={project.description}
+                  compact
                 />
               ) : null}
               {canManage ? (
@@ -488,11 +528,14 @@ export function ProjectLiveBoardMap({
         kind: 'project' as const,
         tone: item.status ? statusTone[item.status] : 'not-started',
         color: projectColor(item.color),
-        badge: '',
-        title: escapeHtml(item.code),
-        farTitle: escapeHtml(item.code),
+        badge: escapeHtml(item.code),
+        title: escapeHtml(item.systemName),
         nearTitle: escapeHtml(item.systemName),
-        nearZoom: 14,
+        hint: item.address ? escapeHtml(item.address) : undefined,
+        pulse:
+          item.importance === projectImportances.HIGH ||
+          item.importance === projectImportances.VERY_HIGH,
+        pulseStrong: item.importance === projectImportances.VERY_HIGH,
         selected: selectedId === item.id,
       })),
     }),
@@ -506,44 +549,35 @@ export function ProjectLiveBoardMap({
   }, [items, selectedId])
 
   return (
-    <div className={className}>
-      <OsmMapPicker
-        latitude=""
-        longitude=""
-        onChange={() => undefined}
-        variant="always"
-        readOnly
-        fill
-        maxBounds={QESHM_MAP_BOUNDS}
-        focus={{
-          lat: QESHM_MAP_CENTER.lat,
-          lng: QESHM_MAP_CENTER.lng,
-          zoom: 11,
-          bounds: QESHM_MAP_BOUNDS,
-        }}
-        overlays={overlays}
-        onMapClick={() => setSelectedId(null)}
-        keepInView={
-          selected
-            ? {
-                id: selected.id,
-                padding: { top: 40, right: 24, bottom: 280, left: 24 },
-              }
-            : null
-        }
-        onMarkerClick={(id) => setSelectedId((current) => (current === id ? null : id))}
-        onSelectedContainerPoint={selectedId ? setMarkerPoint : undefined}
-      />
-      {selected ? (
-        <ProjectMapCard
-          key={selected.id}
-          project={selected}
-          locale={locale}
-          anchor={markerPoint}
-          canManage={canManage}
-          onClose={() => setSelectedId(null)}
-        />
-      ) : null}
+    <div className={`live-board-map-shell ${className}`}>
+      <div className="live-board-map-ring">
+        <div className="live-board-map-frame">
+          <OsmMapPicker
+            latitude=""
+            longitude=""
+            onChange={() => undefined}
+            variant="always"
+            readOnly
+            fill
+            plainChrome
+            maxBounds={QESHM_LIVE_BOARD_BOUNDS}
+            overlays={overlays}
+            onMapClick={() => setSelectedId(null)}
+            onMarkerClick={(id) => setSelectedId((current) => (current === id ? null : id))}
+            onSelectedContainerPoint={selectedId ? setMarkerPoint : undefined}
+          />
+          {selected ? (
+            <ProjectMapCard
+              key={selected.id}
+              project={selected}
+              locale={locale}
+              anchor={markerPoint}
+              canManage={canManage}
+              onClose={() => setSelectedId(null)}
+            />
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }

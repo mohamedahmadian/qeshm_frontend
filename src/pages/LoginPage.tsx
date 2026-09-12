@@ -42,7 +42,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthGuestLayout>
+    <AuthGuestLayout showHeaderHome>
       <FormCard
         icon={KeyRound}
         title={t('auth.loginTitle')}

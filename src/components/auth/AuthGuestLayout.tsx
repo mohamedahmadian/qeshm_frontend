@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, LogIn, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Home, LogIn, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
@@ -16,6 +16,7 @@ export function AuthGuestLayout({
   fill = false,
   showAuthLinks = false,
   showHeaderLogin = false,
+  showHeaderHome = false,
 }: {
   children: ReactNode
   wide?: boolean
@@ -23,6 +24,7 @@ export function AuthGuestLayout({
   fill?: boolean
   showAuthLinks?: boolean
   showHeaderLogin?: boolean
+  showHeaderHome?: boolean
 }) {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -54,6 +56,14 @@ export function AuthGuestLayout({
           </Link>
           <div className="ms-auto flex items-center gap-2">
             <LocaleSwitcher />
+            {showHeaderHome ? (
+              <Link to="/">
+                <Button type="button" variant="ghost" className="gap-1.5">
+                  <Home className="size-4" aria-hidden />
+                  {t('landing.homePage')}
+                </Button>
+              </Link>
+            ) : null}
             {showHeaderLogin ? (
               <Link to={user ? '/dashboard' : '/login'}>
                 <Button type="button" variant={user ? 'soft' : 'primary'} className="gap-1.5">

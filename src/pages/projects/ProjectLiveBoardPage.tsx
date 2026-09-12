@@ -634,17 +634,19 @@ function ProjectBoardCard({
           </p>
         </div>
 
-        <div className="relative rounded-2xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/50 px-3 py-2.5">
-          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-ink-500">
-            <ClipboardList className="size-3.5 text-teal-600" aria-hidden />
-            {t('projectLiveBoard.lastActivity')}
+        {project.lastActivity ? (
+          <div className="relative rounded-2xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/50 px-3 py-2.5">
+            <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-ink-500">
+              <ClipboardList className="size-3.5 text-teal-600" aria-hidden />
+              {t('projectLiveBoard.lastActivity')}
+            </div>
+            <LastActivityPreview
+              projectId={project.id}
+              activity={project.lastActivity}
+              empty={t('projectLiveBoard.noActivity')}
+            />
           </div>
-          <LastActivityPreview
-            projectId={project.id}
-            activity={project.lastActivity}
-            empty={t('projectLiveBoard.noActivity')}
-          />
-        </div>
+        ) : null}
 
         <div className="relative mt-auto flex items-center justify-between gap-3">
           <div className="min-w-0 text-[11px] text-ink-500">

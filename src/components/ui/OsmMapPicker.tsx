@@ -60,6 +60,10 @@ export type MapOverlayMarker = {
   selected?: boolean
   color?: string
   popupHtml?: string
+  pulse?: boolean
+  pulseStrong?: boolean
+  hint?: string
+  tipFooter?: string
 }
 
 function markerVisibleTitle(marker: MapOverlayMarker, zoom: number) {
@@ -68,19 +72,27 @@ function markerVisibleTitle(marker: MapOverlayMarker, zoom: number) {
   return marker.nearTitle ?? marker.title
 }
 
-function projectPinHtml(marker: MapOverlayMarker, zoom: number) {
-  const label = markerVisibleTitle(marker, zoom)
+const PROJECT_PIN_ICON =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>'
+
+function projectPinHtml(marker: MapOverlayMarker) {
+  const title = marker.nearTitle || marker.title
   const selected = marker.selected ? ' eskan-project-pin-selected' : ''
-  const color = isProjectColor(marker.color) ? projectColor(marker.color) : ''
-  const fill = color
-    ? `background:${color};box-shadow:0 0 0 3px #fff,${
-        marker.selected
-          ? `0 0 0 6px ${projectColorAlpha(color, 0.38)},0 4px 12px rgba(20,40,40,0.22)`
-          : '0 2px 8px rgba(20,40,40,0.22)'
-      }`
+  const pulse = marker.pulse ? ' eskan-project-pin-pulse' : ''
+  const pulseStrong = marker.pulseStrong ? ' eskan-project-pin-pulse-strong' : ''
+  const color = isProjectColor(marker.color) ? projectColor(marker.color) : '#2ebdb6'
+  const fill = `background:${color};color:${color};box-shadow:0 0 0 3px rgba(255,255,255,0.92),${
+    marker.selected
+      ? `0 0 0 7px ${projectColorAlpha(color, 0.38)},0 10px 22px ${projectColorAlpha(color, 0.42)}`
+      : `0 8px 18px ${projectColorAlpha(color, 0.38)}`
+  }`
+  const hint = marker.hint
+    ? `<span class="eskan-project-pin-tip-meta">${marker.hint}</span>`
     : ''
-  const style = fill ? ` style="${fill}"` : ''
-  return `<span class="eskan-project-pin${selected}"><span class="eskan-project-pin-dot"${style}></span><span class="eskan-project-pin-label">${label}</span></span>`
+  const code = marker.badge
+    ? `<span class="eskan-project-pin-code">${marker.badge}</span>`
+    : ''
+  return `<span class="eskan-project-pin${selected}${pulse}${pulseStrong}" style="color:${color}"><span class="eskan-project-pin-pulse-ring" aria-hidden="true"></span><span class="eskan-project-pin-glyph" style="${fill}">${PROJECT_PIN_ICON}</span>${code}<span class="eskan-project-pin-tip" dir="rtl"><span class="eskan-project-pin-tip-title">${title}</span>${hint}</span></span>`
 }
 
 function overlayMarkerHtml(marker: MapOverlayMarker, zoom = 12) {
@@ -88,9 +100,9 @@ function overlayMarkerHtml(marker: MapOverlayMarker, zoom = 12) {
     return `<span class="eskan-history-pin">${marker.badge}</span>`
   }
   if (marker.kind === 'project') {
-    return projectPinHtml(marker, zoom)
+    return projectPinHtml(marker)
   }
-  return `<span class="eskan-route-pin"><span class="eskan-route-pin-badge">${marker.badge}</span><span class="eskan-route-pin-title">${marker.title}</span></span>`
+  return `<span class="eskan-route-pin"><span class="eskan-route-pin-badge">${marker.badge}</span><span class="eskan-route-pin-title">${markerVisibleTitle(marker, zoom)}</span></span>`
 }
 
 function overlayMarkerIcon(marker: MapOverlayMarker, zoom: number) {
@@ -99,10 +111,10 @@ function overlayMarkerIcon(marker: MapOverlayMarker, zoom: number) {
   return L.divIcon({
     className: `eskan-route-pin-wrap eskan-route-pin-${marker.kind}${
       marker.tone ? ` eskan-route-pin-tone-${marker.tone}` : ''
-    }`,
+    }${marker.pulse ? ' eskan-route-pin-pulse' : ''}`,
     html: overlayMarkerHtml(marker, zoom),
-    iconSize: isHistory ? [28, 28] : isProject ? [120, 42] : [132, 52],
-    iconAnchor: isHistory ? [14, 14] : isProject ? [60, 10] : [66, 50],
+    iconSize: isHistory ? [28, 28] : isProject ? [80, 54] : [132, 52],
+    iconAnchor: isHistory ? [14, 14] : isProject ? [40, 16] : [66, 50],
   })
 }
 
@@ -186,25 +198,15 @@ function toLeafletBounds(bounds: MapBounds) {
   )
 }
 
+function applyBoundsView(map: L.Map, bounds: L.LatLngBounds) {
+  map.fitBounds(bounds, { padding: [20, 20], animate: false })
+}
+
 function addMapTiles(map: L.Map) {
-  const attribution =
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  const primary = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution,
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19,
-  })
-  let fallbackAttached = false
-  primary.on('tileerror', () => {
-    if (fallbackAttached) return
-    fallbackAttached = true
-    map.removeLayer(primary)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: `${attribution} &copy; CARTO`,
-      subdomains: 'abcd',
-      maxZoom: 19,
-    }).addTo(map)
-  })
-  primary.addTo(map)
+  }).addTo(map)
 }
 
 export function OsmMapPicker({
@@ -221,6 +223,7 @@ export function OsmMapPicker({
   heightClass = 'h-72',
   overlays = null,
   fill = false,
+  plainChrome = false,
   keepInView = null,
   onMarkerClick,
   onSelectedContainerPoint,
@@ -242,6 +245,7 @@ export function OsmMapPicker({
   heightClass?: string
   overlays?: MapOverlays | null
   fill?: boolean
+  plainChrome?: boolean
   keepInView?: {
     id: string
     padding: { top: number; right: number; bottom: number; left: number }
@@ -271,6 +275,7 @@ export function OsmMapPicker({
   const onSelectedContainerPointRef = useRef(onSelectedContainerPoint)
   const onMapClickRef = useRef(onMapClick)
   const maxBoundsRef = useRef(maxBounds)
+  const viewFittedRef = useRef(false)
   const autoGeoDoneRef = useRef(false)
   const stopGeoRef = useRef<(() => void) | null>(null)
   onChangeRef.current = onChange
@@ -321,7 +326,7 @@ export function OsmMapPicker({
     } else if (currentOverlays?.fit && overlayFitLatLngs(currentOverlays).length) {
       fitOverlayBounds(map, currentOverlays)
     } else if (maxBounds) {
-      map.fitBounds(toLeafletBounds(maxBounds), { padding: [28, 28], maxZoom: focus?.zoom ?? 13 })
+      applyBoundsView(map, toLeafletBounds(maxBounds))
     } else if (focus?.bounds) {
       map.fitBounds(toLeafletBounds(focus.bounds), { padding: [56, 56], maxZoom: focus.zoom ?? 16 })
     } else if (focus) {
@@ -346,8 +351,14 @@ export function OsmMapPicker({
 
     mapRef.current = map
     const frame = window.requestAnimationFrame(() => map.invalidateSize())
+    let sized = false
     const observer = new ResizeObserver(() => {
       map.invalidateSize({ animate: false })
+      const size = map.getSize()
+      if (sized || size.x < 80 || size.y < 80) return
+      sized = true
+      const currentBounds = maxBoundsRef.current
+      if (currentBounds) applyBoundsView(map, toLeafletBounds(currentBounds))
     })
     observer.observe(container)
 
@@ -357,6 +368,7 @@ export function OsmMapPicker({
       map.remove()
       mapRef.current = null
       markerRef.current = null
+      viewFittedRef.current = false
     }
     // Map is created once per open session; lat/lng sync is handled below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -385,7 +397,10 @@ export function OsmMapPicker({
       const bounds = toLeafletBounds(maxBounds)
       map.setMaxBounds(bounds.pad(0.08))
       map.options.maxBoundsViscosity = 1
-      map.fitBounds(bounds, { padding: [28, 28], maxZoom: focus?.zoom ?? 13 })
+      if (!viewFittedRef.current) {
+        applyBoundsView(map, bounds)
+        viewFittedRef.current = true
+      }
       return
     }
     map.setMaxBounds(undefined as unknown as L.LatLngBounds)
@@ -420,12 +435,18 @@ export function OsmMapPicker({
         },
       ).addTo(layer)
     }
-    const projectPins: { marker: MapOverlayMarker; pin: L.Marker }[] = []
     for (const marker of overlays.markers) {
       const isHistory = marker.kind === 'history'
       const pin = L.marker([marker.lat, marker.lng], {
         icon: overlayMarkerIcon(marker, map.getZoom()),
-        zIndexOffset: marker.selected || marker.kind === 'current' ? 500 : isHistory ? 420 : 400,
+        zIndexOffset:
+          marker.selected || marker.kind === 'current'
+            ? 500
+            : marker.pulse
+              ? 430
+              : isHistory
+                ? 420
+                : 400,
         keyboard: false,
       }).addTo(layer)
       pin.on('click', (event: L.LeafletMouseEvent) => {
@@ -440,19 +461,7 @@ export function OsmMapPicker({
           autoClose: false,
         })
       }
-      if (marker.kind === 'project') {
-        projectPins.push({ marker, pin })
-      }
     }
-    function syncProjectLabels() {
-      const current = mapRef.current
-      if (!current) return
-      const zoom = current.getZoom()
-      for (const item of projectPins) {
-        item.pin.setIcon(overlayMarkerIcon(item.marker, zoom))
-      }
-    }
-    map.on('zoomend', syncProjectLabels)
     if (overlays.fit) {
       const here = parseLatLng(latitude, longitude)
       const points = overlayFitLatLngs(overlays, here)
@@ -465,7 +474,6 @@ export function OsmMapPicker({
       overlayFitKeyRef.current = ''
     }
     return () => {
-      map.off('zoomend', syncProjectLabels)
       layer.remove()
       if (overlayLayerRef.current === layer) overlayLayerRef.current = null
     }
@@ -659,8 +667,12 @@ export function OsmMapPicker({
       {open ? (
         <div
           dir="ltr"
-          className={`overflow-hidden rounded-2xl border border-line shadow-[0_8px_24px_rgba(20,40,40,0.06)] ${
-            fill ? 'h-full' : ''
+          className={`overflow-hidden ${
+            plainChrome
+              ? 'h-full rounded-none border-0 shadow-none'
+              : `rounded-2xl border border-line shadow-[0_8px_24px_rgba(20,40,40,0.06)] ${
+                  fill ? 'h-full' : ''
+                }`
           }`}
         >
           <div

@@ -32,7 +32,7 @@ export function PublicHomePage() {
           icon={Radio}
           title={t('projectLiveBoard.title')}
           subtitle={
-            located.length ? t('landing.liveBoardHint') : t('projectLiveBoard.noLocation')
+            located.length ? t('landing.subtitle') : t('projectLiveBoard.noLocation')
           }
           className="flex min-h-[28rem] flex-1 flex-col"
         >

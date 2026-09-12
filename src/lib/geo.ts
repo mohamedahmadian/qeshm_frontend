@@ -147,3 +147,9 @@ export const QESHM_MAP_BOUNDS = {
   north: 27.05,
   east: 56.42,
 }
+
+/** Extra space on the west so the island sits nearer the center of the live board. */
+export const QESHM_LIVE_BOARD_BOUNDS = {
+  ...QESHM_MAP_BOUNDS,
+  west: 55.35,
+}
