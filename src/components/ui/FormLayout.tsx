@@ -132,7 +132,7 @@ export function FormCardHeader({
   const subtitleClass =
     heading === 'h1' ? 'mt-1 text-sm leading-6 text-ink-500' : 'mt-1 text-xs leading-6 text-ink-600'
   return (
-    <header className="relative overflow-hidden bg-gradient-to-e from-mint-50 via-white to-teal-50 px-5 py-5 sm:px-6">
+    <header className="relative shrink-0 overflow-hidden bg-gradient-to-e from-mint-50 via-white to-teal-50 px-5 py-5 sm:px-6">
       <FormCardHeaderDecor />
       <div className="relative flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">

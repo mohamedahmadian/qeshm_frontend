@@ -299,9 +299,15 @@ export function ProjectsListPage() {
                 </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
-                    viewTo={projectProgressCreatePath(item.id)}
-                    viewLabel={t('projectProgress.create')}
-                    viewIcon={ClipboardList}
+                    viewTo={`/projects/${item.id}`}
+                    extra={
+                      <Link to={projectProgressCreatePath(item.id)}>
+                        <Button type="button" variant="soft">
+                          <ClipboardList className="size-4" aria-hidden />
+                          {t('projectProgress.create')}
+                        </Button>
+                      </Link>
+                    }
                     editTo={`/projects/${item.id}/edit`}
                     onDelete={() =>
                       confirmDelete({

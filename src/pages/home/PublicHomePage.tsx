@@ -34,11 +34,15 @@ export function PublicHomePage() {
           subtitle={
             located.length ? t('landing.liveBoardHint') : t('projectLiveBoard.noLocation')
           }
-          className="flex min-h-0 flex-1 flex-col"
+          className="flex min-h-[28rem] flex-1 flex-col"
         >
           {query.isLoading ? (
             <div className="flex flex-1 items-center justify-center p-6">
               <LoadingState />
+            </div>
+          ) : query.isError ? (
+            <div className="p-5 sm:p-6">
+              <FormEmptyHint>{t('projectLiveBoard.loadError')}</FormEmptyHint>
             </div>
           ) : located.length === 0 ? (
             <div className="p-5 sm:p-6">

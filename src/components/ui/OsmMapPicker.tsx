@@ -186,6 +186,27 @@ function toLeafletBounds(bounds: MapBounds) {
   )
 }
 
+function addMapTiles(map: L.Map) {
+  const attribution =
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  const primary = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution,
+    maxZoom: 19,
+  })
+  let fallbackAttached = false
+  primary.on('tileerror', () => {
+    if (fallbackAttached) return
+    fallbackAttached = true
+    map.removeLayer(primary)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: `${attribution} &copy; CARTO`,
+      subdomains: 'abcd',
+      maxZoom: 19,
+    }).addTo(map)
+  })
+  primary.addTo(map)
+}
+
 export function OsmMapPicker({
   latitude,
   longitude,
@@ -287,8 +308,9 @@ export function OsmMapPicker({
   useEffect(() => {
     if (!open || !containerRef.current || mapRef.current) return
 
+    const container = containerRef.current
     const start = parseLatLng(latitude, longitude)
-    const map = L.map(containerRef.current, {
+    const map = L.map(container, {
       scrollWheelZoom: true,
       dragging: true,
       doubleClickZoom: !readOnly,
@@ -307,11 +329,7 @@ export function OsmMapPicker({
     } else {
       map.fitBounds(toLeafletBounds(IRAN_BOUNDS), { padding: [28, 28], maxZoom: 6 })
     }
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }).addTo(map)
+    addMapTiles(map)
 
     if (start) placeMarker(map, start, canEdit)
 
@@ -328,9 +346,14 @@ export function OsmMapPicker({
 
     mapRef.current = map
     const frame = window.requestAnimationFrame(() => map.invalidateSize())
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize({ animate: false })
+    })
+    observer.observe(container)
 
     return () => {
       window.cancelAnimationFrame(frame)
+      observer.disconnect()
       map.remove()
       mapRef.current = null
       markerRef.current = null
@@ -593,11 +616,18 @@ export function OsmMapPicker({
 
   const showMapToggle = variant === 'collapsible'
   const showGeoButton = geolocateEnabled && open
+  const fillBleed = fill && !showMapToggle && !showGeoButton
 
   return (
     <div
       className={
-        showMapToggle || showGeoButton ? 'space-y-3' : fill ? 'h-full min-h-0' : undefined
+        showMapToggle || showGeoButton
+          ? 'space-y-3'
+          : fillBleed
+            ? 'absolute inset-0 min-h-0'
+            : fill
+              ? 'h-full min-h-0'
+              : undefined
       }
     >
       {showMapToggle || showGeoButton ? (

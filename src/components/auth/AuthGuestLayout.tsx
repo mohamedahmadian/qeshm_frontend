@@ -29,7 +29,7 @@ export function AuthGuestLayout({
   const { title: brandTitle, name: brandName, logoSrc } = useBrandDisplay()
 
   return (
-    <div className="flex min-h-svh flex-col bg-cream-50">
+    <div className={`flex flex-col bg-cream-50 ${fill ? 'h-svh overflow-hidden' : 'min-h-svh'}`}>
       <header className="z-20 shrink-0 border-b border-line/70 bg-white/90 backdrop-blur">
         <div
           className={`mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-8 ${
