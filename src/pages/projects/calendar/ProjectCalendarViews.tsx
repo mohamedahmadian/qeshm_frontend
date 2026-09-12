@@ -16,7 +16,7 @@ import {
   projectsInDisplayYear,
   projectsWithEndDate,
 } from '../../../lib/project-calendar'
-import { projectColor, projectColorAlpha } from '../../../lib/project-color'
+import { projectColorAlpha } from '../../../lib/project-color'
 import type { Project } from '../../../types/app'
 import { CalendarProjectsModal } from './CalendarProjectsModal'
 import { DeadlineGroup, MonthCalendarGrid, ProposalCardNote } from './ProjectCalendarShared'
