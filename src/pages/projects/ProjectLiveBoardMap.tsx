@@ -83,8 +83,8 @@ const statusTone: Record<ProjectStatus, MapOverlayMarkerTone> = {
 }
 
 const MOBILE_VIEWPORT = '(max-width: 639.98px)'
-const WEB_DOCK_HEIGHT = '8.25rem'
 const WEB_DOCK_HEIGHT_TALL = '10.75rem'
+const WEB_DOCK_HEIGHT_PUBLIC = '10rem'
 
 function useStickToLastLine(value: string) {
   const ref = useRef<HTMLTextAreaElement>(null)
@@ -654,6 +654,11 @@ function ProjectMapCard({
         size="comfortable"
       />
     ) : null
+  const reportText = canManage
+    ? body
+    : project.description?.trim() ||
+      (project.lastActivity ? activityPreviewText(project.lastActivity) : '')
+  const displayProgress = canManage ? progressValue : (project.progressPercent ?? 0)
 
   const inner = (
     <>
@@ -705,8 +710,8 @@ function ProjectMapCard({
         </div>
       </div>
       {lastActivity ? <div className="mt-4">{lastActivity}</div> : null}
-      {canManage ? (
-        <div className="mt-5 flex flex-col items-center gap-3">
+      <div className="mt-5 flex flex-col items-center gap-3">
+        {canManage ? (
           <Button
             type="button"
             className={`relative min-w-[12rem] gap-1.5 px-5 py-2.5 text-sm ${
@@ -722,31 +727,40 @@ function ProjectMapCard({
               {recording ? t('projectProgress.stopRecord') : t('projectProgress.record')}
             </span>
           </Button>
-          <textarea
-            ref={reportRef}
-            className={`${fieldClassName} progress-report-field progress-report-field-roomy`}
-            rows={4}
-            value={body}
-            onChange={(event) => setBody(event.target.value)}
-            placeholder={t('projectLiveBoard.reportPlaceholder')}
+        ) : null}
+        <textarea
+          ref={reportRef}
+          className={`${fieldClassName} progress-report-field ${
+            canManage ? 'progress-report-field-roomy' : 'max-h-28'
+          }`}
+          rows={canManage ? 4 : 3}
+          value={reportText}
+          readOnly={!canManage}
+          onChange={canManage ? (event) => setBody(event.target.value) : undefined}
+          placeholder={t('projectLiveBoard.reportPlaceholder')}
+        />
+        <div className="w-full space-y-1.5">
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            dir="ltr"
+            className={`progress-slider${canManage ? '' : ' pointer-events-none'}`}
+            style={{ '--slider-fill': `${displayProgress}%` } as CSSProperties}
+            value={displayProgress}
+            tabIndex={canManage ? undefined : -1}
+            onChange={
+              canManage ? (event) => setProgressValue(Number(event.target.value)) : undefined
+            }
+            aria-label={t('projectProgress.progress')}
+            aria-readonly={!canManage}
           />
-          <div className="w-full space-y-1.5">
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              dir="ltr"
-              className="progress-slider"
-              style={{ '--slider-fill': `${progressValue}%` } as CSSProperties}
-              value={progressValue}
-              onChange={(event) => setProgressValue(Number(event.target.value))}
-              aria-label={t('projectProgress.progress')}
-            />
-            <p className="text-center text-sm tabular-nums text-ink-700">
-              {`${formatNumber(progressValue, locale)}٪`}
-            </p>
-          </div>
+          <p className="text-center text-sm tabular-nums text-ink-700">
+            {`${formatNumber(displayProgress, locale)}٪`}
+          </p>
+        </div>
+        {canManage ? (
           <Button
             type="button"
             disabled={saving || uploading}
@@ -755,8 +769,8 @@ function ProjectMapCard({
             <Check className="size-4" aria-hidden />
             {t('projectProgress.save')}
           </Button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
       {showDetails ? (
         <div className="mt-5">
           <ProjectMapDetails project={project} locale={locale} canManage={canManage} />
@@ -768,20 +782,34 @@ function ProjectMapCard({
   if (isMobile) {
     return createPortal(
       <div
-        className={`fixed inset-0 z-[80] flex flex-col bg-cream-50 transition-opacity duration-300 ${
-          entered ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`fixed inset-0 z-[80] flex flex-col transition-opacity duration-300 ${
+          canManage ? 'bg-cream-50' : 'justify-end bg-ink-950/30'
+        } ${entered ? 'opacity-100' : 'opacity-0'}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="live-board-project-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="h-0.5 shrink-0" style={{ background: projectColor(project.color) }} />
-        <div className="absolute start-3 top-4 z-10">
-          <ProjectColorLamp color={project.color} />
-        </div>
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
-          <div className="mx-auto my-auto w-full max-w-md">{inner}</div>
+        <div
+          className={
+            canManage
+              ? 'flex min-h-0 flex-1 flex-col'
+              : 'relative max-h-[min(34rem,78vh)] overflow-hidden rounded-t-3xl bg-cream-50 shadow-[0_-12px_32px_rgba(28,39,37,0.16)]'
+          }
+        >
+          <div className="h-0.5 shrink-0" style={{ background: projectColor(project.color) }} />
+          <div className="absolute start-3 top-4 z-10">
+            <ProjectColorLamp color={project.color} />
+          </div>
+          <div
+            className={`flex min-h-0 flex-col overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 ${
+              canManage ? 'flex-1' : ''
+            }`}
+          >
+            <div className={`mx-auto w-full max-w-md ${canManage ? 'my-auto' : 'my-3'}`}>
+              {inner}
+            </div>
+          </div>
         </div>
       </div>,
       document.body,
@@ -789,7 +817,7 @@ function ProjectMapCard({
   }
 
   const dockButtonClass = 'h-8 min-w-[7.75rem] px-2.5 py-0 text-xs'
-  const showDockSecondRow = canManage || Boolean(project.lastActivity)
+  const dockHeight = canManage ? WEB_DOCK_HEIGHT_TALL : WEB_DOCK_HEIGHT_PUBLIC
 
   return (
     <aside
@@ -797,7 +825,7 @@ function ProjectMapCard({
         entered ? 'translate-y-0' : 'translate-y-full'
       }`}
       style={{
-        height: showDockSecondRow ? WEB_DOCK_HEIGHT_TALL : WEB_DOCK_HEIGHT,
+        height: dockHeight,
         borderColor: projectColorAlpha(project.color, 0.35),
         boxShadow: `0 -8px 22px ${projectColorAlpha(project.color, 0.16)}`,
       }}
@@ -870,16 +898,15 @@ function ProjectMapCard({
             </Button>
           ) : null}
           <div className="flex min-h-0 min-w-0 flex-1 items-center gap-2 self-stretch overflow-hidden pe-1">
-            {canManage ? (
-              <textarea
-                ref={reportRef}
-                className={`${fieldClassName} progress-report-field h-full min-h-0 max-h-none w-full min-w-[12rem] flex-1 resize-none border-teal-200 px-3 py-2 text-xs leading-5`}
-                rows={2}
-                value={body}
-                onChange={(event) => setBody(event.target.value)}
-                placeholder={t('projectLiveBoard.reportPlaceholder')}
-              />
-            ) : null}
+            <textarea
+              ref={reportRef}
+              className={`${fieldClassName} progress-report-field h-full min-h-0 max-h-none w-full min-w-[12rem] flex-1 resize-none border-teal-200 px-3 py-2 text-xs leading-5`}
+              rows={2}
+              value={reportText}
+              readOnly={!canManage}
+              onChange={canManage ? (event) => setBody(event.target.value) : undefined}
+              placeholder={t('projectLiveBoard.reportPlaceholder')}
+            />
             {showDetails ? (
               <div className="min-h-0 min-w-0 flex-1 self-stretch py-0.5">
                 <ProjectMapDetails
@@ -892,53 +919,55 @@ function ProjectMapCard({
             ) : null}
           </div>
         </div>
-        {showDockSecondRow ? (
-          <div className="flex shrink-0 items-center gap-2">
-            {project.lastActivity ? (
-              <>
-                <LastActivityDockLine
-                  activity={project.lastActivity}
-                  projectId={canManage ? project.id : undefined}
-                />
-                <DockStatChip
-                  value={formatNumber(project.activityCount, locale)}
-                  label={t('projectLiveBoard.activityCountShort')}
-                  title={t('projectLiveBoard.activityCount')}
-                />
-              </>
-            ) : (
-              <div className="min-w-0 flex-1" />
-            )}
-            {canManage ? (
-              <>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  dir="ltr"
-                  className="progress-slider progress-slider-lg w-[10rem] min-w-[8rem] max-w-[11rem] shrink-0"
-                  style={{ '--slider-fill': `${progressValue}%` } as CSSProperties}
-                  value={progressValue}
-                  onChange={(event) => setProgressValue(Number(event.target.value))}
-                  aria-label={t('projectProgress.progress')}
-                />
-                <span className="w-8 shrink-0 text-end text-[11px] font-semibold tabular-nums text-ink-700">
-                  {`${formatNumber(progressValue, locale)}٪`}
-                </span>
-                <Button
-                  type="button"
-                  className="h-8 shrink-0 px-2.5 py-0 text-xs"
-                  disabled={saving || uploading}
-                  onClick={() => void saveProgress()}
-                >
-                  <Check className="size-3.5" aria-hidden />
-                  {t('projectProgress.save')}
-                </Button>
-              </>
-            ) : null}
-          </div>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-2">
+          {project.lastActivity ? (
+            <>
+              <LastActivityDockLine
+                activity={project.lastActivity}
+                projectId={canManage ? project.id : undefined}
+              />
+              <DockStatChip
+                value={formatNumber(project.activityCount, locale)}
+                label={t('projectLiveBoard.activityCountShort')}
+                title={t('projectLiveBoard.activityCount')}
+              />
+            </>
+          ) : (
+            <div className="min-w-0 flex-1" />
+          )}
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            dir="ltr"
+            className={`progress-slider progress-slider-lg w-[10rem] min-w-[8rem] max-w-[11rem] shrink-0${
+              canManage ? '' : ' pointer-events-none'
+            }`}
+            style={{ '--slider-fill': `${displayProgress}%` } as CSSProperties}
+            value={displayProgress}
+            tabIndex={canManage ? undefined : -1}
+            onChange={
+              canManage ? (event) => setProgressValue(Number(event.target.value)) : undefined
+            }
+            aria-label={t('projectProgress.progress')}
+            aria-readonly={!canManage}
+          />
+          <span className="w-8 shrink-0 text-end text-[11px] font-semibold tabular-nums text-ink-700">
+            {`${formatNumber(displayProgress, locale)}٪`}
+          </span>
+          {canManage ? (
+            <Button
+              type="button"
+              className="h-8 shrink-0 px-2.5 py-0 text-xs"
+              disabled={saving || uploading}
+              onClick={() => void saveProgress()}
+            >
+              <Check className="size-3.5" aria-hidden />
+              {t('projectProgress.save')}
+            </Button>
+          ) : null}
+        </div>
       </div>
     </aside>
   )
