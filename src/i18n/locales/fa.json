@@ -565,6 +565,7 @@
     "speechUnsupported": "تبدیل سریع در این مرورگر پشتیبانی نمی‌شود؛ می‌توانید ضبط کنید تا بعداً تبدیل شود",
     "micDenied": "دسترسی به میکروفون داده نشد",
     "recordFailed": "ضبط صدا ممکن نشد",
+    "recordNeedsHttps": "ضبط صدا فقط روی اتصال امن (https) کار می‌کند",
     "maxDuration": "حداکثر مدت ضبط تمام شد",
     "transcriptionStatus": "وضعیت تبدیل",
     "allStatuses": "همه وضعیت‌ها",

@@ -155,6 +155,11 @@ th {
   scrollbar-color: var(--color-teal-400) transparent;
 }
 
+.progress-report-field-roomy {
+  min-height: 7rem;
+  max-height: 12rem;
+}
+
 .progress-report-field::-webkit-scrollbar {
   width: 4px;
 }

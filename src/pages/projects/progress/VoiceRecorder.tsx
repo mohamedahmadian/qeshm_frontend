@@ -1,4 +1,4 @@
-import { Mic, RotateCcw, Square, Trash2 } from 'lucide-react'
+import { Mic, Square, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -11,6 +11,7 @@ import {
 } from '../../../types/app'
 
 const MAX_MS = 10 * 60 * 1000
+const TIMESLICE_MS = 250
 
 function speechCtor() {
   const w = window as Window & {
@@ -44,10 +45,79 @@ function speechLang(locale: string) {
   return 'en-US'
 }
 
+function isAppleMobile() {
+  const ua = navigator.userAgent
+  return /iP(hone|od|ad)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
+function isMobileRecorder() {
+  return (
+    isAppleMobile() ||
+    /Android/i.test(navigator.userAgent) ||
+    window.matchMedia('(pointer: coarse)').matches
+  )
+}
+
+function isSecureMicContext() {
+  if (window.isSecureContext) return true
+  const host = window.location.hostname
+  return host === 'localhost' || host === '127.0.0.1'
+}
+
 function pickMime() {
-  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
   if (typeof MediaRecorder === 'undefined') return ''
-  return types.find((type) => MediaRecorder.isTypeSupported(type)) ?? ''
+  const apple = isAppleMobile()
+  const types = apple
+    ? ['audio/mp4', 'audio/aac', 'audio/x-m4a', 'audio/mpeg', 'audio/webm;codecs=opus', 'audio/webm']
+    : ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/ogg;codecs=opus']
+  return (
+    types.find((type) => {
+      try {
+        return MediaRecorder.isTypeSupported(type)
+      } catch {
+        return false
+      }
+    }) ?? ''
+  )
+}
+
+function fileExtension(type: string) {
+  if (type.includes('mp4') || type.includes('m4a') || type.includes('aac')) return 'm4a'
+  if (type.includes('mpeg')) return 'mp3'
+  if (type.includes('ogg')) return 'ogg'
+  return 'webm'
+}
+
+async function getMicStream() {
+  const media = navigator.mediaDevices
+  if (!media?.getUserMedia) {
+    throw new DOMException('Unsupported', 'NotSupportedError')
+  }
+  try {
+    return await media.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    })
+  } catch (error) {
+    if (
+      error instanceof DOMException &&
+      (error.name === 'NotAllowedError' || error.name === 'SecurityError')
+    ) {
+      throw error
+    }
+    return media.getUserMedia({ audio: true })
+  }
+}
+
+function createRecorder(stream: MediaStream, mime: string) {
+  try {
+    return mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream)
+  } catch {
+    return new MediaRecorder(stream)
+  }
 }
 
 function formatClock(ms: number, locale: string) {
@@ -71,8 +141,8 @@ export function VoiceRecorder({
 }: {
   audioId?: string | null
   durationMs?: number | null
-  processingMode: ProjectProgressProcessingMode
   liveTranscript: string
+  processingMode: ProjectProgressProcessingMode
   compact?: boolean
   disabled?: boolean
   onAudio: (file: File, durationMs: number) => void
@@ -92,16 +162,26 @@ export function VoiceRecorder({
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const finalsRef = useRef('')
   const mimeRef = useRef('')
+  const recordingRef = useRef(false)
+  const previewUrlRef = useRef<string>()
+  const liveTranscriptRef = useRef(liveTranscript)
+
+  liveTranscriptRef.current = liveTranscript
 
   useEffect(() => {
     return () => {
       stopTracks()
       stopRecognition()
       if (timerRef.current) window.clearInterval(timerRef.current)
-      if (previewUrl) URL.revokeObjectURL(previewUrl)
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  function setRecordingState(value: boolean) {
+    recordingRef.current = value
+    setRecording(value)
+  }
 
   function stopTracks() {
     streamRef.current?.getTracks().forEach((track) => track.stop())
@@ -120,19 +200,15 @@ export function VoiceRecorder({
   }
 
   function startRecognition() {
-    if (processingMode !== projectProgressProcessingModes.IMMEDIATE) {
-      return
-    }
+    if (processingMode !== projectProgressProcessingModes.IMMEDIATE) return
+    if (isMobileRecorder()) return
     const Ctor = speechCtor()
-    if (!Ctor) {
-      toast.error(t('projectProgress.speechUnsupported'))
-      return
-    }
+    if (!Ctor) return
     const recognition = new Ctor()
     recognition.lang = speechLang(locale)
     recognition.continuous = true
     recognition.interimResults = true
-    finalsRef.current = liveTranscript.trim()
+    finalsRef.current = liveTranscriptRef.current.trim()
     recognition.onresult = (event) => {
       let interim = ''
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
@@ -147,7 +223,7 @@ export function VoiceRecorder({
     }
     recognition.onerror = () => undefined
     recognition.onend = () => {
-      if (recognitionRef.current === recognition && recording) {
+      if (recognitionRef.current === recognition && recordingRef.current) {
         try {
           recognition.start()
         } catch {
@@ -159,7 +235,7 @@ export function VoiceRecorder({
     try {
       recognition.start()
     } catch {
-      toast.error(t('projectProgress.speechUnsupported'))
+      recognitionRef.current = null
     }
   }
 
@@ -168,33 +244,52 @@ export function VoiceRecorder({
       toast.error(t('projectProgress.recordFailed'))
       return
     }
+    if (!isSecureMicContext()) {
+      toast.error(t('projectProgress.recordNeedsHttps'))
+      return
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await getMicStream()
       streamRef.current = stream
       mimeRef.current = pickMime()
-      const recorder = mimeRef.current
-        ? new MediaRecorder(stream, { mimeType: mimeRef.current })
-        : new MediaRecorder(stream)
+      const recorder = createRecorder(stream, mimeRef.current)
       chunksRef.current = []
       recorder.ondataavailable = (event) => {
         if (event.data.size) chunksRef.current.push(event.data)
       }
+      recorder.onerror = () => {
+        toast.error(t('projectProgress.recordFailed'))
+        void stop()
+      }
       recorder.onstop = () => {
         const type = recorder.mimeType || mimeRef.current || 'audio/webm'
-        const blob = new Blob(chunksRef.current, { type })
-        const ext = type.includes('mp4') ? 'm4a' : 'webm'
-        const file = new File([blob], `progress.${ext}`, { type })
+        const blob = new Blob(chunksRef.current, { type: type.split(';')[0] || type })
         const duration = Date.now() - startedAtRef.current
-        if (previewUrl) URL.revokeObjectURL(previewUrl)
-        setPreviewUrl(URL.createObjectURL(blob))
-        onAudio(file, duration)
         stopTracks()
+        if (!blob.size) {
+          toast.error(t('projectProgress.recordFailed'))
+          return
+        }
+        const ext = fileExtension(type)
+        const file = new File([blob], `progress.${ext}`, { type: blob.type || type })
+        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+        const url = URL.createObjectURL(blob)
+        previewUrlRef.current = url
+        setPreviewUrl(url)
+        onAudio(file, duration)
       }
       recorderRef.current = recorder
       startedAtRef.current = Date.now()
       setElapsed(0)
-      recorder.start()
-      setRecording(true)
+      if (isAppleMobile()) {
+        await new Promise((resolve) => window.setTimeout(resolve, 80))
+      }
+      try {
+        recorder.start(TIMESLICE_MS)
+      } catch {
+        recorder.start()
+      }
+      setRecordingState(true)
       timerRef.current = window.setInterval(() => {
         const next = Date.now() - startedAtRef.current
         setElapsed(next)
@@ -206,18 +301,25 @@ export function VoiceRecorder({
       startRecognition()
     } catch (error) {
       const denied =
-        error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'SecurityError')
+        error instanceof DOMException &&
+        (error.name === 'NotAllowedError' || error.name === 'SecurityError')
       toast.error(denied ? t('projectProgress.micDenied') : t('projectProgress.recordFailed'))
       stopTracks()
+      setRecordingState(false)
     }
   }
 
   function stop() {
     if (timerRef.current) window.clearInterval(timerRef.current)
-    setRecording(false)
+    setRecordingState(false)
     stopRecognition()
     const recorder = recorderRef.current
     if (recorder && recorder.state !== 'inactive') {
+      try {
+        recorder.requestData()
+      } catch {
+        /* unsupported */
+      }
       recorder.stop()
     } else {
       stopTracks()
@@ -225,7 +327,8 @@ export function VoiceRecorder({
   }
 
   function clear() {
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    previewUrlRef.current = undefined
     setPreviewUrl(undefined)
     setElapsed(0)
     onClear()
@@ -288,15 +391,19 @@ export function VoiceRecorder({
         </div>
         {hasAudio && src && !recording ? (
           <div className="w-full space-y-2 sm:space-y-3">
-            <audio controls src={src} className="w-full" />
+            <audio controls playsInline src={src} className="w-full" />
             <div className="flex flex-wrap justify-center gap-2">
-              <Button type="button" variant="ghost" disabled={disabled} onClick={() => void start()}>
-                <RotateCcw className="size-4" aria-hidden />
-                {t('projectProgress.reRecord')}
-              </Button>
-              <Button type="button" variant="ghost" disabled={disabled} onClick={clear}>
+              <Button
+                type="button"
+                variant="ghost"
+                icon={compact}
+                disabled={disabled}
+                aria-label={t('projectProgress.removeAudio')}
+                title={t('projectProgress.removeAudio')}
+                onClick={clear}
+              >
                 <Trash2 className="size-4" aria-hidden />
-                {t('projectProgress.removeAudio')}
+                {compact ? null : t('projectProgress.removeAudio')}
               </Button>
             </div>
           </div>

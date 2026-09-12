@@ -9,6 +9,7 @@ import {
   Percent,
   ScrollText,
   SlidersHorizontal,
+  X,
 } from 'lucide-react'
 import { type CSSProperties, type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -43,6 +44,7 @@ export function ProjectProgressForm({
   onSubmit,
   embedded = false,
   leading,
+  onDismiss,
 }: {
   initial?: Pick<
     ProjectProgressEntry,
@@ -58,6 +60,7 @@ export function ProjectProgressForm({
   onSubmit: (payload: ProjectProgressPayload) => Promise<void>
   embedded?: boolean
   leading?: ReactNode
+  onDismiss?: () => void
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
@@ -257,30 +260,49 @@ export function ProjectProgressForm({
   )
 
   const fields = (
-      <AppForm onSubmit={submit} className={embedded ? 'space-y-3' : formCardBodyClassName}>
+      <AppForm
+        onSubmit={submit}
+        className={
+          embedded ? (onDismiss ? 'mx-auto w-full space-y-4' : 'space-y-3') : formCardBodyClassName
+        }
+      >
         {leading}
         <FormField icon={Mic} label={t('projectProgress.record')}>
-          <VoiceRecorder
-            audioId={audioId || null}
-            durationMs={audioDurationMs}
-            processingMode={processingMode}
-            liveTranscript={body}
-            compact={embedded}
-            disabled={uploadingAudio || saving}
-            onAudio={(file, durationMs) => void uploadAudio(file, durationMs)}
-            onClear={() => {
-              setAudioId('')
-              setAudioDurationMs(null)
-            }}
-            onLiveTranscript={setBody}
-          />
+          <div className={onDismiss ? 'flex items-center gap-2' : undefined}>
+            <div className={onDismiss ? 'min-w-0 flex-1' : undefined}>
+              <VoiceRecorder
+                audioId={audioId || null}
+                durationMs={audioDurationMs}
+                processingMode={processingMode}
+                liveTranscript={body}
+                compact={embedded}
+                disabled={uploadingAudio || saving}
+                onAudio={(file, durationMs) => void uploadAudio(file, durationMs)}
+                onClear={() => {
+                  setAudioId('')
+                  setAudioDurationMs(null)
+                }}
+                onLiveTranscript={setBody}
+              />
+            </div>
+            {onDismiss ? (
+              <button
+                type="button"
+                className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-teal-400 bg-white text-teal-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                aria-label={t('common.back')}
+                onClick={onDismiss}
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            ) : null}
+          </div>
         </FormField>
         <FormField icon={ScrollText} label={t('projectProgress.body')} htmlFor="progressBody">
           <textarea
             id="progressBody"
             ref={bodyRef}
-            className={`${fieldClassName} progress-report-field`}
-            rows={embedded ? 2 : 3}
+            className={`${fieldClassName} progress-report-field${onDismiss ? ' progress-report-field-roomy' : ''}`}
+            rows={onDismiss ? 5 : embedded ? 2 : 3}
             value={body}
             onChange={(event) => setBody(event.target.value)}
             placeholder={t('projectProgress.bodyPlaceholder')}
