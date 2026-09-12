@@ -1,5 +1,6 @@
 import {
   CalendarRange,
+  Check,
   ClipboardList,
   ExternalLink,
   Eye,
@@ -9,7 +10,6 @@ import {
   Landmark,
   MapPin,
   Mic,
-  Monitor,
   ScrollText,
   Tags,
   X,
@@ -21,21 +21,22 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { DateText } from '../../components/ui/DateText'
-import { Button } from '../../components/ui/Form'
+import { Button, fieldClassName } from '../../components/ui/Form'
 import { FormFactTile } from '../../components/ui/FormLayout'
 import {
   OsmMapPicker,
   type MapOverlayMarkerTone,
   type MapSelectedContainerPoint,
 } from '../../components/ui/OsmMapPicker'
-import { api } from '../../lib/api'
-import { calendarDaysUntil, formatNumber } from '../../lib/datetime'
+import { api, getApiErrorMessage } from '../../lib/api'
+import { calendarDaysUntil, formatNumber, todayIsoDate } from '../../lib/datetime'
 import { QESHM_LIVE_BOARD_BOUNDS } from '../../lib/geo'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
-import { ProjectProgressForm } from './progress/ProjectProgressForm'
 import { projectProgressEntryPath } from './progress/progress-paths'
+import { useVoiceCapture } from './progress/useVoiceCapture'
 import {
   projectImportances,
+  projectProgressProcessingModes,
   type ProjectLiveBoardActivity,
   type ProjectLiveBoardItem,
   type ProjectStatus,
@@ -392,12 +393,15 @@ function ProjectMapCard({
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const isMobile = useNarrowViewport()
-  const [panel, setPanel] = useState<'none' | 'details' | 'progress'>('none')
+  const [showDetails, setShowDetails] = useState(false)
+  const [session, setSession] = useState(false)
+  const [body, setBody] = useState('')
+  const [audioId, setAudioId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [entered, setEntered] = useState(false)
   const theme = liveBoardCardTheme[project.status ?? 'NOT_STARTED'] ?? liveBoardCardTheme.NOT_STARTED
   const contractor = project.mainContractor?.name || project.companyName
-  const showDetails = panel === 'details'
-  const showProgress = panel === 'progress'
   const remainingDays = calendarDaysUntil(project.endDate)
   const overdue = remainingDays != null && remainingDays < 0
   const fullBleed = (anchor?.width ?? 800) < 500
@@ -406,9 +410,41 @@ function ProjectMapCard({
   const daysShort = overdue
     ? t('projectLiveBoard.overdueDaysShort')
     : t('projectLiveBoard.remainingDaysShort')
+  const { recording, start, stop } = useVoiceCapture({
+    processingMode: projectProgressProcessingModes.IMMEDIATE,
+    liveTranscript: body,
+    onAudio: (file, durationMs) => {
+      void uploadAudio(file, durationMs)
+    },
+    onLiveTranscript: setBody,
+  })
+
+  async function uploadAudio(file: File, durationMs: number) {
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('durationMs', String(Math.round(durationMs)))
+      const { data } = await api.post<{ id: string }>('/files', form)
+      setAudioId(data.id)
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('common.error')))
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function resetSession() {
+    if (recording) stop()
+    setSession(false)
+    setBody('')
+    setAudioId('')
+  }
 
   useEffect(() => {
-    setPanel('none')
+    resetSession()
+    setShowDetails(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.id])
 
   useEffect(() => {
@@ -417,43 +453,73 @@ function ProjectMapCard({
   }, [])
 
   useEffect(() => {
-    if (!isMobile) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.repeat) return
       event.preventDefault()
-      if (panel !== 'none') {
-        setPanel('none')
+      if (recording) {
+        stop()
+        return
+      }
+      if (session) {
+        resetSession()
+        return
+      }
+      if (showDetails) {
+        setShowDetails(false)
         return
       }
       onClose()
     }
     document.addEventListener('keydown', onKey)
+    const previousOverflow = isMobile ? document.body.style.overflow : ''
+    if (isMobile) document.body.style.overflow = 'hidden'
     return () => {
-      document.body.style.overflow = previousOverflow
       document.removeEventListener('keydown', onKey)
+      if (isMobile) document.body.style.overflow = previousOverflow
     }
-  }, [isMobile, onClose, panel])
+  }, [isMobile, onClose, recording, session, showDetails, stop])
 
-  const progressForm = canManage && showProgress ? (
-    <div className="rounded-2xl border border-teal-100 bg-cream-50/80 p-3 sm:p-4">
-      <ProjectProgressForm
-        embedded
-        onDismiss={isMobile ? () => setPanel('none') : undefined}
-        onSubmit={async (payload) => {
-          await api.post(`/projects/${project.id}/progress`, payload)
-          toast.success(t('projectProgress.created'))
-          await queryClient.invalidateQueries({ queryKey: ['projects', 'live-board'] })
-          await queryClient.invalidateQueries({ queryKey: ['public', 'projects', 'live-board'] })
-          setPanel('none')
-        }}
-      />
-    </div>
-  ) : null
+  async function toggleRecord() {
+    if (recording) {
+      stop()
+      return
+    }
+    setShowDetails(false)
+    setSession(true)
+    await start()
+  }
 
+  async function saveProgress() {
+    const text = body.trim()
+    if (!text && !audioId) {
+      toast.error(t('projectProgress.needContent'))
+      return
+    }
+    setSaving(true)
+    try {
+      await api.post(`/projects/${project.id}/progress`, {
+        occurredAt: todayIsoDate(),
+        body: text || null,
+        transcript: text || null,
+        progressPercent: null,
+        processingMode: projectProgressProcessingModes.IMMEDIATE,
+        audioId: audioId || null,
+        imageIds: [],
+      })
+      toast.success(t('projectProgress.created'))
+      await queryClient.invalidateQueries({ queryKey: ['projects', 'live-board'] })
+      await queryClient.invalidateQueries({ queryKey: ['public', 'projects', 'live-board'] })
+      resetSession()
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('common.error')))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const showTranscript = session || recording || Boolean(body)
   const lastActivity =
-    !showProgress && !showDetails && project.lastActivity ? (
+    !session && !showDetails && project.lastActivity ? (
       <div className="flex items-start gap-2 rounded-2xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/40 px-3 py-2.5">
         <div className="min-w-0 flex-1">
           <p className="mb-1 text-xs font-medium text-ink-500">{t('projectLiveBoard.lastActivity')}</p>
@@ -488,14 +554,115 @@ function ProjectMapCard({
       }`}
       aria-label={showDetails ? t('projectLiveBoard.hideDetails') : t('common.view')}
       aria-pressed={showDetails}
-      onClick={() => setPanel((current) => (current === 'details' ? 'none' : 'details'))}
+      onClick={() => setShowDetails((open) => !open)}
     >
       <Eye className="size-4" aria-hidden />
     </button>
   )
 
+  const inner = (
+    <>
+      <div className={`${isMobile ? 'px-10' : 'px-8'} text-center`}>
+        <div className="flex items-start justify-center gap-2">
+          <h2
+            id="live-board-project-title"
+            className={`min-w-0 max-w-[calc(100%-2.5rem)] whitespace-normal break-words font-bold text-ink-900 ${
+              isMobile ? 'text-lg leading-7' : 'text-base leading-6'
+            }`}
+          >
+            {project.systemName}
+          </h2>
+          {viewButton}
+        </div>
+        {contractor ? (
+          <p className="mt-1.5 flex items-center justify-center gap-1 text-xs text-ink-600">
+            <Handshake className="size-3.5 shrink-0 text-teal-600" aria-hidden />
+            <span className="whitespace-normal break-words">{contractor}</span>
+          </p>
+        ) : null}
+      </div>
+      <div className="mt-4 flex justify-center gap-3">
+        <div className="flex min-w-[6.5rem] flex-col items-center rounded-2xl border border-teal-100 bg-white px-4 py-3 shadow-[0_8px_18px_rgba(46,189,182,0.1)]">
+          <MiniProgressRing
+            value={project.progressPercent}
+            locale={locale}
+            color={theme.ring}
+            size="md"
+          />
+          <p className="mt-1.5 text-[11px] font-medium text-ink-500">{t('projects.progress')}</p>
+        </div>
+        <div className="flex min-w-[6.5rem] flex-col items-center rounded-2xl border border-mint-100 bg-white px-4 py-3 shadow-[0_8px_18px_rgba(63,214,190,0.12)]">
+          <MiniDaysBadge
+            daysLabel={daysLabel}
+            overdue={overdue}
+            title={daysTitle}
+            label={daysShort}
+            size="md"
+          />
+          <p className="mt-1.5 text-[11px] font-medium text-ink-500">{daysTitle}</p>
+        </div>
+      </div>
+      {lastActivity ? <div className="mt-4">{lastActivity}</div> : null}
+      {canManage ? (
+        <div className="mt-5 flex flex-col items-center gap-3">
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              className={`relative min-w-[12rem] gap-1.5 px-5 py-2.5 text-sm ${
+                recording ? '!bg-red-500 hover:!bg-red-600' : ''
+              }`}
+              onClick={() => void toggleRecord()}
+            >
+              {recording ? (
+                <span className="absolute inset-0 animate-ping rounded-2xl bg-red-400/30" aria-hidden />
+              ) : null}
+              <Mic className={`relative size-4 shrink-0 ${recording ? 'animate-pulse' : ''}`} aria-hidden />
+              <span className="relative">
+                {recording ? t('projectProgress.recording') : t('projectLiveBoard.addProgress')}
+              </span>
+            </Button>
+            {session ? (
+              <button
+                type="button"
+                className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-teal-400 bg-white text-teal-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                aria-label={t('common.back')}
+                onClick={resetSession}
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            ) : null}
+          </div>
+          {showTranscript ? (
+            <textarea
+              className={`${fieldClassName} progress-report-field progress-report-field-roomy`}
+              rows={4}
+              value={body}
+              onChange={(event) => setBody(event.target.value)}
+              placeholder={t('projectProgress.bodyPlaceholder')}
+            />
+          ) : null}
+          {showTranscript && !recording ? (
+            <Button
+              type="button"
+              disabled={saving || uploading || (!body.trim() && !audioId)}
+              onClick={() => void saveProgress()}
+            >
+              <Check className="size-4" aria-hidden />
+              {t('projectProgress.save')}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+      {showDetails ? (
+        <div className="mt-5">
+          <ProjectMapDetails project={project} locale={locale} canManage={canManage} />
+        </div>
+      ) : null}
+    </>
+  )
+
   if (isMobile) {
-    const sheet = (
+    return createPortal(
       <div
         className={`fixed inset-0 z-[80] flex flex-col bg-cream-50 transition-opacity duration-300 ${
           entered ? 'opacity-100' : 'opacity-0'
@@ -508,65 +675,11 @@ function ProjectMapCard({
         <div className="h-0.5 shrink-0" style={{ background: projectColor(project.color) }} />
         <div className="absolute end-3 top-4 z-10">{closeButton}</div>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
-          <div className="mx-auto my-auto w-full max-w-md">
-            <div className="px-10 text-center">
-              <div className="flex items-start justify-center gap-2">
-                <h2
-                  id="live-board-project-title"
-                  className="min-w-0 max-w-[calc(100%-2.5rem)] whitespace-normal break-words text-lg font-bold leading-7 text-ink-900"
-                >
-                  {project.systemName}
-                </h2>
-                {viewButton}
-              </div>
-              {contractor ? (
-                <p className="mt-1.5 flex items-center justify-center gap-1 text-xs text-ink-600">
-                  <Handshake className="size-3.5 shrink-0 text-teal-600" aria-hidden />
-                  <span className="whitespace-normal break-words">{contractor}</span>
-                </p>
-              ) : null}
-            </div>
-            <div className="mt-4 flex justify-center gap-3">
-              <div className="flex min-w-[6.5rem] flex-col items-center rounded-2xl border border-teal-100 bg-white px-4 py-3 shadow-[0_8px_18px_rgba(46,189,182,0.1)]">
-                <MiniProgressRing
-                  value={project.progressPercent}
-                  locale={locale}
-                  color={theme.ring}
-                  size="md"
-                />
-                <p className="mt-1.5 text-[11px] font-medium text-ink-500">{t('projects.progress')}</p>
-              </div>
-              <div className="flex min-w-[6.5rem] flex-col items-center rounded-2xl border border-mint-100 bg-white px-4 py-3 shadow-[0_8px_18px_rgba(63,214,190,0.12)]">
-                <MiniDaysBadge
-                  daysLabel={daysLabel}
-                  overdue={overdue}
-                  title={daysTitle}
-                  label={daysShort}
-                  size="md"
-                />
-                <p className="mt-1.5 text-[11px] font-medium text-ink-500">{daysTitle}</p>
-              </div>
-            </div>
-            {lastActivity ? <div className="mt-4">{lastActivity}</div> : null}
-            {canManage && !showProgress ? (
-              <div className="mt-5 flex justify-center">
-                <Button
-                  type="button"
-                  className="min-w-[12rem] gap-1.5 px-5 py-2.5 text-sm"
-                  onClick={() => setPanel('progress')}
-                >
-                  <Mic className="size-4 shrink-0" aria-hidden />
-                  {t('projectLiveBoard.addProgress')}
-                </Button>
-              </div>
-            ) : null}
-            {progressForm ? <div className="mt-5">{progressForm}</div> : null}
-            {showDetails ? <div className="mt-5"><ProjectMapDetails project={project} locale={locale} canManage={canManage} /></div> : null}
-          </div>
+          <div className="mx-auto my-auto w-full max-w-md">{inner}</div>
         </div>
-      </div>
+      </div>,
+      document.body,
     )
-    return createPortal(sheet, document.body)
   }
 
   return (
@@ -574,7 +687,7 @@ function ProjectMapCard({
       className={`absolute bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-3xl border border-b-0 bg-white transition-transform duration-300 ease-out ${
         fullBleed ? 'inset-x-3' : 'w-[min(calc(100%-1.5rem),26.25rem)]'
       } ${entered ? 'translate-y-0' : 'translate-y-full'} ${
-        showProgress || showDetails ? 'max-h-[min(82%,36rem)]' : ''
+        session || showDetails ? 'max-h-[min(82%,36rem)]' : ''
       }`}
       style={{
         ...(fullBleed ? {} : { left: mapSheetLeft(anchor) }),
@@ -586,60 +699,11 @@ function ProjectMapCard({
       <div className="h-0.5 shrink-0" style={{ background: projectColor(project.color) }} />
       <div
         className={`relative flex-1 px-4 py-3.5 ${
-          showProgress || showDetails ? 'min-h-0 overflow-auto' : 'overflow-hidden'
+          session || showDetails ? 'min-h-0 overflow-auto' : 'overflow-hidden'
         }`}
       >
-        <div className="flex items-start gap-2.5">
-          <div className="min-w-0 flex-1 pe-1">
-            <h2 className="text-base font-bold leading-6 text-ink-900">{project.systemName}</h2>
-            {contractor ? (
-              <p className="mt-1 flex min-w-0 items-center gap-1 text-xs text-ink-600">
-                <Handshake className="size-3.5 shrink-0 text-teal-600" aria-hidden />
-                <span className="truncate">{contractor}</span>
-              </p>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <MiniProgressRing
-              value={project.progressPercent}
-              locale={locale}
-              color={theme.ring}
-            />
-            <MiniDaysBadge
-              daysLabel={daysLabel}
-              overdue={overdue}
-              title={daysTitle}
-              label={daysShort}
-            />
-            {canManage ? closeButton : null}
-          </div>
-        </div>
-        {lastActivity ? <div className="mt-3">{lastActivity}</div> : null}
-        <div className="mt-3 space-y-2.5">
-          <div className={canManage ? 'grid grid-cols-2 gap-2' : 'flex justify-center'}>
-            {canManage ? (
-              <Button
-                type="button"
-                className="w-full gap-1.5 px-3 py-2.5 text-sm"
-                onClick={() => setPanel((current) => (current === 'progress' ? 'none' : 'progress'))}
-              >
-                <Mic className="size-4 shrink-0" aria-hidden />
-                {showProgress ? t('projectLiveBoard.hideProgress') : t('projectLiveBoard.addProgress')}
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="soft"
-              className={`gap-1.5 px-3 py-2 text-sm ${canManage ? 'w-full' : 'w-auto'}`}
-              onClick={() => setPanel((current) => (current === 'details' ? 'none' : 'details'))}
-            >
-              <Monitor className="size-4 shrink-0" aria-hidden />
-              {showDetails ? t('projectLiveBoard.hideDetails') : t('projectLiveBoard.viewDetails')}
-            </Button>
-          </div>
-          {progressForm}
-          {showDetails ? <ProjectMapDetails project={project} locale={locale} canManage={canManage} /> : null}
-        </div>
+        <div className="absolute end-2 top-2 z-10">{closeButton}</div>
+        {inner}
       </div>
     </aside>
   )
