@@ -11,7 +11,9 @@ import {
   indexProjectsByEndDate,
   monthDeadlineCounts,
   monthsWithDeadlines,
+  projectYearBar,
   projectsInDisplayMonth,
+  projectsInDisplayYear,
   projectsWithEndDate,
 } from '../../../lib/project-calendar'
 import { projectColor, projectColorAlpha } from '../../../lib/project-color'
@@ -345,9 +347,14 @@ export function TimelineProposal({
 }) {
   const { t } = useTranslation()
   const rows = useMemo(() => {
-    return projectsWithEndDate(items)
-      .map((project) => ({ project, parts: displayDateParts(project.endDate, locale) }))
-      .filter((row) => row.parts?.year === year)
+    return projectsInDisplayYear(projectsWithEndDate(items), year, locale)
+      .map((project) => ({
+        project,
+        bar: projectYearBar(project, year, locale),
+        startDay: displayDateParts(project.startDate, locale)?.day,
+        endDay: displayDateParts(project.endDate, locale)?.day,
+      }))
+      .filter((row) => row.bar)
       .sort((a, b) => (a.project.endDate ?? '').localeCompare(b.project.endDate ?? ''))
   }, [items, locale, year])
   return (
@@ -362,46 +369,59 @@ export function TimelineProposal({
         {rows.length ? (
           <div className="overflow-x-auto">
             <div className="min-w-[46rem] space-y-2">
-              <div className="grid grid-cols-[9rem_repeat(12,minmax(0,1fr))] items-center gap-1 text-[10px] font-medium text-ink-400">
+              <div className="grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-3 text-[10px] font-medium text-ink-400">
                 <div />
-                {Array.from({ length: 12 }, (_, index) => (
-                  <div key={index} className="truncate text-center">
-                    {monthName(index + 1, locale)}
-                  </div>
-                ))}
+                <div className="grid grid-cols-12">
+                  {Array.from({ length: 12 }, (_, index) => (
+                    <div key={index} className="truncate text-center">
+                      {monthName(index + 1, locale)}
+                    </div>
+                  ))}
+                </div>
               </div>
-              {rows.map(({ project, parts }) => (
-                <div
-                  key={project.id}
-                  className="grid grid-cols-[9rem_repeat(12,minmax(0,1fr))] items-center gap-1"
-                >
+              {rows.map(({ project, bar, startDay, endDay }) => (
+                <div key={project.id} className="grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-3">
                   <Link
                     to={`/projects/${project.id}`}
                     className="truncate text-xs font-semibold text-ink-800 hover:text-teal-700"
                   >
                     {project.systemName}
                   </Link>
-                  {Array.from({ length: 12 }, (_, index) => {
-                    const month = index + 1
-                    const match = parts?.month === month
-                    return (
-                      <div key={month} className="flex justify-center">
-                        {match && parts ? (
-                          <Link
-                            to={`/projects/${project.id}`}
-                            className="flex size-8 items-center justify-center rounded-lg text-xs font-bold text-white"
-                            style={{
-                              background: projectColor(project.color),
-                              boxShadow: `0 4px 10px ${projectColorAlpha(project.color, 0.28)}`,
-                            }}
-                            title={project.systemName}
-                          >
-                            {formatNumber(parts.day, locale)}
-                          </Link>
-                        ) : null}
-                      </div>
-                    )
-                  })}
+                  <div className="relative h-9 rounded-xl bg-cream-50">
+                    <div className="pointer-events-none absolute inset-0 grid grid-cols-12">
+                      {Array.from({ length: 12 }, (_, index) => (
+                        <div key={index} className="border-line/60 border-e last:border-e-0" />
+                      ))}
+                    </div>
+                    {bar ? (
+                      <Link
+                        to={`/projects/${project.id}`}
+                        className="absolute top-1 bottom-1 z-[1] flex items-center justify-between gap-1 rounded-lg px-1.5 text-[11px] font-bold text-white"
+                        style={{
+                          insetInlineStart: `${bar.offsetPercent}%`,
+                          width: bar.markerOnly
+                            ? '1.75rem'
+                            : `${Math.max(bar.widthPercent, 4.5)}%`,
+                          background: projectColor(project.color),
+                          boxShadow: `0 4px 10px ${projectColorAlpha(project.color, 0.28)}`,
+                        }}
+                        title={project.systemName}
+                      >
+                        {bar.markerOnly || startDay == null ? (
+                          <span className="mx-auto tabular-nums">
+                            {endDay != null ? formatNumber(endDay, locale) : ''}
+                          </span>
+                        ) : (
+                          <>
+                            <span className="tabular-nums">{formatNumber(startDay, locale)}</span>
+                            <span className="tabular-nums">
+                              {endDay != null ? formatNumber(endDay, locale) : ''}
+                            </span>
+                          </>
+                        )}
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
