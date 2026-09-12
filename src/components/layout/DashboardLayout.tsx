@@ -232,8 +232,8 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
 
   return (
     <QuickToolsProvider>
-      <div className="h-svh overflow-hidden bg-cream-50">
-        <div className="flex h-full">
+      <div className="h-svh w-full overflow-hidden bg-cream-50">
+        <div className="flex h-full w-full">
           {open ? (
             <button
               type="button"
@@ -395,7 +395,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
             </div>
           </aside>
 
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col">
             <ImpersonationBanner />
             <header className="z-20 flex shrink-0 items-center gap-3 bg-cream-50/90 px-4 py-4 backdrop-blur sm:px-8">
               <button
@@ -415,7 +415,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
             </header>
             <main
               ref={mainRef}
-              className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pb-8 sm:px-8"
+              className="min-h-0 min-w-0 w-full flex-1 overflow-x-hidden overflow-y-auto px-4 pb-8 sm:px-8"
             >
               <PageTransition>{children ?? <Outlet />}</PageTransition>
             </main>

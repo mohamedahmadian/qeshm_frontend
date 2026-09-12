@@ -380,6 +380,54 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/organization')) {
     return { titleKey: 'organization.details', subtitleKey: 'organization.detailsSubtitle' }
   }
+  if (pathname === '/singard/categories/new') {
+    return { titleKey: 'singardCategories.create', subtitleKey: 'singardCategories.createSubtitle' }
+  }
+  if (/\/singard\/categories\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'singardCategories.edit', subtitleKey: 'singardCategories.editSubtitle' }
+  }
+  if (/\/singard\/categories\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'singardCategories.details', subtitleKey: 'singardCategories.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/singard/categories')) {
+    return { titleKey: 'menus.singardCategories', subtitleKey: 'singardCategories.subtitle' }
+  }
+  if (/\/singard\/inbox\/[^/]+\/activities\/new$/.test(pathname)) {
+    return { titleKey: 'singardActivities.create', subtitleKey: 'singardActivities.createSubtitle' }
+  }
+  if (/\/singard\/inbox\/[^/]+\/activities\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'singardActivities.edit', subtitleKey: 'singardActivities.editSubtitle' }
+  }
+  if (/\/singard\/inbox\/[^/]+\/activities\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'singardActivities.details', subtitleKey: 'singardActivities.detailsSubtitle' }
+  }
+  if (/\/singard\/inbox\/[^/]+\/activities$/.test(pathname)) {
+    return { titleKey: 'singardActivities.title', subtitleKey: 'singardActivities.subtitle' }
+  }
+  if (/\/singard\/inbox\/[^/]+\/reply$/.test(pathname)) {
+    return { titleKey: 'singard.writeReply', subtitleKey: 'singard.replySubtitle' }
+  }
+  if (/\/singard\/inbox\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'singard.details', subtitleKey: 'singard.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/singard/inbox')) {
+    return { titleKey: 'menus.singardInbox', subtitleKey: 'singard.subtitle' }
+  }
+  if (/\/singard\/mine\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'singardMine.details', subtitleKey: 'singard.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/singard/mine')) {
+    return { titleKey: 'menus.singardMine', subtitleKey: 'singardMine.subtitle' }
+  }
+  if (pathname.startsWith('/singard/submit')) {
+    return { titleKey: 'menus.singardSubmit', subtitleKey: 'singardWizard.subtitle' }
+  }
+  if (pathname.startsWith('/singard/reports')) {
+    return { titleKey: 'menus.singardReports', subtitleKey: 'singardReports.subtitle' }
+  }
+  if (pathname === '/singard') {
+    return { titleKey: 'landing.singard', subtitleKey: 'singardWizard.subtitle' }
+  }
   if (pathname === '/dashboard') {
     return { titleKey: 'dashboard.title', subtitleKey: 'dashboard.subtitle' }
   }

@@ -46,7 +46,9 @@ export function hasMenuAccess(
   menuCode: string,
   moduleCode: string,
 ) {
-  if (menuCode === 'dashboard.home') return true
+  if (menuCode === 'dashboard.home' || menuCode === 'singard.submit' || menuCode === 'singard.mine') {
+    return true
+  }
   return hasPermission(user, menuCode) || hasPermission(user, moduleCode)
 }
 
@@ -63,7 +65,7 @@ export function filterNavByAccess(
     .filter((mod) => mod.menus.length > 0)
 }
 
-const ALWAYS_ALLOWED_PREFIXES = ['/account', '/settings']
+const ALWAYS_ALLOWED_PREFIXES = ['/account', '/settings', '/singard/submit', '/singard/mine']
 
 export function canAccessPath(
   user: Pick<AuthUser, 'isAdmin' | 'permissionCodes' | 'roles'> | null | undefined,

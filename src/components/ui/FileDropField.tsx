@@ -67,6 +67,10 @@ export function FileDropField({
       toast.error(t('common.fileInvalidType'))
       return
     }
+    if (accept.includes('video') && !file.type.startsWith('video/')) {
+      toast.error(t('common.fileInvalidType'))
+      return
+    }
     if (file.type.startsWith('image/')) {
       if (localPreview) URL.revokeObjectURL(localPreview)
       setLocalPreview(URL.createObjectURL(file))

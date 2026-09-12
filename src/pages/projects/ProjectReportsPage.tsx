@@ -20,12 +20,10 @@ import {
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 import { Button, FormField, PageHeader, listShellClassName } from '../../components/ui/Form'
 import {
   FormCard,
   FormFactTile,
-  FormSectionTitle,
   formCardBodyClassName,
 } from '../../components/ui/FormLayout'
 import { LoadingState } from '../../components/ui/LoadingState'
@@ -45,9 +43,6 @@ import {
   ChartPanel,
   ReportBar,
   ReportDonut,
-  ReportGroupedBar,
-  formatYearMonth,
-  importanceColors,
   reportColors,
 } from './ProjectReportCharts'
 import { withCurrent } from './ProjectShared'
@@ -127,11 +122,6 @@ export function ProjectReportsPage() {
     { value: 'true', label: t('geo.active') },
     { value: 'false', label: t('geo.inactive') },
   ]
-  const statusSlices = (report?.byStatus ?? []).map((item) => ({
-    name: item.key === 'active' ? t('geo.active') : t('geo.inactive'),
-    value: item.count,
-    color: item.key === 'active' ? reportColors.teal : reportColors.ink,
-  }))
   const lifecycleColors: Record<string, string> = {
     NOT_STARTED: reportColors.ink,
     IN_PROGRESS: reportColors.teal,
@@ -146,43 +136,6 @@ export function ProjectReportsPage() {
         : t(`projects.statuses.${item.key}`),
     value: item.count,
     color: lifecycleColors[item.key] ?? reportColors.teal,
-  }))
-  const supportSlices = (report?.bySupport ?? []).map((item) => ({
-    name: item.key === 'active' ? t('geo.active') : t('geo.inactive'),
-    value: item.count,
-    color: item.key === 'active' ? reportColors.mint : reportColors.ink,
-  }))
-  const importanceSlices = (report?.byImportance ?? []).map((item) => ({
-    name: t(`projects.importances.${item.key}`),
-    value: item.count,
-    color: importanceColors[item.key] ?? reportColors.teal,
-  }))
-  const coverageSlices = (report?.byContractorCoverage ?? []).map((item) => ({
-    name:
-      item.key === 'with'
-        ? t('projectReports.coverageWith')
-        : t('projectReports.coverageWithout'),
-    value: item.count,
-    color: item.key === 'with' ? reportColors.teal : reportColors.ink,
-  }))
-  const phaseSlices = (report?.byPhaseStatus ?? []).map((item) => ({
-    name:
-      item.key === 'upcoming'
-        ? t('projectReports.phaseUpcoming')
-        : item.key === 'ongoing'
-          ? t('projectReports.phaseOngoing')
-          : t('projectReports.phaseEnded'),
-    value: item.count,
-    color:
-      item.key === 'upcoming'
-        ? reportColors.mint
-        : item.key === 'ongoing'
-          ? reportColors.teal
-          : reportColors.ink,
-  }))
-  const paymentMonths = (report?.paymentByMonth ?? []).slice(-18).map((item) => ({
-    name: formatYearMonth(item.month, locale),
-    value: item.amount,
   }))
   const launchYears = (report?.byLaunchYear ?? []).map((item) => ({
     name:
@@ -307,7 +260,7 @@ export function ProjectReportsPage() {
         <div className="space-y-5">
           <FormCard icon={FolderKanban} title={t('projectReports.overview')}>
             <div className={`${formCardBodyClassName} space-y-5`}>
-              <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
+              <div className="grid items-start gap-2 sm:grid-cols-2 xl:grid-cols-4 sm:gap-3">
                 <FormFactTile
                   icon={FolderKanban}
                   label={t('projectReports.totalProjects')}
@@ -324,6 +277,13 @@ export function ProjectReportsPage() {
                   label={t('projectReports.totalContractors')}
                   value={money(kpis.totalContractors, locale)}
                 />
+                <ChartPanel
+                  icon={Gauge}
+                  title={t('projectReports.byLifecycleStatus')}
+                  empty={lifecycleSlices.every((item) => item.value === 0)}
+                >
+                  <ReportDonut compact data={lifecycleSlices} locale={locale} />
+                </ChartPanel>
               </div>
               <div className="flex justify-center">
                 <Button
@@ -462,201 +422,47 @@ export function ProjectReportsPage() {
             </div>
           </FormCard>
 
-          <FormCard icon={ChartColumn} title={t('projectReports.distributions')}>
-            <div className={`${formCardBodyClassName} grid gap-4 lg:grid-cols-2 xl:grid-cols-3`}>
-              <ChartPanel
-                icon={Activity}
-                title={t('projectReports.byStatus')}
-                empty={statusSlices.every((item) => item.value === 0)}
-              >
-                <ReportDonut data={statusSlices} locale={locale} />
-              </ChartPanel>
-              <ChartPanel
-                icon={Gauge}
-                title={t('projectReports.byLifecycleStatus')}
-                empty={lifecycleSlices.every((item) => item.value === 0)}
-              >
-                <ReportDonut data={lifecycleSlices} locale={locale} />
-              </ChartPanel>
-              <ChartPanel
-                icon={TriangleAlert}
-                title={t('projectReports.byImportance')}
-                empty={importanceSlices.every((item) => item.value === 0)}
-              >
-                <ReportDonut data={importanceSlices} locale={locale} />
-              </ChartPanel>
-              <ChartPanel
-                icon={ShieldCheck}
-                title={t('projectReports.bySupport')}
-                empty={supportSlices.every((item) => item.value === 0)}
-              >
-                <ReportDonut data={supportSlices} locale={locale} />
-              </ChartPanel>
+          <FormCard icon={Building2} title={t('projectReports.organization')}>
+            <div className={`${formCardBodyClassName} space-y-4`}>
+              <div className="grid gap-4 xl:grid-cols-2">
+                <ChartPanel
+                  icon={Building2}
+                  title={t('projectReports.byOperator')}
+                  empty={(report.byOperator ?? []).length === 0}
+                >
+                  <ReportBar
+                    locale={locale}
+                    data={(report.byOperator ?? []).map((item) => ({
+                      name: item.name,
+                      value: item.count,
+                    }))}
+                  />
+                </ChartPanel>
+                <ChartPanel
+                  icon={CalendarRange}
+                  title={t('projectReports.byLaunchYear')}
+                  empty={launchYears.length === 0}
+                >
+                  <ReportBar locale={locale} data={launchYears} />
+                </ChartPanel>
+              </div>
               <ChartPanel
                 icon={Handshake}
-                title={t('projectReports.byContractorCoverage')}
-                empty={coverageSlices.every((item) => item.value === 0)}
-              >
-                <ReportDonut data={coverageSlices} locale={locale} />
-              </ChartPanel>
-              <ChartPanel
-                icon={Layers3}
-                title={t('projectReports.byPhaseStatus')}
-                empty={phaseSlices.every((item) => item.value === 0)}
-              >
-                <ReportDonut data={phaseSlices} locale={locale} />
-              </ChartPanel>
-            </div>
-          </FormCard>
-
-          <FormCard icon={Building2} title={t('projectReports.organization')}>
-            <div className={`${formCardBodyClassName} grid gap-4 xl:grid-cols-2`}>
-              <ChartPanel
-                icon={Building2}
-                title={t('projectReports.byOperator')}
-                empty={(report.byOperator ?? []).length === 0}
+                title={t('projectReports.byContractor')}
+                empty={(report.byContractor ?? report.byCompany).length === 0}
               >
                 <ReportBar
                   locale={locale}
-                  data={(report.byOperator ?? []).map((item) => ({
+                  data={(report.byContractor ?? report.byCompany).map((item) => ({
                     name: item.name,
                     value: item.count,
                   }))}
                 />
               </ChartPanel>
-              <ChartPanel
-                icon={CalendarRange}
-                title={t('projectReports.byLaunchYear')}
-                empty={launchYears.length === 0}
-              >
-                <ReportBar locale={locale} data={launchYears} />
-              </ChartPanel>
-              <ChartPanel
-                icon={Handshake}
-                title={t('projectReports.byCompany')}
-                empty={report.byCompany.length === 0}
-              >
-                <ReportBar
-                  locale={locale}
-                  data={report.byCompany.map((item) => ({ name: item.name, value: item.count }))}
-                />
-              </ChartPanel>
-            </div>
-          </FormCard>
-
-          <FormCard icon={Wallet} title={t('projectReports.finance')}>
-            <div className={`${formCardBodyClassName} grid gap-4 xl:grid-cols-2`}>
-              <ChartPanel
-                icon={Wallet}
-                title={t('projectReports.financeByOperator')}
-                empty={(report.financeByOperator ?? []).length === 0}
-              >
-                <ReportGroupedBar
-                  data={report.financeByOperator ?? []}
-                  locale={locale}
-                  estimateLabel={t('projectReports.estimate')}
-                  paidLabel={t('projectReports.paid')}
-                />
-              </ChartPanel>
-              <ChartPanel
-                icon={CalendarRange}
-                title={t('projectReports.paymentByMonth')}
-                empty={paymentMonths.length === 0}
-              >
-                <ReportBar locale={locale} data={paymentMonths} />
-              </ChartPanel>
-            </div>
-          </FormCard>
-
-          <FormCard icon={ChartColumn} title={t('projectReports.rankings')}>
-            <div className={`${formCardBodyClassName} grid gap-6 xl:grid-cols-2`}>
-              <div>
-                <FormSectionTitle icon={FolderKanban}>
-                  {t('projectReports.topProjects')}
-                </FormSectionTitle>
-                <RankingTable
-                  locale={locale}
-                  empty={report.topProjects.length === 0}
-                  rows={report.topProjects.map((item) => ({
-                    key: item.id,
-                    title: item.name,
-                    subtitle: item.operators || '—',
-                    to: `/projects/${item.id}`,
-                    estimate: item.estimate,
-                    paid: item.paid,
-                  }))}
-                />
-              </div>
-              <div>
-                <FormSectionTitle icon={Handshake}>
-                  {t('projectReports.topContractors')}
-                </FormSectionTitle>
-                <RankingTable
-                  locale={locale}
-                  empty={report.topContractors.length === 0}
-                  rows={report.topContractors.map((item) => ({
-                    key: item.id,
-                    title: item.name,
-                    subtitle: item.projectName,
-                    to: `/projects/${item.projectId}/contractors/${item.id}`,
-                    estimate: item.estimate,
-                    paid: item.paid,
-                  }))}
-                />
-              </div>
             </div>
           </FormCard>
         </div>
       )}
-    </div>
-  )
-}
-
-function RankingTable({
-  rows,
-  locale,
-  empty,
-}: {
-  rows: {
-    key: string
-    title: string
-    subtitle: string
-    to: string
-    estimate: number
-    paid: number
-  }[]
-  locale: string
-  empty: boolean
-}) {
-  const { t } = useTranslation()
-  if (empty) {
-    return <p className="rounded-2xl border border-dashed border-line bg-cream-50 px-4 py-6 text-center text-sm text-ink-400">{t('projectReports.empty')}</p>
-  }
-  return (
-    <div className="overflow-x-auto rounded-2xl border border-teal-100">
-      <table className="w-full text-sm">
-        <thead className="bg-cream-50 text-ink-700">
-          <tr>
-            <th className="px-4 py-3 text-start font-medium">{t('projectReports.itemName')}</th>
-            <th className="px-4 py-3 text-start font-medium">{t('projectReports.estimate')}</th>
-            <th className="px-4 py-3 text-start font-medium">{t('projectReports.paid')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.key} className="border-t border-teal-50">
-              <td className="px-4 py-3">
-                <Link to={row.to} className="font-medium text-teal-700 hover:underline">
-                  {row.title}
-                </Link>
-                <div className="mt-0.5 text-xs text-ink-500">{row.subtitle}</div>
-              </td>
-              <td className="px-4 py-3">{money(row.estimate, locale)}</td>
-              <td className="px-4 py-3">{money(row.paid, locale)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   )
 }

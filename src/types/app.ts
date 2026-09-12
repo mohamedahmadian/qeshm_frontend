@@ -148,6 +148,9 @@ export type AppRole = {
 export type AuthUser = {
   id: string;
   username: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
   fullName: string;
   locale: string;
   gender?: UserGender | null;
@@ -835,6 +838,7 @@ export type ProjectReportsOverview = {
   byPhaseStatus: ProjectReportKeyCount[];
   byOperator: ProjectReportOrgRow[];
   byCompany: ProjectReportNamedCount[];
+  byContractor?: ProjectReportNamedCount[];
   byLaunchYear: { year: number | null; count: number; activeCount: number }[];
   paymentByMonth: { month: string; amount: number; count: number }[];
   financeByOperator: { name: string; estimate: number; paid: number }[];
@@ -4151,6 +4155,131 @@ export type VehicleReportNamedCount = {
 export type VehicleReportKeyCount = {
   key: string;
   count: number;
+};
+
+export const singardFeedbackKinds = {
+  SUGGESTION: 'SUGGESTION',
+  COMPLAINT: 'COMPLAINT',
+  CRITICISM: 'CRITICISM',
+  REPORT: 'REPORT',
+} as const;
+
+export type SingardFeedbackKind =
+  (typeof singardFeedbackKinds)[keyof typeof singardFeedbackKinds];
+
+export const singardFeedbackStatuses = {
+  NEW: 'NEW',
+  IN_PROGRESS: 'IN_PROGRESS',
+  ANSWERED: 'ANSWERED',
+  CLOSED: 'CLOSED',
+} as const;
+
+export type SingardFeedbackStatus =
+  (typeof singardFeedbackStatuses)[keyof typeof singardFeedbackStatuses];
+
+export const singardActivityKinds = {
+  NOTE: 'NOTE',
+  CONTACT: 'CONTACT',
+} as const;
+
+export type SingardActivityKind =
+  (typeof singardActivityKinds)[keyof typeof singardActivityKinds];
+
+export const singardAttachmentKinds = {
+  IMAGE: 'IMAGE',
+  AUDIO: 'AUDIO',
+  VIDEO: 'VIDEO',
+} as const;
+
+export type SingardAttachmentKind =
+  (typeof singardAttachmentKinds)[keyof typeof singardAttachmentKinds];
+
+export type SingardCategory = {
+  id: string;
+  parentId: string | null;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  path?: string;
+  parent?: { id: string; name: string } | null;
+  children?: SingardCategory[];
+  createdAt: string;
+  updatedAt: string;
+  _count: { children: number; feedbacks: number };
+};
+
+export type SingardAttachment = {
+  id: string;
+  kind: SingardAttachmentKind;
+  imageId: string | null;
+  fileId: string | null;
+  sortOrder: number;
+  createdAt: string;
+  file?: {
+    id: string;
+    mimeType: string;
+    byteSize: number;
+    originalName: string | null;
+    durationMs: number | null;
+  } | null;
+};
+
+export type SingardActivity = {
+  id: string;
+  feedbackId: string;
+  kind: SingardActivityKind;
+  occurredAt: string;
+  title: string;
+  body: string | null;
+  createdById: string;
+  createdBy: { id: string; fullName: string };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SingardFeedback = {
+  id: string;
+  trackingCode: string;
+  kind: SingardFeedbackKind;
+  status: SingardFeedbackStatus;
+  categoryId: string;
+  category: Pick<SingardCategory, 'id' | 'name' | 'parentId'> & {
+    parent?: { id: string; name: string } | null;
+  };
+  userId: string | null;
+  isAnonymous: boolean;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  submitterName: string | null;
+  body: string | null;
+  replyBody?: string | null;
+  repliedAt: string | null;
+  repliedById?: string | null;
+  repliedBy?: { id: string; fullName: string } | null;
+  user?: { id: string; fullName: string; phone: string | null } | null;
+  attachments?: SingardAttachment[];
+  activities?: SingardActivity[];
+  createdAt: string;
+  updatedAt: string;
+  _count?: { attachments: number; activities: number };
+};
+
+export type SingardReports = {
+  kpis: {
+    total: number;
+    pending: number;
+    answered: number;
+    closed: number;
+    suggestions: number;
+    complaints: number;
+    criticisms: number;
+    reports: number;
+  };
+  byKind: { key: string; count: number }[];
+  byStatus: { key: string; count: number }[];
+  byCategory: { id: string; name: string; count: number }[];
 };
 
 export type VehicleReportsOverview = {

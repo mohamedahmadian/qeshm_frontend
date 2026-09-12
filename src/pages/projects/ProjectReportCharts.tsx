@@ -160,22 +160,24 @@ function ChartTooltip({
 export function ReportDonut({
   data,
   locale,
+  compact = false,
 }: {
   data: Slice[]
   locale: string
+  compact?: boolean
 }) {
   const rows = data.filter((item) => item.value > 0)
   const total = rows.reduce((sum, item) => sum + item.value, 0)
   return (
-    <div className="relative h-64">
+    <div className={compact ? 'relative h-52' : 'relative h-64'}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={rows}
             dataKey="value"
             nameKey="name"
-            innerRadius={58}
-            outerRadius={86}
+            innerRadius={compact ? 42 : 58}
+            outerRadius={compact ? 64 : 86}
             paddingAngle={3}
             stroke="#fff"
             strokeWidth={2}

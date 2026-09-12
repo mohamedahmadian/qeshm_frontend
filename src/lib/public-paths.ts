@@ -4,6 +4,7 @@ export function isPublicSessionPath(pathname: string) {
     pathname.startsWith('/login') ||
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/impersonate') ||
-    pathname.startsWith('/p/')
+    pathname.startsWith('/p/') ||
+    pathname === '/singard'
   )
 }

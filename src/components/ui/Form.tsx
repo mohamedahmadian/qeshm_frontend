@@ -36,9 +36,9 @@ const variants = {
   danger: 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-60',
 }
 
-export const formShellClassName = 'mx-auto w-full min-w-0 max-w-6xl'
-export const userFormShellClassName = 'mx-auto w-full min-w-0 max-w-6xl'
-export const listShellClassName = 'mx-auto w-full min-w-0 max-w-6xl'
+export const formShellClassName = 'mx-auto w-full min-w-0'
+export const userFormShellClassName = 'mx-auto w-full min-w-0'
+export const listShellClassName = 'mx-auto w-full min-w-0'
 
 export function Button({
   variant = 'primary',

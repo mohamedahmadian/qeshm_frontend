@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, Home, LogIn, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthProvider'
 import { useBrandDisplay } from '../../hooks/useHeadquartersSummary'
 import { AppLogo } from '../brand/AppLogo'
@@ -54,6 +54,15 @@ export function AuthGuestLayout({
               ) : null}
             </div>
           </Link>
+          <nav
+            className="ms-1 flex min-w-0 flex-wrap items-center gap-1 sm:ms-4"
+            aria-label={t('landing.publicNav')}
+          >
+            <PublicHeaderLink to="/" end>
+              {t('landing.homePage')}
+            </PublicHeaderLink>
+            <PublicHeaderLink to="/singard">{t('landing.singard')}</PublicHeaderLink>
+          </nav>
           <div className="ms-auto flex items-center gap-2">
             <LocaleSwitcher />
             {showHeaderHome ? (
@@ -115,6 +124,32 @@ export function AuthGuestLayout({
       ) : null}
       <AdminFooter />
     </div>
+  )
+}
+
+function PublicHeaderLink({
+  to,
+  end,
+  children,
+}: {
+  to: string
+  end?: boolean
+  children: ReactNode
+}) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        `inline-flex min-h-10 items-center rounded-2xl px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+          isActive
+            ? 'bg-teal-500 bg-[linear-gradient(to_inline-end,var(--color-teal-500),var(--color-mint-500))] text-white shadow-[0_8px_18px_rgba(46,189,182,0.28)]'
+            : 'text-ink-700 hover:bg-teal-50 hover:text-teal-800'
+        }`
+      }
+    >
+      {children}
+    </NavLink>
   )
 }
 

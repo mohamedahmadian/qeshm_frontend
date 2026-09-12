@@ -252,6 +252,60 @@ th {
   background: #e8eef0;
 }
 
+.live-board-color-lamp {
+  position: relative;
+  display: inline-flex;
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: var(--lamp-color);
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 5px var(--lamp-ring),
+    0 6px 16px var(--lamp-glow);
+  animation: live-board-color-lamp 1.65s ease-in-out infinite;
+}
+
+.live-board-color-lamp::after {
+  content: '';
+  position: absolute;
+  inset: 20%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.58);
+  animation: live-board-color-lamp-glint 1.65s ease-in-out infinite;
+}
+
+@keyframes live-board-color-lamp {
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1.12);
+    box-shadow:
+      0 0 0 2px #fff,
+      0 0 0 5px var(--lamp-ring),
+      0 0 16px var(--lamp-glow);
+  }
+  50% {
+    opacity: 0.32;
+    filter: brightness(0.68);
+    box-shadow:
+      0 0 0 2px #fff,
+      0 0 0 3px var(--lamp-ring-dim),
+      0 2px 6px var(--lamp-glow-dim);
+  }
+}
+
+@keyframes live-board-color-lamp-glint {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.12;
+  }
+}
+
 @keyframes live-board-map-enter {
   from {
     opacity: 0.5;
@@ -857,13 +911,75 @@ th {
   animation: loading-pulse 1.4s ease-in-out infinite;
 }
 
+@keyframes singard-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes singard-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.singard-step {
+  animation: singard-step-in 0.45s ease both;
+}
+
+.singard-choice {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.singard-choice:hover {
+  transform: translateY(-4px);
+}
+
+.singard-hero-icon {
+  animation: singard-float 3.2s ease-in-out infinite;
+}
+
+.singard-step-dot,
+.singard-step-line {
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease,
+    transform 0.3s ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .singard-step,
+  .singard-hero-icon {
+    animation: none;
+  }
+  .singard-step-dot,
+  .singard-step-line {
+    transition: none;
+  }
+  .singard-choice:hover {
+    transform: none;
+  }
   .animate-page-fade-in,
   .admin-footer-open-btn,
   .animate-loading-spin,
   .animate-loading-pulse,
   .eskan-project-pin-pulse .eskan-project-pin-pulse-ring,
-  .live-board-map-ring {
+  .live-board-map-ring,
+  .live-board-color-lamp,
+  .live-board-color-lamp::after {
     animation: none;
   }
 }

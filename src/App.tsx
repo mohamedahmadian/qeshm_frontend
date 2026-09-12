@@ -170,6 +170,24 @@ import {
   VehicleBrandListPage,
 } from './pages/vehicles/brands/VehicleBrandPages'
 import { VehicleReportsPage } from './pages/vehicles/VehicleReportsPage'
+import { PublicSingardPage } from './pages/singard/public/PublicSingardPage'
+import { SingardSubmitPage } from './pages/singard/submit/SingardSubmitPage'
+import { SingardMineListPage } from './pages/singard/mine/SingardMineListPage'
+import { SingardMineDetailPage } from './pages/singard/mine/SingardMineDetailPage'
+import { SingardInboxListPage } from './pages/singard/inbox/SingardInboxListPage'
+import { SingardInboxDetailPage } from './pages/singard/inbox/SingardInboxDetailPage'
+import { SingardReplyPage } from './pages/singard/inbox/SingardReplyPage'
+import {
+  SingardActivityCreatePage,
+  SingardActivityDetailPage,
+  SingardActivityEditPage,
+  SingardActivityListPage,
+} from './pages/singard/inbox/SingardActivityPages'
+import { SingardCategoriesListPage } from './pages/singard/categories/SingardCategoriesListPage'
+import { SingardCategoryCreatePage } from './pages/singard/categories/SingardCategoryCreatePage'
+import { SingardCategoryDetailPage } from './pages/singard/categories/SingardCategoryDetailPage'
+import { SingardCategoryEditPage } from './pages/singard/categories/SingardCategoryEditPage'
+import { SingardReportsPage } from './pages/singard/reports/SingardReportsPage'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 
 const queryClient = new QueryClient()
@@ -199,6 +217,7 @@ export default function App() {
             <AppToaster />
             <Routes>
               <Route path="/" element={<PublicHomePage />} />
+              <Route path="/singard" element={<PublicSingardPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/impersonate" element={<ImpersonateEntryPage />} />
@@ -330,6 +349,21 @@ export default function App() {
                   <Route path="/vehicles/:id/assignments/:assignmentId/edit" element={<VehicleAssignmentEditPage />} />
                   <Route path="/vehicles/:id" element={<VehicleDetailPage />} />
                   <Route path="/vehicles/:id/edit" element={<VehicleEditPage />} />
+                  <Route path="/singard/submit" element={<SingardSubmitPage />} />
+                  <Route path="/singard/mine" element={<SingardMineListPage />} />
+                  <Route path="/singard/mine/:id" element={<SingardMineDetailPage />} />
+                  <Route path="/singard/inbox" element={<SingardInboxListPage />} />
+                  <Route path="/singard/inbox/:id/reply" element={<SingardReplyPage />} />
+                  <Route path="/singard/inbox/:id/activities" element={<SingardActivityListPage />} />
+                  <Route path="/singard/inbox/:id/activities/new" element={<SingardActivityCreatePage />} />
+                  <Route path="/singard/inbox/:id/activities/:activityId/edit" element={<SingardActivityEditPage />} />
+                  <Route path="/singard/inbox/:id/activities/:activityId" element={<SingardActivityDetailPage />} />
+                  <Route path="/singard/inbox/:id" element={<SingardInboxDetailPage />} />
+                  <Route path="/singard/categories" element={<SingardCategoriesListPage />} />
+                  <Route path="/singard/categories/new" element={<SingardCategoryCreatePage />} />
+                  <Route path="/singard/categories/:id/edit" element={<SingardCategoryEditPage />} />
+                  <Route path="/singard/categories/:id" element={<SingardCategoryDetailPage />} />
+                  <Route path="/singard/reports" element={<SingardReportsPage />} />
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
