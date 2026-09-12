@@ -163,7 +163,7 @@ export function VoiceRecorder({
   const finalsRef = useRef('')
   const mimeRef = useRef('')
   const recordingRef = useRef(false)
-  const previewUrlRef = useRef<string>()
+  const previewUrlRef = useRef<string | undefined>(undefined)
   const liveTranscriptRef = useRef(liveTranscript)
 
   liveTranscriptRef.current = liveTranscript

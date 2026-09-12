@@ -505,7 +505,7 @@ function ProjectMapCard({
         aria-labelledby="live-board-project-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="h-1.5 shrink-0" style={{ background: projectColor(project.color) }} />
+        <div className="h-0.5 shrink-0" style={{ background: projectColor(project.color) }} />
         <div className="absolute end-3 top-4 z-10">{closeButton}</div>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
           <div className="mx-auto my-auto w-full max-w-md">
@@ -571,25 +571,19 @@ function ProjectMapCard({
 
   return (
     <aside
-      className={`absolute bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-3xl border-x border-t bg-white transition-transform duration-300 ease-out ${
+      className={`absolute bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-3xl border border-b-0 bg-white transition-transform duration-300 ease-out ${
         fullBleed ? 'inset-x-3' : 'w-[min(calc(100%-1.5rem),26.25rem)]'
       } ${entered ? 'translate-y-0' : 'translate-y-full'} ${
         showProgress || showDetails ? 'max-h-[min(82%,36rem)]' : ''
       }`}
       style={{
         ...(fullBleed ? {} : { left: mapSheetLeft(anchor) }),
-        borderColor: projectColorAlpha(project.color, 0.28),
-        borderInlineStartWidth: 4,
-        borderInlineStartStyle: 'solid',
-        borderInlineStartColor: projectColor(project.color),
-        borderTopWidth: 4,
-        borderTopStyle: 'solid',
-        borderTopColor: projectColor(project.color),
-        boxShadow: `0 -12px 32px ${projectColorAlpha(project.color, 0.2)}`,
+        borderColor: projectColorAlpha(project.color, 0.35),
+        boxShadow: `0 -6px 20px ${projectColorAlpha(project.color, 0.16)}`,
       }}
       onClick={(event) => event.stopPropagation()}
     >
-      <div className="h-1.5 shrink-0" style={{ background: projectColor(project.color) }} />
+      <div className="h-0.5 shrink-0" style={{ background: projectColor(project.color) }} />
       <div
         className={`relative flex-1 px-4 py-3.5 ${
           showProgress || showDetails ? 'min-h-0 overflow-auto' : 'overflow-hidden'
