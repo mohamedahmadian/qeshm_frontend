@@ -95,14 +95,7 @@ export function ProjectCalendarPage() {
         <>
           <AgendaProposal items={dated} locale={locale} />
           <YearStripProposal key={`strip-${selectedYear}`} items={dated} year={selectedYear} locale={locale} />
-          <YearGridProposal key={`grid-${selectedYear}`} items={dated} year={selectedYear} locale={locale} />
-          <YearGridProposal
-            key={`busy-${selectedYear}`}
-            items={dated}
-            year={selectedYear}
-            locale={locale}
-            onlyWithDeadlines
-          />
+          <YearGridProposal key={`busy-${selectedYear}`} items={dated} year={selectedYear} locale={locale} />
           <MonthAgendaProposal
             key={`month-${selectedYear}`}
             items={dated}

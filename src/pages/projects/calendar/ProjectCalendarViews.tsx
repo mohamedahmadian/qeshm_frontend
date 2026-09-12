@@ -170,40 +170,24 @@ export function YearGridProposal({
   items,
   year,
   locale,
-  onlyWithDeadlines,
 }: {
   items: Project[]
   year: number
   locale: string
-  onlyWithDeadlines?: boolean
 }) {
   const { t } = useTranslation()
   const byDate = useMemo(() => indexProjectsByEndDate(items), [items])
-  const months = onlyWithDeadlines
-    ? monthsWithDeadlines(items, year, locale)
-    : Array.from({ length: 12 }, (_, index) => index + 1)
+  const months = monthsWithDeadlines(items, year, locale)
   const { modal, open, close } = useProjectsModal()
 
   return (
     <FormCard
       icon={CalendarRange}
-      title={
-        onlyWithDeadlines
-          ? t('projectCalendar.proposals.busyMonths')
-          : t('projectCalendar.proposals.yearGrid')
-      }
-      subtitle={
-        onlyWithDeadlines
-          ? t('projectCalendar.proposals.busyMonthsHint')
-          : t('projectCalendar.proposals.yearGridHint')
-      }
+      title={t('projectCalendar.proposals.busyMonths')}
+      subtitle={t('projectCalendar.proposals.busyMonthsHint')}
     >
       <div className="space-y-4 p-5 sm:p-6">
-        <ProposalCardNote>
-          {onlyWithDeadlines
-            ? t('projectCalendar.proposals.busyMonthsNote')
-            : t('projectCalendar.proposals.yearGridNote')}
-        </ProposalCardNote>
+        <ProposalCardNote>{t('projectCalendar.proposals.busyMonthsNote')}</ProposalCardNote>
         {!months.length ? <FormEmptyHint>{t('projectCalendar.emptyYear')}</FormEmptyHint> : null}
         {months.length ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
