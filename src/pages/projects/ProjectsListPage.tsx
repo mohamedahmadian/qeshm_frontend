@@ -2,18 +2,9 @@ import { ClipboardList, Filter, FolderKanban, Landmark, Plus } from 'lucide-reac
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import {
-  ActionsTh,
-  PaginationBar,
-  SearchBar,
-  TableCard,
-  EntityRowActions,
-  SortableTh,
-  actionsColClassName,
-} from '../../components/ui/ListControls'
+import { PaginationBar, SearchBar } from '../../components/ui/ListControls'
 import { Button, FormField, PageHeader, listShellClassName } from '../../components/ui/Form'
 import { SearchSelect } from '../../components/ui/SearchSelect'
-import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
@@ -25,25 +16,14 @@ import {
   type Project,
   type ProjectLookups,
 } from '../../types/app'
-import {
-  ProjectLifecycleBadge,
-  ProjectNameWithColor,
-  ProjectOperatorsCell,
-  ProjectProgress,
-  operatorsColClassName,
-  withCurrent,
-} from './ProjectShared'
-import {
-  projectProgressCreateGlobalPath,
-  projectProgressCreatePath,
-} from './progress/progress-paths'
+import { ProjectsSummaryTable, withCurrent } from './ProjectShared'
+import { projectProgressCreateGlobalPath } from './progress/progress-paths'
 
 export function ProjectsListPage() {
   const { t } = useTranslation()
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
     useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
-  const { confirmDelete } = useConfirmDelete()
   const operatorUnitId = searchParams.get('operatorUnitId') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
@@ -238,92 +218,14 @@ export function ProjectsListPage() {
           </>
         }
       />
-      <TableCard loading={query.isLoading} empty={emptyMessage} hasRows={rows.length > 0}>
-        <table className="w-full text-sm">
-          <thead className="bg-cream-50 text-ink-700">
-            <tr>
-              <SortableTh
-                column="systemName"
-                label={t('projects.systemName')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="operators"
-                label={t('projects.operators')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-                className={operatorsColClassName}
-              />
-              <SortableTh
-                column="companyName"
-                label={t('projects.companyName')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="progressPercent"
-                label={t('projects.progress')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="status"
-                label={t('projects.status')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <ActionsTh />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((item) => (
-              <tr key={item.id} className="border-t border-line">
-                <td className="px-4 py-3 font-medium">
-                  <ProjectNameWithColor name={item.systemName} color={item.color} />
-                </td>
-                <td className={`px-4 py-3 align-top ${operatorsColClassName}`}>
-                  <ProjectOperatorsCell operators={item.operators} />
-                </td>
-                <td className="px-4 py-3">{item.companyName || '—'}</td>
-                <td className="px-4 py-3">
-                  <ProjectProgress value={item.progressPercent} />
-                </td>
-                <td className="px-4 py-3">
-                  <ProjectLifecycleBadge value={item.status} />
-                </td>
-                <td className={actionsColClassName}>
-                  <EntityRowActions
-                    viewTo={`/projects/${item.id}`}
-                    extra={
-                      <Link to={projectProgressCreatePath(item.id)}>
-                        <Button type="button" variant="soft">
-                          <ClipboardList className="size-4" aria-hidden />
-                          {t('projectProgress.create')}
-                        </Button>
-                      </Link>
-                    }
-                    editTo={`/projects/${item.id}/edit`}
-                    onDelete={() =>
-                      confirmDelete({
-                        message: t('projects.confirmDelete'),
-                        successMessage: t('projects.deleted'),
-                        path: `/projects/${item.id}`,
-                        queryKey: ['projects'],
-                      })
-                    }
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </TableCard>
+      <ProjectsSummaryTable
+        rows={rows}
+        loading={query.isLoading}
+        empty={emptyMessage}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSort={onSort}
+      />
       {query.data ? (
         <PaginationBar
           page={query.data.page}

@@ -36,6 +36,7 @@ import { ProjectCreatePage } from './pages/projects/ProjectCreatePage'
 import { ProjectDetailPage } from './pages/projects/ProjectDetailPage'
 import { ProjectEditPage } from './pages/projects/ProjectEditPage'
 import { ProjectLiveBoardPage } from './pages/projects/ProjectLiveBoardPage'
+import { ProjectCalendarPage } from './pages/projects/calendar/ProjectCalendarPage'
 import { ProjectReportsPage } from './pages/projects/ProjectReportsPage'
 import { ProjectsListPage } from './pages/projects/ProjectsListPage'
 import { ContractorCreatePage } from './pages/projects/contractors/ContractorCreatePage'
@@ -233,6 +234,7 @@ export default function App() {
                   <Route path="/base-info/roles/:id/edit" element={<RoleEditPage />} />
                   <Route path="/projects" element={<ProjectsListPage />} />
                   <Route path="/projects/reports" element={<ProjectReportsPage />} />
+                  <Route path="/projects/calendar" element={<ProjectCalendarPage />} />
                   <Route path="/projects/live-board" element={<ProjectLiveBoardPage />} />
                   <Route path="/projects/contractors" element={<GlobalContractorsListPage />} />
                   <Route path="/projects/contractors/new" element={<GlobalContractorCreatePage />} />

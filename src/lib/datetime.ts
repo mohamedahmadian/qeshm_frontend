@@ -340,3 +340,100 @@ export function addDaysIso(iso: string, days: number) {
   if (!date) return ''
   return toIsoDateOnly(date.add(days, 'days'))
 }
+
+export function displayYearNow(locale: string) {
+  return new DateObject({ calendar: datePickerCalendar(locale) }).year
+}
+
+export function displayDateParts(iso?: string | null, locale = 'fa') {
+  const date = fromIsoDateOnly(iso ?? undefined)
+  if (!date) return null
+  const converted = cloneDateObject(date).convert(datePickerCalendar(locale))
+  return {
+    year: converted.year,
+    month: converted.month.number,
+    day: converted.day,
+  }
+}
+
+export function monthName(month: number, locale: string) {
+  const date = new DateObject({
+    year: usesJalaliCalendar(locale) ? 1400 : 2026,
+    month,
+    day: 1,
+    calendar: datePickerCalendar(locale),
+    locale: datePickerLocale(locale),
+  })
+  const name = date.month?.name
+  return typeof name === 'string' && name.trim() ? name.trim() : String(month)
+}
+
+export function startOfDisplayWeekIso(iso = todayIsoDate(), locale = 'fa') {
+  if (usesJalaliCalendar(locale)) return startOfIranWeekIso(iso)
+  const js = new Date(`${iso}T12:00:00`)
+  if (Number.isNaN(js.getTime())) return iso
+  return addDaysIso(iso, -js.getDay())
+}
+
+export function weekdayOffset(iso: string, locale: string) {
+  const js = new Date(`${iso}T12:00:00`)
+  if (Number.isNaN(js.getTime())) return 0
+  return usesJalaliCalendar(locale) ? (js.getDay() + 1) % 7 : js.getDay()
+}
+
+export function weekDayShortLabels(locale: string) {
+  const start = startOfDisplayWeekIso(todayIsoDate(), locale)
+  return Array.from({ length: 7 }, (_, index) => {
+    const iso = addDaysIso(start, index)
+    const date = fromIsoDateOnly(iso)
+    if (!date) return ''
+    const converted = cloneDateObject(date).convert(
+      datePickerCalendar(locale),
+      datePickerLocale(locale),
+    )
+    const short = converted.weekDay?.shortName
+    const name = converted.weekDay?.name
+    if (typeof short === 'string' && short.trim()) return short.trim()
+    if (typeof name === 'string' && name.trim()) return name.trim().slice(0, 2)
+    return ''
+  })
+}
+
+export type MonthGridCell = {
+  iso: string
+  day: number
+}
+
+export type MonthGrid = {
+  year: number
+  month: number
+  name: string
+  leading: number
+  days: MonthGridCell[]
+}
+
+export function buildMonthGrid(year: number, month: number, locale: string): MonthGrid {
+  const calendar = datePickerCalendar(locale)
+  const first = new DateObject({ year, month, day: 1, calendar })
+  const lastDay = new DateObject({ year, month, day: 1, calendar }).toLastOfMonth().day
+  const firstIso = toIsoDateOnly(first)
+  const days: MonthGridCell[] = []
+  for (let day = 1; day <= lastDay; day += 1) {
+    const date = new DateObject({ year, month, day, calendar })
+    days.push({ iso: toIsoDateOnly(date), day })
+  }
+  return {
+    year,
+    month,
+    name: monthName(month, locale),
+    leading: weekdayOffset(firstIso, locale),
+    days,
+  }
+}
+
+export function displayYearRangeIso(year: number, locale: string) {
+  const calendar = datePickerCalendar(locale)
+  const start = new DateObject({ year, month: 1, day: 1, calendar })
+  const end = new DateObject({ year, month: 12, day: 1, calendar }).toLastOfMonth()
+  return { startIso: toIsoDateOnly(start), endIso: toIsoDateOnly(end) }
+}

@@ -1,13 +1,27 @@
+import { ClipboardList } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { GeoStatus } from '../geo/GeoShared'
+import { Link } from 'react-router-dom'
+import {
+  ActionsTh,
+  EntityRowActions,
+  SortableTh,
+  TableCard,
+  actionsColClassName,
+  type SortDir,
+} from '../../components/ui/ListControls'
+import { Button } from '../../components/ui/Form'
+import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { formatNumber } from '../../lib/datetime'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
 import {
   projectImportances,
   projectStatuses,
+  type Project,
   type ProjectImportance,
   type ProjectStatus as ProjectLifecycle,
 } from '../../types/app'
+import { GeoStatus } from '../geo/GeoShared'
+import { projectProgressCreatePath } from './progress/progress-paths'
 
 export function ProjectColorDot({
   color,
@@ -161,5 +175,121 @@ export function ProjectUrl({ value }: { value: string | null }) {
     <span dir="ltr" className="break-all">
       {value}
     </span>
+  )
+}
+
+export function projectContractorName(item: {
+  companyName?: string | null
+  mainContractor?: { name: string } | null
+}) {
+  return item.companyName || item.mainContractor?.name || '—'
+}
+
+export function ProjectsSummaryTable({
+  rows,
+  loading,
+  empty,
+  sortBy,
+  sortDir,
+  onSort,
+}: {
+  rows: Project[]
+  loading: boolean
+  empty: string
+  sortBy: string
+  sortDir: SortDir | ''
+  onSort: (column: string) => void
+}) {
+  const { t } = useTranslation()
+  const { confirmDelete } = useConfirmDelete()
+
+  return (
+    <TableCard loading={loading} empty={empty} hasRows={rows.length > 0}>
+      <table className="w-full text-sm">
+        <thead className="bg-cream-50 text-ink-700">
+          <tr>
+            <SortableTh
+              column="systemName"
+              label={t('projects.systemName')}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={onSort}
+            />
+            <SortableTh
+              column="operators"
+              label={t('projects.operators')}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={onSort}
+              className={operatorsColClassName}
+            />
+            <SortableTh
+              column="companyName"
+              label={t('projects.companyName')}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={onSort}
+            />
+            <SortableTh
+              column="progressPercent"
+              label={t('projects.progress')}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={onSort}
+            />
+            <SortableTh
+              column="status"
+              label={t('projects.status')}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={onSort}
+            />
+            <ActionsTh />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((item) => (
+            <tr key={item.id} className="border-t border-line">
+              <td className="px-4 py-3 font-medium">
+                <ProjectNameWithColor name={item.systemName} color={item.color} />
+              </td>
+              <td className={`px-4 py-3 align-top ${operatorsColClassName}`}>
+                <ProjectOperatorsCell operators={item.operators} />
+              </td>
+              <td className="px-4 py-3">{projectContractorName(item)}</td>
+              <td className="px-4 py-3">
+                <ProjectProgress value={item.progressPercent} />
+              </td>
+              <td className="px-4 py-3">
+                <ProjectLifecycleBadge value={item.status} />
+              </td>
+              <td className={actionsColClassName}>
+                <EntityRowActions
+                  viewTo={`/projects/${item.id}`}
+                  showView={false}
+                  extra={
+                    <Link to={projectProgressCreatePath(item.id)}>
+                      <Button type="button" variant="soft">
+                        <ClipboardList className="size-4" aria-hidden />
+                        {t('projectProgress.create')}
+                      </Button>
+                    </Link>
+                  }
+                  editTo={`/projects/${item.id}/edit`}
+                  onDelete={() =>
+                    confirmDelete({
+                      message: t('projects.confirmDelete'),
+                      successMessage: t('projects.deleted'),
+                      path: `/projects/${item.id}`,
+                      queryKey: ['projects'],
+                    })
+                  }
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableCard>
   )
 }

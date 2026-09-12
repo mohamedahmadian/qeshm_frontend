@@ -80,6 +80,9 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/base-info/roles')) {
     return { titleKey: 'menus.roles', subtitleKey: 'accessRoles.subtitle' }
   }
+  if (pathname.startsWith('/projects/calendar')) {
+    return { titleKey: 'menus.projectCalendar', subtitleKey: 'projectCalendar.subtitle' }
+  }
   if (pathname.startsWith('/projects/live-board')) {
     return {
       titleKey: 'menus.digitalTransformationLiveBoard',

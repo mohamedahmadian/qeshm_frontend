@@ -32,18 +32,9 @@ import {
   FormSectionTitle,
   formCardBodyClassName,
 } from '../../components/ui/FormLayout'
-import {
-  ActionsTh,
-  EntityRowActions,
-  PaginationBar,
-  SearchBar,
-  SortableTh,
-  TableCard,
-  actionsColClassName,
-} from '../../components/ui/ListControls'
+import { PaginationBar, SearchBar } from '../../components/ui/ListControls'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { SearchSelect } from '../../components/ui/SearchSelect'
-import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
@@ -61,11 +52,8 @@ import {
 import {
   ProjectImportanceBadge,
   ProjectLifecycleBadge,
-  ProjectNameWithColor,
-  ProjectOperatorsCell,
-  ProjectProgress,
   ProjectStatus as ProjectActiveBadge,
-  operatorsColClassName,
+  ProjectsSummaryTable,
   projectOperatorsText,
   withCurrent,
 } from './ProjectShared'
@@ -98,7 +86,6 @@ export function ProjectLiveBoardPage() {
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
     useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
-  const { confirmDelete } = useConfirmDelete()
 
   const rawView = searchParams.get('view')
   const view: LiveBoardView =
@@ -347,156 +334,14 @@ export function ProjectLiveBoardPage() {
         </>
       ) : (
         <>
-          <TableCard loading={query.isLoading} empty={emptyMessage} hasRows={tableRows.length > 0}>
-            <table className="w-full text-sm">
-              <thead className="bg-cream-50 text-ink-700">
-                <tr>
-                  <SortableTh
-                    column="systemName"
-                    label={t('projects.systemName')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <SortableTh
-                    column="code"
-                    label={t('projects.code')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <SortableTh
-                    column="status"
-                    label={t('projects.status')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <SortableTh
-                    column="progressPercent"
-                    label={t('projects.progress')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <SortableTh
-                    column="importance"
-                    label={t('projects.importance')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <th className="px-4 py-3 text-start font-medium">
-                    {t('projectLiveBoard.mainContractor')}
-                  </th>
-                  <SortableTh
-                    column="operators"
-                    label={t('projects.operators')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                    className={operatorsColClassName}
-                  />
-                  <SortableTh
-                    column="companyName"
-                    label={t('projects.companyName')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <SortableTh
-                    column="isActive"
-                    label={t('projects.isActive')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <SortableTh
-                    column="startDate"
-                    label={t('projects.startDate')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <SortableTh
-                    column="endDate"
-                    label={t('projects.endDate')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <SortableTh
-                    column="activityCount"
-                    label={t('projectLiveBoard.activityCount')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <th className="px-4 py-3 text-start font-medium">
-                    {t('projectLiveBoard.lastActivity')}
-                  </th>
-                  <ActionsTh />
-                </tr>
-              </thead>
-              <tbody>
-                {tableRows.map((item) => (
-                  <tr key={item.id} className="border-t border-line">
-                    <td className="px-4 py-3 font-medium">
-                      <ProjectNameWithColor name={item.systemName} color={item.color} />
-                    </td>
-                    <td className="px-4 py-3">{item.code}</td>
-                    <td className="px-4 py-3">
-                      <ProjectLifecycleBadge value={item.status} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <ProjectProgress value={item.progressPercent} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <ProjectImportanceBadge value={item.importance} />
-                    </td>
-                    <td className="px-4 py-3">{item.mainContractor?.name || '—'}</td>
-                    <td className={`px-4 py-3 align-top ${operatorsColClassName}`}>
-                      <ProjectOperatorsCell operators={item.operators} />
-                    </td>
-                    <td className="px-4 py-3">{item.companyName || '—'}</td>
-                    <td className="px-4 py-3">
-                      <ProjectActiveBadge active={item.isActive} />
-                    </td>
-                    <td className="px-4 py-3">
-                      {item.startDate ? <DateText value={item.startDate} /> : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {item.endDate ? <DateText value={item.endDate} /> : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {formatNumber(item.activityCount, locale)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <LastActivityPreview
-                        projectId={item.id}
-                        activity={item.lastActivity}
-                        empty={t('projectLiveBoard.noActivity')}
-                      />
-                    </td>
-                    <td className={actionsColClassName}>
-                      <EntityRowActions
-                        viewTo={`/projects/${item.id}`}
-                        editTo={`/projects/${item.id}/edit`}
-                        onDelete={() =>
-                          confirmDelete({
-                            message: t('projects.confirmDelete'),
-                            successMessage: t('projects.deleted'),
-                            path: `/projects/${item.id}`,
-                            queryKey: ['projects'],
-                          })
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableCard>
+          <ProjectsSummaryTable
+            rows={tableRows}
+            loading={query.isLoading}
+            empty={emptyMessage}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSort={onSort}
+          />
           {query.data ? (
             <PaginationBar
               page={page}
