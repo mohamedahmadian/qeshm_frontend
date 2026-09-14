@@ -1,7 +1,7 @@
-import { ArrowLeft, ArrowRight, Home, LogIn, Sparkles, type LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { ArrowLeft, ArrowRight, Home, LogIn, Menu, Sparkles, X, type LucideIcon } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthProvider'
 import { useBrandDisplay } from '../../hooks/useHeadquartersSummary'
 import { AppLogo } from '../brand/AppLogo'
@@ -26,13 +26,35 @@ export function AuthGuestLayout({
 }) {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const { title: brandTitle, name: brandName, logoSrc } = useBrandDisplay()
+  const { logoSrc } = useBrandDisplay()
+  const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const loginTo = user ? '/dashboard' : '/login'
+  const loginLabel = user ? t('landing.goToPanel') : t('auth.login')
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [menuOpen])
 
   return (
     <div className={`flex flex-col bg-cream-50 ${fill ? 'h-svh overflow-hidden' : 'min-h-svh'}`}>
-      <header className="z-20 shrink-0 border-b border-line/70 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-8">
-          <Link to="/" className="flex min-w-0 items-center gap-3">
+      <header className="relative z-30 shrink-0 border-b border-line/70 bg-white/90 backdrop-blur">
+        <div className="relative z-40 mx-auto flex w-full items-center gap-2 px-4 py-3 sm:gap-3 sm:px-8">
+          <Link to="/" className="flex shrink-0 items-center" aria-label={t('landing.homePage')}>
             <AppLogo
               src={logoSrc}
               className={
@@ -41,15 +63,9 @@ export function AuthGuestLayout({
                   : 'h-11 w-auto shrink-0 object-contain sm:h-12'
               }
             />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-ink-900 sm:text-base">{brandTitle}</p>
-              {brandName && brandName !== brandTitle ? (
-                <p className="truncate text-[11px] text-ink-400 sm:text-xs">{brandName}</p>
-              ) : null}
-            </div>
           </Link>
           <nav
-            className="ms-1 flex min-w-0 flex-wrap items-center gap-1.5 sm:ms-4"
+            className="ms-1 hidden min-w-0 flex-wrap items-center gap-1.5 sm:ms-4 sm:flex"
             aria-label={t('landing.publicNav')}
           >
             <PublicHeaderLink to="/" end icon={Home}>
@@ -62,15 +78,57 @@ export function AuthGuestLayout({
           <div className="ms-auto flex items-center gap-2">
             <LocaleSwitcher />
             {showHeaderLogin ? (
-              <Link to={user ? '/dashboard' : '/login'}>
+              <Link to={loginTo} className="hidden sm:block">
                 <Button type="button" variant={user ? 'soft' : 'primary'} className="gap-1.5">
                   <LogIn className="size-4" aria-hidden />
-                  {user ? t('landing.goToPanel') : t('auth.login')}
+                  {loginLabel}
                 </Button>
               </Link>
             ) : null}
+            <button
+              type="button"
+              className="inline-flex size-10 cursor-pointer items-center justify-center rounded-2xl border border-teal-400 bg-white text-ink-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 sm:hidden"
+              aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              {menuOpen ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
+            </button>
           </div>
         </div>
+        {menuOpen ? (
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 top-0 z-20 bg-ink-900/20 sm:hidden"
+              aria-label={t('nav.closeMenu')}
+              onClick={() => setMenuOpen(false)}
+            />
+            <nav
+              className="relative z-30 border-t border-line/70 bg-white px-4 py-3 sm:hidden"
+              aria-label={t('landing.publicNav')}
+            >
+              <div className="flex flex-col gap-2">
+                <PublicHeaderLink to="/" end icon={Home} block>
+                  {t('landing.homePage')}
+                </PublicHeaderLink>
+                <PublicHeaderLink to="/singard" icon={Sparkles} block>
+                  {t('landing.singard')}
+                </PublicHeaderLink>
+                {showHeaderLogin ? (
+                  <Link
+                    to={loginTo}
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-teal-500 px-3 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(46,189,182,0.28)]"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <LogIn className="size-4" aria-hidden />
+                    {loginLabel}
+                  </Link>
+                ) : null}
+              </div>
+            </nav>
+          </>
+        ) : null}
       </header>
       <main
         className={
@@ -120,11 +178,13 @@ function PublicHeaderLink({
   end,
   icon: Icon,
   children,
+  block = false,
 }: {
   to: string
   end?: boolean
   icon: LucideIcon
   children: ReactNode
+  block?: boolean
 }) {
   return (
     <NavLink
@@ -132,6 +192,8 @@ function PublicHeaderLink({
       end={end}
       className={({ isActive }) =>
         `group inline-flex min-h-10 items-center gap-2 rounded-2xl px-2 pe-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+          block ? 'w-full justify-start' : ''
+        } ${
           isActive
             ? 'bg-teal-500 bg-[linear-gradient(to_inline-end,var(--color-teal-500),var(--color-mint-500))] text-white shadow-[0_8px_18px_rgba(46,189,182,0.28)]'
             : 'border border-teal-100/90 bg-white text-ink-700 shadow-[0_6px_14px_rgba(46,189,182,0.08)] hover:border-teal-200 hover:bg-teal-50 hover:text-teal-800'

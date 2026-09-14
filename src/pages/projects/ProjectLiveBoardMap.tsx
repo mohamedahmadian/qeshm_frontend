@@ -11,6 +11,7 @@ import {
   Mic,
   ScrollText,
   Tags,
+  X,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
@@ -29,6 +30,7 @@ import { api, getApiErrorMessage } from '../../lib/api'
 import { calendarDaysUntil, formatNumber, todayIsoDate } from '../../lib/datetime'
 import { QESHM_LIVE_BOARD_BOUNDS } from '../../lib/geo'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
+import { ProjectProgressForm, type ProjectProgressPayload } from './progress/ProjectProgressForm'
 import { projectProgressEntryPath, projectProgressPath } from './progress/progress-paths'
 import { useVoiceCapture } from './progress/useVoiceCapture'
 import {
@@ -646,6 +648,14 @@ function ProjectMapCard({
     }
   }
 
+  async function saveProgressFromForm(payload: ProjectProgressPayload) {
+    await api.post(`/projects/${project.id}/progress`, payload)
+    toast.success(t('projectProgress.created'))
+    await queryClient.invalidateQueries({ queryKey: ['projects', 'live-board'] })
+    await queryClient.invalidateQueries({ queryKey: ['public', 'projects', 'live-board'] })
+    onClose()
+  }
+
   const lastActivity =
     !showDetails && project.lastActivity ? (
       <LastActivityDockLine
@@ -660,19 +670,18 @@ function ProjectMapCard({
       (project.lastActivity ? activityPreviewText(project.lastActivity) : '')
   const displayProgress = canManage ? progressValue : (project.progressPercent ?? 0)
 
-  const inner = (
-    <>
-      <div className={`${isMobile ? 'px-10' : 'px-8'} text-center`}>
-        <div className="flex items-start justify-center gap-2">
+  const identityRow = (
+    <div className="flex items-start gap-2 pl-12">
+      <div className="flex min-w-0 flex-1 items-start gap-2">
+        <ProjectColorLamp color={project.color} />
+        <div className="min-w-0 flex-1 text-start">
           <h2
             id="live-board-project-title"
-            className={`min-w-0 max-w-[calc(100%-2.5rem)] whitespace-normal break-words font-bold text-ink-900 ${
-              isMobile ? 'text-lg leading-7' : 'text-base leading-6'
-            }`}
+            className="whitespace-normal break-words text-sm font-bold leading-6 text-ink-900"
           >
             <button
               type="button"
-              className="cursor-pointer hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+              className="cursor-pointer text-start hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
               aria-pressed={showDetails}
               title={showDetails ? t('projectLiveBoard.hideDetails') : t('projectLiveBoard.viewDetails')}
               onClick={() => setShowDetails((open) => !open)}
@@ -680,35 +689,35 @@ function ProjectMapCard({
               {project.systemName}
             </button>
           </h2>
-        </div>
-        {contractor ? (
-          <p className="mt-1.5 flex items-center justify-center gap-1 text-xs text-ink-600">
-            <Handshake className="size-3.5 shrink-0 text-teal-600" aria-hidden />
-            <span className="whitespace-normal break-words">{contractor}</span>
-          </p>
-        ) : null}
-      </div>
-      <div className="mt-4 flex justify-center gap-3">
-        <div className="flex min-w-[6.5rem] flex-col items-center rounded-2xl border border-teal-100 bg-white px-4 py-3 shadow-[0_8px_18px_rgba(46,189,182,0.1)]">
-          <MiniProgressRing
-            value={project.progressPercent}
-            locale={locale}
-            color={theme.ring}
-            size="md"
-          />
-          <p className="mt-1.5 text-[11px] font-medium text-ink-500">{t('projects.progress')}</p>
-        </div>
-        <div className="flex min-w-[6.5rem] flex-col items-center rounded-2xl border border-mint-100 bg-white px-4 py-3 shadow-[0_8px_18px_rgba(63,214,190,0.12)]">
-          <MiniDaysBadge
-            daysLabel={daysLabel}
-            overdue={overdue}
-            title={daysTitle}
-            label={daysShort}
-            size="md"
-          />
-          <p className="mt-1.5 text-[11px] font-medium text-ink-500">{daysTitle}</p>
+          {contractor ? (
+            <p className="mt-1 flex items-center gap-1 text-xs text-ink-600">
+              <Handshake className="size-3.5 shrink-0 text-teal-600" aria-hidden />
+              <span className="whitespace-normal break-words">{contractor}</span>
+            </p>
+          ) : null}
         </div>
       </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <MiniProgressRing
+          value={project.progressPercent}
+          locale={locale}
+          color={theme.ring}
+          size="xs"
+        />
+        <MiniDaysBadge
+          daysLabel={daysLabel}
+          overdue={overdue}
+          title={daysTitle}
+          label={daysShort}
+          size="xs"
+        />
+      </div>
+    </div>
+  )
+
+  const inner = (
+    <>
+      {identityRow}
       {lastActivity ? <div className="mt-4">{lastActivity}</div> : null}
       <div className="mt-5 flex flex-col items-center gap-3">
         {canManage ? (
@@ -793,23 +802,47 @@ function ProjectMapCard({
         <div
           className={
             canManage
-              ? 'flex min-h-0 flex-1 flex-col'
+              ? 'relative flex min-h-0 flex-1 flex-col'
               : 'relative max-h-[min(34rem,78vh)] overflow-hidden rounded-t-3xl bg-cream-50 shadow-[0_-12px_32px_rgba(28,39,37,0.16)]'
           }
         >
           <div className="h-0.5 shrink-0" style={{ background: projectColor(project.color) }} />
-          <div className="absolute start-3 top-4 z-10">
-            <ProjectColorLamp color={project.color} />
-          </div>
-          <div
-            className={`flex min-h-0 flex-col overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 ${
-              canManage ? 'flex-1' : ''
-            }`}
+          <button
+            type="button"
+            className="absolute left-3 top-3 z-20 inline-flex size-9 cursor-pointer items-center justify-center rounded-2xl border border-teal-400 bg-white text-ink-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+            aria-label={t('common.close')}
+            onClick={onClose}
           >
-            <div className={`mx-auto w-full max-w-md ${canManage ? 'my-auto' : 'my-3'}`}>
-              {inner}
+            <X className="size-4" aria-hidden />
+          </button>
+          {canManage ? (
+            <>
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-3">
+                <div className="mx-auto w-full max-w-xl space-y-4 pb-4">
+                  {identityRow}
+                  <ProjectProgressForm
+                    key={project.id}
+                    onSubmit={saveProgressFromForm}
+                  />
+                  {showDetails ? (
+                    <ProjectMapDetails project={project} locale={locale} canManage={canManage} />
+                  ) : null}
+                </div>
+              </div>
+              <div className="shrink-0 border-t border-line/70 bg-white/90 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
+                <div className="flex justify-center">
+                  <Button type="button" variant="ghost" className="w-auto" onClick={onClose}>
+                    <X className="size-4" aria-hidden />
+                    {t('common.close')}
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex min-h-0 flex-col overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
+              <div className="mx-auto my-3 w-full max-w-md">{inner}</div>
             </div>
-          </div>
+          )}
         </div>
       </div>,
       document.body,

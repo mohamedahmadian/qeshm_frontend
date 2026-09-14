@@ -86,11 +86,11 @@ function LocaleMenu({ tone }: { tone: 'light' | 'onDark' }) {
         aria-haspopup="listbox"
         aria-label={t('settings.locale')}
         onClick={() => setOpen((value) => !value)}
-        className={`inline-flex min-h-10 items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${triggerClass}`}
+        className={`inline-flex min-h-10 min-w-10 items-center justify-center gap-1 rounded-2xl px-2.5 py-2 text-xs font-bold tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${triggerClass}`}
       >
-        <span>{t(`languages.${locale}`)}</span>
+        <span dir="ltr">{locale.toUpperCase()}</span>
         <ChevronDown
-          className={`size-4 shrink-0 opacity-70 transition ${open ? 'rotate-180' : ''}`}
+          className={`size-3.5 shrink-0 opacity-70 transition ${open ? 'rotate-180' : ''}`}
           aria-hidden
         />
       </button>
@@ -120,14 +120,17 @@ function LocaleMenu({ tone }: { tone: 'light' | 'onDark' }) {
                       setLocale(code)
                       setOpen(false)
                     }}
-                    className={`flex w-full items-center px-3 py-2.5 text-start text-sm transition focus-visible:outline-none focus-visible:bg-teal-50 ${
-                      selected
-                        ? 'bg-teal-50 font-medium text-teal-800'
-                        : 'text-ink-700 hover:bg-cream-50'
-                    }`}
-                  >
-                    {t(`languages.${code}`)}
-                  </button>
+                    className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-start text-sm transition focus-visible:outline-none focus-visible:bg-teal-50 ${
+                        selected
+                          ? 'bg-teal-50 font-medium text-teal-800'
+                          : 'text-ink-700 hover:bg-cream-50'
+                      }`}
+                    >
+                      <span dir="ltr" className="w-8 shrink-0 text-xs font-bold tracking-wide text-ink-400">
+                        {code.toUpperCase()}
+                      </span>
+                      <span>{t(`languages.${code}`)}</span>
+                    </button>
                 )
               })}
             </div>,

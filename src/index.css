@@ -984,6 +984,18 @@ th {
     transform 0.3s ease;
 }
 
+.singard-step-line-dashed {
+  height: 2px;
+  width: 100%;
+  background-image: repeating-linear-gradient(
+    to inline-end,
+    #2ebdb6 0,
+    #2ebdb6 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   .singard-step,
   .singard-hero-icon {

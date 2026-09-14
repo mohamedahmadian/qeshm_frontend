@@ -31,9 +31,7 @@ export function PublicHomePage() {
         <FormCard
           icon={Radio}
           title={t('projectLiveBoard.title')}
-          subtitle={
-            located.length ? t('landing.subtitle') : t('projectLiveBoard.noLocation')
-          }
+          subtitle={located.length ? undefined : t('projectLiveBoard.noLocation')}
           className="flex min-h-[28rem] flex-1 flex-col"
         >
           {query.isLoading ? (

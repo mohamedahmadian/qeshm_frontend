@@ -1,8 +1,8 @@
 import {
   AlertTriangle,
-  ArrowRight,
   Check,
   ChevronLeft,
+  ChevronRight,
   Flag,
   HeartHandshake,
   ImagePlus,
@@ -40,6 +40,7 @@ const MAX_IMAGES = 5
 
 type IdentityMode = 'introduce' | 'anonymous' | null
 type MediaTabId = 'photo' | 'audio' | 'video' | 'location'
+type WizardStepId = 'kind' | 'identity' | 'identity-form' | 'category' | 'content'
 
 function toOptionalNumber(value: string) {
   const trimmed = value.trim()
@@ -117,23 +118,22 @@ export function SingardWizard({
   const [saving, setSaving] = useState(false)
   const [mediaTab, setMediaTab] = useState<MediaTabId>('photo')
   const [result, setResult] = useState<SingardFeedback>()
+  const [wizardIndex, setWizardIndex] = useState(0)
 
-  const step = result
-    ? 'thanks'
-    : !kind
-      ? 'kind'
-      : !loggedIn && !identity
-        ? 'identity'
-        : !loggedIn && !identityReady
-          ? identity === 'introduce'
-            ? 'identity-form'
-            : 'identity'
-          : !category
-            ? 'category'
-            : 'content'
+  const steps = useMemo<WizardStepId[]>(() => {
+    const ids: WizardStepId[] = ['kind']
+    if (!loggedIn) {
+      ids.push('identity')
+      if (identity === 'introduce') ids.push('identity-form')
+    }
+    ids.push('category', 'content')
+    return ids
+  }, [identity, loggedIn])
 
+  const step = result ? 'thanks' : steps[Math.min(wizardIndex, steps.length - 1)]
   const currentNodes = trail.length ? trail[trail.length - 1]?.children ?? [] : categories
-  const totalSteps = loggedIn ? 3 : identity === 'introduce' ? 5 : 4
+  const identityFormValid =
+    firstName.trim().length >= 2 && lastName.trim().length >= 2 && phone.trim().length >= 8
   const stepLabels = useMemo(() => {
     const labels = [t('singardWizard.stepKindShort')]
     if (!loggedIn) {
@@ -144,40 +144,46 @@ export function SingardWizard({
     return labels
   }, [identity, loggedIn, t])
 
-  const visibleStep = useMemo(() => {
-    if (step === 'thanks') return totalSteps
-    if (loggedIn) {
-      if (step === 'kind') return 1
-      if (step === 'category') return 2
-      return 3
+  const furthestIndex = useMemo(() => {
+    if (!kind) return 0
+    if (!loggedIn) {
+      if (!identity) return steps.indexOf('identity')
+      if (identity === 'introduce' && !identityReady) return steps.indexOf('identity-form')
     }
-    if (step === 'kind') return 1
-    if (step === 'identity') return 2
-    if (step === 'identity-form') return 3
-    if (step === 'category') return identity === 'introduce' ? 4 : 3
-    return identity === 'introduce' ? 5 : 4
-  }, [identity, loggedIn, step, totalSteps])
+    if (!category) return steps.indexOf('category')
+    return steps.indexOf('content')
+  }, [category, identity, identityReady, kind, loggedIn, steps])
+
+  function canAdvance() {
+    if (step === 'kind') return Boolean(kind)
+    if (step === 'identity') return Boolean(identity)
+    if (step === 'identity-form') return identityFormValid
+    if (step === 'category') return Boolean(category)
+    return false
+  }
 
   function goBack() {
-    if (step === 'content') {
-      setCategory(undefined)
-      return
-    }
     if (step === 'category' && trail.length) {
       setTrail((current) => current.slice(0, -1))
       return
     }
-    if (step === 'category') {
-      if (loggedIn) setKind(undefined)
-      else setIdentityReady(false)
+    setWizardIndex((current) => Math.max(0, current - 1))
+  }
+
+  function goNext() {
+    if (!canAdvance()) return
+    if (step === 'identity-form') setIdentityReady(true)
+    setWizardIndex((current) => Math.min(steps.length - 1, current + 1))
+  }
+
+  function goToStep(stepNo: number) {
+    const index = stepNo - 1
+    if (index === wizardIndex || index < 0 || index >= steps.length) return
+    if (index < wizardIndex || index <= furthestIndex) {
+      setWizardIndex(index)
       return
     }
-    if (step === 'identity-form') {
-      setIdentity(null)
-      setIdentityReady(false)
-      return
-    }
-    if (step === 'identity') setKind(undefined)
+    if (index === wizardIndex + 1) goNext()
   }
 
   async function uploadImage(file: File) {
@@ -268,6 +274,7 @@ export function SingardWizard({
     setLongitude('')
     setMapNonce(0)
     setMediaTab('photo')
+    setWizardIndex(0)
   }
 
   return (
@@ -279,13 +286,26 @@ export function SingardWizard({
         <h1 className="text-2xl font-bold text-ink-900 sm:text-3xl">{t('singardWizard.title')}</h1>
         <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-ink-500">{t('singardWizard.subtitle')}</p>
         {step !== 'thanks' ? (
-          <WizardProgress current={visibleStep} labels={stepLabels} total={totalSteps} />
+          <WizardProgress
+            current={wizardIndex + 1}
+            labels={stepLabels}
+            total={steps.length}
+            maxClickable={
+              (canAdvance() ? Math.max(furthestIndex, wizardIndex) + 1 : Math.max(furthestIndex, wizardIndex)) + 1
+            }
+            onStepClick={goToStep}
+          />
         ) : null}
       </header>
 
       <div className="singard-step rounded-[2rem] border border-teal-100 bg-white/90 p-4 shadow-[0_18px_40px_rgba(20,40,40,0.08)] sm:p-7">
         {step === 'kind' ? (
-          <StepFrame title={t('singardWizard.stepKind')} hint={t('singardWizard.stepKindHint')}>
+          <StepFrame
+            title={t('singardWizard.stepKind')}
+            hint={t('singardWizard.stepKindHint')}
+            onNext={goNext}
+            nextDisabled={!kind}
+          >
             <div className="grid gap-3 sm:grid-cols-2">
               {kinds.map((item) => (
                 <ChoiceCard
@@ -294,7 +314,10 @@ export function SingardWizard({
                   title={t(item.titleKey)}
                   hint={t(item.hintKey)}
                   className={item.tone}
-                  onClick={() => setKind(item.value)}
+                  onClick={() => {
+                    setKind(item.value)
+                    setWizardIndex(1)
+                  }}
                 />
               ))}
             </div>
@@ -302,7 +325,13 @@ export function SingardWizard({
         ) : null}
 
         {step === 'identity' ? (
-          <StepFrame title={t('singardWizard.stepIdentity')} hint={t('singardWizard.stepIdentityHint')} onBack={goBack}>
+          <StepFrame
+            title={t('singardWizard.stepIdentity')}
+            hint={t('singardWizard.stepIdentityHint')}
+            onBack={goBack}
+            onNext={goNext}
+            nextDisabled={!identity}
+          >
             <div className="grid gap-3 sm:grid-cols-2">
               <ChoiceCard
                 icon={UserRound}
@@ -312,6 +341,7 @@ export function SingardWizard({
                 onClick={() => {
                   setIdentity('introduce')
                   setIdentityReady(false)
+                  setWizardIndex(2)
                 }}
               />
               <ChoiceCard
@@ -322,6 +352,7 @@ export function SingardWizard({
                 onClick={() => {
                   setIdentity('anonymous')
                   setIdentityReady(true)
+                  setWizardIndex(2)
                 }}
               />
             </div>
@@ -333,13 +364,12 @@ export function SingardWizard({
             title={t('singardWizard.stepIdentityForm')}
             hint={t('singardWizard.stepIdentityFormHint')}
             onBack={goBack}
+            onNext={goNext}
+            nextDisabled={!identityFormValid}
           >
             <AppForm
               onSubmit={() => {
-                if (firstName.trim() && lastName.trim() && phone.trim()) {
-                  setIdentity('introduce')
-                  setIdentityReady(true)
-                }
+                if (identityFormValid) goNext()
               }}
               className="space-y-4"
             >
@@ -384,7 +414,13 @@ export function SingardWizard({
         ) : null}
 
         {step === 'category' ? (
-          <StepFrame title={t('singardWizard.stepCategory')} hint={t('singardWizard.stepCategoryHint')} onBack={goBack}>
+          <StepFrame
+            title={t('singardWizard.stepCategory')}
+            hint={t('singardWizard.stepCategoryHint')}
+            onBack={goBack}
+            onNext={goNext}
+            nextDisabled={!category}
+          >
             {trail.length ? (
               <p className="mb-3 text-sm text-teal-800">
                 {trail.map((item) => item.name).join(' / ')}
@@ -402,7 +438,10 @@ export function SingardWizard({
                     className="from-teal-50/80 to-white border-teal-100"
                     onClick={() => {
                       if (hasKids) setTrail((current) => [...current, item])
-                      else setCategory(item)
+                      else {
+                        setCategory(item)
+                        setWizardIndex(steps.indexOf('content'))
+                      }
                     }}
                   />
                 )
@@ -413,7 +452,10 @@ export function SingardWizard({
                 type="button"
                 variant="soft"
                 className="mt-4 w-full"
-                onClick={() => setCategory(trail[trail.length - 1])}
+                onClick={() => {
+                  setCategory(trail[trail.length - 1])
+                  setWizardIndex(steps.indexOf('content'))
+                }}
               >
                 <Check className="size-4" aria-hidden />
                 {t('singardWizard.selectThis')}
@@ -493,7 +535,9 @@ export function SingardWizard({
                     phone: localizeDigits(result.phone || phone, locale),
                   })}
             </p>
-            <p className="text-sm leading-7 text-teal-800">{t('singardWizard.thanksSms')}</p>
+            {!result.isAnonymous ? (
+              <p className="text-sm leading-7 text-teal-800">{t('singardWizard.thanksSms')}</p>
+            ) : null}
             <div className="rounded-2xl bg-teal-50 px-4 py-3">
               <p className="text-xs text-teal-700">{t('singardWizard.thanksCode')}</p>
               <p className="mt-1 font-mono text-xl font-bold tracking-widest text-teal-900" dir="ltr">
@@ -525,25 +569,52 @@ function StepFrame({
   title,
   hint,
   onBack,
+  onNext,
+  nextDisabled,
   children,
 }: {
   title: string
   hint: string
   onBack?: () => void
+  onNext?: () => void
+  nextDisabled?: boolean
   children: ReactNode
 }) {
   const { t } = useTranslation()
   return (
     <div>
-      {onBack ? (
-        <button
-          type="button"
-          onClick={onBack}
-          className="mb-3 inline-flex items-center gap-1 text-sm text-teal-700 hover:text-teal-900"
-        >
-          <ArrowRight className="size-4 ltr:rotate-180" aria-hidden />
-          {t('singardWizard.back')}
-        </button>
+      {onBack || onNext ? (
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label={t('singardWizard.back')}
+                className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-teal-700 hover:bg-teal-50 hover:text-teal-900"
+              >
+                <ChevronRight className="size-5 ltr:rotate-180" aria-hidden />
+              </button>
+            ) : null}
+          </div>
+          <div>
+            {onNext ? (
+              <button
+                type="button"
+                onClick={onNext}
+                disabled={nextDisabled}
+                aria-label={t('singardWizard.nextStep')}
+                className={`inline-flex size-10 items-center justify-center rounded-full border-0 bg-transparent ${
+                  nextDisabled
+                    ? 'cursor-not-allowed text-ink-300'
+                    : 'cursor-pointer text-teal-700 hover:bg-teal-50 hover:text-teal-900'
+                }`}
+              >
+                <ChevronLeft className="size-5 ltr:rotate-180" aria-hidden />
+              </button>
+            ) : null}
+          </div>
+        </div>
       ) : null}
       <h2 className="text-xl font-bold text-ink-900">{title}</h2>
       <p className="mt-1 mb-5 text-sm leading-7 text-ink-500">{hint}</p>
@@ -584,10 +655,14 @@ function WizardProgress({
   current,
   total,
   labels,
+  maxClickable,
+  onStepClick,
 }: {
   current: number
   total: number
   labels: string[]
+  maxClickable: number
+  onStepClick: (stepNo: number) => void
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
@@ -599,30 +674,40 @@ function WizardProgress({
           const stepNo = index + 1
           const done = current > stepNo
           const active = current === stepNo
+          const clickable = stepNo !== current && stepNo <= maxClickable
           const status = done
             ? t('singardWizard.stepDone')
             : active
               ? t('singardWizard.stepCurrent')
               : t('singardWizard.stepUpcoming')
+          const dotClassName = `singard-step-dot flex size-8 items-center justify-center rounded-full border-0 p-0 text-sm font-bold sm:size-9 ${
+            done
+              ? 'bg-emerald-500 text-white shadow-[0_8px_16px_rgba(16,185,129,0.35)]'
+              : active
+                ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.35)] ring-4 ring-teal-100'
+                : 'bg-white text-ink-400 ring-2 ring-teal-200'
+          } ${clickable ? 'cursor-pointer hover:scale-105' : ''}`
+          const label = `${labels[index] ?? formatNumber(stepNo, locale)} — ${status}`
           return (
             <li
               key={stepNo}
               className={`flex items-center ${index < total - 1 ? 'min-w-0 flex-1' : ''}`}
             >
               <div className="flex w-12 shrink-0 flex-col items-center sm:w-16">
-                <span
-                  className={`singard-step-dot flex size-8 items-center justify-center rounded-full text-sm font-bold sm:size-9 ${
-                    done
-                      ? 'bg-emerald-500 text-white shadow-[0_8px_16px_rgba(16,185,129,0.35)]'
-                      : active
-                        ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.35)] ring-4 ring-teal-100'
-                        : 'bg-white text-ink-400 ring-2 ring-teal-100'
-                  }`}
-                  aria-current={active ? 'step' : undefined}
-                  aria-label={`${labels[index] ?? formatNumber(stepNo, locale)} — ${status}`}
-                >
-                  {done ? <Check className="size-4" aria-hidden /> : formatNumber(stepNo, locale)}
-                </span>
+                {clickable ? (
+                  <button
+                    type="button"
+                    className={dotClassName}
+                    aria-label={label}
+                    onClick={() => onStepClick(stepNo)}
+                  >
+                    {done ? <Check className="size-4" aria-hidden /> : formatNumber(stepNo, locale)}
+                  </button>
+                ) : (
+                  <span className={dotClassName} aria-current={active ? 'step' : undefined} aria-label={label}>
+                    {done ? <Check className="size-4" aria-hidden /> : formatNumber(stepNo, locale)}
+                  </span>
+                )}
                 <span
                   className={`mt-1.5 line-clamp-2 text-center text-[10px] leading-4 sm:text-[11px] ${
                     done ? 'text-emerald-700' : active ? 'font-semibold text-teal-700' : 'text-ink-400'
@@ -633,11 +718,17 @@ function WizardProgress({
               </div>
               {index < total - 1 ? (
                 <span
-                  className={`singard-step-line mb-6 h-1 min-w-3 flex-1 rounded-full ${
-                    done ? 'bg-emerald-500' : active ? 'bg-gradient-to-e from-teal-400 to-teal-100' : 'bg-teal-100'
-                  }`}
+                  className="singard-step-line mb-6 flex min-w-3 flex-1 items-center"
                   aria-hidden
-                />
+                >
+                  {done ? (
+                    <span className="h-1 w-full rounded-full bg-emerald-500" />
+                  ) : active ? (
+                    <span className="singard-step-line-dashed" />
+                  ) : (
+                    <span className="h-1 w-full rounded-full bg-teal-300" />
+                  )}
+                </span>
               ) : null}
             </li>
           )
