@@ -37,6 +37,7 @@ import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
 import { formatGroupedQuantity, formatNumber } from '../../lib/datetime'
+import { projectHasMapLocation } from '../../lib/geo'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
 import { LastActivityPreview, ProjectLiveBoardMap, liveBoardCardTheme } from './ProjectLiveBoardMap'
 import {
@@ -146,14 +147,7 @@ export function ProjectLiveBoardPage() {
 
   const items = query.data?.items ?? []
   const stats = query.data?.stats
-  const located = useMemo(
-    () =>
-      items.filter(
-        (item) =>
-          item.showOnLiveBoard !== false && item.latitude != null && item.longitude != null,
-      ),
-    [items],
-  )
+  const located = useMemo(() => items.filter(projectHasMapLocation), [items])
   const tableRows = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const filtersActive = Boolean(
     operatorUnitId ||

@@ -24,6 +24,10 @@ export function getFileUrl(id: string): string {
   return `${apiBaseUrl}/files/${id}`
 }
 
+export function getProjectDocumentUrl(projectId: string, documentId: string): string {
+  return `${apiBaseUrl}/public/projects/${projectId}/documents/${documentId}/file`
+}
+
 export function isApiServerError(error: unknown): boolean {
   if (!axios.isAxiosError(error)) {
     return false

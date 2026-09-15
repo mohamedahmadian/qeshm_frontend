@@ -155,6 +155,18 @@ export function getPageMeta(pathname: string): {
   if (/\/contractors\/[^/]+\/phases$/.test(pathname)) {
     return { titleKey: 'contractorPhases.title', subtitleKey: 'contractorPhases.subtitle' }
   }
+  if (/^\/projects\/[^/]+\/documents\/new$/.test(pathname)) {
+    return { titleKey: 'projectDocuments.create', subtitleKey: 'projectDocuments.createSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/documents\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'projectDocuments.edit', subtitleKey: 'projectDocuments.editSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/documents\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'projectDocuments.details', subtitleKey: 'projectDocuments.detailsSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/documents$/.test(pathname)) {
+    return { titleKey: 'projectDocuments.title', subtitleKey: 'projectDocuments.subtitle' }
+  }
   if (/^\/projects\/[^/]+\/progress\/new$/.test(pathname)) {
     return { titleKey: 'projectProgress.create', subtitleKey: 'projectProgress.createSubtitle' }
   }

@@ -12,6 +12,7 @@ import {
   MapPin,
   Monitor,
   Palette,
+  Paperclip,
   Percent,
   Radio,
   ScrollText,
@@ -28,6 +29,7 @@ import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { api } from '../../lib/api'
 import { formatNumber, localizeDigits } from '../../lib/datetime'
+import { projectBoundaryPolygons } from '../../lib/geo'
 import { projectColor } from '../../lib/project-color'
 import type { Project } from '../../types/app'
 import {
@@ -60,8 +62,11 @@ export function ProjectDetailPage() {
     return <LoadingState />
   }
 
+  const rings = projectBoundaryPolygons(project.boundary)
+  const hasPolygon = rings.length > 0
+  const hasPoint = project.latitude != null && project.longitude != null
   const coords =
-    project.latitude != null && project.longitude != null
+    hasPoint
       ? localizeDigits(`${project.latitude}, ${project.longitude}`, locale)
       : '—'
 
@@ -246,15 +251,28 @@ export function ProjectDetailPage() {
             value={coords}
             empty={project.latitude == null || project.longitude == null}
           />
-          {project.latitude != null && project.longitude != null ? (
+          {hasPolygon || hasPoint ? (
             <div className="overflow-hidden rounded-2xl ring-1 ring-teal-100">
               <OsmMapPicker
                 variant="always"
                 readOnly
-                latitude={String(project.latitude)}
-                longitude={String(project.longitude)}
+                latitude={hasPolygon || !hasPoint ? '' : String(project.latitude)}
+                longitude={hasPolygon || !hasPoint ? '' : String(project.longitude)}
                 onChange={() => undefined}
                 heightClass="h-56"
+                overlays={
+                  hasPolygon
+                    ? {
+                        markers: [],
+                        polygons: rings.map((latlngs) => ({
+                          id: project.id,
+                          latlngs,
+                          color: projectColor(project.color),
+                          title: project.systemName,
+                        })),
+                      }
+                    : undefined
+                }
               />
             </div>
           ) : null}
@@ -283,6 +301,11 @@ export function ProjectDetailPage() {
             to: `/projects/${project.id}/phases`,
             icon: Flag,
             label: t('projectPhases.manage'),
+          },
+          {
+            to: `/projects/${project.id}/documents`,
+            icon: Paperclip,
+            label: t('projectDocuments.manage'),
           },
           {
             to: `/projects/${project.id}/contractors`,

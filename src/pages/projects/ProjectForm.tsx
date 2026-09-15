@@ -31,7 +31,7 @@ import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { getApiErrorMessage, api } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
-import { QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
+import { projectBoundaryPolygons, QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
 import { DEFAULT_PROJECT_COLOR, PROJECT_COLOR_SWATCHES, projectColor } from '../../lib/project-color'
 import {
   projectImportanceOrder,
@@ -40,6 +40,7 @@ import {
   projectStatuses,
   type OrganizationUnit,
   type Project,
+  type ProjectBoundary,
   type ProjectGroup,
   type ProjectImportance,
   type ProjectStatus,
@@ -93,7 +94,7 @@ export function ProjectForm({
   excludeId,
   onSubmit,
 }: {
-  initial?: ProjectPayload
+  initial?: ProjectPayload & { boundary?: ProjectBoundary | null }
   excludeId?: string
   onSubmit: (payload: ProjectPayload) => Promise<void>
 }) {
@@ -163,6 +164,18 @@ export function ProjectForm({
   })
 
   const hasPin = toOptionalNumber(latitude) != null && toOptionalNumber(longitude) != null
+  const boundaryOverlays = useMemo(() => {
+    const rings = projectBoundaryPolygons(initial?.boundary)
+    if (!rings.length) return null
+    return {
+      markers: [],
+      polygons: rings.map((latlngs, index) => ({
+        id: `boundary-${index}`,
+        latlngs,
+        color,
+      })),
+    }
+  }, [color, initial?.boundary])
   const focus = useMemo(() => {
     if (hasPin) return null
     return {
@@ -265,7 +278,6 @@ export function ProjectForm({
           <div className={`space-y-4 ${tab === 'info' ? '' : 'hidden'}`}>
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField icon={Landmark} label={t('projects.orgUnit')} htmlFor="projectOrgUnit">
-                <p className="mb-2 text-xs leading-6 text-ink-500">{t('projects.orgUnitHint')}</p>
                 <SearchSelect
                   id="projectOrgUnit"
                   value={orgUnitId}
@@ -571,6 +583,7 @@ export function ProjectForm({
                 look="tablet"
                 pinZoom={13}
                 heightClass="h-[22rem] sm:h-[28rem] lg:h-[34rem]"
+                overlays={boundaryOverlays}
                 onChange={(nextLat, nextLng) => {
                   setLatitude(nextLat)
                   setLongitude(nextLng)

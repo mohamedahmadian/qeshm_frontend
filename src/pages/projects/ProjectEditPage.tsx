@@ -48,6 +48,7 @@ export function ProjectEditPage() {
           endDate: query.data.endDate,
           latitude: query.data.latitude,
           longitude: query.data.longitude,
+          boundary: query.data.boundary,
           address: query.data.address,
           companyName: query.data.companyName,
           systemUrl: query.data.systemUrl,

@@ -153,3 +153,46 @@ export const QESHM_LIVE_BOARD_BOUNDS = {
   ...QESHM_MAP_BOUNDS,
   west: 55.35,
 }
+
+export type MapLatLng = { lat: number; lng: number }
+
+function ringToLatLngs(ring: unknown): MapLatLng[] {
+  if (!Array.isArray(ring)) return []
+  const points: MapLatLng[] = []
+  for (const position of ring) {
+    if (!Array.isArray(position) || position.length < 2) continue
+    const lng = Number(position[0])
+    const lat = Number(position[1])
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+    points.push({ lat, lng })
+  }
+  return points
+}
+
+export function projectBoundaryPolygons(boundary: unknown): MapLatLng[][] {
+  if (!boundary || typeof boundary !== 'object') return []
+  const value = boundary as { type?: string; coordinates?: unknown }
+  if (value.type === 'Polygon' && Array.isArray(value.coordinates)) {
+    const outer = ringToLatLngs(value.coordinates[0])
+    return outer.length >= 3 ? [outer] : []
+  }
+  if (value.type === 'MultiPolygon' && Array.isArray(value.coordinates)) {
+    return value.coordinates.flatMap((polygon) => {
+      if (!Array.isArray(polygon)) return []
+      const outer = ringToLatLngs(polygon[0])
+      return outer.length >= 3 ? [outer] : []
+    })
+  }
+  return []
+}
+
+export function projectHasMapLocation(item: {
+  showOnLiveBoard?: boolean
+  latitude?: number | null
+  longitude?: number | null
+  boundary?: unknown
+}) {
+  if (item.showOnLiveBoard === false) return false
+  if (projectBoundaryPolygons(item.boundary).length) return true
+  return item.latitude != null && item.longitude != null
+}

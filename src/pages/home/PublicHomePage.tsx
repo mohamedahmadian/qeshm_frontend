@@ -5,7 +5,7 @@ import { AuthGuestLayout } from '../../components/auth/AuthGuestLayout'
 import { FormCard, FormEmptyHint } from '../../components/ui/FormLayout'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { api } from '../../lib/api'
-import type { ProjectLiveBoard } from '../../types/app'
+import { projectHasMapLocation } from '../../lib/geo'
 import { ProjectLiveBoardMap } from '../projects/ProjectLiveBoardMap'
 
 export function PublicHomePage() {
@@ -21,9 +21,7 @@ export function PublicHomePage() {
   })
 
   const items = query.data?.items ?? []
-  const located = items.filter(
-    (item) => item.showOnLiveBoard !== false && item.latitude != null && item.longitude != null,
-  )
+  const located = items.filter(projectHasMapLocation)
 
   return (
     <AuthGuestLayout fill showHeaderLogin>

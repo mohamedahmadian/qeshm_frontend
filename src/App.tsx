@@ -84,6 +84,12 @@ import {
   ProjectPhaseListPage,
 } from './pages/projects/phases/ProjectPhasePages'
 import {
+  ProjectDocumentCreatePage,
+  ProjectDocumentDetailPage,
+  ProjectDocumentEditPage,
+  ProjectDocumentListPage,
+} from './pages/projects/documents/ProjectDocumentPages'
+import {
   ProjectProgressCreateGlobalPage,
   ProjectProgressCreatePage,
   ProjectProgressDetailPage,
@@ -304,6 +310,10 @@ export default function App() {
                   <Route path="/projects/:id/phases/new" element={<ProjectPhaseCreatePage />} />
                   <Route path="/projects/:id/phases/:phaseId" element={<ProjectPhaseDetailPage />} />
                   <Route path="/projects/:id/phases/:phaseId/edit" element={<ProjectPhaseEditPage />} />
+                  <Route path="/projects/:id/documents" element={<ProjectDocumentListPage />} />
+                  <Route path="/projects/:id/documents/new" element={<ProjectDocumentCreatePage />} />
+                  <Route path="/projects/:id/documents/:documentId" element={<ProjectDocumentDetailPage />} />
+                  <Route path="/projects/:id/documents/:documentId/edit" element={<ProjectDocumentEditPage />} />
                   <Route path="/projects/:id/contractors" element={<ContractorsListPage />} />
                   <Route path="/projects/:id/contractors/new" element={<ContractorCreatePage />} />
                   <Route path="/projects/:id/contractors/:contractorId/team" element={<ContractorTeamListPage />} />

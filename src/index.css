@@ -726,6 +726,28 @@ th {
   color: #148f8a;
 }
 
+.leaflet-tooltip.eskan-project-polygon-label {
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 18px rgba(12, 28, 28, 0.16);
+  color: #1d2a28;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.leaflet-tooltip.eskan-project-polygon-label::before {
+  display: none;
+}
+
+.leaflet-tooltip.eskan-project-polygon-label.is-selected {
+  background: rgba(46, 189, 182, 0.92);
+  color: #fff;
+}
+
 .eskan-history-pin {
   display: flex;
   width: 28px;

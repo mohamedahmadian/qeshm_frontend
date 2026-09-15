@@ -130,8 +130,17 @@ export type MapSelectedContainerPoint = {
   height: number
 }
 
+export type MapOverlayPolygon = {
+  id: string
+  latlngs: { lat: number; lng: number }[]
+  color?: string
+  selected?: boolean
+  title?: string
+}
+
 export type MapOverlays = {
   markers: MapOverlayMarker[]
+  polygons?: MapOverlayPolygon[]
   path?: { lat: number; lng: number }[]
   /** If set, `fit` zooms to these points instead of every marker and path vertex. */
   fitPoints?: { lat: number; lng: number }[]
@@ -144,6 +153,9 @@ function overlayLatLngs(overlays: MapOverlays | null, extra?: L.LatLng | null) {
   const points = [
     ...overlays.markers.map((marker) => L.latLng(marker.lat, marker.lng)),
     ...(overlays.path ?? []).map((point) => L.latLng(point.lat, point.lng)),
+    ...(overlays.polygons ?? []).flatMap((polygon) =>
+      polygon.latlngs.map((point) => L.latLng(point.lat, point.lng)),
+    ),
   ]
   if (extra) points.push(extra)
   return points
@@ -204,16 +216,7 @@ function applyBoundsView(map: L.Map, bounds: L.LatLngBounds) {
 
 const DEFAULT_PIN_ZOOM = 16
 
-function addMapTiles(map: L.Map, tiles: 'osm' | 'voyager' = 'osm') {
-  if (tiles === 'voyager') {
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20,
-    }).addTo(map)
-    return
-  }
+function addMapTiles(map: L.Map) {
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19,
@@ -353,7 +356,7 @@ export function OsmMapPicker({
     } else {
       map.fitBounds(toLeafletBounds(IRAN_BOUNDS), { padding: [28, 28], maxZoom: 6 })
     }
-    addMapTiles(map, lookRef.current === 'tablet' ? 'voyager' : 'osm')
+    addMapTiles(map)
 
     if (start) placeMarker(map, start, canEdit)
 
@@ -439,7 +442,11 @@ export function OsmMapPicker({
     if (!open || !map) return
     overlayLayerRef.current?.remove()
     overlayLayerRef.current = null
-    if (!overlays?.markers.length && !overlays?.path?.length) {
+    if (
+      !overlays?.markers.length &&
+      !overlays?.path?.length &&
+      !overlays?.polygons?.length
+    ) {
       overlayFitKeyRef.current = ''
       return
     }
@@ -457,6 +464,35 @@ export function OsmMapPicker({
           lineCap: 'round',
         },
       ).addTo(layer)
+    }
+    for (const polygon of overlays.polygons ?? []) {
+      if (polygon.latlngs.length < 3) continue
+      const color = isProjectColor(polygon.color) ? projectColor(polygon.color) : '#2ebdb6'
+      const shape = L.polygon(
+        polygon.latlngs.map((point) => [point.lat, point.lng] as L.LatLngTuple),
+        {
+          color,
+          weight: polygon.selected ? 3 : 2,
+          opacity: 0.95,
+          fillColor: color,
+          fillOpacity: polygon.selected ? 0.34 : 0.18,
+          bubblingMouseEvents: false,
+        },
+      ).addTo(layer)
+      if (polygon.selected) shape.bringToFront()
+      if (polygon.title) {
+        shape.bindTooltip(polygon.title, {
+          permanent: true,
+          direction: 'center',
+          className: `eskan-project-polygon-label${polygon.selected ? ' is-selected' : ''}`,
+          opacity: 1,
+        })
+      }
+      shape.on('click', (event: L.LeafletMouseEvent) => {
+        L.DomEvent.stopPropagation(event)
+        const point = map.latLngToContainerPoint(event.latlng)
+        onMarkerClickRef.current?.(polygon.id, { x: point.x, y: point.y })
+      })
     }
     for (const marker of overlays.markers) {
       const isHistory = marker.kind === 'history'
@@ -525,9 +561,21 @@ export function OsmMapPicker({
     const map = mapRef.current
     if (!open || !map || !keepInView) return
     const marker = overlaysRef.current?.markers.find((item) => item.id === keepInView.id)
-    if (!marker) return
+    const polygon = overlaysRef.current?.polygons?.find((item) => item.id === keepInView.id)
+    if (!marker && !polygon?.latlngs.length) return
     const timer = window.setTimeout(() => {
-      map.panInside(L.latLng(marker.lat, marker.lng), {
+      if (marker) {
+        map.panInside(L.latLng(marker.lat, marker.lng), {
+          paddingTopLeft: [keepInView.padding.left, keepInView.padding.top],
+          paddingBottomRight: [keepInView.padding.right, keepInView.padding.bottom],
+          animate: true,
+        })
+        return
+      }
+      const bounds = L.latLngBounds(
+        (polygon?.latlngs ?? []).map((point) => L.latLng(point.lat, point.lng)),
+      )
+      if (bounds.isValid()) map.panInside(bounds.getCenter(), {
         paddingTopLeft: [keepInView.padding.left, keepInView.padding.top],
         paddingBottomRight: [keepInView.padding.right, keepInView.padding.bottom],
         animate: true,
@@ -546,13 +594,19 @@ export function OsmMapPicker({
         frame = 0
         const leafletMap = mapRef.current
         if (!leafletMap) return
-        const selected = overlaysRef.current?.markers.find((item) => item.selected)
+        const selected =
+          overlaysRef.current?.markers.find((item) => item.selected) ??
+          overlaysRef.current?.polygons?.find((item) => item.selected)
         const size = leafletMap.getSize()
         if (!selected) {
           onSelectedContainerPointRef.current?.(null)
           return
         }
-        const point = leafletMap.latLngToContainerPoint(L.latLng(selected.lat, selected.lng))
+        const latlng =
+          'lat' in selected && 'lng' in selected
+            ? L.latLng(selected.lat, selected.lng)
+            : L.latLngBounds(selected.latlngs.map((point) => L.latLng(point.lat, point.lng))).getCenter()
+        const point = leafletMap.latLngToContainerPoint(latlng)
         onSelectedContainerPointRef.current?.({
           x: point.x,
           y: point.y,

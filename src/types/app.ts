@@ -612,6 +612,10 @@ export type ProjectOrgUnit = {
   kind: { id: string; name: string };
 };
 
+export type ProjectBoundary =
+  | { type: 'Polygon'; coordinates: number[][][] }
+  | { type: 'MultiPolygon'; coordinates: number[][][][] };
+
 export type Project = {
   id: string;
   operators: ProjectOperator[];
@@ -628,6 +632,7 @@ export type Project = {
   endDate: string | null;
   latitude: number | null;
   longitude: number | null;
+  boundary: ProjectBoundary | null;
   address: string | null;
   companyName: string | null;
   systemUrl: string | null;
@@ -642,6 +647,19 @@ export type Project = {
   createdAt: string;
   updatedAt: string;
   _count?: { contractors: number; phases: number; progressEntries?: number };
+};
+
+export type ProjectDocument = {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string | null;
+  originalName: string;
+  mimeType: string;
+  byteSize: number;
+  createdAt: string;
+  updatedAt: string;
+  project: { id: string; systemName: string };
 };
 
 export type ProjectPhase = {

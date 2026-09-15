@@ -2,6 +2,7 @@ import {
   CalendarRange,
   Check,
   ClipboardList,
+  Download,
   ExternalLink,
   FolderKanban,
   Globe,
@@ -9,26 +10,29 @@ import {
   Landmark,
   MapPin,
   Mic,
+  Paperclip,
   ScrollText,
   Tags,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { DateText } from '../../components/ui/DateText'
 import { Button, fieldClassName } from '../../components/ui/Form'
-import { FormFactTile } from '../../components/ui/FormLayout'
+import { FormEmptyHint, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
 import {
   OsmMapPicker,
+  type MapOverlayMarker,
   type MapOverlayMarkerTone,
+  type MapOverlayPolygon,
 } from '../../components/ui/OsmMapPicker'
-import { api, getApiErrorMessage } from '../../lib/api'
+import { api, getApiErrorMessage, getProjectDocumentUrl } from '../../lib/api'
 import { calendarDaysUntil, formatNumber, todayIsoDate } from '../../lib/datetime'
-import { QESHM_LIVE_BOARD_BOUNDS } from '../../lib/geo'
+import { projectBoundaryPolygons, projectHasMapLocation, QESHM_LIVE_BOARD_BOUNDS } from '../../lib/geo'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
 import { ProjectProgressForm, type ProjectProgressPayload } from './progress/ProjectProgressForm'
 import { projectProgressEntryPath, projectProgressPath } from './progress/progress-paths'
@@ -38,6 +42,7 @@ import {
   projectProgressProcessingModes,
   type ProjectLiveBoardActivity,
   type ProjectLiveBoardItem,
+  type ProjectDocument,
   type ProjectStatus,
 } from '../../types/app'
 import {
@@ -85,8 +90,8 @@ const statusTone: Record<ProjectStatus, MapOverlayMarkerTone> = {
 }
 
 const MOBILE_VIEWPORT = '(max-width: 639.98px)'
-const WEB_DOCK_HEIGHT_TALL = '10.75rem'
-const WEB_DOCK_HEIGHT_PUBLIC = '10rem'
+const WEB_DOCK_HEIGHT_TALL = '16rem'
+const WEB_DOCK_HEIGHT_PUBLIC = '20rem'
 
 function useStickToLastLine(value: string) {
   const ref = useRef<HTMLTextAreaElement>(null)
@@ -403,6 +408,73 @@ function MiniDaysBadge({
         {daysLabel}
       </span>
       <span className={`mt-0.5 font-medium leading-none text-ink-500 ${caption}`}>{label}</span>
+    </div>
+  )
+}
+
+function ProjectMapAttachments({
+  projectId,
+  canManage,
+  compact = false,
+}: {
+  projectId: string
+  canManage: boolean
+  compact?: boolean
+}) {
+  const { t } = useTranslation()
+  const query = useQuery({
+    queryKey: ['public', 'project-documents', projectId],
+    queryFn: async () => {
+      const { data } = await api.get<ProjectDocument[]>(
+        `/public/projects/${projectId}/documents`,
+      )
+      return data
+    },
+  })
+  const items = query.data ?? []
+  return (
+    <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
+      <FormSectionTitle icon={Paperclip}>{t('projectDocuments.section')}</FormSectionTitle>
+      {query.isLoading ? (
+        <p className="text-xs text-ink-400">{t('common.loading')}</p>
+      ) : items.length === 0 ? (
+        <FormEmptyHint>{t('projectDocuments.empty')}</FormEmptyHint>
+      ) : (
+        <ul className="space-y-1.5">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-start justify-between gap-2 rounded-2xl bg-white px-3 py-2 ring-1 ring-teal-100"
+            >
+              <div className="min-w-0 text-start">
+                <p className="truncate text-sm font-semibold text-ink-900">{item.title}</p>
+                {item.description ? (
+                  <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-ink-500">
+                    {item.description}
+                  </p>
+                ) : null}
+              </div>
+              <a
+                href={getProjectDocumentUrl(projectId, item.id)}
+                className="shrink-0"
+              >
+                <Button type="button" variant="ghost" className="h-8 px-3 py-0 text-xs">
+                  <Download className="size-3.5" aria-hidden />
+                  {t('projectDocuments.download')}
+                </Button>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+      {canManage ? (
+        <Link to={`/projects/${projectId}/documents`} className="block">
+          <Button type="button" variant="soft" className={compact ? 'h-8 px-3 py-0 text-xs' : undefined}>
+            <Paperclip className="size-4" aria-hidden />
+            {t('projectDocuments.manage')}
+          </Button>
+        </Link>
+      ) : null}
     </div>
   )
 }
@@ -759,9 +831,11 @@ function ProjectMapCard({
             style={{ '--slider-fill': `${displayProgress}%` } as CSSProperties}
             value={displayProgress}
             tabIndex={canManage ? undefined : -1}
-            onChange={
-              canManage ? (event) => setProgressValue(Number(event.target.value)) : undefined
-            }
+            readOnly={!canManage}
+            onChange={(event) => {
+              if (!canManage) return
+              setProgressValue(Number(event.target.value))
+            }}
             aria-label={t('projectProgress.progress')}
             aria-readonly={!canManage}
           />
@@ -779,6 +853,9 @@ function ProjectMapCard({
             {t('projectProgress.save')}
           </Button>
         ) : null}
+      </div>
+      <div className="mt-5">
+        <ProjectMapAttachments projectId={project.id} canManage={canManage} />
       </div>
       {showDetails ? (
         <div className="mt-5">
@@ -824,6 +901,7 @@ function ProjectMapCard({
                     key={project.id}
                     onSubmit={saveProgressFromForm}
                   />
+                  <ProjectMapAttachments projectId={project.id} canManage={canManage} />
                   {showDetails ? (
                     <ProjectMapDetails project={project} locale={locale} canManage={canManage} />
                   ) : null}
@@ -980,9 +1058,11 @@ function ProjectMapCard({
             style={{ '--slider-fill': `${displayProgress}%` } as CSSProperties}
             value={displayProgress}
             tabIndex={canManage ? undefined : -1}
-            onChange={
-              canManage ? (event) => setProgressValue(Number(event.target.value)) : undefined
-            }
+            readOnly={!canManage}
+            onChange={(event) => {
+              if (!canManage) return
+              setProgressValue(Number(event.target.value))
+            }}
             aria-label={t('projectProgress.progress')}
             aria-readonly={!canManage}
           />
@@ -1019,36 +1099,48 @@ export function ProjectLiveBoardMap({
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = items.find((item) => item.id === selectedId) ?? null
-  const located = useMemo(
-    () =>
-      items.filter(
-        (item) =>
-          item.showOnLiveBoard !== false && item.latitude != null && item.longitude != null,
-      ),
-    [items],
-  )
-  const overlays = useMemo(
-    () => ({
-      markers: located.map((item) => ({
+  const located = useMemo(() => items.filter(projectHasMapLocation), [items])
+  const overlays = useMemo(() => {
+    const markers: MapOverlayMarker[] = []
+    const polygons: MapOverlayPolygon[] = []
+    for (const item of located) {
+      const rings = projectBoundaryPolygons(item.boundary)
+      const selected = selectedId === item.id
+      const color = projectColor(item.color)
+      const title = escapeHtml(item.systemName)
+      if (rings.length) {
+        for (const latlngs of rings) {
+          polygons.push({
+            id: item.id,
+            latlngs,
+            color,
+            selected,
+            title,
+          })
+        }
+        continue
+      }
+      if (item.latitude == null || item.longitude == null) continue
+      markers.push({
         id: item.id,
-        lat: item.latitude as number,
-        lng: item.longitude as number,
+        lat: item.latitude,
+        lng: item.longitude,
         kind: 'project' as const,
         tone: item.status ? statusTone[item.status] : 'not-started',
-        color: projectColor(item.color),
+        color,
         badge: escapeHtml(item.code),
-        title: escapeHtml(item.systemName),
-        nearTitle: escapeHtml(item.systemName),
+        title,
+        nearTitle: title,
         hint: item.address ? escapeHtml(item.address) : undefined,
         pulse:
           item.importance === projectImportances.HIGH ||
           item.importance === projectImportances.VERY_HIGH,
         pulseStrong: item.importance === projectImportances.VERY_HIGH,
-        selected: selectedId === item.id,
-      })),
-    }),
-    [located, selectedId],
-  )
+        selected,
+      })
+    }
+    return { markers, polygons }
+  }, [located, selectedId])
 
   useEffect(() => {
     if (selectedId && !items.some((item) => item.id === selectedId)) {
