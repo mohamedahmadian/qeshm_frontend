@@ -105,7 +105,7 @@ export function BoardResolutionsListPage() {
               return (
                 <tr key={item.id} className="border-t border-line">
                   <td className="px-4 py-3">{item.title}</td>
-                  <td className="px-4 py-3">{item.unit.name}</td>
+                  <td className="px-4 py-3">{item.unit?.name || t('boardResolutions.withoutUnit')}</td>
                   <td className="px-4 py-3">{item.dueDate ? <DateText value={item.dueDate} /> : '—'}</td>
                   <td className="px-4 py-3">{item.minutes?.subject || '—'}</td>
                   <td className="px-4 py-3">{item.minutes?.request?.subject || t('boardResolutions.noRequest')}</td>

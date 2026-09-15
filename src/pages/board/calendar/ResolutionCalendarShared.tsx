@@ -1,6 +1,10 @@
+import { Building2, CalendarDays, ScrollText } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { DateText } from '../../../components/ui/DateText'
 import { FormEmptyHint } from '../../../components/ui/FormLayout'
+import { HoverTooltip } from '../../../components/ui/HoverTooltip'
 import type { ResolutionCalendarItem } from '../../../lib/resolution-calendar'
 import { ProjectNameWithColor } from '../../projects/ProjectShared'
 import { DeadlineDaysBadge } from '../../projects/calendar/ProjectCalendarShared'
@@ -10,6 +14,76 @@ export function resolutionHref(item: ResolutionCalendarItem) {
   return boardMinuteResolutionPath(item.minutesId, item.id, item.minutes.requestId ?? undefined)
 }
 
+function minutesSubject(item: ResolutionCalendarItem, untitled: string) {
+  const subject = item.minutes.subject?.trim()
+  return subject || untitled
+}
+
+export function ResolutionMinutesBadges({ item }: { item: ResolutionCalendarItem }) {
+  const { t } = useTranslation()
+  return (
+    <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
+      <span className="inline-flex min-w-0 max-w-[16rem] items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-medium text-teal-800">
+        <ScrollText className="size-3 shrink-0" aria-hidden />
+        <span className="truncate">{minutesSubject(item, t('boardCalendar.untitledMinutes'))}</span>
+      </span>
+      {item.minutes.heldAt ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-mint-50 px-2 py-0.5 text-[11px] font-medium text-mint-800">
+          <CalendarDays className="size-3 shrink-0" aria-hidden />
+          <DateText value={item.minutes.heldAt} />
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
+export function ResolutionMinutesHoverCard({ item }: { item: ResolutionCalendarItem }) {
+  const { t } = useTranslation()
+  return (
+    <div className="w-64 space-y-2.5 p-3">
+      <p className="text-[11px] font-semibold text-teal-700">{t('boardCalendar.minutes')}</p>
+      <p className="text-sm font-semibold leading-5 text-ink-900">
+        {minutesSubject(item, t('boardCalendar.untitledMinutes'))}
+      </p>
+      <div className="space-y-1.5 text-xs text-ink-600">
+        <p className="flex items-center gap-1.5">
+          <CalendarDays className="size-3.5 shrink-0 text-teal-600" aria-hidden />
+          <span>{t('boardMinutes.heldAt')}</span>
+          {item.minutes.heldAt ? <DateText value={item.minutes.heldAt} /> : '—'}
+        </p>
+        <p className="flex min-w-0 items-center gap-1.5">
+          <Building2 className="size-3.5 shrink-0 text-teal-600" aria-hidden />
+          <span className="shrink-0">{t('boardResolutions.unit')}</span>
+          <span className="min-w-0 truncate">
+            {item.unit?.name || t('boardResolutions.withoutUnit')}
+          </span>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export function ResolutionNameHover({
+  item,
+  children,
+  className,
+}: {
+  item: ResolutionCalendarItem
+  children: ReactNode
+  className?: string
+}) {
+  const { t } = useTranslation()
+  return (
+    <HoverTooltip
+      className={className}
+      label={minutesSubject(item, t('boardCalendar.minutes'))}
+      content={<ResolutionMinutesHoverCard item={item} />}
+    >
+      {children}
+    </HoverTooltip>
+  )
+}
+
 export function DeadlineResolutionRow({
   item,
   locale,
@@ -17,6 +91,7 @@ export function DeadlineResolutionRow({
   item: ResolutionCalendarItem
   locale: string
 }) {
+  const { t } = useTranslation()
   return (
     <Link
       to={resolutionHref(item)}
@@ -24,12 +99,15 @@ export function DeadlineResolutionRow({
     >
       <DeadlineDaysBadge endDate={item.endDate} locale={locale} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-ink-900">
-          <ProjectNameWithColor name={item.title} color={item.color} />
-        </p>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <p className="min-w-0 max-w-full truncate text-sm font-semibold text-ink-900">
+            <ProjectNameWithColor name={item.title} color={item.color} />
+          </p>
+          <ResolutionMinutesBadges item={item} />
+        </div>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-500">
           {item.endDate ? <DateText value={item.endDate} /> : '—'}
-          <span>{item.unit.name}</span>
+          <span>{item.unit?.name || t('boardResolutions.withoutUnit')}</span>
         </div>
       </div>
     </Link>

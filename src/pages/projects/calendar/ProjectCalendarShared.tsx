@@ -126,31 +126,39 @@ export function ProposalCardNote({ children }: { children: ReactNode }) {
   return <p className="mb-4 text-sm leading-6 text-ink-600">{children}</p>
 }
 
-function DayProjectLabels({
+function DayProjectLabels<T extends CalendarDayMark>({
   items,
   locale,
   moreOnDayKey,
   forceLtr,
+  renderItemLabel,
 }: {
-  items: CalendarDayMark[]
+  items: T[]
   locale: string
   moreOnDayKey: string
   forceLtr?: boolean
+  renderItemLabel?: (item: T, label: ReactNode) => ReactNode
 }) {
   const { t } = useTranslation()
   const visible = items.slice(0, 2)
   const extra = items.length - visible.length
   return (
     <div className="mt-0.5 flex w-full min-w-0 flex-col items-center gap-0.5 text-center">
-      {visible.map((item) => (
-        <span
-          key={item.id}
-          className="block min-w-0 max-w-full truncate font-bold leading-tight"
-          dir={forceLtr ? 'ltr' : undefined}
-        >
-          {item.code}
-        </span>
-      ))}
+      {visible.map((item) => {
+        const label = (
+          <span
+            className="block min-w-0 max-w-full truncate font-bold leading-tight"
+            dir={forceLtr ? 'ltr' : undefined}
+          >
+            {item.code}
+          </span>
+        )
+        return (
+          <span key={item.id} className="block min-w-0 max-w-full">
+            {renderItemLabel ? renderItemLabel(item, label) : label}
+          </span>
+        )
+      })}
       {extra > 0 ? (
         <span className="text-[10px] font-semibold text-teal-800">
           {t(moreOnDayKey, { count: formatNumber(extra, locale) })}
@@ -171,6 +179,7 @@ export function MonthCalendarGrid<T extends CalendarDayMark>({
   dayCountLabelKey = 'projectCalendar.dayWithCount',
   moreOnDayKey = 'projectCalendar.moreOnDay',
   forceLtr = true,
+  renderItemLabel,
 }: {
   year: number
   month: number
@@ -182,6 +191,7 @@ export function MonthCalendarGrid<T extends CalendarDayMark>({
   dayCountLabelKey?: string
   moreOnDayKey?: string
   forceLtr?: boolean
+  renderItemLabel?: (item: T, label: ReactNode) => ReactNode
 }) {
   const { t } = useTranslation()
   const grid = useMemo(() => buildMonthGrid(year, month, locale), [year, month, locale])
@@ -244,6 +254,7 @@ export function MonthCalendarGrid<T extends CalendarDayMark>({
                   locale={locale}
                   moreOnDayKey={moreOnDayKey}
                   forceLtr={forceLtr}
+                  renderItemLabel={renderItemLabel}
                 />
               ) : null}
               {!showLabels && items.length > 1 ? (

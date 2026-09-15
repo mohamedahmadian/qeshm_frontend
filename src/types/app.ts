@@ -4516,8 +4516,8 @@ export type BoardMinutesResolution = {
   minutesId: string;
   title: string;
   description: string | null;
-  unitId: string;
-  unit: { id: string; name: string };
+  unitId: string | null;
+  unit: { id: string; name: string } | null;
   dueDate: string | null;
   notes: string | null;
   createdAt: string;

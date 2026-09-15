@@ -29,12 +29,13 @@ import { ActionsTh, actionsColClassName } from '../../components/ui/ListControls
 import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { api, getApiErrorMessage } from '../../lib/api'
-import { localizeDigits, toLatinDigits, todayIsoDate } from '../../lib/datetime'
+import { localizeDigits, todayIsoDate } from '../../lib/datetime'
 import {
   boardMinutesAttendances,
   type BoardMinutes,
   type BoardMinutesAttendance,
   type ManagedUser,
+  type Paginated,
 } from '../../types/app'
 import {
   BoardMinutesAttachmentsField,
@@ -88,13 +89,6 @@ export function BoardMinutesForm({
   const [membersModalOpen, setMembersModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const employees = useQuery({
-    queryKey: ['users', 'employees', 'lookup'],
-    queryFn: async () => {
-      const { data } = await api.get<ManagedUser[]>('/users', { params: { employeesOnly: true } })
-      return data
-    },
-  })
   const requests = useQuery({
     queryKey: ['board-minutes-approved-requests'],
     enabled: !lockedRequestId,
@@ -289,7 +283,6 @@ export function BoardMinutesForm({
       </AppForm>
       <MinutesMembersPickerModal
         open={membersModalOpen}
-        employees={employees.data ?? []}
         selectedIds={members.map((row) => row.userId)}
         onClose={() => setMembersModalOpen(false)}
         onPick={addMember}
@@ -298,15 +291,15 @@ export function BoardMinutesForm({
   )
 }
 
+const MEMBER_SEARCH_MIN_CHARS = 3
+
 function MinutesMembersPickerModal({
   open,
-  employees,
   selectedIds,
   onClose,
   onPick,
 }: {
   open: boolean
-  employees: ManagedUser[]
   selectedIds: string[]
   onClose: () => void
   onPick: (user: ManagedUser) => void
@@ -315,6 +308,34 @@ function MinutesMembersPickerModal({
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const [term, setTerm] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const needle = term.trim()
+  const canSearch = needle.length >= MEMBER_SEARCH_MIN_CHARS
+
+  const query = useQuery({
+    queryKey: ['users', 'employees', 'minutes-member-search', needle],
+    enabled: open && canSearch,
+    queryFn: async () => {
+      const { data } = await api.get<Paginated<ManagedUser>>('/users', {
+        params: {
+          q: needle,
+          employeesOnly: true,
+          page: 1,
+          pageSize: 20,
+          sortBy: 'fullName',
+          sortDir: 'asc',
+        },
+      })
+      return data
+    },
+  })
+
+  const items = useMemo(
+    () =>
+      canSearch
+        ? (query.data?.items ?? []).filter((user) => !selectedIds.includes(user.id))
+        : [],
+    [canSearch, query.data?.items, selectedIds],
+  )
 
   useEffect(() => {
     if (!open) return
@@ -334,25 +355,6 @@ function MinutesMembersPickerModal({
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, open])
-
-  const items = useMemo(() => {
-    const needle = toLatinDigits(term).trim().toLowerCase()
-    return employees.filter((user) => {
-      if (selectedIds.includes(user.id)) return false
-      if (!needle) return true
-      const haystack = [
-        user.fullName,
-        user.username,
-        user.nationalId,
-        user.phone,
-        user.orgUnit?.name,
-        user.position?.name,
-      ]
-        .filter(Boolean)
-        .map((value) => toLatinDigits(String(value)).toLowerCase())
-      return haystack.some((value) => value.includes(needle))
-    })
-  }, [employees, selectedIds, term])
 
   if (!open) return null
 
@@ -435,7 +437,11 @@ function MinutesMembersPickerModal({
             ))}
             {!items.length ? (
               <li className="px-3 py-6 text-center text-sm text-ink-400">
-                {term.trim() ? t('users.noResults') : t('boardMinutes.noMembers')}
+                {!canSearch
+                  ? t('boardMinutes.searchMembersHint')
+                  : query.isFetching
+                    ? t('common.loading')
+                    : t('users.noResults')}
               </li>
             ) : null}
           </ul>

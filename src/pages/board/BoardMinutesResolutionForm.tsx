@@ -13,7 +13,7 @@ import type { BoardMinutesResolution, OrganizationUnit } from '../../types/app'
 export type BoardResolutionPayload = {
   title: string
   description: string | null
-  unitId: string
+  unitId: string | null
   dueDate: string | null
   notes: string | null
 }
@@ -56,7 +56,7 @@ export function BoardMinutesResolutionForm({
       await onSubmit({
         title,
         description: emptyToNull(description),
-        unitId,
+        unitId: unitId || null,
         dueDate: dueDate || null,
         notes: emptyToNull(notes),
       })
@@ -95,9 +95,11 @@ export function BoardMinutesResolutionForm({
           <SearchSelect
             value={unitId}
             onChange={setUnitId}
-            required
             placeholder={t('boardResolutions.selectUnit')}
-            options={(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name }))}
+            options={[
+              { value: '', label: t('boardResolutions.withoutUnit') },
+              ...(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name })),
+            ]}
           />
         </FormField>
         <FormField icon={CalendarRange} label={t('boardResolutions.dueDate')}>

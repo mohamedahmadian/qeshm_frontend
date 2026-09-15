@@ -102,7 +102,9 @@ export function CalendarResolutionsModal({
                   <p className="truncate text-sm font-semibold text-ink-900">
                     <ProjectNameWithColor name={item.title} color={item.color} />
                   </p>
-                  <p className="mt-1 text-xs font-medium text-teal-700">{item.unit.name}</p>
+                  <p className="mt-1 text-xs font-medium text-teal-700">
+                    {item.unit?.name || t('boardResolutions.withoutUnit')}
+                  </p>
                 </div>
                 <DeadlineDaysBadge endDate={item.endDate} locale={locale} />
               </div>
@@ -124,7 +126,7 @@ export function CalendarResolutionsModal({
                 <FormFactTile
                   icon={Building2}
                   label={t('boardResolutions.unit')}
-                  value={item.unit.name}
+                  value={item.unit?.name || t('boardResolutions.withoutUnit')}
                   compact
                 />
                 <FormFactTile

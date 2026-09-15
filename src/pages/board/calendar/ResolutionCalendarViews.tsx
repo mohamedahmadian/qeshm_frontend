@@ -19,7 +19,7 @@ import {
 import { projectColor, projectColorAlpha } from '../../../lib/project-color'
 import type { ResolutionCalendarItem } from '../../../lib/resolution-calendar'
 import { CalendarResolutionsModal } from './CalendarResolutionsModal'
-import { DeadlineResolutionGroup, resolutionHref } from './ResolutionCalendarShared'
+import { DeadlineResolutionGroup, ResolutionNameHover, resolutionHref } from './ResolutionCalendarShared'
 import { MonthCalendarGrid, ProposalCardNote } from '../../projects/calendar/ProjectCalendarShared'
 
 type ResolutionsModalState = {
@@ -100,77 +100,49 @@ export function ResolutionYearStripProposal({
     >
       <div className="space-y-4 p-5 sm:p-6">
         <ProposalCardNote>{t('boardCalendar.proposals.stripNote')}</ProposalCardNote>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {counts.map((count, index) => {
-            const value = index + 1
-            const empty = count === 0
-            const active = selectedMonth === value
-            if (empty) {
+        {!busyMonths.length ? (
+          <FormEmptyHint>{t('boardCalendar.emptyYearStrip')}</FormEmptyHint>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            {busyMonths.map((value) => {
+              const count = counts[value - 1] ?? 0
+              const active = selectedMonth === value
               return (
-                <div
+                <button
                   key={value}
-                  className="rounded-2xl border border-line/70 bg-cream-50 px-3 py-3 text-start text-ink-400"
+                  type="button"
+                  onClick={() => setMonth(value)}
+                  className={`cursor-pointer rounded-2xl border px-3 py-3 text-start transition ${
+                    active
+                      ? 'border-teal-300 bg-teal-50 shadow-[0_6px_16px_rgba(46,189,182,0.16)]'
+                      : 'border-teal-100 bg-white hover:bg-teal-50/70'
+                  }`}
                 >
-                  <p className="text-sm font-semibold">{monthName(value, locale)}</p>
-                  <p className="mt-1 text-xs">{t('boardCalendar.noMonthDeadline')}</p>
-                </div>
+                  <p className="text-sm font-semibold text-ink-800">{monthName(value, locale)}</p>
+                  <p className="mt-1 text-xs text-ink-500">
+                    {t('boardCalendar.monthCount', { count: formatNumber(count, locale) })}
+                  </p>
+                </button>
               )
-            }
-            return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setMonth(value)}
-                className={`cursor-pointer rounded-2xl border px-3 py-3 text-start transition ${
-                  active
-                    ? 'border-teal-300 bg-teal-50 shadow-[0_6px_16px_rgba(46,189,182,0.16)]'
-                    : 'border-teal-100 bg-white hover:bg-teal-50/70'
-                }`}
-              >
-                <p className="text-sm font-semibold text-ink-800">{monthName(value, locale)}</p>
-                <p className="mt-1 text-xs text-ink-500">
-                  {t('boardCalendar.monthCount', { count: formatNumber(count, locale) })}
-                </p>
-              </button>
-            )
-          })}
-        </div>
+            })}
+          </div>
+        )}
         {selectedMonth ? (
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {busyMonths.map((value) => {
-                const active = selectedMonth === value
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setMonth(value)}
-                    className={`inline-flex cursor-pointer items-center rounded-2xl px-3 py-2 text-sm font-medium transition ${
-                      active
-                        ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
-                        : 'bg-white text-ink-700 ring-1 ring-teal-400 shadow-[0_6px_14px_rgba(46,189,182,0.12)] hover:bg-cream-50'
-                    }`}
-                  >
-                    {monthName(value, locale)}
-                  </button>
-                )
-              })}
-            </div>
-            <article className="rounded-2xl border border-teal-50 bg-white p-3 shadow-[0_4px_14px_rgba(20,40,40,0.04)] sm:p-4">
-              <button
-                type="button"
-                className="mb-3 cursor-pointer text-start text-sm font-semibold text-ink-800 hover:text-teal-700"
-                onClick={() =>
-                  open({
-                    title: t('boardCalendar.monthModalTitle', { month: selectedLabel }),
-                    subtitle: t('boardCalendar.monthModalHint'),
-                    items: monthItems,
-                  })
-                }
-                aria-label={t('boardCalendar.openMonthDetails', { month: selectedLabel })}
-              >
-                {selectedLabel}
-              </button>
+          <article className="rounded-2xl border border-teal-50 bg-white p-3 shadow-[0_4px_14px_rgba(20,40,40,0.04)] sm:p-4">
+            <button
+              type="button"
+              className="mb-3 cursor-pointer text-start text-sm font-semibold text-ink-800 hover:text-teal-700"
+              onClick={() =>
+                open({
+                  title: t('boardCalendar.monthModalTitle', { month: selectedLabel }),
+                  subtitle: t('boardCalendar.monthModalHint'),
+                  items: monthItems,
+                })
+              }
+              aria-label={t('boardCalendar.openMonthDetails', { month: selectedLabel })}
+            >
+              {selectedLabel}
+            </button>
               <MonthCalendarGrid
                 year={year}
                 month={selectedMonth}
@@ -180,6 +152,11 @@ export function ResolutionYearStripProposal({
                 forceLtr={false}
                 dayCountLabelKey="boardCalendar.dayWithCount"
                 moreOnDayKey="boardCalendar.moreOnDay"
+                renderItemLabel={(item, label) => (
+                  <ResolutionNameHover item={item} className="max-w-full">
+                    {label}
+                  </ResolutionNameHover>
+                )}
                 onSelectDay={(iso, dayItems) =>
                   open({
                     title: t('boardCalendar.dayModalTitle', { date: formatDate(iso, locale) }),
@@ -187,11 +164,8 @@ export function ResolutionYearStripProposal({
                   })
                 }
               />
-            </article>
-          </div>
-        ) : (
-          <FormEmptyHint>{t('boardCalendar.emptyYear')}</FormEmptyHint>
-        )}
+          </article>
+        ) : null}
         <CalendarResolutionsModal
           open={Boolean(modal)}
           title={modal?.title ?? ''}
@@ -267,13 +241,18 @@ export function ResolutionTimelineProposal({
               <div className="grid grid-cols-[9rem_minmax(0,1fr)] items-stretch gap-3">
                 <div className="space-y-2">
                   {rows.map(({ item }) => (
-                    <Link
+                    <ResolutionNameHover
                       key={item.id}
-                      to={resolutionHref(item)}
-                      className="flex h-9 min-w-0 items-center truncate text-xs font-semibold text-ink-800 hover:text-teal-700"
+                      item={item}
+                      className="flex h-9 min-w-0 max-w-full items-center"
                     >
-                      {item.title}
-                    </Link>
+                      <Link
+                        to={resolutionHref(item)}
+                        className="flex h-9 min-w-0 items-center truncate text-xs font-semibold text-ink-800 hover:text-teal-700"
+                      >
+                        {item.title}
+                      </Link>
+                    </ResolutionNameHover>
                   ))}
                 </div>
                 <div className="relative space-y-2 overflow-hidden rounded-xl">

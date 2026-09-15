@@ -12,7 +12,7 @@ export type ResolutionCalendarItem = BoardMinutesResolution & {
 export function toResolutionCalendarItem(item: BoardMinutesResolution): ResolutionCalendarItem {
   return {
     ...item,
-    color: swatchColorFromId(item.unitId),
+    color: swatchColorFromId(item.unitId ?? item.id),
     code: resolutionCalendarCode(item.title),
     endDate: item.dueDate,
     startDate: null,

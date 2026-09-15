@@ -110,7 +110,7 @@ export function BoardMinutesResolutionListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3">{item.title}</td>
-                <td className="px-4 py-3">{item.unit.name}</td>
+                <td className="px-4 py-3">{item.unit?.name || t('boardResolutions.withoutUnit')}</td>
                 <td className="px-4 py-3">{item.dueDate ? <DateText value={item.dueDate} /> : '—'}</td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
@@ -236,7 +236,7 @@ export function BoardMinutesResolutionDetailPage() {
           <FormSectionTitle icon={FileText}>{t('boardResolutions.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile icon={FileText} label={t('boardResolutions.titleField')} value={item.title} tone="teal" />
-            <FormFactTile icon={Building2} label={t('boardResolutions.unit')} value={item.unit.name} tone="mint" />
+            <FormFactTile icon={Building2} label={t('boardResolutions.unit')} value={item.unit?.name || t('boardResolutions.withoutUnit')} tone="mint" />
             <FormFactTile
               icon={CalendarRange}
               label={t('boardResolutions.dueDate')}
