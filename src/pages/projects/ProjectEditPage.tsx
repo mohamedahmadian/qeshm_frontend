@@ -35,6 +35,7 @@ export function ProjectEditPage() {
       />
       <ProjectForm
         excludeId={query.data.id}
+        projectId={query.data.id}
         initial={{
           operatorIds: (query.data.operators ?? []).map((item) => item.id),
           orgUnitId: query.data.orgUnitId,

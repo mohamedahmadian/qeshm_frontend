@@ -1,5 +1,5 @@
 import { Download, FileText, Paperclip, Plus, ScrollText, Type } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -148,7 +148,7 @@ export function ProjectDocumentListPage() {
               />
               <SortableTh
                 column="createdAt"
-                label={t('common.createdAt')}
+                label={t('projectDocuments.createdAt')}
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
@@ -199,6 +199,7 @@ export function ProjectDocumentListPage() {
 export function ProjectDocumentCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { projectId, project } = useProject()
   if (!project || !projectId) {
     return <LoadingState />
@@ -208,11 +209,12 @@ export function ProjectDocumentCreatePage() {
       <PageHeader
         icon={Paperclip}
         title={t('projectDocuments.create')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={Paperclip} />}
+        subtitle={t('projectDocuments.createSubtitle')}
       />
       <ProjectDocumentForm
         onSubmit={async (payload) => {
           await api.post(`/projects/${projectId}/documents`, toFormData(payload))
+          await queryClient.invalidateQueries({ queryKey: ['project-documents'] })
           toast.success(t('projectDocuments.created'))
           navigate(projectDocumentsPath(projectId))
         }}
@@ -225,6 +227,7 @@ export function ProjectDocumentEditPage() {
   const { t } = useTranslation()
   const { documentId } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { projectId } = useProject()
   const query = useQuery({
     queryKey: ['project-document', projectId, documentId],
@@ -250,6 +253,8 @@ export function ProjectDocumentEditPage() {
         initial={query.data}
         onSubmit={async (payload) => {
           await api.patch(`/projects/${projectId}/documents/${documentId}`, toFormData(payload))
+          await queryClient.invalidateQueries({ queryKey: ['project-documents'] })
+          await queryClient.invalidateQueries({ queryKey: ['project-document', projectId, documentId] })
           toast.success(t('projectDocuments.updated'))
           navigate(projectDocumentsPath(projectId))
         }}

@@ -1,4 +1,5 @@
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList, Flag, Handshake, Paperclip } from 'lucide-react'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { HoverTooltip } from '../../components/ui/HoverTooltip'
@@ -10,7 +11,7 @@ import {
   actionsColClassName,
   type SortDir,
 } from '../../components/ui/ListControls'
-import { Button } from '../../components/ui/Form'
+import { Button, type DetailActionExtraItem } from '../../components/ui/Form'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { formatNumber } from '../../lib/datetime'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
@@ -61,6 +62,34 @@ export function ProjectNameWithColor({
 export function projectOperatorsText(operators?: { name: string }[]) {
   if (!operators?.length) return ''
   return operators.map((item) => item.name).join('، ')
+}
+
+export function projectManageExtraItems(
+  projectId: string,
+  t: TFunction,
+): DetailActionExtraItem[] {
+  return [
+    {
+      to: `/projects/${projectId}/progress`,
+      icon: ClipboardList,
+      label: t('projectProgress.manage'),
+    },
+    {
+      to: `/projects/${projectId}/phases`,
+      icon: Flag,
+      label: t('projectPhases.manage'),
+    },
+    {
+      to: `/projects/${projectId}/documents`,
+      icon: Paperclip,
+      label: t('projectDocuments.manage'),
+    },
+    {
+      to: `/projects/${projectId}/contractors`,
+      icon: Handshake,
+      label: t('contractors.manage'),
+    },
+  ]
 }
 
 export const operatorsColClassName = 'w-52 max-w-52'

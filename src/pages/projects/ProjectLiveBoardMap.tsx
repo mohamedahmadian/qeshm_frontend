@@ -90,8 +90,8 @@ const statusTone: Record<ProjectStatus, MapOverlayMarkerTone> = {
 }
 
 const MOBILE_VIEWPORT = '(max-width: 639.98px)'
-const WEB_DOCK_HEIGHT_TALL = '16rem'
-const WEB_DOCK_HEIGHT_PUBLIC = '20rem'
+const WEB_DOCK_HEIGHT_TALL = '22rem'
+const WEB_DOCK_HEIGHT_PUBLIC = '22rem'
 
 function useStickToLastLine(value: string) {
   const ref = useRef<HTMLTextAreaElement>(null)
@@ -423,7 +423,7 @@ function ProjectMapAttachments({
 }) {
   const { t } = useTranslation()
   const query = useQuery({
-    queryKey: ['public', 'project-documents', projectId],
+    queryKey: ['project-documents', projectId],
     queryFn: async () => {
       const { data } = await api.get<ProjectDocument[]>(
         `/public/projects/${projectId}/documents`,
@@ -453,6 +453,7 @@ function ProjectMapAttachments({
                     {item.description}
                   </p>
                 ) : null}
+                <p className="mt-0.5 truncate text-[11px] text-ink-400">{item.originalName}</p>
               </div>
               <a
                 href={getProjectDocumentUrl(projectId, item.id)}
@@ -1080,6 +1081,13 @@ function ProjectMapCard({
               {t('projectProgress.save')}
             </Button>
           ) : null}
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto pb-1">
+          <ProjectMapAttachments
+            projectId={project.id}
+            canManage={canManage}
+            compact
+          />
         </div>
       </div>
     </aside>

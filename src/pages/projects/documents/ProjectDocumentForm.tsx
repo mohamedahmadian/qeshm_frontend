@@ -68,6 +68,7 @@ export function ProjectDocumentForm({
             onChange={(event) => setTitle(event.target.value)}
             required
             minLength={2}
+            maxLength={200}
           />
         </FormField>
         <FormField icon={ScrollText} label={t('projectDocuments.description')} htmlFor="documentDescription">
@@ -75,6 +76,7 @@ export function ProjectDocumentForm({
             id="documentDescription"
             className={fieldClassName}
             rows={4}
+            maxLength={2000}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
           />

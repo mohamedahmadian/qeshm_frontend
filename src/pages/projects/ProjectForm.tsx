@@ -33,6 +33,7 @@ import { getApiErrorMessage, api } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
 import { projectBoundaryPolygons, QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
 import { DEFAULT_PROJECT_COLOR, PROJECT_COLOR_SWATCHES, projectColor } from '../../lib/project-color'
+import { projectManageExtraItems } from './ProjectShared'
 import {
   projectImportanceOrder,
   projectImportances,
@@ -92,10 +93,12 @@ function toOptionalNumber(value: string) {
 export function ProjectForm({
   initial,
   excludeId,
+  projectId,
   onSubmit,
 }: {
   initial?: ProjectPayload & { boundary?: ProjectBoundary | null }
   excludeId?: string
+  projectId?: string
   onSubmit: (payload: ProjectPayload) => Promise<void>
 }) {
   const { t, i18n } = useTranslation()
@@ -597,6 +600,7 @@ export function ProjectForm({
             cancelLabel={t('projects.cancel')}
             submitting={saving}
             onCancel={() => history.back()}
+            extraItems={projectId ? projectManageExtraItems(projectId, t) : undefined}
           />
         </AppForm>
       </div>

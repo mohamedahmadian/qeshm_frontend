@@ -590,7 +590,8 @@
     "download": "دانلود",
     "originalName": "نام فایل",
     "size": "حجم",
-    "fileHint": "فقط PDF یا Word، حداکثر ۱۰ مگابایت"
+    "fileHint": "فقط PDF یا Word، حداکثر ۱۰ مگابایت",
+    "createdAt": "تاریخ ایجاد"
   },
   "projectProgress": {
     "title": "پیشرفت پروژه",

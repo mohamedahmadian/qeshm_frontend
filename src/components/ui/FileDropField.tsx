@@ -88,7 +88,7 @@ export function FileDropField({
       URL.revokeObjectURL(localPreview)
       setLocalPreview(undefined)
     }
-    setSelectedName(hideLocalPreview ? undefined : file.name)
+    setSelectedName(file.name)
     onFile(file)
   }
 

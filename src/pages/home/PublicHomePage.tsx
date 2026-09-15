@@ -6,6 +6,7 @@ import { FormCard, FormEmptyHint } from '../../components/ui/FormLayout'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { api } from '../../lib/api'
 import { projectHasMapLocation } from '../../lib/geo'
+import { type ProjectLiveBoard } from '../../types/app'
 import { ProjectLiveBoardMap } from '../projects/ProjectLiveBoardMap'
 
 export function PublicHomePage() {

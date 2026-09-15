@@ -1,6 +1,5 @@
 import {
   CalendarRange,
-  ClipboardList,
   FolderKanban,
   Gauge,
   Globe,
@@ -12,7 +11,6 @@ import {
   MapPin,
   Monitor,
   Palette,
-  Paperclip,
   Percent,
   Radio,
   ScrollText,
@@ -40,6 +38,7 @@ import {
   ProjectStatus,
   ProjectUrl,
   projectLabelOrUnspecified,
+  projectManageExtraItems,
 } from './ProjectShared'
 
 export function ProjectDetailPage() {
@@ -291,28 +290,7 @@ export function ProjectDetailPage() {
             onDeleted: () => navigate('/projects'),
           })
         }
-        extraItems={[
-          {
-            to: `/projects/${project.id}/progress`,
-            icon: ClipboardList,
-            label: t('projectProgress.manage'),
-          },
-          {
-            to: `/projects/${project.id}/phases`,
-            icon: Flag,
-            label: t('projectPhases.manage'),
-          },
-          {
-            to: `/projects/${project.id}/documents`,
-            icon: Paperclip,
-            label: t('projectDocuments.manage'),
-          },
-          {
-            to: `/projects/${project.id}/contractors`,
-            icon: Handshake,
-            label: t('contractors.manage'),
-          },
-        ]}
+        extraItems={projectManageExtraItems(project.id, t)}
       />
     </div>
   )
