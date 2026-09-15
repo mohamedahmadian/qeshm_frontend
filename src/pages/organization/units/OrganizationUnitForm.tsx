@@ -1,5 +1,6 @@
 import {
   Building2,
+  Hash,
   MapPin,
   MessageCircle,
   Network,
@@ -39,6 +40,7 @@ export type OrganizationUnitPayload = {
   telegram: string | null
   whatsapp: string | null
   nutritionRepId: string | null
+  maxMeals: number | null
 }
 
 function toCoordString(value: number | null | undefined) {
@@ -79,6 +81,7 @@ export function OrganizationUnitForm({
   const [telegram, setTelegram] = useState(initial?.telegram ?? '')
   const [whatsapp, setWhatsapp] = useState(initial?.whatsapp ?? '')
   const [nutritionRepId, setNutritionRepId] = useState(initial?.nutritionRepId ?? '')
+  const [maxMeals, setMaxMeals] = useState(initial?.maxMeals != null ? String(initial.maxMeals) : '')
   const [saving, setSaving] = useState(false)
 
   const units = useQuery({
@@ -128,6 +131,11 @@ export function OrganizationUnitForm({
       toast.error(t('organizationPhones.phoneInvalid'))
       return
     }
+    const mealsLimit = toOptionalNumber(toLatinDigits(maxMeals))
+    if (mealsLimit != null && (!Number.isInteger(mealsLimit) || mealsLimit < 1)) {
+      toast.error(t('organizationUnits.maxMealsInvalid'))
+      return
+    }
     setSaving(true)
     try {
       await onSubmit({
@@ -145,6 +153,7 @@ export function OrganizationUnitForm({
         telegram: emptyToNull(telegram),
         whatsapp: emptyToNull(whatsapp),
         nutritionRepId: emptyToNull(nutritionRepId),
+        maxMeals: mealsLimit,
       })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
@@ -219,24 +228,51 @@ export function OrganizationUnitForm({
             onChange={(e) => setAddress(e.target.value)}
           />
         </FormField>
+        <FormSectionTitle icon={UtensilsCrossed}>{t('organizationUnits.foodSection')}</FormSectionTitle>
         {initial ? (
-          <FormField icon={UtensilsCrossed} label={t('organizationUnits.nutritionRep')} htmlFor="unitNutritionRep">
-            <SearchSelect
-              id="unitNutritionRep"
-              value={nutritionRepId}
-              onChange={setNutritionRepId}
-              placeholder={t('organizationUnits.selectNutritionRep')}
-              options={[
-                { value: '', label: t('organizationUnits.selectNutritionRep') },
-                ...(employees.data ?? []).map((user) => ({
-                  value: user.id,
-                  label: user.fullName,
-                })),
-              ]}
-            />
-          </FormField>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField icon={UtensilsCrossed} label={t('organizationUnits.nutritionRep')} htmlFor="unitNutritionRep">
+              <SearchSelect
+                id="unitNutritionRep"
+                value={nutritionRepId}
+                onChange={setNutritionRepId}
+                placeholder={t('organizationUnits.selectNutritionRep')}
+                options={[
+                  { value: '', label: t('organizationUnits.selectNutritionRep') },
+                  ...(employees.data ?? []).map((user) => ({
+                    value: user.id,
+                    label: user.fullName,
+                  })),
+                ]}
+              />
+            </FormField>
+            <FormField icon={Hash} label={t('organizationUnits.maxMeals')} htmlFor="unitMaxMeals">
+              <input
+                id="unitMaxMeals"
+                type="number"
+                min={1}
+                max={9999}
+                className={fieldClassName}
+                value={maxMeals}
+                onChange={(e) => setMaxMeals(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 4))}
+              />
+            </FormField>
+          </div>
         ) : (
-          <p className="text-xs leading-6 text-ink-500">{t('organizationUnits.nutritionRepHint')}</p>
+          <>
+            <p className="text-xs leading-6 text-ink-500">{t('organizationUnits.nutritionRepHint')}</p>
+            <FormField icon={Hash} label={t('organizationUnits.maxMeals')} htmlFor="unitMaxMeals">
+              <input
+                id="unitMaxMeals"
+                type="number"
+                min={1}
+                max={9999}
+                className={fieldClassName}
+                value={maxMeals}
+                onChange={(e) => setMaxMeals(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 4))}
+              />
+            </FormField>
+          </>
         )}
         <FormSectionTitle icon={MapPin}>{t('organizationUnits.locationSection')}</FormSectionTitle>
         <div className="space-y-2">

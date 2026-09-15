@@ -42,6 +42,7 @@ import { selectableLanguages, selectableLocale } from '../../i18n'
 import { api, getApiErrorMessage, getImageUrl } from '../../lib/api'
 import { parseDigitString, toLatinDigits } from '../../lib/datetime'
 import { useGeoName } from '../../lib/geo'
+import { isValidIranianNationalId, normalizeNationalId } from '../../lib/national-id'
 import {
   isLikelyEmail,
   isPhoneReady,
@@ -49,7 +50,7 @@ import {
   sanitizeUsername,
   USERNAME_ENGLISH_PATTERN,
 } from '../../lib/identity'
-import { isValidIranianNationalId, normalizeNationalId } from '../../lib/national-id'
+import { EMPLOYEE_ROLE_CODE } from '../../lib/roles'
 import { optimizeImageFile } from '../../lib/optimize-image'
 import {
   religions,
@@ -238,6 +239,7 @@ export function UserForm({
   })
   const orgUnits = useQuery({
     queryKey: ['organization-units', 'lookup'],
+    enabled: !selfProfile,
     queryFn: async () => {
       const { data } = await api.get<OrganizationUnit[]>('/organization/units')
       return data
@@ -245,6 +247,7 @@ export function UserForm({
   })
   const orgPositions = useQuery({
     queryKey: ['organization-positions', 'lookup'],
+    enabled: !selfProfile,
     queryFn: async () => {
       const { data } = await api.get<OrganizationPosition[]>('/organization/positions')
       return data
@@ -258,6 +261,12 @@ export function UserForm({
       return data
     },
   })
+  useEffect(() => {
+    if (!isCreate || selfProfile) return
+    const employee = (roles.data ?? []).find((role) => role.code === EMPLOYEE_ROLE_CODE)
+    if (!employee) return
+    setRoleIds((current) => (current.length ? current : [employee.id]))
+  }, [isCreate, selfProfile, roles.data])
   const iranCountryId = countries.data?.find((country) => country.iso2 === 'IR')?.id ?? ''
   const selectedCountryId = countryId || (isCreate ? iranCountryId : '')
   const isIranian = !iranCountryId || !selectedCountryId || selectedCountryId === iranCountryId
@@ -754,9 +763,16 @@ export function UserForm({
                   />
                 </FormField>
               </div>
-              {selfProfile ? null : (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField icon={Building2} label={t('users.orgUnit')} htmlFor="orgUnitId">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField icon={Building2} label={t('users.orgUnit')} htmlFor="orgUnitId">
+                  {selfProfile ? (
+                    <input
+                      id="orgUnitId"
+                      className={`${fieldClassName} cursor-default bg-cream-50`}
+                      value={initial?.orgUnit?.name || '—'}
+                      readOnly
+                    />
+                  ) : (
                     <SearchSelect
                       id="orgUnitId"
                       value={orgUnitId}
@@ -770,8 +786,17 @@ export function UserForm({
                         })),
                       ]}
                     />
-                  </FormField>
-                  <FormField icon={Briefcase} label={t('users.position')} htmlFor="positionId">
+                  )}
+                </FormField>
+                <FormField icon={Briefcase} label={t('users.position')} htmlFor="positionId">
+                  {selfProfile ? (
+                    <input
+                      id="positionId"
+                      className={`${fieldClassName} cursor-default bg-cream-50`}
+                      value={initial?.position?.name || '—'}
+                      readOnly
+                    />
+                  ) : (
                     <SearchSelect
                       id="positionId"
                       value={positionId}
@@ -782,9 +807,12 @@ export function UserForm({
                         ...(orgPositions.data ?? []).map((item) => ({ value: item.id, label: item.name })),
                       ]}
                     />
-                  </FormField>
-                </div>
-              )}
+                  )}
+                </FormField>
+              </div>
+              {selfProfile ? (
+                <p className="text-xs text-ink-500">{t('users.orgAssignmentReadOnly')}</p>
+              ) : null}
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField icon={Share2} label={t('users.religion')} htmlFor="religion">
                   <SearchSelect

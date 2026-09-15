@@ -14,6 +14,22 @@ import { LoadingSpinner } from './LoadingState'
 
 const defaultMaxBytes = 8 * 1024 * 1024
 
+function fileMatchesAccept(file: File, accept: string) {
+  const tokens = accept
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
+  if (!tokens.length) return true
+  const mime = (file.type || '').toLowerCase()
+  const name = file.name.toLowerCase()
+  const ext = name.includes('.') ? `.${name.split('.').pop()}` : ''
+  return tokens.some((token) => {
+    if (token.endsWith('/*')) return mime.startsWith(token.slice(0, -1))
+    if (token.startsWith('.')) return ext === token
+    return mime === token
+  })
+}
+
 export function FileDropField({
   id,
   accept = 'image/*',
@@ -22,6 +38,7 @@ export function FileDropField({
   previewUrl,
   uploading,
   maxBytes = defaultMaxBytes,
+  hideLocalPreview,
   onFile,
   onClear,
 }: {
@@ -32,6 +49,7 @@ export function FileDropField({
   previewUrl?: string
   uploading?: boolean
   maxBytes?: number
+  hideLocalPreview?: boolean
   onFile: (file: File) => void
   onClear?: () => void
 }) {
@@ -59,26 +77,18 @@ export function FileDropField({
       toast.error(t('common.fileTooLarge'))
       return
     }
-    if (accept.includes('image') && !file.type.startsWith('image/')) {
+    if (!fileMatchesAccept(file, accept)) {
       toast.error(t('common.fileInvalidType'))
       return
     }
-    if (accept.includes('audio') && !file.type.startsWith('audio/')) {
-      toast.error(t('common.fileInvalidType'))
-      return
-    }
-    if (accept.includes('video') && !file.type.startsWith('video/')) {
-      toast.error(t('common.fileInvalidType'))
-      return
-    }
-    if (file.type.startsWith('image/')) {
+    if (!hideLocalPreview && file.type.startsWith('image/')) {
       if (localPreview) URL.revokeObjectURL(localPreview)
       setLocalPreview(URL.createObjectURL(file))
     } else if (localPreview) {
       URL.revokeObjectURL(localPreview)
       setLocalPreview(undefined)
     }
-    setSelectedName(file.name)
+    setSelectedName(hideLocalPreview ? undefined : file.name)
     onFile(file)
   }
 
@@ -109,7 +119,7 @@ export function FileDropField({
     takeFile(event.dataTransfer.files?.[0])
   }
 
-  const preview = localPreview || previewUrl
+  const preview = hideLocalPreview ? previewUrl : localPreview || previewUrl
   const hasFile = Boolean(preview || selectedName)
 
   return (

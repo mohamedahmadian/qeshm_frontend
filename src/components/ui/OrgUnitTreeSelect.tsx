@@ -9,9 +9,73 @@ import {
   type OrganizationUnitNode,
 } from '../../pages/organization/organization-unit-label'
 import type { OrganizationUnit } from '../../types/app'
+import { formatNumber } from '../../lib/datetime'
 import { CheckboxField } from './CheckboxField'
 import { fieldClassName } from './Form'
 import { FormEmptyHint } from './FormLayout'
+import { HoverTooltip } from './HoverTooltip'
+
+function SelectedUnitsSummary({
+  units,
+  disabled,
+  locale,
+  onRemove,
+}: {
+  units: OrganizationUnit[]
+  disabled?: boolean
+  locale: string
+  onRemove: (id: string) => void
+}) {
+  const { t } = useTranslation()
+  const first = units[0]
+  if (!first) return null
+  const count = units.length
+  const chip = (
+    <div className="inline-flex min-w-0 max-w-full items-center gap-1.5">
+      <span className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-800 ring-1 ring-teal-100">
+        <span className="truncate">{first.pathLabel || first.name}</span>
+        {disabled ? null : (
+          <button
+            type="button"
+            className="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full text-teal-700 hover:bg-teal-100"
+            aria-label={t('projects.removeOperator', { name: first.name })}
+            onClick={() => onRemove(first.id)}
+          >
+            <X className="size-3" aria-hidden />
+          </button>
+        )}
+      </span>
+      {count > 1 ? (
+        <span
+          className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-teal-500 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+          aria-label={t('projects.operatorCount', {
+            count: formatNumber(count, locale),
+          })}
+        >
+          {formatNumber(count, locale)}
+        </span>
+      ) : null}
+    </div>
+  )
+  if (count <= 1) return chip
+  return (
+    <HoverTooltip
+      className="max-w-full"
+      label={t('projects.operators')}
+      content={
+        <ul className="max-h-64 space-y-1 overflow-y-auto p-3">
+          {units.map((unit) => (
+            <li key={unit.id} className="text-sm leading-6 text-ink-800">
+              {unit.pathLabel || unit.name}
+            </li>
+          ))}
+        </ul>
+      }
+    >
+      {chip}
+    </HoverTooltip>
+  )
+}
 
 export function OrgUnitTreeSelect({
   id,
@@ -92,26 +156,12 @@ export function OrgUnitTreeSelect({
         aria-required={required}
       />
       {selectedUnits.length ? (
-        <div className="flex flex-wrap gap-1.5">
-          {selectedUnits.map((unit) => (
-            <span
-              key={unit.id}
-              className="inline-flex max-w-full items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-800 ring-1 ring-teal-100"
-            >
-              <span className="truncate">{unit.pathLabel || unit.name}</span>
-              {disabled ? null : (
-                <button
-                  type="button"
-                  className="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full text-teal-700 hover:bg-teal-100"
-                  aria-label={t('projects.removeOperator', { name: unit.name })}
-                  onClick={() => toggle(unit.id, false)}
-                >
-                  <X className="size-3" aria-hidden />
-                </button>
-              )}
-            </span>
-          ))}
-        </div>
+        <SelectedUnitsSummary
+          units={selectedUnits}
+          disabled={disabled}
+          locale={locale}
+          onRemove={(unitId) => toggle(unitId, false)}
+        />
       ) : null}
       <div className="overflow-hidden rounded-2xl border border-line bg-cream-50">
         <div className="flex flex-wrap items-center gap-2 border-b border-line/80 bg-white px-3 py-2">

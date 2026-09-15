@@ -3,6 +3,9 @@ import type { RoleOption } from '../../types/app'
 
 const roleClass: Record<string, string> = {
   ADMIN: 'bg-teal-50 text-teal-800 ring-teal-100',
+  BOARD_ADMIN: 'bg-teal-50 text-teal-800 ring-teal-100',
+  EMPLOYEE: 'bg-mint-50 text-mint-800 ring-mint-100',
+  CITIZEN: 'bg-cream-100 text-ink-700 ring-line',
   PILGRIM: 'bg-teal-50 text-teal-800 ring-teal-100',
   CARAVAN_MANAGER: 'bg-mint-50 text-mint-800 ring-mint-100',
   GROUP_MANAGER: 'bg-mint-50 text-mint-800 ring-mint-100',

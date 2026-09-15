@@ -30,10 +30,12 @@ export function HoverTooltip({
   content,
   children,
   label,
+  className = '',
 }: {
   content: ReactNode
   children: ReactNode
   label?: string
+  className?: string
 }) {
   const tooltipId = useId()
   const triggerRef = useRef<HTMLSpanElement>(null)
@@ -90,7 +92,7 @@ export function HoverTooltip({
     <>
       <span
         ref={triggerRef}
-        className="inline-flex"
+        className={`inline-flex min-w-0 ${className}`.trim()}
         aria-describedby={open ? tooltipId : undefined}
         onMouseEnter={show}
         onMouseLeave={hide}

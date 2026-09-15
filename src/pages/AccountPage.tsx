@@ -40,7 +40,14 @@ export function AccountPage() {
         identityCheckPath="/account/identity-check"
         onCancel={() => navigate('/dashboard')}
         onSubmit={async (payload) => {
-          const { password: _password, status: _status, ...body } = payload
+          const {
+            password: _password,
+            status: _status,
+            roleIds: _roleIds,
+            orgUnitId: _orgUnitId,
+            positionId: _positionId,
+            ...body
+          } = payload
           await api.patch('/account', body)
           const nextLocale = selectableLocale(body.locale)
           persistPreferredLocale(nextLocale)

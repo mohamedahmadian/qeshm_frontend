@@ -341,6 +341,26 @@ export function addDaysIso(iso: string, days: number) {
   return toIsoDateOnly(date.add(days, 'days'))
 }
 
+/** پنجشنبه و جمعه در تقویم ایران */
+export function isIranWeekendIso(iso: string) {
+  const js = new Date(`${iso}T12:00:00`)
+  if (Number.isNaN(js.getTime())) return false
+  const day = js.getDay()
+  return day === 4 || day === 5
+}
+
+export function eachWorkingIsoDatesInclusive(start: string, end = start) {
+  if (!start || (end && end < start)) return []
+  const last = end || start
+  const dates: string[] = []
+  let current = start
+  while (current && current <= last) {
+    if (!isIranWeekendIso(current)) dates.push(current)
+    current = addDaysIso(current, 1)
+  }
+  return dates
+}
+
 export function displayYearNow(locale: string) {
   return new DateObject({ calendar: datePickerCalendar(locale) }).year
 }

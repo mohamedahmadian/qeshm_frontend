@@ -1,7 +1,7 @@
-import { CalendarDays, CalendarRange, CircleCheck } from 'lucide-react'
+import { CalendarDays, CalendarRange } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FormField, PageHeader, ToggleField, listShellClassName } from '../../../components/ui/Form'
+import { FormField, PageHeader, listShellClassName } from '../../../components/ui/Form'
 import { FormCard, FormEmptyHint, formCardBodyClassName } from '../../../components/ui/FormLayout'
 import { LoadingState } from '../../../components/ui/LoadingState'
 import { SearchSelect } from '../../../components/ui/SearchSelect'
@@ -11,20 +11,13 @@ import {
   filterCalendarProjects,
   projectsWithEndDate,
 } from '../../../lib/project-calendar'
-import {
-  AgendaProposal,
-  MonthAgendaProposal,
-  TimelineProposal,
-  YearGridProposal,
-  YearStripProposal,
-} from './ProjectCalendarViews'
+import { AgendaProposal, TimelineProposal, YearStripProposal } from './ProjectCalendarViews'
 import { useProjectCalendarItems } from './useProjectCalendarItems'
 
 export function ProjectCalendarPage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const query = useProjectCalendarItems()
-  const [includeCompleted, setIncludeCompleted] = useState(false)
   const [year, setYear] = useState(() => String(displayYearNow(locale)))
 
   useEffect(() => {
@@ -34,10 +27,10 @@ export function ProjectCalendarPage() {
   const filtered = useMemo(
     () =>
       filterCalendarProjects(query.data ?? [], {
-        includeCompleted,
+        includeCompleted: false,
         includeInactive: false,
       }),
-    [includeCompleted, query.data],
+    [query.data],
   )
   const dated = useMemo(() => projectsWithEndDate(filtered), [filtered])
   const yearOptions = useMemo(
@@ -49,7 +42,6 @@ export function ProjectCalendarPage() {
     [locale, query.data],
   )
   const selectedYear = Number(year) || displayYearNow(locale)
-  const undatedCount = filtered.length - dated.length
 
   return (
     <div className={`${listShellClassName} space-y-5`}>
@@ -72,19 +64,6 @@ export function ProjectCalendarPage() {
               placeholder={t('projectCalendar.yearPlaceholder')}
             />
           </FormField>
-          <FormField icon={CircleCheck} label={t('projectCalendar.includeCompleted')}>
-            <ToggleField
-              checked={includeCompleted}
-              onChange={setIncludeCompleted}
-              onLabel={t('projectCalendar.includeCompletedOn')}
-              offLabel={t('projectCalendar.includeCompletedOff')}
-            />
-          </FormField>
-          {undatedCount > 0 ? (
-            <p className="text-sm text-ink-500">
-              {t('projectCalendar.undatedHint', { count: formatNumber(undatedCount, locale) })}
-            </p>
-          ) : null}
         </div>
       </FormCard>
       {query.isLoading ? <LoadingState /> : null}
@@ -95,13 +74,6 @@ export function ProjectCalendarPage() {
         <>
           <AgendaProposal items={dated} locale={locale} />
           <YearStripProposal key={`strip-${selectedYear}`} items={dated} year={selectedYear} locale={locale} />
-          <YearGridProposal key={`busy-${selectedYear}`} items={dated} year={selectedYear} locale={locale} />
-          <MonthAgendaProposal
-            key={`month-${selectedYear}`}
-            items={dated}
-            year={selectedYear}
-            locale={locale}
-          />
           <TimelineProposal key={`line-${selectedYear}`} items={dated} year={selectedYear} locale={locale} />
         </>
       ) : null}

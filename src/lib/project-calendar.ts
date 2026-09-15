@@ -166,3 +166,22 @@ export function projectYearBar(project: Project, year: number, locale: string) {
     markerOnly: !project.startDate || project.startDate === project.endDate,
   }
 }
+
+export function yearTodayMarker(year: number, locale: string, today = todayIsoDate()) {
+  const parts = displayDateParts(today, locale)
+  if (!parts) {
+    return { pastMonths: 0, offsetPercent: null as number | null }
+  }
+  if (parts.year > year) {
+    return { pastMonths: 12, offsetPercent: null as number | null }
+  }
+  if (parts.year < year) {
+    return { pastMonths: 0, offsetPercent: null as number | null }
+  }
+  const { startIso, totalDays } = yearDaySpan(year, locale)
+  const offset = Math.max(0, calendarDaysUntil(today, startIso) ?? 0)
+  return {
+    pastMonths: Math.max(0, parts.month - 1),
+    offsetPercent: totalDays > 0 ? (offset / totalDays) * 100 : null,
+  }
+}

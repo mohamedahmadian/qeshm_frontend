@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { AppForm, FormActions, FormField, fieldClassName } from '../../components/ui/Form'
 import { FormCard, FormEmptyHint, formCardBodyClassName } from '../../components/ui/FormLayout'
 import { getApiErrorMessage } from '../../lib/api'
-import { ADMIN_ROLE_CODE } from '../../lib/roles'
+import { ADMIN_ROLE_CODE, isRolePermissionsLocked, isSystemRoleLocked } from '../../lib/roles'
 import type { AppRole } from '../../types/app'
 import { PermissionTree } from './PermissionTree'
 
@@ -24,7 +24,8 @@ export function RoleForm({
   onSubmit: (payload: RolePayload) => Promise<void>
 }) {
   const { t } = useTranslation()
-  const locked = Boolean(initial?.isSystem || initial?.code === ADMIN_ROLE_CODE)
+  const systemLocked = isSystemRoleLocked(initial)
+  const permissionsLocked = isRolePermissionsLocked(initial)
   const [name, setName] = useState(initial?.name ?? '')
   const [code, setCode] = useState(initial?.code ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
@@ -33,7 +34,7 @@ export function RoleForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (!locked && permissionCodes.length === 0) {
+    if (!permissionsLocked && !systemLocked && permissionCodes.length === 0) {
       toast.error(t('accessRoles.permissionsRequired'))
       return
     }
@@ -43,7 +44,7 @@ export function RoleForm({
         name: name.trim(),
         code: code.trim().toUpperCase(),
         description: description.trim() || undefined,
-        permissionCodes: locked ? [] : permissionCodes,
+        permissionCodes: permissionsLocked ? [] : permissionCodes,
       })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
@@ -82,7 +83,7 @@ export function RoleForm({
             maxLength={40}
             pattern="[A-Za-z][A-Za-z0-9_]*"
             title={t('accessRoles.codeHint')}
-            disabled={locked}
+            disabled={systemLocked}
           />
         </FormField>
         <FormField icon={FileText} label={t('accessRoles.description')} htmlFor="roleDescription">
@@ -95,8 +96,14 @@ export function RoleForm({
           />
         </FormField>
         <FormField icon={Shield} label={t('accessRoles.permissions')}>
-          {locked ? (
-            <FormEmptyHint>{t('accessRoles.adminBypass')}</FormEmptyHint>
+          {permissionsLocked ? (
+            <FormEmptyHint>
+              {t(
+                initial?.code === ADMIN_ROLE_CODE
+                  ? 'accessRoles.adminBypass'
+                  : 'accessRoles.systemPermissionsLocked',
+              )}
+            </FormEmptyHint>
           ) : (
             <PermissionTree selected={permissionCodes} onChange={setPermissionCodes} />
           )}

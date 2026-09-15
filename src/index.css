@@ -276,6 +276,53 @@ th {
   background: #e8eef0;
 }
 
+.map-tablet {
+  display: flex;
+  width: 100%;
+}
+
+.map-tablet-bezel {
+  width: 100%;
+  border-radius: 1.85rem;
+  padding: 0.7rem 0.72rem 0.85rem;
+  background:
+    linear-gradient(165deg, #3a4a4a 0%, #1c2626 42%, #243332 100%);
+  box-shadow:
+    0 22px 48px rgba(20, 40, 40, 0.22),
+    0 2px 0 rgba(255, 255, 255, 0.12) inset,
+    0 0 0 1px rgba(20, 40, 40, 0.35);
+}
+
+.map-tablet-camera {
+  display: block;
+  width: 0.42rem;
+  height: 0.42rem;
+  margin: 0 auto 0.55rem;
+  border-radius: 9999px;
+  background: #0c1212;
+  box-shadow:
+    0 0 0 2px #4a5a5a inset,
+    0 0 0 1px rgba(63, 214, 190, 0.45);
+}
+
+.map-tablet-screen {
+  overflow: hidden;
+  border-radius: 0.95rem;
+  background: #d7e4e6;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.16) inset,
+    0 8px 18px rgba(12, 20, 20, 0.28);
+}
+
+.map-tablet-home {
+  display: block;
+  width: 3.4rem;
+  height: 0.28rem;
+  margin: 0.65rem auto 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
 .live-board-color-lamp {
   position: relative;
   display: inline-flex;
@@ -996,6 +1043,54 @@ th {
   );
 }
 
+.board-stage-double-ring {
+  position: absolute;
+  inset: 2px;
+  border-radius: 9999px;
+  border: 3px solid #047857;
+}
+
+.board-stage-pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid #047857;
+  animation: board-stage-pulse 1.7s ease-out infinite;
+}
+
+.board-stage-current-core {
+  box-shadow:
+    0 0 0 4px rgba(4, 120, 87, 0.22),
+    0 10px 22px rgba(4, 120, 87, 0.38);
+}
+
+.board-stage-line-current {
+  background-image: repeating-linear-gradient(
+    to inline-end,
+    #047857 0,
+    #047857 7px,
+    transparent 7px,
+    transparent 13px
+  );
+}
+
+@keyframes board-stage-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.95;
+    box-shadow: 0 0 0 0 rgba(4, 120, 87, 0.45);
+  }
+  70% {
+    transform: scale(1.22);
+    opacity: 0;
+    box-shadow: 0 0 0 16px rgba(4, 120, 87, 0);
+  }
+  100% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .singard-step,
   .singard-hero-icon {
@@ -1013,6 +1108,7 @@ th {
   .animate-loading-spin,
   .animate-loading-pulse,
   .eskan-project-pin-pulse .eskan-project-pin-pulse-ring,
+  .board-stage-pulse-ring,
   .live-board-map-ring,
   .live-board-color-lamp,
   .live-board-color-lamp::after {

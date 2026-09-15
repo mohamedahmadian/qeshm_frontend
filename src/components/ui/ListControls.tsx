@@ -315,6 +315,7 @@ export function EntityRowActions({
   viewIcon: ViewIcon = Eye,
   extra,
   editTo,
+  rowOpensView = false,
   onDelete,
   canDelete = true,
 }: {
@@ -324,28 +325,36 @@ export function EntityRowActions({
   viewIcon?: LucideIcon
   extra?: ReactNode
   editTo?: string
+  /** If true, row click / Enter opens details instead of edit. */
+  rowOpensView?: boolean
   onDelete?: () => void
   canDelete?: boolean
 }) {
   const { t } = useTranslation()
   const label = viewLabel ?? t('common.view')
+  const rowOpensEdit = Boolean(editTo) && !rowOpensView
   return (
     <div data-row-actions className="flex flex-nowrap items-center gap-2 whitespace-nowrap">
       {showView ? (
-        <Link to={viewTo} data-row-view>
+        <Link to={viewTo} {...(rowOpensEdit ? {} : { 'data-row-view': '' })}>
           <Button type="button" variant="ghost">
             <ViewIcon className="size-4" aria-hidden />
             {label}
           </Button>
         </Link>
-      ) : (
+      ) : editTo && !rowOpensView ? null : (
         <Link to={viewTo} data-row-view className="sr-only">
           {label}
         </Link>
       )}
       {extra}
       {editTo ? (
-        <Link to={editTo} aria-label={t('common.edit')} title={t('common.edit')}>
+        <Link
+          to={editTo}
+          {...(rowOpensEdit ? { 'data-row-view': '' } : {})}
+          aria-label={t('common.edit')}
+          title={t('common.edit')}
+        >
           <Button type="button" variant="ghost" icon>
             <Pencil className="size-4" aria-hidden />
           </Button>

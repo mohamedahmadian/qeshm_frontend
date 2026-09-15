@@ -1,4 +1,4 @@
-import { CookingPot, ImagePlus, MapPin, Phone, Store, Type, UtensilsCrossed } from 'lucide-react'
+import { Building2, CookingPot, ImagePlus, MapPin, Phone, Store, Type, UtensilsCrossed } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -15,7 +15,7 @@ import { api } from '../../../lib/api'
 import { formatNumber } from '../../../lib/datetime'
 import type { Restaurant } from '../../../types/app'
 import { ImageFact } from '../EntityThumb'
-import { restaurantMenuPath, restaurantPath, restaurantsPath } from '../food-paths'
+import { restaurantMenuPath, restaurantPath, restaurantUnitsPath, restaurantsPath } from '../food-paths'
 
 export function RestaurantDetailPage() {
   const { t, i18n } = useTranslation()
@@ -51,6 +51,11 @@ export function RestaurantDetailPage() {
             <FormFactTile icon={Type} label={t('restaurants.name')} value={restaurant.name} tone="teal" />
             <FormFactTile icon={Phone} label={t('restaurants.phone')} copyValue={restaurant.phone} tone="mint" />
             <FormFactTile
+              icon={Building2}
+              label={t('restaurants.unitCount')}
+              value={formatNumber(restaurant._count?.orgUnits ?? 0, locale)}
+            />
+            <FormFactTile
               icon={UtensilsCrossed}
               label={t('restaurants.menuItemCount')}
               value={formatNumber(restaurant._count?.menuItems ?? 0, locale)}
@@ -83,6 +88,11 @@ export function RestaurantDetailPage() {
               })
             }
             extraItems={[
+              {
+                to: restaurantUnitsPath(restaurant.id),
+                icon: Building2,
+                label: t('restaurantUnits.manage'),
+              },
               {
                 to: restaurantMenuPath(restaurant.id),
                 icon: CookingPot,

@@ -105,13 +105,16 @@ export function OrganizationPositionListPage() {
                   <EntityRowActions
                     viewTo={organizationPositionPath(item.id)}
                     editTo={`${organizationPositionPath(item.id)}/edit`}
-                    onDelete={() =>
-                      confirmDelete({
-                        message: t('organizationPositions.confirmDelete'),
-                        successMessage: t('organizationPositions.deleted'),
-                        path: `/organization/positions/${item.id}`,
-                        queryKey: ['organization-positions'],
-                      })
+                    onDelete={
+                      item.isSystem
+                        ? undefined
+                        : () =>
+                            confirmDelete({
+                              message: t('organizationPositions.confirmDelete'),
+                              successMessage: t('organizationPositions.deleted'),
+                              path: `/organization/positions/${item.id}`,
+                              queryKey: ['organization-positions'],
+                            })
                     }
                   />
                 </td>
@@ -223,15 +226,18 @@ export function OrganizationPositionDetailPage() {
           <DetailActions
             editTo={`${organizationPositionPath(id)}/edit`}
             editLabel={t('common.edit')}
-            deleteLabel={t('organizationPositions.delete')}
-            onDelete={() =>
-              confirmDelete({
-                message: t('organizationPositions.confirmDelete'),
-                successMessage: t('organizationPositions.deleted'),
-                path: `/organization/positions/${id}`,
-                queryKey: ['organization-positions'],
-                onDeleted: () => navigate(organizationPositionsPath()),
-              })
+            deleteLabel={item.isSystem ? undefined : t('organizationPositions.delete')}
+            onDelete={
+              item.isSystem
+                ? undefined
+                : () =>
+                    confirmDelete({
+                      message: t('organizationPositions.confirmDelete'),
+                      successMessage: t('organizationPositions.deleted'),
+                      path: `/organization/positions/${id}`,
+                      queryKey: ['organization-positions'],
+                      onDeleted: () => navigate(organizationPositionsPath()),
+                    })
             }
           />
         </div>

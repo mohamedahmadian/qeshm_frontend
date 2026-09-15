@@ -202,7 +202,18 @@ function applyBoundsView(map: L.Map, bounds: L.LatLngBounds) {
   map.fitBounds(bounds, { padding: [20, 20], animate: false })
 }
 
-function addMapTiles(map: L.Map) {
+const DEFAULT_PIN_ZOOM = 16
+
+function addMapTiles(map: L.Map, tiles: 'osm' | 'voyager' = 'osm') {
+  if (tiles === 'voyager') {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20,
+    }).addTo(map)
+    return
+  }
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19,
@@ -224,6 +235,8 @@ export function OsmMapPicker({
   overlays = null,
   fill = false,
   plainChrome = false,
+  look = 'default',
+  pinZoom = DEFAULT_PIN_ZOOM,
   keepInView = null,
   onMarkerClick,
   onSelectedContainerPoint,
@@ -246,6 +259,8 @@ export function OsmMapPicker({
   overlays?: MapOverlays | null
   fill?: boolean
   plainChrome?: boolean
+  look?: 'default' | 'tablet'
+  pinZoom?: number
   keepInView?: {
     id: string
     padding: { top: number; right: number; bottom: number; left: number }
@@ -267,6 +282,8 @@ export function OsmMapPicker({
   const overlayLayerRef = useRef<L.LayerGroup | null>(null)
   const overlayFitKeyRef = useRef<string>('')
   const overlaysRef = useRef(overlays)
+  const pinZoomRef = useRef(pinZoom)
+  const lookRef = useRef(look)
   const onChangeRef = useRef(onChange)
   const onGeolocateRef = useRef(onGeolocate)
   const onGeoErrorRef = useRef(onGeoError)
@@ -287,6 +304,8 @@ export function OsmMapPicker({
   onMapClickRef.current = onMapClick
   overlaysRef.current = overlays
   maxBoundsRef.current = maxBounds
+  pinZoomRef.current = pinZoom
+  lookRef.current = look
 
   const canEdit = !readOnly
   const geolocateEnabled = showGeolocate || (alwaysOpen && !readOnly)
@@ -322,7 +341,7 @@ export function OsmMapPicker({
     })
     const currentOverlays = overlaysRef.current
     if (start) {
-      map.setView(start, 16)
+      map.setView(start, pinZoomRef.current)
     } else if (currentOverlays?.fit && overlayFitLatLngs(currentOverlays).length) {
       fitOverlayBounds(map, currentOverlays)
     } else if (maxBounds) {
@@ -334,7 +353,7 @@ export function OsmMapPicker({
     } else {
       map.fitBounds(toLeafletBounds(IRAN_BOUNDS), { padding: [28, 28], maxZoom: 6 })
     }
-    addMapTiles(map)
+    addMapTiles(map, lookRef.current === 'tablet' ? 'voyager' : 'osm')
 
     if (start) placeMarker(map, start, canEdit)
 
@@ -382,7 +401,11 @@ export function OsmMapPicker({
     const previous = markerRef.current?.getLatLng()
     placeMarker(map, next, canEdit)
     if ((!previous || previous.distanceTo(next) > 1) && !overlays?.fit) {
-      map.setView(next, Math.max(map.getZoom(), 16))
+      const currentZoom = map.getZoom()
+      const nextZoom = previous
+        ? Math.min(currentZoom, pinZoomRef.current)
+        : pinZoomRef.current
+      map.setView(next, nextZoom)
     }
   }, [canEdit, latitude, longitude, open, overlays?.fit])
 
@@ -561,7 +584,7 @@ export function OsmMapPicker({
     if (fromGeo) onGeolocateRef.current?.(formatCoord(lat), formatCoord(lng))
     if (map) {
       placeMarker(map, latlng, canEdit)
-      map.setView(latlng, Math.max(map.getZoom(), 16))
+      map.setView(latlng, Math.min(map.getZoom() || pinZoomRef.current, pinZoomRef.current))
     }
     return 'ok' as const
   }
@@ -665,21 +688,36 @@ export function OsmMapPicker({
         </div>
       ) : null}
       {open ? (
-        <div
-          dir="ltr"
-          className={`overflow-hidden ${
-            plainChrome
-              ? 'h-full rounded-none border-0 shadow-none'
-              : `rounded-2xl border border-line shadow-[0_8px_24px_rgba(20,40,40,0.06)] ${
-                  fill ? 'h-full' : ''
-                }`
-          }`}
-        >
+        look === 'tablet' ? (
+          <div dir="ltr" className="map-tablet">
+            <div className="map-tablet-bezel">
+              <span className="map-tablet-camera" aria-hidden />
+              <div className="map-tablet-screen">
+                <div
+                  ref={containerRef}
+                  className={`eskan-osm-map w-full ${fill ? 'h-full' : heightClass}`}
+                />
+              </div>
+              <span className="map-tablet-home" aria-hidden />
+            </div>
+          </div>
+        ) : (
           <div
-            ref={containerRef}
-            className={`eskan-osm-map w-full ${fill ? 'h-full' : heightClass}`}
-          />
-        </div>
+            dir="ltr"
+            className={`overflow-hidden ${
+              plainChrome
+                ? 'h-full rounded-none border-0 shadow-none'
+                : `rounded-2xl border border-line shadow-[0_8px_24px_rgba(20,40,40,0.06)] ${
+                    fill ? 'h-full' : ''
+                  }`
+            }`}
+          >
+            <div
+              ref={containerRef}
+              className={`eskan-osm-map w-full ${fill ? 'h-full' : heightClass}`}
+            />
+          </div>
+        )
       ) : null}
     </div>
   )

@@ -17,7 +17,7 @@ import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
-import { ADMIN_ROLE_CODE } from '../../lib/roles'
+import { isSystemRoleLocked } from '../../lib/roles'
 import type { AppRole, Paginated } from '../../types/app'
 
 export function RolesListPage() {
@@ -82,7 +82,7 @@ export function RolesListPage() {
           </thead>
           <tbody>
             {rows.map((role) => {
-              const locked = role.isSystem || role.code === ADMIN_ROLE_CODE
+              const locked = isSystemRoleLocked(role)
               return (
                 <tr key={role.id} className="border-t border-line">
                   <td className="px-4 py-3">{role.name}</td>

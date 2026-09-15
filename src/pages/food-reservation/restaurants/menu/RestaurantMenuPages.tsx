@@ -1,5 +1,6 @@
-import { CalendarRange, CookingPot, Filter, ImagePlus, Plus, ScrollText, Store, ToggleRight, UtensilsCrossed, Wallet } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { Ban, CalendarRange, CookingPot, Filter, ImagePlus, ScrollText, Store, ToggleRight, UtensilsCrossed, Wallet } from 'lucide-react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -35,7 +36,14 @@ import type { Food, Paginated, Restaurant, RestaurantMenuItem } from '../../../.
 import { GeoStatus } from '../../../geo/GeoShared'
 import { EntityThumb, ImageFact } from '../../EntityThumb'
 import { restaurantMenuPath } from '../../food-paths'
-import { RestaurantMenuForm } from './RestaurantMenuForm'
+import { RestaurantMenuCancelForm, RestaurantMenuForm } from './RestaurantMenuForm'
+
+const menuManageTabs = [
+  { id: 'create', icon: CookingPot, labelKey: 'restaurantMenuItems.create' },
+  { id: 'cancel', icon: Ban, labelKey: 'restaurantMenuItems.cancelPlan' },
+] as const
+
+type MenuManageTab = (typeof menuManageTabs)[number]['id']
 
 function useRestaurant() {
   const { id: restaurantId } = useParams()
@@ -119,8 +127,8 @@ export function RestaurantMenuListPage() {
         action={
           <Link to={`${base}/new`}>
             <Button>
-              <Plus className="size-4" />
-              {t('restaurantMenuItems.create')}
+              <CookingPot className="size-4" />
+              {t('restaurantMenuItems.manage')}
             </Button>
           </Link>
         }
@@ -248,9 +256,11 @@ export function RestaurantMenuListPage() {
 export function RestaurantMenuCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { restaurantId, restaurant } = useRestaurant()
   const foods = useFoods()
   const menuItems = useMenuItems(restaurantId)
+  const [tab, setTab] = useState<MenuManageTab>('create')
   if (!restaurant || !restaurantId || !foods.data || !menuItems.data) {
     return <LoadingState />
   }
@@ -258,18 +268,76 @@ export function RestaurantMenuCreatePage() {
     <div className={formShellClassName}>
       <PageHeader
         icon={UtensilsCrossed}
-        title={t('restaurantMenuItems.create')}
+        title={t('restaurantMenuItems.manage')}
         subtitle={<EntityNameSubtitle name={restaurant.name} icon={Store} />}
       />
-      <RestaurantMenuForm
-        foods={foods.data}
-        existingItems={menuItems.data}
-        onSubmit={async (payload) => {
-          await api.post(`/restaurants/${restaurantId}/menu-items`, payload)
-          toast.success(t('restaurantMenuItems.created'))
-          navigate(restaurantMenuPath(restaurantId))
-        }}
-      />
+      <FormCard
+        icon={CookingPot}
+        title={t('restaurantMenuItems.manage')}
+        subtitle={t('restaurantMenuItems.manageSubtitle')}
+      >
+        <nav className="flex flex-wrap gap-2 border-b border-line bg-cream-50/60 px-4 py-3 sm:px-5">
+          {menuManageTabs.map((itemTab) => {
+            const Icon = itemTab.icon
+            const active = tab === itemTab.id
+            return (
+              <button
+                key={itemTab.id}
+                type="button"
+                onClick={() => setTab(itemTab.id)}
+                className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition ${
+                  active
+                    ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
+                    : 'bg-white text-ink-700 ring-1 ring-line hover:bg-cream-50'
+                }`}
+              >
+                <Icon className={`size-3.5 ${active ? 'text-white' : 'text-teal-600'}`} aria-hidden />
+                {t(itemTab.labelKey)}
+              </button>
+            )
+          })}
+        </nav>
+        {tab === 'create' ? (
+          <RestaurantMenuForm
+            embedded
+            foods={foods.data}
+            existingItems={menuItems.data}
+            onSubmit={async (payload) => {
+              await api.post(`/restaurants/${restaurantId}/menu-items`, {
+                foodId: payload.foodId,
+                offeredAt: payload.offeredAt,
+                ...(payload.offeredUntil ? { offeredUntil: payload.offeredUntil } : {}),
+                price: payload.price,
+                isActive: payload.isActive,
+              })
+              toast.success(t('restaurantMenuItems.created'))
+              navigate(restaurantMenuPath(restaurantId))
+            }}
+          />
+        ) : (
+          <RestaurantMenuCancelForm
+            foods={foods.data}
+            onSubmit={async (payload) => {
+              const { data } = await api.post<{ menuItemCount: number; reservationCount: number }>(
+                `/restaurants/${restaurantId}/menu-items/cancel`,
+                {
+                  foodId: payload.foodId,
+                  offeredAt: payload.offeredAt,
+                  ...(payload.offeredUntil ? { offeredUntil: payload.offeredUntil } : {}),
+                },
+              )
+              if (!data.menuItemCount && !data.reservationCount) {
+                toast.error(t('restaurantMenuItems.cancelPlanEmpty'))
+                return
+              }
+              await queryClient.invalidateQueries({ queryKey: ['restaurant-menu'] })
+              await queryClient.invalidateQueries({ queryKey: ['food-reservations'] })
+              toast.success(t('restaurantMenuItems.cancelPlanSuccess'))
+              navigate(restaurantMenuPath(restaurantId))
+            }}
+          />
+        )}
+      </FormCard>
     </div>
   )
 }
@@ -306,7 +374,12 @@ export function RestaurantMenuEditPage() {
         existingItems={menuItems.data}
         initial={query.data}
         onSubmit={async (payload) => {
-          await api.patch(`/restaurants/${restaurantId}/menu-items/${itemId}`, payload)
+          await api.patch(`/restaurants/${restaurantId}/menu-items/${itemId}`, {
+            foodId: payload.foodId,
+            offeredAt: payload.offeredAt,
+            price: payload.price,
+            isActive: payload.isActive,
+          })
           toast.success(t('restaurantMenuItems.updated'))
           navigate(restaurantMenuPath(restaurantId))
         }}

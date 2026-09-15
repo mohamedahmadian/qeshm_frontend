@@ -503,7 +503,9 @@ export function ProjectForm({
                 latitude={latitude}
                 longitude={longitude}
                 focus={focus}
-                heightClass="h-56 sm:h-64"
+                look="tablet"
+                pinZoom={13}
+                heightClass="h-[22rem] sm:h-[28rem] lg:h-[34rem]"
                 onChange={(nextLat, nextLng) => {
                   setLatitude(nextLat)
                   setLongitude(nextLng)

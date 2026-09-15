@@ -213,7 +213,7 @@ export function getPageMeta(pathname: string): {
     return { titleKey: 'menus.foodManagement', subtitleKey: 'foods.subtitle' }
   }
   if (/\/restaurants\/[^/]+\/menu\/new$/.test(pathname)) {
-    return { titleKey: 'restaurantMenuItems.create', subtitleKey: 'restaurantMenuItems.createSubtitle' }
+    return { titleKey: 'restaurantMenuItems.manage', subtitleKey: 'restaurantMenuItems.manageSubtitle' }
   }
   if (/\/menu\/[^/]+\/edit$/.test(pathname)) {
     return { titleKey: 'restaurantMenuItems.edit', subtitleKey: 'restaurantMenuItems.editSubtitle' }
@@ -223,6 +223,15 @@ export function getPageMeta(pathname: string): {
   }
   if (/\/menu$/.test(pathname)) {
     return { titleKey: 'restaurantMenuItems.title', subtitleKey: 'restaurantMenuItems.subtitle' }
+  }
+  if (/\/food-reservation\/restaurants\/[^/]+\/units\/new$/.test(pathname)) {
+    return { titleKey: 'restaurantUnits.create', subtitleKey: 'restaurantUnits.createSubtitle' }
+  }
+  if (/\/food-reservation\/restaurants\/[^/]+\/units\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'restaurantUnits.edit', subtitleKey: 'restaurantUnits.editSubtitle' }
+  }
+  if (/\/food-reservation\/restaurants\/[^/]+\/units$/.test(pathname)) {
+    return { titleKey: 'restaurantUnits.title', subtitleKey: 'restaurantUnits.subtitle' }
   }
   if (pathname === '/food-reservation/restaurants/new') {
     return { titleKey: 'restaurants.create', subtitleKey: 'restaurants.createSubtitle' }
@@ -427,6 +436,48 @@ export function getPageMeta(pathname: string): {
   }
   if (pathname === '/singard') {
     return { titleKey: 'landing.singard', subtitleKey: 'singardWizard.subtitle' }
+  }
+  if (pathname.startsWith('/board/permissions')) {
+    return { titleKey: 'menus.boardPermissions', subtitleKey: 'boardPermissions.subtitle' }
+  }
+  if (pathname.startsWith('/board/plans')) {
+    return { titleKey: 'menus.boardPlans', subtitleKey: 'boardPlans.subtitle' }
+  }
+  if (/\/resolutions\/new$/.test(pathname) && pathname.includes('/minutes/')) {
+    return { titleKey: 'boardResolutions.create', subtitleKey: 'boardResolutions.createSubtitle' }
+  }
+  if (/\/minutes\/[^/]+\/resolutions\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'boardResolutions.edit', subtitleKey: 'boardResolutions.editSubtitle' }
+  }
+  if (/\/minutes\/[^/]+\/resolutions\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'boardResolutions.details', subtitleKey: 'boardResolutions.detailsSubtitle' }
+  }
+  if (pathname.includes('/minutes/') && pathname.endsWith('/resolutions')) {
+    return { titleKey: 'boardResolutions.title', subtitleKey: 'boardResolutions.subtitle' }
+  }
+  if (pathname.endsWith('/minutes/new') || pathname === '/board/minutes/new') {
+    return { titleKey: 'boardMinutes.create', subtitleKey: 'boardMinutes.createSubtitle' }
+  }
+  if (/\/minutes\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'boardMinutes.edit', subtitleKey: 'boardMinutes.editSubtitle' }
+  }
+  if (/\/minutes\/[^/]+$/.test(pathname) && !pathname.endsWith('/minutes')) {
+    return { titleKey: 'boardMinutes.details', subtitleKey: 'boardMinutes.detailsSubtitle' }
+  }
+  if (pathname === '/board/minutes' || pathname.endsWith('/minutes')) {
+    return { titleKey: 'menus.boardMinutes', subtitleKey: 'boardMinutes.subtitle' }
+  }
+  if (pathname === '/board/requests/new') {
+    return { titleKey: 'boardRequests.create', subtitleKey: 'boardRequests.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/board/requests/')) {
+    return { titleKey: 'boardRequests.edit', subtitleKey: 'boardRequests.editSubtitle' }
+  }
+  if (pathname.startsWith('/board/requests/')) {
+    return { titleKey: 'boardRequests.details', subtitleKey: 'boardRequests.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/board/requests')) {
+    return { titleKey: 'menus.boardRequests', subtitleKey: 'boardRequests.subtitle' }
   }
   if (pathname === '/dashboard') {
     return { titleKey: 'dashboard.title', subtitleKey: 'dashboard.subtitle' }

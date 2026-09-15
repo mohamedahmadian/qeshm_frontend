@@ -18,6 +18,14 @@ export function restaurantMenuPath(restaurantId: string) {
   return `${restaurantPath(restaurantId)}/menu`
 }
 
+export function restaurantUnitsPath(restaurantId: string) {
+  return `${restaurantPath(restaurantId)}/units`
+}
+
+export function restaurantUnitPath(restaurantId: string, linkId: string) {
+  return `${restaurantUnitsPath(restaurantId)}/${linkId}`
+}
+
 export function foodReservePath() {
   return '/food-reservation/reserve'
 }

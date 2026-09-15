@@ -1,5 +1,5 @@
 import { getPageMeta } from "./page-meta";
-import { menuPathMatches, normalizeMenuPath } from "./nav-path";
+import { menuPathMatches, normalizeMenuPath, sidebarMenuPathname } from "./nav-path";
 
 export type BreadcrumbNavMenu = {
   path: string;
@@ -22,6 +22,7 @@ const HOME_TITLE_KEY = "nav.home";
 const FALLBACK_TITLE_KEY = "menus.overview";
 
 function findLongestMenu(pathname: string, modules: BreadcrumbNavModule[]) {
+  const path = sidebarMenuPathname(pathname);
   let best:
     | {
         moduleNameKey: string;
@@ -32,7 +33,7 @@ function findLongestMenu(pathname: string, modules: BreadcrumbNavModule[]) {
     | undefined;
   for (const mod of modules) {
     for (const menu of mod.menus) {
-      if (!menuPathMatches(pathname, menu.path)) continue;
+      if (!menuPathMatches(path, menu.path)) continue;
       const menuPath = normalizeMenuPath(menu.path);
       if (!best || menuPath.length > best.menuPath.length) {
         best = {

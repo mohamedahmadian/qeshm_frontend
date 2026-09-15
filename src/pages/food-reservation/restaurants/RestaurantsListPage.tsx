@@ -1,4 +1,4 @@
-import { CookingPot, Plus, Store } from 'lucide-react'
+import { Building2, CookingPot, Plus, Store } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -19,7 +19,7 @@ import { api } from '../../../lib/api'
 import { formatNumber, localizeDigits } from '../../../lib/datetime'
 import type { Paginated, Restaurant } from '../../../types/app'
 import { EntityThumb } from '../EntityThumb'
-import { restaurantMenuPath, restaurantPath, restaurantsPath } from '../food-paths'
+import { restaurantMenuPath, restaurantPath, restaurantUnitsPath, restaurantsPath } from '../food-paths'
 
 export function RestaurantsListPage() {
   const { t, i18n } = useTranslation()
@@ -72,8 +72,8 @@ export function RestaurantsListPage() {
               <SortableTh column="name" label={t('restaurants.name')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="phone" label={t('restaurants.phone')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh
-                column="address"
-                label={t('restaurants.address')}
+                column="unitCount"
+                label={t('restaurants.units')}
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
@@ -100,21 +100,32 @@ export function RestaurantsListPage() {
                 <td className="px-4 py-3">
                   {restaurant.phone ? localizeDigits(restaurant.phone, locale) : '—'}
                 </td>
-                <td className="px-4 py-3">{restaurant.address || '—'}</td>
+                <td className="px-4 py-3">
+                  {formatNumber(restaurant._count?.orgUnits ?? 0, locale)}
+                </td>
                 <td className="px-4 py-3">
                   {formatNumber(restaurant._count?.menuItems ?? 0, locale)}
                 </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
                     viewTo={restaurantPath(restaurant.id)}
+                    showView={false}
                     editTo={`${restaurantPath(restaurant.id)}/edit`}
                     extra={
-                      <Link to={restaurantMenuPath(restaurant.id)}>
-                        <Button type="button" variant="soft">
-                          <CookingPot className="size-4" aria-hidden />
-                          {t('restaurants.menu')}
-                        </Button>
-                      </Link>
+                      <>
+                        <Link to={restaurantUnitsPath(restaurant.id)}>
+                          <Button type="button" variant="soft">
+                            <Building2 className="size-4" aria-hidden />
+                            {t('restaurants.units')}
+                          </Button>
+                        </Link>
+                        <Link to={restaurantMenuPath(restaurant.id)}>
+                          <Button type="button" variant="soft">
+                            <CookingPot className="size-4" aria-hidden />
+                            {t('restaurants.menu')}
+                          </Button>
+                        </Link>
+                      </>
                     }
                     onDelete={() =>
                       confirmDelete({

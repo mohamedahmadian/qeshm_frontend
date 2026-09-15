@@ -4,6 +4,7 @@ import {
   ChevronRight,
   CornerDownLeft,
   Filter,
+  Hash,
   MapPin,
   MessageCircle,
   Network,
@@ -97,12 +98,20 @@ function UnitRowActions({
       viewTo={organizationUnitPath(item.id)}
       showView={false}
       extra={
-        <Link to={`${organizationEmployeesPath()}?orgUnitId=${item.id}`}>
-          <Button type="button" variant="soft">
-            <Users className="size-4" aria-hidden />
-            {t('employees.manage')}
-          </Button>
-        </Link>
+        <>
+          <Link to={`${organizationEmployeesPath()}?orgUnitId=${item.id}`}>
+            <Button type="button" variant="soft">
+              <Users className="size-4" aria-hidden />
+              {t('organizationUnits.employees')}
+            </Button>
+          </Link>
+          <Link to={organizationUnitRestaurantsPath(item.id)}>
+            <Button type="button" variant="soft">
+              <Store className="size-4" aria-hidden />
+              {t('organizationUnits.restaurants')}
+            </Button>
+          </Link>
+        </>
       }
       editTo={`${organizationUnitPath(item.id)}/edit`}
       onDelete={() => onDelete(item)}
@@ -285,7 +294,7 @@ export function OrganizationUnitListPage() {
                 <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.name')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.kind')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.phone')}</th>
-                <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.employeeCount')}</th>
+                <th className="px-4 py-3 text-center font-medium">{t('organizationUnits.employeeCount')}</th>
                 <ActionsTh />
               </tr>
             </thead>
@@ -363,7 +372,11 @@ export function OrganizationUnitListPage() {
                         '—'
                       )}
                     </td>
-                    <td className="px-4 py-3">{formatNumber(item._count?.employees ?? 0, locale)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex min-w-8 justify-center rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700">
+                        {formatNumber(item._count?.employees ?? 0, locale)}
+                      </span>
+                    </td>
                     <td className={actionsColClassName}>
                       <UnitRowActions item={item} onDelete={deleteUnit} />
                     </td>
@@ -389,6 +402,7 @@ export function OrganizationUnitListPage() {
                     sortBy={sortBy}
                     sortDir={sortDir}
                     onSort={onSort}
+                    align="center"
                   />
                   <ActionsTh />
                 </tr>
@@ -408,7 +422,11 @@ export function OrganizationUnitListPage() {
                         '—'
                       )}
                     </td>
-                    <td className="px-4 py-3">{formatNumber(item._count?.employees ?? 0, locale)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex min-w-8 justify-center rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700">
+                        {formatNumber(item._count?.employees ?? 0, locale)}
+                      </span>
+                    </td>
                     <td className={actionsColClassName}>
                       <UnitRowActions item={item} onDelete={deleteUnit} />
                     </td>
@@ -562,12 +580,6 @@ export function OrganizationUnitDetailPage() {
                 />
                 <FormFactTile icon={Phone} label={t('organizationUnits.phone')} copyValue={item.phone} tone="mint" />
                 <FormFactTile
-                  icon={UtensilsCrossed}
-                  label={t('organizationUnits.nutritionRep')}
-                  value={item.nutritionRep?.fullName || empty}
-                  empty={!item.nutritionRep}
-                />
-                <FormFactTile
                   icon={Users}
                   label={t('organizationUnits.employeeCount')}
                   value={formatNumber(item._count?.employees ?? 0, locale)}
@@ -584,6 +596,23 @@ export function OrganizationUnitDetailPage() {
                   value={item.address || empty}
                   empty={!item.address}
                   className="sm:col-span-2"
+                />
+              </div>
+              <FormSectionTitle icon={UtensilsCrossed}>{t('organizationUnits.foodSection')}</FormSectionTitle>
+              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+                <FormFactTile
+                  icon={UtensilsCrossed}
+                  label={t('organizationUnits.nutritionRep')}
+                  value={item.nutritionRep?.fullName || empty}
+                  empty={!item.nutritionRep}
+                  tone="teal"
+                />
+                <FormFactTile
+                  icon={Hash}
+                  label={t('organizationUnits.maxMeals')}
+                  value={item.maxMeals != null ? formatNumber(item.maxMeals, locale) : empty}
+                  empty={item.maxMeals == null}
+                  tone="mint"
                 />
               </div>
               <FormSectionTitle icon={MapPin}>{t('organizationUnits.locationSection')}</FormSectionTitle>

@@ -117,6 +117,9 @@ export function FoodReserveForm({
     },
   })
   const foods = menu.data ?? []
+  const resolvedFoodId =
+    foods.length === 1 ? foods[0].food.id : foodId
+  const menuPending = Boolean(restaurantId && reservedAt && menu.isLoading)
 
   useEffect(() => {
     if (context.restaurants.length === 1) {
@@ -129,7 +132,10 @@ export function FoodReserveForm({
       setFoodId('')
       return
     }
-    if (!menu.data) return
+    if (!menu.data) {
+      setFoodId('')
+      return
+    }
     if (menu.data.length === 1) {
       setFoodId(menu.data[0].food.id)
       return
@@ -137,16 +143,31 @@ export function FoodReserveForm({
     setFoodId((current) =>
       menu.data.some((item) => item.food.id === current) ? current : '',
     )
-  }, [restaurantId, menu.data])
+  }, [restaurantId, reservedAt, menu.data])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (!reservedAt || !restaurantId || !foodId) {
-      toast.error(t('foodReservations.createSubtitle'))
+    if (!reservedAt) {
+      toast.error(t('foodReservations.selectDay'))
+      return
+    }
+    if (!restaurantId) {
+      toast.error(t('foodReservations.selectRestaurant'))
       return
     }
     if (reservedAt < todayIsoDate()) {
       toast.error(t('foodReservations.pastDay'))
+      return
+    }
+    if (menuPending) {
+      return
+    }
+    if (menu.isSuccess && foods.length === 0) {
+      toast.error(t('foodReservations.noActiveFood'))
+      return
+    }
+    if (!resolvedFoodId) {
+      toast.error(t('foodReservations.selectFood'))
       return
     }
     const qty = context.isNutritionRep ? Number(quantity) || 1 : 1
@@ -155,7 +176,7 @@ export function FoodReserveForm({
       await onSubmit({
         reservedAt,
         restaurantId,
-        foodId,
+        foodId: resolvedFoodId,
         quantity: qty,
       })
     } catch (error) {
@@ -228,11 +249,11 @@ export function FoodReserveForm({
         {restaurantId && menu.isSuccess && foods.length === 0 ? (
           <FormEmptyHint>{t('foodReservations.noActiveFood')}</FormEmptyHint>
         ) : null}
-        {foods.length > 1 ? (
+        {foods.length > 0 ? (
           <FormField icon={UtensilsCrossed} label={t('foodReservations.food')} htmlFor="reserveFood">
             <SearchSelect
               id="reserveFood"
-              value={foodId}
+              value={resolvedFoodId}
               required
               onChange={setFoodId}
               placeholder={t('foodReservations.selectFood')}
@@ -243,7 +264,7 @@ export function FoodReserveForm({
         <FormActions
           submitLabel={t('foodReservations.save')}
           cancelLabel={t('foodReservations.cancel')}
-          submitting={saving}
+          submitting={saving || menuPending}
           onCancel={() => history.back()}
         />
       </AppForm>

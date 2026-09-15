@@ -173,6 +173,8 @@ export type AuthUser = {
   impersonatedBy?: { id: string; fullName: string } | null;
   orgUnitId?: string | null;
   orgUnit?: { id: string; name: string } | null;
+  positionId?: string | null;
+  position?: { id: string; code: string | null; name: string } | null;
   isNutritionRep?: boolean;
 };
 
@@ -3713,7 +3715,7 @@ export type Restaurant = {
   logoId: string | null;
   createdAt: string;
   updatedAt: string;
-  _count?: { menuItems: number };
+  _count?: { menuItems: number; orgUnits: number };
 };
 
 export type RestaurantMenuItem = {
@@ -3740,7 +3742,9 @@ export type OrganizationPhone = {
 
 export type OrganizationPosition = {
   id: string;
+  code?: string | null;
   name: string;
+  isSystem?: boolean;
   createdAt: string;
   updatedAt: string;
   _count?: { users: number };
@@ -3774,6 +3778,7 @@ export type OrganizationUnit = {
   whatsapp: string | null;
   nutritionRepId: string | null;
   nutritionRep: { id: string; firstName: string; lastName: string; fullName: string } | null;
+  maxMeals: number | null;
   createdAt: string;
   updatedAt: string;
   _count?: { employees: number; restaurants: number; children: number };
@@ -3807,7 +3812,7 @@ export type FoodReservation = {
 };
 
 export type FoodReservationContext = {
-  orgUnit: { id: string; name: string } | null;
+  orgUnit: { id: string; name: string; maxMeals: number | null } | null;
   isNutritionRep: boolean;
   restaurants: Pick<Restaurant, 'id' | 'name' | 'logoId'>[];
 };
@@ -3899,6 +3904,18 @@ export type OrganizationUnitRestaurant = {
   unitId: string;
   restaurantId: string;
   restaurant: Pick<Restaurant, 'id' | 'name' | 'phone' | 'address' | 'logoId'>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RestaurantUnit = {
+  id: string;
+  unitId: string;
+  restaurantId: string;
+  unit: Pick<OrganizationUnit, 'id' | 'name' | 'phone'> & {
+    kind: Pick<OrganizationUnitKind, 'id' | 'name'>;
+    parent: { id: string; name: string } | null;
+  };
   createdAt: string;
   updatedAt: string;
 };
@@ -4315,5 +4332,175 @@ export type VehicleReportsOverview = {
   byBrand: VehicleReportNamedCount[];
   byModel: VehicleReportNamedCount[];
 };
+
+export const boardRequestStatuses = {
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  PENDING_LEGAL: 'PENDING_LEGAL',
+  PENDING_BUDGET: 'PENDING_BUDGET',
+  PENDING_SECRETARY: 'PENDING_SECRETARY',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export type BoardRequestStatus =
+  (typeof boardRequestStatuses)[keyof typeof boardRequestStatuses];
+
+export const boardStages = {
+  REQUEST: 'REQUEST',
+  MANAGEMENT: 'MANAGEMENT',
+  LEGAL: 'LEGAL',
+  BUDGET: 'BUDGET',
+  SECRETARY: 'SECRETARY',
+} as const;
+
+export type BoardStage = (typeof boardStages)[keyof typeof boardStages];
+
+export type BoardPerson = {
+  id: string;
+  fullName: string;
+  username: string;
+};
+
+export type BoardAttachment = {
+  id: string;
+  stage: BoardStage;
+  kind: 'IMAGE' | 'FILE';
+  imageId: string | null;
+  fileId: string | null;
+  originalName: string | null;
+  mimeType: string | null;
+  byteSize: number | null;
+  createdAt: string;
+};
+
+export type BoardRequest = {
+  id: string;
+  status: BoardRequestStatus;
+  requestedAt: string;
+  unitId: string;
+  unit: { id: string; name: string };
+  orgPositionText: string;
+  subject: string;
+  justification: string | null;
+  topicHistory: string | null;
+  description: string | null;
+  createdById: string;
+  createdBy: BoardPerson;
+  managementComment: string | null;
+  managementAt: string | null;
+  managementBy: BoardPerson | null;
+  legalOrgMatch: boolean | null;
+  legalRegulationsMatch: boolean | null;
+  legalComment: string | null;
+  legalAt: string | null;
+  legalBy: BoardPerson | null;
+  budgetProgramHistory: boolean | null;
+  budgetCurrentYearFunding: boolean | null;
+  budgetComment: string | null;
+  budgetAt: string | null;
+  budgetBy: BoardPerson | null;
+  secretaryComment: string | null;
+  secretaryAt: string | null;
+  secretaryBy: BoardPerson | null;
+  rejectedStage: BoardStage | null;
+  rejectedComment: string | null;
+  rejectedAt: string | null;
+  rejectedBy: BoardPerson | null;
+  attachments: BoardAttachment[];
+  createdAt: string;
+  updatedAt: string;
+  _count?: { attachments: number };
+};
+
+export type BoardAccess = {
+  canAccess: boolean;
+  canPickUnit: boolean;
+  canSeeAll: boolean;
+  canEditPermissions: boolean;
+  canChangeStage: boolean;
+  canManageMinutes: boolean;
+  orgUnitId: string | null;
+  positionName: string | null;
+  stages: Record<BoardStage, boolean>;
+};
+
+export type BoardStagePermission = {
+  stage: Exclude<BoardStage, 'REQUEST'>;
+  units: { id: string; name: string }[];
+  positions: { id: string; name: string; code: string | null }[];
+};
+
+export type BoardRequestStats = {
+  total: number;
+  pendingReview: number;
+  pendingLegal: number;
+  pendingBudget: number;
+  pendingSecretary: number;
+  approved: number;
+  rejected: number;
+};
+
+export const boardMinutesAttendances = {
+  PRESENT: 'PRESENT',
+  ABSENT: 'ABSENT',
+} as const;
+
+export type BoardMinutesAttendance =
+  (typeof boardMinutesAttendances)[keyof typeof boardMinutesAttendances];
+
+export type BoardMinutesMember = {
+  id: string;
+  userId: string;
+  attendance: BoardMinutesAttendance;
+  user: BoardPerson;
+};
+
+export type BoardMinutesAttachment = {
+  id: string;
+  kind: 'IMAGE' | 'AUDIO';
+  imageId: string | null;
+  fileId: string | null;
+  originalName: string | null;
+  mimeType: string | null;
+  byteSize: number | null;
+  durationMs: number | null;
+};
+
+export type BoardMinutes = {
+  id: string;
+  requestId: string | null;
+  request: { id: string; subject: string; status: BoardRequestStatus } | null;
+  heldAt: string;
+  subject: string;
+  body: string | null;
+  createdById: string;
+  createdBy: BoardPerson;
+  members: BoardMinutesMember[];
+  attachments: BoardMinutesAttachment[];
+  createdAt: string;
+  updatedAt: string;
+  _count?: { members: number; resolutions: number; attachments: number };
+};
+
+export type BoardMinutesStats = {
+  total: number;
+  linked: number;
+  regular: number;
+  resolutionCount: number;
+};
+
+export type BoardMinutesResolution = {
+  id: string;
+  minutesId: string;
+  title: string;
+  description: string | null;
+  unitId: string;
+  unit: { id: string; name: string };
+  dueDate: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 
 

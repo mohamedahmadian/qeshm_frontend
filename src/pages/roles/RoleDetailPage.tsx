@@ -13,7 +13,7 @@ import { FormCard, FormEmptyHint, FormFactTile, FormSectionTitle } from '../../c
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { api } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
-import { ADMIN_ROLE_CODE } from '../../lib/roles'
+import { ADMIN_ROLE_CODE, isRolePermissionsLocked, isSystemRoleLocked } from '../../lib/roles'
 import type { AppRole } from '../../types/app'
 import { PermissionTree } from './PermissionTree'
 
@@ -37,7 +37,8 @@ export function RoleDetailPage() {
     return <LoadingState />
   }
 
-  const locked = role.isSystem || role.code === ADMIN_ROLE_CODE
+  const systemLocked = isSystemRoleLocked(role)
+  const permissionsLocked = isRolePermissionsLocked(role)
 
   return (
     <div className={formShellClassName}>
@@ -66,8 +67,14 @@ export function RoleDetailPage() {
             />
           </div>
           <FormSectionTitle icon={Shield}>{t('accessRoles.permissions')}</FormSectionTitle>
-          {locked ? (
-            <FormEmptyHint>{t('accessRoles.adminBypass')}</FormEmptyHint>
+          {permissionsLocked ? (
+            <FormEmptyHint>
+              {t(
+                role.code === ADMIN_ROLE_CODE
+                  ? 'accessRoles.adminBypass'
+                  : 'accessRoles.systemPermissionsLocked',
+              )}
+            </FormEmptyHint>
           ) : role.permissionCodes.length ? (
             <PermissionTree selected={role.permissionCodes} onChange={() => undefined} disabled />
           ) : (
@@ -76,9 +83,9 @@ export function RoleDetailPage() {
           <DetailActions
             editTo={`/base-info/roles/${role.id}/edit`}
             editLabel={t('common.edit')}
-            deleteLabel={locked ? undefined : t('accessRoles.delete')}
+            deleteLabel={systemLocked ? undefined : t('accessRoles.delete')}
             onDelete={
-              locked
+              systemLocked
                 ? undefined
                 : () =>
                     confirmDelete({

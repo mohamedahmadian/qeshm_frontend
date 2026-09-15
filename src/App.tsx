@@ -109,6 +109,11 @@ import {
   RestaurantMenuEditPage,
   RestaurantMenuListPage,
 } from './pages/food-reservation/restaurants/menu/RestaurantMenuPages'
+import {
+  RestaurantUnitCreatePage,
+  RestaurantUnitEditPage,
+  RestaurantUnitListPage,
+} from './pages/food-reservation/restaurants/units/RestaurantUnitPages'
 import { EmployeeCreatePage, EmployeeListPage } from './pages/organization/employees/EmployeePages'
 import { OrganizationCreatePage } from './pages/organization/OrganizationCreatePage'
 import { OrganizationDetailPage } from './pages/organization/OrganizationDetailPage'
@@ -188,6 +193,22 @@ import { SingardCategoryCreatePage } from './pages/singard/categories/SingardCat
 import { SingardCategoryDetailPage } from './pages/singard/categories/SingardCategoryDetailPage'
 import { SingardCategoryEditPage } from './pages/singard/categories/SingardCategoryEditPage'
 import { SingardReportsPage } from './pages/singard/reports/SingardReportsPage'
+import { BoardRequestCreatePage, BoardRequestEditPage } from './pages/board/BoardRequestPages'
+import { BoardRequestDetailPage } from './pages/board/BoardRequestDetailPage'
+import { BoardPlansPage } from './pages/board/BoardPlansPage'
+import { BoardPermissionsPage } from './pages/board/BoardPermissionsPage'
+import {
+  BoardMinutesCreatePage,
+  BoardMinutesDetailPage,
+  BoardMinutesEditPage,
+  BoardMinutesListPage,
+} from './pages/board/BoardMinutesPages'
+import {
+  BoardMinutesResolutionCreatePage,
+  BoardMinutesResolutionDetailPage,
+  BoardMinutesResolutionEditPage,
+  BoardMinutesResolutionListPage,
+} from './pages/board/BoardMinutesResolutionPages'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 
 const queryClient = new QueryClient()
@@ -299,6 +320,9 @@ export default function App() {
                   <Route path="/food-reservation/restaurants/:id/menu/new" element={<RestaurantMenuCreatePage />} />
                   <Route path="/food-reservation/restaurants/:id/menu/:itemId" element={<RestaurantMenuDetailPage />} />
                   <Route path="/food-reservation/restaurants/:id/menu/:itemId/edit" element={<RestaurantMenuEditPage />} />
+                  <Route path="/food-reservation/restaurants/:id/units" element={<RestaurantUnitListPage />} />
+                  <Route path="/food-reservation/restaurants/:id/units/new" element={<RestaurantUnitCreatePage />} />
+                  <Route path="/food-reservation/restaurants/:id/units/:linkId/edit" element={<RestaurantUnitEditPage />} />
                   <Route path="/food-reservation/restaurants/:id" element={<RestaurantDetailPage />} />
                   <Route path="/food-reservation/restaurants/:id/edit" element={<RestaurantEditPage />} />
                   <Route path="/food-reservation/reserve" element={<FoodReserveListPage />} />
@@ -364,6 +388,46 @@ export default function App() {
                   <Route path="/singard/categories/:id/edit" element={<SingardCategoryEditPage />} />
                   <Route path="/singard/categories/:id" element={<SingardCategoryDetailPage />} />
                   <Route path="/singard/reports" element={<SingardReportsPage />} />
+                  <Route path="/board/requests" element={<Navigate to="/board/requests/new" replace />} />
+                  <Route path="/board/requests/new" element={<BoardRequestCreatePage />} />
+                  <Route path="/board/requests/:requestId/minutes/new" element={<BoardMinutesCreatePage />} />
+                  <Route path="/board/requests/:requestId/minutes/:minutesId/edit" element={<BoardMinutesEditPage />} />
+                  <Route
+                    path="/board/requests/:requestId/minutes/:minutesId/resolutions/new"
+                    element={<BoardMinutesResolutionCreatePage />}
+                  />
+                  <Route
+                    path="/board/requests/:requestId/minutes/:minutesId/resolutions/:resolutionId/edit"
+                    element={<BoardMinutesResolutionEditPage />}
+                  />
+                  <Route
+                    path="/board/requests/:requestId/minutes/:minutesId/resolutions/:resolutionId"
+                    element={<BoardMinutesResolutionDetailPage />}
+                  />
+                  <Route
+                    path="/board/requests/:requestId/minutes/:minutesId/resolutions"
+                    element={<BoardMinutesResolutionListPage />}
+                  />
+                  <Route path="/board/requests/:requestId/minutes/:minutesId" element={<BoardMinutesDetailPage />} />
+                  <Route path="/board/requests/:requestId/minutes" element={<BoardMinutesListPage />} />
+                  <Route path="/board/requests/:id/edit" element={<BoardRequestEditPage />} />
+                  <Route path="/board/requests/:id" element={<BoardRequestDetailPage />} />
+                  <Route path="/board/plans" element={<BoardPlansPage />} />
+                  <Route path="/board/minutes" element={<BoardMinutesListPage />} />
+                  <Route path="/board/minutes/new" element={<BoardMinutesCreatePage />} />
+                  <Route path="/board/minutes/:minutesId/edit" element={<BoardMinutesEditPage />} />
+                  <Route path="/board/minutes/:minutesId/resolutions/new" element={<BoardMinutesResolutionCreatePage />} />
+                  <Route
+                    path="/board/minutes/:minutesId/resolutions/:resolutionId/edit"
+                    element={<BoardMinutesResolutionEditPage />}
+                  />
+                  <Route
+                    path="/board/minutes/:minutesId/resolutions/:resolutionId"
+                    element={<BoardMinutesResolutionDetailPage />}
+                  />
+                  <Route path="/board/minutes/:minutesId/resolutions" element={<BoardMinutesResolutionListPage />} />
+                  <Route path="/board/minutes/:minutesId" element={<BoardMinutesDetailPage />} />
+                  <Route path="/board/permissions" element={<BoardPermissionsPage />} />
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

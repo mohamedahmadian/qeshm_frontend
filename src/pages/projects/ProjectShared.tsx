@@ -1,6 +1,7 @@
 import { ClipboardList } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { HoverTooltip } from '../../components/ui/HoverTooltip'
 import {
   ActionsTh,
   EntityRowActions,
@@ -64,25 +65,63 @@ export function projectOperatorsText(operators?: { name: string }[]) {
 
 export const operatorsColClassName = 'w-52 max-w-52'
 
+function OperatorsTooltipList({
+  items,
+}: {
+  items: { id: string; name: string }[]
+}) {
+  return (
+    <ul className="max-h-64 space-y-1 overflow-y-auto p-3">
+      {items.map((item) => (
+        <li key={item.id} className="text-sm leading-6 text-ink-800">
+          {item.name}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function ProjectOperatorsCell({
   operators,
 }: {
   operators?: { id: string; name: string }[]
 }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   if (!operators?.length) {
     return '—'
   }
-  return (
-    <div className="flex min-w-0 w-full flex-col items-stretch gap-1">
-      {operators.map((item) => (
+  const first = operators[0]
+  if (!first) {
+    return '—'
+  }
+  const count = operators.length
+  const chip = (
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
+      <span className="min-w-0 truncate rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium leading-5 text-teal-800">
+        {first.name}
+      </span>
+      {count > 1 ? (
         <span
-          key={item.id}
-          className="block max-w-full break-words rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium leading-5 text-teal-800"
+          className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-teal-500 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+          aria-label={t('projects.operatorCount', { count: formatNumber(count, locale) })}
         >
-          {item.name}
+          {formatNumber(count, locale)}
         </span>
-      ))}
-    </div>
+      ) : null}
+    </span>
+  )
+  if (count <= 1) {
+    return chip
+  }
+  return (
+    <HoverTooltip
+      className="max-w-full"
+      label={t('projects.operators')}
+      content={<OperatorsTooltipList items={operators} />}
+    >
+      {chip}
+    </HoverTooltip>
   )
 }
 
@@ -253,7 +292,7 @@ export function ProjectsSummaryTable({
               <td className="px-4 py-3 font-medium">
                 <ProjectNameWithColor name={item.systemName} color={item.color} />
               </td>
-              <td className={`px-4 py-3 align-top ${operatorsColClassName}`}>
+              <td className={`px-4 py-3 ${operatorsColClassName}`}>
                 <ProjectOperatorsCell operators={item.operators} />
               </td>
               <td className="px-4 py-3">{projectContractorName(item)}</td>

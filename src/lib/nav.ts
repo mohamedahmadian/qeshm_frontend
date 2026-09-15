@@ -1,6 +1,19 @@
 import type { NavModule } from '../types/app'
 
-export const APP_NAV: NavModule[] = [
+export const MANAGEMENT_MODULE_CODE = 'management'
+
+/** ماژول مدیریت کاربران همیشه آخرین کارت منوی اصلی می‌ماند. */
+export function withManagementLast(nav: NavModule[]): NavModule[] {
+  const rest: NavModule[] = []
+  const management: NavModule[] = []
+  for (const mod of nav) {
+    if (mod.code === MANAGEMENT_MODULE_CODE) management.push(mod)
+    else rest.push(mod)
+  }
+  return [...rest, ...management]
+}
+
+export const APP_NAV: NavModule[] = withManagementLast([
   {
     code: 'dashboard',
     nameKey: 'modules.dashboard',
@@ -17,10 +30,53 @@ export const APP_NAV: NavModule[] = [
     ],
   },
   {
+    code: 'singard',
+    nameKey: 'modules.singard',
+    icon: 'sparkles',
+    sortOrder: 2,
+    menus: [
+      {
+        code: 'singard.submit',
+        nameKey: 'menus.singardSubmit',
+        path: '/singard/submit',
+        icon: 'message-circle-heart',
+        sortOrder: 1,
+      },
+      {
+        code: 'singard.mine',
+        nameKey: 'menus.singardMine',
+        path: '/singard/mine',
+        icon: 'inbox',
+        sortOrder: 2,
+      },
+      {
+        code: 'singard.inbox',
+        nameKey: 'menus.singardInbox',
+        path: '/singard/inbox',
+        icon: 'messages-square',
+        sortOrder: 3,
+      },
+      {
+        code: 'singard.categories',
+        nameKey: 'menus.singardCategories',
+        path: '/singard/categories',
+        icon: 'folder-tree',
+        sortOrder: 4,
+      },
+      {
+        code: 'singard.reports',
+        nameKey: 'menus.singardReports',
+        path: '/singard/reports',
+        icon: 'chart-column',
+        sortOrder: 5,
+      },
+    ],
+  },
+  {
     code: 'projects',
     nameKey: 'modules.projects',
     icon: 'folder-kanban',
-    sortOrder: 2,
+    sortOrder: 3,
     menus: [
       {
         code: 'projects.list',
@@ -63,7 +119,7 @@ export const APP_NAV: NavModule[] = [
     code: 'food-reservation',
     nameKey: 'modules.foodReservation',
     icon: 'cooking-pot',
-    sortOrder: 3,
+    sortOrder: 4,
     menus: [
       {
         code: 'food-reservation.foods',
@@ -113,7 +169,7 @@ export const APP_NAV: NavModule[] = [
     code: 'qeshm-organization',
     nameKey: 'modules.qeshmOrganization',
     icon: 'landmark',
-    sortOrder: 4,
+    sortOrder: 5,
     menus: [
       {
         code: 'qeshm-organization.info',
@@ -156,7 +212,7 @@ export const APP_NAV: NavModule[] = [
     code: 'light-assets',
     nameKey: 'modules.lightAssets',
     icon: 'car',
-    sortOrder: 5,
+    sortOrder: 6,
     menus: [
       {
         code: 'light-assets.vehicles',
@@ -185,7 +241,7 @@ export const APP_NAV: NavModule[] = [
     code: 'base-info',
     nameKey: 'modules.baseInfo',
     icon: 'globe',
-    sortOrder: 6,
+    sortOrder: 7,
     menus: [
       {
         code: 'base-info.countries',
@@ -211,10 +267,46 @@ export const APP_NAV: NavModule[] = [
     ],
   },
   {
+    code: 'board',
+    nameKey: 'modules.board',
+    icon: 'gavel',
+    sortOrder: 8,
+    menus: [
+      {
+        code: 'board.requests',
+        nameKey: 'menus.boardRequests',
+        path: '/board/requests',
+        icon: 'file-text',
+        sortOrder: 1,
+      },
+      {
+        code: 'board.plans',
+        nameKey: 'menus.boardPlans',
+        path: '/board/plans',
+        icon: 'stamp',
+        sortOrder: 2,
+      },
+      {
+        code: 'board.minutes',
+        nameKey: 'menus.boardMinutes',
+        path: '/board/minutes',
+        icon: 'scroll-text',
+        sortOrder: 3,
+      },
+      {
+        code: 'board.permissions',
+        nameKey: 'menus.boardPermissions',
+        path: '/board/permissions',
+        icon: 'shield',
+        sortOrder: 4,
+      },
+    ],
+  },
+  {
     code: 'management',
     nameKey: 'modules.management',
     icon: 'user-cog',
-    sortOrder: 7,
+    sortOrder: 9,
     menus: [
       {
         code: 'management.users',
@@ -232,47 +324,4 @@ export const APP_NAV: NavModule[] = [
       },
     ],
   },
-  {
-    code: 'singard',
-    nameKey: 'modules.singard',
-    icon: 'sparkles',
-    sortOrder: 8,
-    menus: [
-      {
-        code: 'singard.submit',
-        nameKey: 'menus.singardSubmit',
-        path: '/singard/submit',
-        icon: 'message-circle-heart',
-        sortOrder: 1,
-      },
-      {
-        code: 'singard.mine',
-        nameKey: 'menus.singardMine',
-        path: '/singard/mine',
-        icon: 'inbox',
-        sortOrder: 2,
-      },
-      {
-        code: 'singard.inbox',
-        nameKey: 'menus.singardInbox',
-        path: '/singard/inbox',
-        icon: 'messages-square',
-        sortOrder: 3,
-      },
-      {
-        code: 'singard.categories',
-        nameKey: 'menus.singardCategories',
-        path: '/singard/categories',
-        icon: 'folder-tree',
-        sortOrder: 4,
-      },
-      {
-        code: 'singard.reports',
-        nameKey: 'menus.singardReports',
-        path: '/singard/reports',
-        icon: 'chart-column',
-        sortOrder: 5,
-      },
-    ],
-  },
-]
+])
