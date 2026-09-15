@@ -62,7 +62,7 @@ export function hasMenuAccess(
     return true
   }
   if (moduleCode === 'board') {
-    if (menuCode === 'board.minutes') return canAccessBoardMinutes(user)
+    if (menuCode === 'board.minutes' || menuCode === 'board.resolutions' || menuCode === 'board.calendar') return canAccessBoardMinutes(user)
     return canAccessBoardModule(user)
   }
   return hasPermission(user, menuCode) || hasPermission(user, moduleCode)
@@ -94,6 +94,12 @@ export function canAccessPath(
     return true
   }
   if (pathname === '/board/minutes' || pathname.startsWith('/board/minutes/') || /\/board\/requests\/[^/]+\/minutes/.test(pathname)) {
+    return canAccessBoardMinutes(user)
+  }
+  if (pathname === '/board/resolutions' || pathname.startsWith('/board/resolutions/')) {
+    return canAccessBoardMinutes(user)
+  }
+  if (pathname === '/board/calendar' || pathname.startsWith('/board/calendar/')) {
     return canAccessBoardMinutes(user)
   }
 

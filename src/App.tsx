@@ -209,6 +209,8 @@ import {
   BoardMinutesResolutionEditPage,
   BoardMinutesResolutionListPage,
 } from './pages/board/BoardMinutesResolutionPages'
+import { BoardResolutionsListPage } from './pages/board/BoardResolutionsListPage'
+import { ResolutionCalendarPage } from './pages/board/calendar/ResolutionCalendarPage'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 
 const queryClient = new QueryClient()
@@ -413,6 +415,8 @@ export default function App() {
                   <Route path="/board/requests/:id/edit" element={<BoardRequestEditPage />} />
                   <Route path="/board/requests/:id" element={<BoardRequestDetailPage />} />
                   <Route path="/board/plans" element={<BoardPlansPage />} />
+                  <Route path="/board/calendar" element={<ResolutionCalendarPage />} />
+                  <Route path="/board/resolutions" element={<BoardResolutionsListPage />} />
                   <Route path="/board/minutes" element={<BoardMinutesListPage />} />
                   <Route path="/board/minutes/new" element={<BoardMinutesCreatePage />} />
                   <Route path="/board/minutes/:minutesId/edit" element={<BoardMinutesEditPage />} />

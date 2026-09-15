@@ -542,6 +542,7 @@ export function FormActions({
   onCancel,
   className = '',
   headerIcons,
+  extraItems,
 }: {
   submitLabel: string
   cancelLabel?: string
@@ -550,24 +551,32 @@ export function FormActions({
   className?: string
   /** آیکون ذخیره/انصراف در هدر. پیش‌فرض روی مسیر ایجاد/ویرایش روشن است */
   headerIcons?: boolean
+  extraItems?: DetailActionExtraItem[]
 }) {
   const { pathname } = useLocation()
   const formId = useContext(AppFormContext)
   const showHeaderIcons = headerIcons ?? isCreateOrEditPath(pathname)
   useEscapeCancel(onCancel && cancelLabel ? onCancel : undefined)
+  const extras = extraItems ?? []
+  const hasExtra = extras.length > 0
   return (
     <>
-      <div className={`flex flex-wrap gap-3 ${className}`.trim()}>
-        <Button type="submit" disabled={submitting}>
-          <Check className="size-4" aria-hidden />
-          {submitLabel}
-        </Button>
-        {onCancel && cancelLabel ? (
-          <Button type="button" variant="ghost" data-form-cancel="" onClick={onCancel}>
-            <X className="size-4" aria-hidden />
-            {cancelLabel}
+      <div
+        className={`flex flex-wrap items-center gap-3 ${hasExtra ? 'justify-between' : ''} ${className}`.trim()}
+      >
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit" disabled={submitting}>
+            <Check className="size-4" aria-hidden />
+            {submitLabel}
           </Button>
-        ) : null}
+          {onCancel && cancelLabel ? (
+            <Button type="button" variant="ghost" data-form-cancel="" onClick={onCancel}>
+              <X className="size-4" aria-hidden />
+              {cancelLabel}
+            </Button>
+          ) : null}
+        </div>
+        {hasExtra ? <div className="flex flex-wrap gap-3">{renderDetailExtraButtons(extras)}</div> : null}
       </div>
       {showHeaderIcons && formId ? (
         <PageHeaderActionsPortal>

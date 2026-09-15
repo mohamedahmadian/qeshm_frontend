@@ -8,6 +8,12 @@ import {
 } from './datetime'
 import { projectStatuses, type Project } from '../types/app'
 
+export type DatedCalendarItem = {
+  id: string
+  endDate: string | null
+  startDate?: string | null
+}
+
 export type DeadlineBucket = 'overdue' | 'today' | 'week' | 'month' | 'later'
 
 export const deadlineBucketOrder: DeadlineBucket[] = [
@@ -33,7 +39,7 @@ export function filterCalendarProjects(
   })
 }
 
-export function projectsWithEndDate(items: Project[]) {
+export function projectsWithEndDate<T extends DatedCalendarItem>(items: T[]) {
   return items.filter((item) => Boolean(item.endDate))
 }
 
@@ -56,8 +62,12 @@ export function deadlineBucket(endDate: string, locale: string, today = todayIso
   return 'later'
 }
 
-export function groupByDeadline(items: Project[], locale: string, today = todayIsoDate()) {
-  const groups: Record<DeadlineBucket, Project[]> = {
+export function groupByDeadline<T extends DatedCalendarItem>(
+  items: T[],
+  locale: string,
+  today = todayIsoDate(),
+) {
+  const groups: Record<DeadlineBucket, T[]> = {
     overdue: [],
     today: [],
     week: [],
@@ -73,8 +83,8 @@ export function groupByDeadline(items: Project[], locale: string, today = todayI
   return groups
 }
 
-export function indexProjectsByEndDate(items: Project[]) {
-  const map = new Map<string, Project[]>()
+export function indexProjectsByEndDate<T extends DatedCalendarItem>(items: T[]) {
+  const map = new Map<string, T[]>()
   for (const item of projectsWithEndDate(items)) {
     const key = item.endDate as string
     const list = map.get(key)
@@ -84,7 +94,7 @@ export function indexProjectsByEndDate(items: Project[]) {
   return map
 }
 
-export function calendarYearOptions(items: Project[], locale: string) {
+export function calendarYearOptions(items: DatedCalendarItem[], locale: string) {
   const years = new Set<number>([displayYearNow(locale)])
   for (const item of items) {
     const end = displayDateParts(item.endDate, locale)
@@ -95,7 +105,11 @@ export function calendarYearOptions(items: Project[], locale: string) {
   return [...years].sort((a, b) => b - a)
 }
 
-export function projectsInDisplayYear(items: Project[], year: number, locale: string) {
+export function projectsInDisplayYear<T extends DatedCalendarItem>(
+  items: T[],
+  year: number,
+  locale: string,
+) {
   return items.filter((item) => {
     const end = displayDateParts(item.endDate, locale)
     const start = displayDateParts(item.startDate, locale)
@@ -103,8 +117,8 @@ export function projectsInDisplayYear(items: Project[], year: number, locale: st
   })
 }
 
-export function projectsInDisplayMonth(
-  items: Project[],
+export function projectsInDisplayMonth<T extends DatedCalendarItem>(
+  items: T[],
   year: number,
   month: number,
   locale: string,
@@ -115,7 +129,7 @@ export function projectsInDisplayMonth(
   })
 }
 
-export function monthsWithDeadlines(items: Project[], year: number, locale: string) {
+export function monthsWithDeadlines(items: DatedCalendarItem[], year: number, locale: string) {
   const months = new Set<number>()
   for (const item of projectsWithEndDate(items)) {
     const parts = displayDateParts(item.endDate, locale)
@@ -124,7 +138,7 @@ export function monthsWithDeadlines(items: Project[], year: number, locale: stri
   return [...months].sort((a, b) => a - b)
 }
 
-export function monthDeadlineCounts(items: Project[], year: number, locale: string) {
+export function monthDeadlineCounts(items: DatedCalendarItem[], year: number, locale: string) {
   const counts = Array.from({ length: 12 }, () => 0)
   for (const item of projectsWithEndDate(items)) {
     const parts = displayDateParts(item.endDate, locale)
@@ -149,7 +163,7 @@ export function yearDaySpan(year: number, locale: string) {
   }
 }
 
-export function projectYearBar(project: Project, year: number, locale: string) {
+export function projectYearBar(project: DatedCalendarItem, year: number, locale: string) {
   const { startIso, endIso, totalDays } = yearDaySpan(year, locale)
   const end = project.endDate
   const start = project.startDate ?? project.endDate

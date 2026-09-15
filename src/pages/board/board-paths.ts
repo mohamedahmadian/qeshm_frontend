@@ -22,6 +22,14 @@ export function boardPermissionsPath() {
   return '/board/permissions'
 }
 
+export function boardCalendarPath() {
+  return '/board/calendar'
+}
+
+export function boardResolutionsPath() {
+  return '/board/resolutions'
+}
+
 export function boardMinutesListPath(requestId?: string) {
   return requestId ? `${boardRequestPath(requestId)}/minutes` : '/board/minutes'
 }

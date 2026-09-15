@@ -4500,6 +4500,13 @@ export type BoardMinutesResolution = {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  minutes?: {
+    id: string;
+    subject: string;
+    heldAt: string;
+    requestId: string | null;
+    request: { id: string; subject: string; status: BoardRequestStatus } | null;
+  };
 };
 
 

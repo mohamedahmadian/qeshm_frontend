@@ -15,6 +15,12 @@ import { projectColor, projectColorAlpha } from '../../../lib/project-color'
 import type { Project } from '../../../types/app'
 import { ProjectLifecycleBadge, ProjectNameWithColor, ProjectProgress } from '../ProjectShared'
 
+export type CalendarDayMark = {
+  id: string
+  code: string
+  color?: string | null
+}
+
 export function daysUntilLabel(endDate: string | null, locale: string) {
   const days = calendarDaysUntil(endDate)
   if (days == null) return { text: '—', tone: 'later' as const, overdue: false }
@@ -120,27 +126,41 @@ export function ProposalCardNote({ children }: { children: ReactNode }) {
   return <p className="mb-4 text-sm leading-6 text-ink-600">{children}</p>
 }
 
-function DayProjectLabels({ items, locale }: { items: Project[]; locale: string }) {
+function DayProjectLabels({
+  items,
+  locale,
+  moreOnDayKey,
+  forceLtr,
+}: {
+  items: CalendarDayMark[]
+  locale: string
+  moreOnDayKey: string
+  forceLtr?: boolean
+}) {
   const { t } = useTranslation()
   const visible = items.slice(0, 2)
   const extra = items.length - visible.length
   return (
     <div className="mt-0.5 flex w-full min-w-0 flex-col items-center gap-0.5 text-center">
       {visible.map((item) => (
-        <span key={item.id} className="block min-w-0 max-w-full truncate font-bold leading-tight" dir="ltr">
+        <span
+          key={item.id}
+          className="block min-w-0 max-w-full truncate font-bold leading-tight"
+          dir={forceLtr ? 'ltr' : undefined}
+        >
           {item.code}
         </span>
       ))}
       {extra > 0 ? (
         <span className="text-[10px] font-semibold text-teal-800">
-          {t('projectCalendar.moreOnDay', { count: formatNumber(extra, locale) })}
+          {t(moreOnDayKey, { count: formatNumber(extra, locale) })}
         </span>
       ) : null}
     </div>
   )
 }
 
-export function MonthCalendarGrid({
+export function MonthCalendarGrid<T extends CalendarDayMark>({
   year,
   month,
   locale,
@@ -148,14 +168,20 @@ export function MonthCalendarGrid({
   selectedIso,
   onSelectDay,
   showLabels,
+  dayCountLabelKey = 'projectCalendar.dayWithCount',
+  moreOnDayKey = 'projectCalendar.moreOnDay',
+  forceLtr = true,
 }: {
   year: number
   month: number
   locale: string
-  byDate: Map<string, Project[]>
+  byDate: Map<string, T[]>
   selectedIso?: string | null
-  onSelectDay?: (iso: string, items: Project[]) => void
+  onSelectDay?: (iso: string, items: T[]) => void
   showLabels?: boolean
+  dayCountLabelKey?: string
+  moreOnDayKey?: string
+  forceLtr?: boolean
 }) {
   const { t } = useTranslation()
   const grid = useMemo(() => buildMonthGrid(year, month, locale), [year, month, locale])
@@ -200,7 +226,7 @@ export function MonthCalendarGrid({
             clickable ? 'cursor-pointer hover:brightness-[0.98]' : ''
           }`
           const label = hasDeadline
-            ? t('projectCalendar.dayWithCount', {
+            ? t(dayCountLabelKey, {
                 day: formatNumber(day.day, locale),
                 count: formatNumber(items.length, locale),
               })
@@ -213,7 +239,12 @@ export function MonthCalendarGrid({
                 {formatNumber(day.day, locale)}
               </span>
               {showLabels && hasDeadline ? (
-                <DayProjectLabels items={items} locale={locale} />
+                <DayProjectLabels
+                  items={items}
+                  locale={locale}
+                  moreOnDayKey={moreOnDayKey}
+                  forceLtr={forceLtr}
+                />
               ) : null}
               {!showLabels && items.length > 1 ? (
                 <span className="mt-0.5 flex justify-center gap-0.5">

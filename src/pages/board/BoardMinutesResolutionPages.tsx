@@ -1,4 +1,4 @@
-import { Building2, CalendarRange, FileText, Plus, ScrollText } from 'lucide-react'
+import { Building2, CalendarRange, FileText, Plus, ScrollText, Stamp } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -33,6 +33,7 @@ import {
   boardMinutePath,
   boardMinuteResolutionPath,
   boardMinuteResolutionsPath,
+  boardRequestPath,
 } from './board-paths'
 
 function useMinutesContext() {
@@ -244,6 +245,16 @@ export function BoardMinutesResolutionDetailPage() {
             <FormFactTile icon={ScrollText} label={t('boardResolutions.description')} value={item.description || '—'} />
             <FormFactTile icon={ScrollText} label={t('boardResolutions.notes')} value={item.notes || '—'} />
           </div>
+          <FormSectionTitle icon={ScrollText}>{t('boardResolutions.minutes')}</FormSectionTitle>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <FormFactTile icon={ScrollText} label={t('boardMinutes.subject')} value={minutes.subject} tone="teal" />
+            <FormFactTile icon={CalendarRange} label={t('boardMinutes.heldAt')} value={<DateText value={minutes.heldAt} />} tone="mint" />
+            <FormFactTile
+              icon={Stamp}
+              label={t('boardMinutes.request')}
+              value={minutes.request?.subject || t('boardResolutions.noRequest')}
+            />
+          </div>
           <DetailActions
             editTo={boardMinuteResolutionPath(minutesId, resolutionId, requestId) + '/edit'}
             editLabel={t('common.edit')}
@@ -257,6 +268,22 @@ export function BoardMinutesResolutionDetailPage() {
                 onDeleted: () => navigate(listPath),
               })
             }
+            extraItems={[
+              {
+                to: boardMinutePath(minutesId, requestId),
+                icon: ScrollText,
+                label: t('boardMinutes.details'),
+              },
+              ...(minutes.request
+                ? [
+                    {
+                      to: boardRequestPath(minutes.request.id),
+                      icon: FileText,
+                      label: t('boardRequests.details'),
+                    },
+                  ]
+                : []),
+            ]}
           />
         </div>
       </FormCard>

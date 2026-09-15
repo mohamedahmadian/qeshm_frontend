@@ -209,6 +209,15 @@ export function BoardMinutesListPage() {
                 <td className={actionsColClassName}>
                   <EntityRowActions
                     viewTo={boardMinutePath(item.id, requestId)}
+                    showView={false}
+                    extra={
+                      <Link to={boardMinuteResolutionsPath(item.id, requestId)}>
+                        <Button type="button" variant="soft">
+                          <FileText className="size-4" aria-hidden />
+                          {t('boardResolutions.title')}
+                        </Button>
+                      </Link>
+                    }
                     editTo={boardMinuteEditPath(item.id, requestId)}
                     onDelete={() =>
                       confirmDelete({

@@ -34,3 +34,11 @@ export function projectColorAlpha(value: string | null | undefined, alpha: numbe
   const b = Number.parseInt(hex.slice(4, 6), 16)
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
+
+export function swatchColorFromId(id: string) {
+  let hash = 0
+  for (let i = 0; i < id.length; i += 1) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  }
+  return PROJECT_COLOR_SWATCHES[hash % PROJECT_COLOR_SWATCHES.length]
+}

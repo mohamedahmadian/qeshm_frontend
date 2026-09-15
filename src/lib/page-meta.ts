@@ -440,6 +440,12 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/board/permissions')) {
     return { titleKey: 'menus.boardPermissions', subtitleKey: 'boardPermissions.subtitle' }
   }
+  if (pathname.startsWith('/board/calendar')) {
+    return { titleKey: 'menus.boardCalendar', subtitleKey: 'boardCalendar.subtitle' }
+  }
+  if (pathname === '/board/resolutions' || pathname.startsWith('/board/resolutions/')) {
+    return { titleKey: 'menus.boardResolutions', subtitleKey: 'boardResolutions.listSubtitle' }
+  }
   if (pathname.startsWith('/board/plans')) {
     return { titleKey: 'menus.boardPlans', subtitleKey: 'boardPlans.subtitle' }
   }
