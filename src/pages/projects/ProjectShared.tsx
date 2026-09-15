@@ -125,6 +125,27 @@ export function ProjectOperatorsCell({
   )
 }
 
+export const unspecifiedProjectFilter = 'none'
+
+export function orgUnitFilterOptions(
+  units: { id: string; name: string; pathLabel?: string }[],
+  t: (key: string) => string,
+) {
+  return [
+    { value: '', label: t('projects.allOrgUnits') },
+    { value: unspecifiedProjectFilter, label: t('projects.unspecified') },
+    ...units.map((item) => ({
+      value: item.id,
+      label: item.pathLabel || item.name,
+    })),
+  ]
+}
+
+export function projectLabelOrUnspecified(value: string | null | undefined, t: (key: string) => string) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : t('projects.unspecified')
+}
+
 export function withCurrent(values: string[] | undefined, current: string) {
   const next = new Set(values ?? [])
   const trimmed = current.trim()
@@ -255,6 +276,20 @@ export function ProjectsSummaryTable({
               onSort={onSort}
             />
             <SortableTh
+              column="orgUnit"
+              label={t('projects.orgUnit')}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={onSort}
+            />
+            <SortableTh
+              column="group"
+              label={t('projects.group')}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={onSort}
+            />
+            <SortableTh
               column="operators"
               label={t('projects.operators')}
               sortBy={sortBy}
@@ -291,6 +326,17 @@ export function ProjectsSummaryTable({
             <tr key={item.id} className="border-t border-line">
               <td className="px-4 py-3 font-medium">
                 <ProjectNameWithColor name={item.systemName} color={item.color} />
+              </td>
+              <td className="px-4 py-3">{projectLabelOrUnspecified(item.orgUnit?.name, t)}</td>
+              <td className="px-4 py-3">
+                {item.group ? (
+                  <span className="inline-flex min-w-0 items-center gap-2">
+                    <ProjectColorDot color={item.group.color} />
+                    <span>{item.group.name}</span>
+                  </span>
+                ) : (
+                  t('projects.unspecified')
+                )}
               </td>
               <td className={`px-4 py-3 ${operatorsColClassName}`}>
                 <ProjectOperatorsCell operators={item.operators} />

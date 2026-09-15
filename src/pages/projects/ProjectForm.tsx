@@ -6,6 +6,7 @@ import {
   Handshake,
   Hash,
   Landmark,
+  Layers,
   Link2,
   MapPin,
   Monitor,
@@ -21,6 +22,7 @@ import { type CSSProperties, type FormEvent, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { useAuth } from '../../auth/AuthProvider'
 import { AppForm, FormField, FormActions, ToggleField, fieldClassName } from '../../components/ui/Form'
 import { FormCard } from '../../components/ui/FormLayout'
 import { OrgUnitTreeSelect } from '../../components/ui/OrgUnitTreeSelect'
@@ -38,6 +40,7 @@ import {
   projectStatuses,
   type OrganizationUnit,
   type Project,
+  type ProjectGroup,
   type ProjectImportance,
   type ProjectStatus,
 } from '../../types/app'
@@ -47,6 +50,8 @@ type ProjectFormTab = (typeof tabs)[number]
 
 export type ProjectPayload = {
   operatorIds: string[]
+  orgUnitId: string | null
+  groupId: string | null
   systemName: string
   code: string
   isActive: boolean
@@ -93,9 +98,14 @@ export function ProjectForm({
   onSubmit: (payload: ProjectPayload) => Promise<void>
 }) {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const [tab, setTab] = useState<ProjectFormTab>('info')
   const [operatorIds, setOperatorIds] = useState(initial?.operatorIds ?? [])
+  const [orgUnitId, setOrgUnitId] = useState(
+    initial ? (initial.orgUnitId ?? '') : (user?.orgUnitId ?? ''),
+  )
+  const [groupId, setGroupId] = useState(initial?.groupId ?? '')
   const [systemName, setSystemName] = useState(initial?.systemName ?? '')
   const [code, setCode] = useState(initial?.code ?? '')
   const [codeTouched, setCodeTouched] = useState(Boolean(initial?.code))
@@ -130,6 +140,14 @@ export function ProjectForm({
     queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
       const { data } = await api.get<OrganizationUnit[]>('/organization/units')
+      return data
+    },
+  })
+
+  const groups = useQuery({
+    queryKey: ['project-groups', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<ProjectGroup[]>('/projects/groups')
       return data
     },
   })
@@ -190,6 +208,8 @@ export function ProjectForm({
     try {
       await onSubmit({
         operatorIds,
+        orgUnitId: orgUnitId || null,
+        groupId: groupId || null,
         systemName: systemName.trim(),
         code: code.trim(),
         isActive,
@@ -243,6 +263,51 @@ export function ProjectForm({
 
         <AppForm noValidate onSubmit={submit} className="space-y-4">
           <div className={`space-y-4 ${tab === 'info' ? '' : 'hidden'}`}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={Landmark} label={t('projects.orgUnit')} htmlFor="projectOrgUnit">
+                <p className="mb-2 text-xs leading-6 text-ink-500">{t('projects.orgUnitHint')}</p>
+                <SearchSelect
+                  id="projectOrgUnit"
+                  value={orgUnitId}
+                  onChange={setOrgUnitId}
+                  placeholder={t('projects.unspecified')}
+                  options={[
+                    { value: '', label: t('projects.unspecified') },
+                    ...[
+                      ...(user?.orgUnitId &&
+                      !(orgUnits.data ?? []).some((item) => item.id === user.orgUnitId)
+                        ? [
+                            {
+                              id: user.orgUnitId,
+                              pathLabel: user.orgUnit?.name || user.orgUnitId,
+                              name: user.orgUnit?.name || user.orgUnitId,
+                            },
+                          ]
+                        : []),
+                      ...(orgUnits.data ?? []),
+                    ].map((item) => ({
+                      value: item.id,
+                      label: item.pathLabel || item.name,
+                    })),
+                  ]}
+                />
+              </FormField>
+              <FormField icon={Layers} label={t('projects.group')} htmlFor="projectGroup">
+                <SearchSelect
+                  id="projectGroup"
+                  value={groupId}
+                  onChange={setGroupId}
+                  placeholder={t('projects.unspecified')}
+                  options={[
+                    { value: '', label: t('projects.unspecified') },
+                    ...(groups.data ?? []).map((item) => ({
+                      value: item.id,
+                      label: item.name,
+                    })),
+                  ]}
+                />
+              </FormField>
+            </div>
             <FormField icon={Landmark} label={t('projects.operators')} htmlFor="projectOperators-search">
               <p className="mb-2 text-xs leading-6 text-ink-500">{t('projects.operatorHint')}</p>
               <OrgUnitTreeSelect

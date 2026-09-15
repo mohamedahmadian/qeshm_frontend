@@ -39,6 +39,12 @@ import { ProjectLiveBoardPage } from './pages/projects/ProjectLiveBoardPage'
 import { ProjectCalendarPage } from './pages/projects/calendar/ProjectCalendarPage'
 import { ProjectReportsPage } from './pages/projects/ProjectReportsPage'
 import { ProjectsListPage } from './pages/projects/ProjectsListPage'
+import {
+  ProjectGroupCreatePage,
+  ProjectGroupDetailPage,
+  ProjectGroupEditPage,
+  ProjectGroupListPage,
+} from './pages/projects/groups/ProjectGroupPages'
 import { ContractorCreatePage } from './pages/projects/contractors/ContractorCreatePage'
 import { ContractorDetailPage } from './pages/projects/contractors/ContractorDetailPage'
 import { ContractorEditPage } from './pages/projects/contractors/ContractorEditPage'
@@ -275,6 +281,10 @@ export default function App() {
                   <Route path="/base-info/roles/:id" element={<RoleDetailPage />} />
                   <Route path="/base-info/roles/:id/edit" element={<RoleEditPage />} />
                   <Route path="/projects" element={<ProjectsListPage />} />
+                  <Route path="/projects/groups" element={<ProjectGroupListPage />} />
+                  <Route path="/projects/groups/new" element={<ProjectGroupCreatePage />} />
+                  <Route path="/projects/groups/:id/edit" element={<ProjectGroupEditPage />} />
+                  <Route path="/projects/groups/:id" element={<ProjectGroupDetailPage />} />
                   <Route path="/projects/reports" element={<ProjectReportsPage />} />
                   <Route path="/projects/calendar" element={<ProjectCalendarPage />} />
                   <Route path="/projects/live-board" element={<ProjectLiveBoardPage />} />

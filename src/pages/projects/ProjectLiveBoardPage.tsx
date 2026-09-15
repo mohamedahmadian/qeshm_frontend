@@ -53,6 +53,7 @@ import {
   ProjectStatus as ProjectActiveBadge,
   ProjectsSummaryTable,
   projectOperatorsText,
+  orgUnitFilterOptions,
   withCurrent,
 } from './ProjectShared'
 
@@ -87,6 +88,7 @@ export function ProjectLiveBoardPage() {
   const view: LiveBoardView =
     rawView === 'table' || rawView === 'cards' ? rawView : 'map'
   const operatorUnitId = searchParams.get('operatorUnitId') ?? ''
+  const orgUnitId = searchParams.get('orgUnitId') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
   const status = searchParams.get('status') ?? ''
@@ -115,6 +117,7 @@ export function ProjectLiveBoardPage() {
       'live-board',
       q,
       operatorUnitId,
+      orgUnitId,
       companyName,
       isActive,
       status,
@@ -128,6 +131,7 @@ export function ProjectLiveBoardPage() {
         params: {
           ...(q ? { q } : {}),
           ...(operatorUnitId ? { operatorUnitId } : {}),
+          ...(orgUnitId ? { orgUnitId } : {}),
           ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
           ...(status ? { status } : {}),
@@ -153,6 +157,7 @@ export function ProjectLiveBoardPage() {
   const tableRows = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const filtersActive = Boolean(
     operatorUnitId ||
+      orgUnitId ||
       companyName ||
       isActive ||
       status ||
@@ -179,6 +184,15 @@ export function ProjectLiveBoardPage() {
         extraClassName="sm:grid-cols-2 xl:grid-cols-3"
         extra={
           <>
+            <FormField icon={Landmark} label={t('projects.orgUnit')} htmlFor="live-org-unit">
+              <SearchSelect
+                id="live-org-unit"
+                value={orgUnitId}
+                placeholder={t('projects.allOrgUnits')}
+                onChange={(next) => setParams({ orgUnitId: next || undefined }, { resetPage: true })}
+                options={orgUnitFilterOptions(orgUnits.data ?? [], t)}
+              />
+            </FormField>
             <FormField icon={Landmark} label={t('projects.operators')} htmlFor="live-operator">
               <SearchSelect
                 id="live-operator"

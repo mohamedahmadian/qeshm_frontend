@@ -107,6 +107,18 @@ export function getPageMeta(pathname: string): {
   if (pathname === '/projects/contractors') {
     return { titleKey: 'menus.contractorManagement', subtitleKey: 'contractors.globalSubtitle' }
   }
+  if (pathname === '/projects/groups/new') {
+    return { titleKey: 'projectGroups.create', subtitleKey: 'projectGroups.createSubtitle' }
+  }
+  if (/^\/projects\/groups\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'projectGroups.edit', subtitleKey: 'projectGroups.editSubtitle' }
+  }
+  if (/^\/projects\/groups\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'projectGroups.details', subtitleKey: 'projectGroups.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/projects/groups')) {
+    return { titleKey: 'menus.projectGroups', subtitleKey: 'projectGroups.subtitle' }
+  }
   if (pathname.startsWith('/projects/reports')) {
     return { titleKey: 'menus.projectReports', subtitleKey: 'projectReports.subtitle' }
   }

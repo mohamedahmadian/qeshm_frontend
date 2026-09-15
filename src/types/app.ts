@@ -594,9 +594,31 @@ export type ProjectOperator = {
   kind: { id: string; name: string };
 };
 
+export type ProjectGroup = {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { projects: number };
+};
+
+export type ProjectOrgUnit = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  pathLabel: string;
+  kind: { id: string; name: string };
+};
+
 export type Project = {
   id: string;
   operators: ProjectOperator[];
+  orgUnitId: string | null;
+  orgUnit: ProjectOrgUnit | null;
+  groupId: string | null;
+  group: Pick<ProjectGroup, 'id' | 'name' | 'color'> | null;
   systemName: string;
   code: string;
   isActive: boolean;

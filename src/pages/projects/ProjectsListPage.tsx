@@ -16,7 +16,7 @@ import {
   type Project,
   type ProjectLookups,
 } from '../../types/app'
-import { ProjectsSummaryTable, withCurrent } from './ProjectShared'
+import { ProjectsSummaryTable, orgUnitFilterOptions, withCurrent } from './ProjectShared'
 import { projectProgressCreateGlobalPath } from './progress/progress-paths'
 
 export function ProjectsListPage() {
@@ -25,6 +25,7 @@ export function ProjectsListPage() {
     useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const operatorUnitId = searchParams.get('operatorUnitId') ?? ''
+  const orgUnitId = searchParams.get('orgUnitId') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
   const status = searchParams.get('status') ?? ''
@@ -54,6 +55,7 @@ export function ProjectsListPage() {
       q,
       page,
       operatorUnitId,
+      orgUnitId,
       companyName,
       isActive,
       status,
@@ -68,6 +70,7 @@ export function ProjectsListPage() {
           page,
           ...(q ? { q } : {}),
           ...(operatorUnitId ? { operatorUnitId } : {}),
+          ...(orgUnitId ? { orgUnitId } : {}),
           ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
           ...(status ? { status } : {}),
@@ -83,6 +86,7 @@ export function ProjectsListPage() {
   const rows = query.data?.items ?? []
   const filtersActive = Boolean(
     operatorUnitId ||
+      orgUnitId ||
       companyName ||
       isActive ||
       status ||
@@ -129,6 +133,15 @@ export function ProjectsListPage() {
         extraClassName="sm:grid-cols-2 xl:grid-cols-3"
         extra={
           <>
+            <FormField icon={Landmark} label={t('projects.orgUnit')} htmlFor="project-org-unit">
+              <SearchSelect
+                id="project-org-unit"
+                value={orgUnitId}
+                placeholder={t('projects.allOrgUnits')}
+                onChange={(next) => setParams({ orgUnitId: next || undefined }, { resetPage: true })}
+                options={orgUnitFilterOptions(orgUnits.data ?? [], t)}
+              />
+            </FormField>
             <FormField icon={Landmark} label={t('projects.operators')} htmlFor="project-operator">
               <SearchSelect
                 id="project-operator"

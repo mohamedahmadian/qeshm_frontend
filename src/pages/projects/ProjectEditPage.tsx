@@ -37,6 +37,8 @@ export function ProjectEditPage() {
         excludeId={query.data.id}
         initial={{
           operatorIds: (query.data.operators ?? []).map((item) => item.id),
+          orgUnitId: query.data.orgUnitId,
+          groupId: query.data.groupId,
           systemName: query.data.systemName,
           code: query.data.code,
           isActive: query.data.isActive,

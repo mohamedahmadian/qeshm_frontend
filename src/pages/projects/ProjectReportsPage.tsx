@@ -45,7 +45,7 @@ import {
   ReportDonut,
   reportColors,
 } from './ProjectReportCharts'
-import { withCurrent } from './ProjectShared'
+import { withCurrent, orgUnitFilterOptions } from './ProjectShared'
 
 function money(value: number, locale: string) {
   return formatGroupedNumber(value, locale)
@@ -56,6 +56,7 @@ export function ProjectReportsPage() {
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { q, term, setTerm, applySearch, searchParams, setParams } = useListParams()
   const operatorUnitId = searchParams.get('operatorUnitId') ?? ''
+  const orgUnitId = searchParams.get('orgUnitId') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
   const lifecycle = searchParams.get('status') ?? ''
@@ -84,6 +85,7 @@ export function ProjectReportsPage() {
       'reports',
       q,
       operatorUnitId,
+      orgUnitId,
       companyName,
       isActive,
       lifecycle,
@@ -95,6 +97,7 @@ export function ProjectReportsPage() {
         params: {
           ...(q ? { q } : {}),
           ...(operatorUnitId ? { operatorUnitId } : {}),
+          ...(orgUnitId ? { orgUnitId } : {}),
           ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
           ...(lifecycle ? { status: lifecycle } : {}),
@@ -111,6 +114,7 @@ export function ProjectReportsPage() {
   const kpis = report?.kpis
   const filtersActive = Boolean(
     operatorUnitId ||
+      orgUnitId ||
       companyName ||
       isActive ||
       lifecycle ||
@@ -160,6 +164,15 @@ export function ProjectReportsPage() {
         extraClassName="sm:grid-cols-2 xl:grid-cols-3"
         extra={
           <>
+            <FormField icon={Landmark} label={t('projects.orgUnit')} htmlFor="report-org-unit">
+              <SearchSelect
+                id="report-org-unit"
+                value={orgUnitId}
+                placeholder={t('projects.allOrgUnits')}
+                onChange={(next) => setParams({ orgUnitId: next || undefined }, { resetPage: true })}
+                options={orgUnitFilterOptions(orgUnits.data ?? [], t)}
+              />
+            </FormField>
             <FormField icon={Landmark} label={t('projects.operators')} htmlFor="report-operator">
               <SearchSelect
                 id="report-operator"

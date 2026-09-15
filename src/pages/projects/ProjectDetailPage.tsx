@@ -7,6 +7,7 @@ import {
   Flag,
   Handshake,
   Landmark,
+  Layers,
   Link2,
   MapPin,
   Monitor,
@@ -36,6 +37,7 @@ import {
   ProjectProgress,
   ProjectStatus,
   ProjectUrl,
+  projectLabelOrUnspecified,
 } from './ProjectShared'
 
 export function ProjectDetailPage() {
@@ -74,6 +76,27 @@ export function ProjectDetailPage() {
         <div className="space-y-6 p-5 sm:p-6">
           <FormSectionTitle icon={Landmark}>{t('projects.orgSection')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <FormFactTile
+              icon={Landmark}
+              label={t('projects.orgUnit')}
+              value={projectLabelOrUnspecified(project.orgUnit?.pathLabel || project.orgUnit?.name, t)}
+              tone="teal"
+            />
+            <FormFactTile
+              icon={Layers}
+              label={t('projects.group')}
+              value={
+                project.group ? (
+                  <span className="inline-flex items-center gap-2">
+                    <ProjectColorDot color={project.group.color} />
+                    <span>{project.group.name}</span>
+                  </span>
+                ) : (
+                  t('projects.unspecified')
+                )
+              }
+              tone="mint"
+            />
             {(project.operators ?? []).length ? (
               (project.operators ?? []).map((item, index) => (
                 <FormFactTile
