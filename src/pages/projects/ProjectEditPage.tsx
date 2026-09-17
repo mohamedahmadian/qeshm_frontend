@@ -59,6 +59,7 @@ export function ProjectEditPage() {
           description: query.data.description,
           color: query.data.color ?? DEFAULT_PROJECT_COLOR,
           showOnLiveBoard: query.data.showOnLiveBoard ?? true,
+          showOnHomePage: query.data.showOnHomePage ?? true,
           importance: query.data.importance,
         }}
         onSubmit={async (payload) => {

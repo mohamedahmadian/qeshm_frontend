@@ -51,6 +51,7 @@ export function FormCard({
   action,
   children,
   className = '',
+  headerClassName,
   editTo,
   onDoubleClick,
 }: {
@@ -61,6 +62,7 @@ export function FormCard({
   action?: ReactNode
   children: ReactNode
   className?: string
+  headerClassName?: string
   /** دابل‌کلیک کارت جزئیات → ویرایش؛ اگر نیاید از `DetailActions` خوانده می‌شود */
   editTo?: string
   onDoubleClick?: () => void
@@ -85,6 +87,7 @@ export function FormCard({
         subtitle={subtitle}
         chips={chips}
         action={action}
+        className={headerClassName}
       />
       {children}
     </section>
@@ -115,6 +118,7 @@ export function FormCardHeader({
   action,
   heading = 'h2',
   leading,
+  className = '',
 }: {
   icon: LucideIcon
   title: ReactNode
@@ -123,6 +127,7 @@ export function FormCardHeader({
   action?: ReactNode
   heading?: 'h1' | 'h2'
   leading?: ReactNode
+  className?: string
 }) {
   const Heading = heading
   const titleClass =
@@ -130,11 +135,11 @@ export function FormCardHeader({
       ? 'text-xl font-semibold leading-snug text-ink-900 sm:text-2xl'
       : 'text-base font-semibold leading-snug text-ink-900'
   const subtitleClass =
-    heading === 'h1' ? 'mt-1 text-sm leading-6 text-ink-500' : 'mt-1 text-xs leading-6 text-ink-600'
+    heading === 'h1' ? 'mt-1 text-sm leading-6 text-ink-500' : 'mt-0.5 text-xs leading-5 text-ink-600'
   return (
-    <header className="relative shrink-0 overflow-hidden bg-gradient-to-e from-mint-50 via-white to-teal-50 px-5 py-5 sm:px-6">
+    <header className={`relative shrink-0 overflow-hidden bg-gradient-to-e from-mint-50 via-white to-teal-50 px-5 py-5 sm:px-6 ${className}`}>
       <FormCardHeaderDecor />
-      <div className="relative flex flex-wrap items-center justify-between gap-3">
+      <div className="relative flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {leading}
           <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-[0_10px_22px_rgba(46,189,182,0.32)]">

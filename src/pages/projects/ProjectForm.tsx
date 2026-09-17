@@ -5,6 +5,7 @@ import {
   Globe,
   Handshake,
   Hash,
+  Home,
   Landmark,
   Layers,
   Link2,
@@ -72,6 +73,7 @@ export type ProjectPayload = {
   description: string | null
   color: string
   showOnLiveBoard: boolean
+  showOnHomePage: boolean
   importance: ProjectImportance
 }
 
@@ -135,6 +137,7 @@ export function ProjectForm({
   const [description, setDescription] = useState(initial?.description ?? '')
   const [color, setColor] = useState(projectColor(initial?.color ?? DEFAULT_PROJECT_COLOR))
   const [showOnLiveBoard, setShowOnLiveBoard] = useState(initial?.showOnLiveBoard ?? true)
+  const [showOnHomePage, setShowOnHomePage] = useState(initial?.showOnHomePage ?? true)
   const [importance, setImportance] = useState<ProjectImportance>(
     initial?.importance ?? projectImportances.HIGH,
   )
@@ -244,6 +247,7 @@ export function ProjectForm({
         description: emptyToNull(description),
         color,
         showOnLiveBoard,
+        showOnHomePage,
         importance,
       })
     } catch (error) {
@@ -486,6 +490,15 @@ export function ProjectForm({
                   onChange={setShowOnLiveBoard}
                   onLabel={t('projects.showOnLiveBoardOn')}
                   offLabel={t('projects.showOnLiveBoardOff')}
+                />
+              </FormField>
+              <FormField icon={Home} label={t('projects.showOnHomePage')} htmlFor="showOnHomePage">
+                <ToggleField
+                  id="showOnHomePage"
+                  checked={showOnHomePage}
+                  onChange={setShowOnHomePage}
+                  onLabel={t('projects.showOnHomePageOn')}
+                  offLabel={t('projects.showOnHomePageOff')}
                 />
               </FormField>
               <FormField icon={Link2} label={t('projects.replacement')} htmlFor="replacementProjectId">

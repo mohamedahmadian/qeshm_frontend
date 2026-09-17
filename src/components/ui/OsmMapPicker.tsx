@@ -214,6 +214,22 @@ function applyBoundsView(map: L.Map, bounds: L.LatLngBounds) {
   map.fitBounds(bounds, { padding: [20, 20], animate: false })
 }
 
+const SELECT_ZOOM_LEVELS = 3
+const SELECT_MAX_ZOOM = 16
+
+function polygonLatLngBounds(latlngs: { lat: number; lng: number }[]) {
+  return L.latLngBounds(latlngs.map((point) => L.latLng(point.lat, point.lng)))
+}
+
+function stageMapView(map: L.Map, target: L.LatLng, targetZoom: number) {
+  map.stop()
+  const start = map.getCenter()
+  const startZoom = map.getZoom()
+  const endZoom = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), targetZoom))
+  if (start.distanceTo(target) < 4 && Math.abs(startZoom - endZoom) < 0.15) return
+  map.setView(target, endZoom, { animate: true, duration: 0.55 })
+}
+
 const DEFAULT_PIN_ZOOM = 16
 
 function addMapTiles(map: L.Map) {
@@ -244,6 +260,7 @@ export function OsmMapPicker({
   onMarkerClick,
   onSelectedContainerPoint,
   onMapClick,
+  zoomOnSelected = false,
   onGeolocate,
   onGeoError,
   onGeoOutside,
@@ -271,6 +288,7 @@ export function OsmMapPicker({
   onMarkerClick?: (id: string, point: MapOverlayClickPoint) => void
   onSelectedContainerPoint?: (point: MapSelectedContainerPoint | null) => void
   onMapClick?: () => void
+  zoomOnSelected?: boolean
   onGeolocate?: (latitude: string, longitude: string) => void
   onGeoError?: (kind: GeoErrorKind) => void
   onGeoOutside?: () => void
@@ -296,6 +314,8 @@ export function OsmMapPicker({
   const onMapClickRef = useRef(onMapClick)
   const maxBoundsRef = useRef(maxBounds)
   const viewFittedRef = useRef(false)
+  const overviewViewRef = useRef<{ center: L.LatLng; zoom: number } | null>(null)
+  const selectedZoomIdRef = useRef<string | null>(null)
   const autoGeoDoneRef = useRef(false)
   const stopGeoRef = useRef<(() => void) | null>(null)
   onChangeRef.current = onChange
@@ -349,6 +369,7 @@ export function OsmMapPicker({
       fitOverlayBounds(map, currentOverlays)
     } else if (maxBounds) {
       applyBoundsView(map, toLeafletBounds(maxBounds))
+      overviewViewRef.current = { center: map.getCenter(), zoom: map.getZoom() }
     } else if (focus?.bounds) {
       map.fitBounds(toLeafletBounds(focus.bounds), { padding: [56, 56], maxZoom: focus.zoom ?? 16 })
     } else if (focus) {
@@ -366,7 +387,14 @@ export function OsmMapPicker({
         onChangeRef.current(formatCoord(event.latlng.lat), formatCoord(event.latlng.lng))
       })
     } else {
-      map.on('click', () => {
+      map.on('click', (event: L.LeafletMouseEvent) => {
+        const origin = event.originalEvent?.target
+        if (
+          origin instanceof Element &&
+          origin.closest('.leaflet-marker-icon, .leaflet-interactive, .leaflet-tooltip')
+        ) {
+          return
+        }
         onMapClickRef.current?.()
       })
     }
@@ -379,8 +407,12 @@ export function OsmMapPicker({
       const size = map.getSize()
       if (sized || size.x < 80 || size.y < 80) return
       sized = true
+      if (selectedZoomIdRef.current) return
       const currentBounds = maxBoundsRef.current
-      if (currentBounds) applyBoundsView(map, toLeafletBounds(currentBounds))
+      if (currentBounds) {
+        applyBoundsView(map, toLeafletBounds(currentBounds))
+        overviewViewRef.current = { center: map.getCenter(), zoom: map.getZoom() }
+      }
     })
     observer.observe(container)
 
@@ -391,6 +423,8 @@ export function OsmMapPicker({
       mapRef.current = null
       markerRef.current = null
       viewFittedRef.current = false
+      overviewViewRef.current = null
+      selectedZoomIdRef.current = null
     }
     // Map is created once per open session; lat/lng sync is handled below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -472,26 +506,36 @@ export function OsmMapPicker({
         polygon.latlngs.map((point) => [point.lat, point.lng] as L.LatLngTuple),
         {
           color,
-          weight: polygon.selected ? 3 : 2,
+          weight: polygon.selected ? 4 : 3,
           opacity: 0.95,
           fillColor: color,
           fillOpacity: polygon.selected ? 0.34 : 0.18,
           bubblingMouseEvents: false,
+          interactive: true,
         },
       ).addTo(layer)
       if (polygon.selected) shape.bringToFront()
+      const emitPolygonClick = (latlng: L.LatLng) => {
+        const point = map.latLngToContainerPoint(latlng)
+        onMarkerClickRef.current?.(polygon.id, { x: point.x, y: point.y })
+      }
       if (polygon.title) {
         shape.bindTooltip(polygon.title, {
           permanent: true,
           direction: 'center',
+          interactive: true,
           className: `eskan-project-polygon-label${polygon.selected ? ' is-selected' : ''}`,
           opacity: 1,
         })
+        const tooltip = shape.getTooltip()
+        tooltip?.on('click', (event: L.LeafletMouseEvent) => {
+          L.DomEvent.stop(event)
+          emitPolygonClick(event.latlng ?? shape.getBounds().getCenter())
+        })
       }
       shape.on('click', (event: L.LeafletMouseEvent) => {
-        L.DomEvent.stopPropagation(event)
-        const point = map.latLngToContainerPoint(event.latlng)
-        onMarkerClickRef.current?.(polygon.id, { x: point.x, y: point.y })
+        L.DomEvent.stop(event)
+        emitPolygonClick(event.latlng)
       })
     }
     for (const marker of overlays.markers) {
@@ -537,6 +581,41 @@ export function OsmMapPicker({
       if (overlayLayerRef.current === layer) overlayLayerRef.current = null
     }
   }, [latitude, longitude, open, overlays])
+
+  useEffect(() => {
+    if (!zoomOnSelected || !open) return
+    const map = mapRef.current
+    if (!map) return
+    const selectedMarker = overlays?.markers.find((item) => item.selected)
+    const selectedPolygon = overlays?.polygons?.find((item) => item.selected)
+    const selectedId = selectedMarker?.id ?? selectedPolygon?.id ?? null
+    if (selectedZoomIdRef.current === selectedId) return
+    selectedZoomIdRef.current = selectedId
+
+    if (!selectedId) {
+      const overview = overviewViewRef.current
+      if (overview) {
+        stageMapView(map, overview.center, overview.zoom)
+      } else if (maxBoundsRef.current) {
+        const bounds = toLeafletBounds(maxBoundsRef.current)
+        stageMapView(map, bounds.getCenter(), map.getBoundsZoom(bounds, false, L.point(20, 20)))
+      }
+      return
+    }
+
+    const polyBounds =
+      selectedPolygon && selectedPolygon.latlngs.length >= 3
+        ? polygonLatLngBounds(selectedPolygon.latlngs)
+        : null
+    const target = selectedMarker
+      ? L.latLng(selectedMarker.lat, selectedMarker.lng)
+      : polyBounds?.getCenter()
+    if (!target) return
+
+    const overviewZoom = overviewViewRef.current?.zoom ?? map.getZoom()
+    const targetZoom = Math.min(overviewZoom + SELECT_ZOOM_LEVELS, SELECT_MAX_ZOOM)
+    stageMapView(map, target, targetZoom)
+  }, [open, overlays, zoomOnSelected])
 
   useEffect(() => {
     if (!open || !active || !mapRef.current) return

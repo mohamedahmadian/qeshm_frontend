@@ -54,15 +54,23 @@ export function AuthGuestLayout({
     <div className={`flex flex-col bg-cream-50 ${fill ? 'h-svh overflow-hidden' : 'min-h-svh'}`}>
       <header className="relative z-30 shrink-0 border-b border-line/70 bg-white/90 backdrop-blur">
         <div className="relative z-40 mx-auto flex w-full items-center gap-2 px-4 py-3 sm:gap-3 sm:px-8">
-          <Link to="/" className="flex shrink-0 items-center" aria-label={t('landing.homePage')}>
+          <Link
+            to="/"
+            className="flex min-w-0 shrink items-center gap-2.5 sm:gap-3"
+            aria-label={t('landing.platformTitle')}
+          >
             <AppLogo
               src={logoSrc}
+              decorative
               className={
                 logoSrc
                   ? 'h-11 w-11 shrink-0 rounded-2xl bg-white object-cover shadow-[0_8px_18px_rgba(20,40,40,0.16)] ring-1 ring-teal-100 sm:h-12 sm:w-12'
                   : 'h-11 w-auto shrink-0 object-contain sm:h-12'
               }
             />
+            <span className="hidden min-w-0 text-[13px] font-semibold leading-snug text-ink-900 sm:block lg:text-sm">
+              {t('landing.platformTitle')}
+            </span>
           </Link>
           <nav
             className="ms-1 hidden min-w-0 flex-wrap items-center gap-1.5 sm:ms-4 sm:flex"

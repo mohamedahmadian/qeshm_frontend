@@ -186,13 +186,33 @@ export function projectBoundaryPolygons(boundary: unknown): MapLatLng[][] {
   return []
 }
 
+export function polygonRingCenter(latlngs: MapLatLng[]): MapLatLng | null {
+  if (!latlngs.length) return null
+  let minLat = latlngs[0].lat
+  let maxLat = latlngs[0].lat
+  let minLng = latlngs[0].lng
+  let maxLng = latlngs[0].lng
+  for (const point of latlngs) {
+    minLat = Math.min(minLat, point.lat)
+    maxLat = Math.max(maxLat, point.lat)
+    minLng = Math.min(minLng, point.lng)
+    maxLng = Math.max(maxLng, point.lng)
+  }
+  return { lat: (minLat + maxLat) / 2, lng: (minLng + maxLng) / 2 }
+}
+
+export function projectBoundaryCenter(boundary: unknown): MapLatLng | null {
+  const rings = projectBoundaryPolygons(boundary)
+  if (!rings.length) return null
+  const ring = rings.reduce((best, current) => (current.length > best.length ? current : best))
+  return polygonRingCenter(ring)
+}
+
 export function projectHasMapLocation(item: {
-  showOnLiveBoard?: boolean
   latitude?: number | null
   longitude?: number | null
   boundary?: unknown
 }) {
-  if (item.showOnLiveBoard === false) return false
   if (projectBoundaryPolygons(item.boundary).length) return true
   return item.latitude != null && item.longitude != null
 }

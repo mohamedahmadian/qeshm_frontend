@@ -5,6 +5,7 @@ import {
   Globe,
   Flag,
   Handshake,
+  Home,
   Landmark,
   Layers,
   Link2,
@@ -170,6 +171,16 @@ export function ProjectDetailPage() {
                   : t('projects.showOnLiveBoardOff')
               }
               tone={project.showOnLiveBoard ? 'teal' : 'ink'}
+            />
+            <FormFactTile
+              icon={Home}
+              label={t('projects.showOnHomePage')}
+              value={
+                project.showOnHomePage
+                  ? t('projects.showOnHomePageOn')
+                  : t('projects.showOnHomePageOff')
+              }
+              tone={project.showOnHomePage ? 'teal' : 'ink'}
             />
             <FormFactTile
               icon={Link2}

@@ -1,18 +1,13 @@
 import {
-  CalendarRange,
-  Check,
   ClipboardList,
   Download,
   ExternalLink,
   FolderKanban,
-  Globe,
   Handshake,
-  Landmark,
-  MapPin,
-  Mic,
   Paperclip,
-  ScrollText,
-  Tags,
+  Percent,
+  Radio,
+  Sparkles,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
@@ -22,34 +17,33 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { DateText } from '../../components/ui/DateText'
-import { Button, fieldClassName } from '../../components/ui/Form'
-import { FormEmptyHint, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
+import { Button } from '../../components/ui/Form'
+import { FormSectionTitle } from '../../components/ui/FormLayout'
 import {
   OsmMapPicker,
   type MapOverlayMarker,
   type MapOverlayMarkerTone,
   type MapOverlayPolygon,
 } from '../../components/ui/OsmMapPicker'
-import { api, getApiErrorMessage, getProjectDocumentUrl } from '../../lib/api'
-import { calendarDaysUntil, formatNumber, todayIsoDate } from '../../lib/datetime'
-import { projectBoundaryPolygons, projectHasMapLocation, QESHM_LIVE_BOARD_BOUNDS } from '../../lib/geo'
+import { languageDir } from '../../i18n'
+import { api, getProjectDocumentUrl } from '../../lib/api'
+import { calendarDaysUntil, formatNumber } from '../../lib/datetime'
+import {
+  projectBoundaryCenter,
+  projectBoundaryPolygons,
+  projectHasMapLocation,
+  QESHM_LIVE_BOARD_BOUNDS,
+} from '../../lib/geo'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
 import { ProjectProgressForm, type ProjectProgressPayload } from './progress/ProjectProgressForm'
-import { projectProgressEntryPath, projectProgressPath } from './progress/progress-paths'
-import { useVoiceCapture } from './progress/useVoiceCapture'
+import { projectProgressEntryPath } from './progress/progress-paths'
 import {
   projectImportances,
-  projectProgressProcessingModes,
   type ProjectLiveBoardActivity,
   type ProjectLiveBoardItem,
   type ProjectDocument,
   type ProjectStatus,
 } from '../../types/app'
-import {
-  ProjectImportanceBadge,
-  ProjectUrl,
-  projectOperatorsText,
-} from './ProjectShared'
 
 export const liveBoardCardTheme: Record<
   string,
@@ -87,32 +81,6 @@ const statusTone: Record<ProjectStatus, MapOverlayMarkerTone> = {
   IN_PROGRESS: 'in-progress',
   SUSPENDED: 'suspended',
   COMPLETED: 'completed',
-}
-
-const MOBILE_VIEWPORT = '(max-width: 639.98px)'
-const WEB_DOCK_HEIGHT_TALL = '22rem'
-const WEB_DOCK_HEIGHT_PUBLIC = '22rem'
-
-function useStickToLastLine(value: string) {
-  const ref = useRef<HTMLTextAreaElement>(null)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.scrollTop = el.scrollHeight
-  }, [value])
-  return ref
-}
-
-function useNarrowViewport(query = MOBILE_VIEWPORT) {
-  const [narrow, setNarrow] = useState(() => window.matchMedia(query).matches)
-  useEffect(() => {
-    const media = window.matchMedia(query)
-    const update = () => setNarrow(media.matches)
-    update()
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [query])
-  return narrow
 }
 
 function escapeHtml(value: string) {
@@ -224,100 +192,87 @@ export function LastActivityPreview({
   )
 }
 
-function activityPreviewText(activity: ProjectLiveBoardActivity) {
-  const title = activityTitle(activity.title)
-  const leftover =
-    activity.excerpt && activity.excerpt !== activity.title
-      ? activity.excerpt
-      : activity.title.replace(/\s+/g, ' ').trim().split(' ').slice(8).join(' ')
-  const excerpt = excerptPreview(leftover, 18)
-  if (title && excerpt) return `${title} ${excerpt}`
-  return title || excerpt
+function activityFullText(activity: ProjectLiveBoardActivity) {
+  const text = activity.text?.trim()
+  if (text) return text
+  return [activity.title, activity.excerpt].filter(Boolean).join('\n').trim()
 }
 
-function LastActivityDockLine({
+function truncateActivityPreview(text: string, maxChars = 150) {
+  const compact = text.replace(/\s+/g, ' ').trim()
+  if (compact.length <= maxChars) return compact
+  return `${compact.slice(0, maxChars).trimEnd()}...`
+}
+
+function LiveBoardActivityCard({
   activity,
-  projectId,
-  size = 'compact',
+  onOpen,
 }: {
   activity: ProjectLiveBoardActivity
-  projectId?: string
-  size?: 'compact' | 'comfortable'
+  onOpen: (activity: ProjectLiveBoardActivity) => void
 }) {
-  const { t } = useTranslation()
-  const text = activityPreviewText(activity)
-  const comfortable = size === 'comfortable'
-  const inner = (
-    <>
-      <span
-        className={`inline-flex shrink-0 items-center rounded-full bg-teal-500 font-semibold text-white ${
-          comfortable ? 'px-2 py-0.5 text-xs leading-5' : 'px-1.5 py-px text-[11px] leading-4'
-        }`}
-      >
+  const preview = truncateActivityPreview(activityFullText(activity))
+  return (
+    <button
+      type="button"
+      className="live-board-activity-card"
+      onClick={() => onOpen(activity)}
+    >
+      <span className="live-board-activity-card-date">
         <DateText value={activity.occurredAt} />
       </span>
-      {projectId ? (
-        <ClipboardList
-          className={`shrink-0 text-teal-700 ${comfortable ? 'size-5' : 'size-4'}`}
-          aria-hidden
-        />
-      ) : null}
-      <p
-        className={`min-w-0 flex-1 font-medium text-ink-800 ${
-          comfortable ? 'text-base leading-6' : 'truncate text-sm leading-5'
-        }`}
-      >
-        {text || '—'}
-      </p>
-    </>
-  )
-  const className = comfortable
-    ? 'flex min-w-0 items-start gap-2 rounded-2xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/40 px-3 py-2.5'
-    : 'flex min-w-0 flex-[3] items-center gap-1.5 rounded-xl border border-mint-100 bg-gradient-to-e from-mint-50/80 to-teal-50/40 px-2 py-1'
-  if (!projectId) {
-    return <div className={className}>{inner}</div>
-  }
-  return (
-    <Link
-      to={projectProgressPath(projectId)}
-      className={`${className} cursor-pointer hover:border-teal-200 hover:text-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400`}
-      aria-label={t('projectLiveBoard.openActivities')}
-      title={t('projectLiveBoard.openActivities')}
-      onClick={(event) => event.stopPropagation()}
-    >
-      {inner}
-    </Link>
+      <p className="live-board-activity-card-text">{preview || '—'}</p>
+    </button>
   )
 }
 
-function DockStatChip({
-  value,
-  label,
-  title,
-  overdue = false,
+function LiveBoardActivityFullModal({
+  activity,
+  onClose,
 }: {
-  value: string
-  label: string
-  title: string
-  overdue?: boolean
+  activity: ProjectLiveBoardActivity
+  onClose: () => void
 }) {
-  return (
+  const { t } = useTranslation()
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.repeat) return
+      event.preventDefault()
+      event.stopPropagation()
+      onClose()
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [onClose])
+  return createPortal(
     <div
-      className={`flex h-8 shrink-0 flex-col items-center justify-center rounded-xl border bg-white px-2 ${
-        overdue ? 'border-ink-200' : 'border-mint-200'
-      }`}
-      title={`${title} ${value}`}
-      aria-label={`${title} ${value}`}
+      className="live-board-activity-full-overlay"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        event.stopPropagation()
+        onClose()
+      }}
     >
-      <span
-        className={`text-[11px] font-bold tabular-nums leading-none ${
-          overdue ? 'text-ink-800' : 'text-mint-700'
-        }`}
-      >
-        {value}
-      </span>
-      <span className="mt-0.5 text-[8px] font-medium leading-none text-ink-500">{label}</span>
-    </div>
+      <div className="live-board-activity-full-card" onClick={(event) => event.stopPropagation()}>
+        <button
+          type="button"
+          className="absolute left-3 top-3 z-20 inline-flex size-9 cursor-pointer items-center justify-center rounded-2xl border border-teal-400 bg-white text-ink-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+          aria-label={t('common.close')}
+          onClick={onClose}
+        >
+          <X className="size-4" aria-hidden />
+        </button>
+        <div className="live-board-activity-full-body">
+          <p className="live-board-activity-full-title">{t('projectLiveBoard.activityFull')}</p>
+          <span className="live-board-activity-card-date">
+            <DateText value={activity.occurredAt} />
+          </span>
+          <p className="live-board-activity-full-text mt-3">{activityFullText(activity) || '—'}</p>
+        </div>
+      </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -350,14 +305,21 @@ function MiniProgressRing({
   value: number | null
   locale: string
   color: string
-  size?: 'xs' | 'sm' | 'md'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
 }) {
   const { t } = useTranslation()
   const pct = Math.min(100, Math.max(0, value ?? 0))
   const label = value == null ? '—' : `${formatNumber(value, locale)}٪`
   const box =
-    size === 'md' ? 'size-14 p-[3px]' : size === 'sm' ? 'size-11 p-[2.5px]' : 'size-8 p-[2px]'
-  const text = size === 'md' ? 'text-xs' : size === 'sm' ? 'text-[10px]' : 'text-[9px]'
+    size === 'lg'
+      ? 'size-[4.75rem] p-[3.5px]'
+      : size === 'md'
+        ? 'size-14 p-[3px]'
+        : size === 'sm'
+          ? 'size-11 p-[2.5px]'
+          : 'size-8 p-[2px]'
+  const text =
+    size === 'lg' ? 'text-sm' : size === 'md' ? 'text-xs' : size === 'sm' ? 'text-[10px]' : 'text-[9px]'
   return (
     <div
       className={`relative shrink-0 rounded-full ${box}`}
@@ -385,29 +347,28 @@ function MiniDaysBadge({
   overdue: boolean
   title: string
   label: string
-  size?: 'xs' | 'sm' | 'md'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
 }) {
-  const box = size === 'md' ? 'size-14' : size === 'sm' ? 'size-11' : 'size-8'
-  const number = size === 'md' ? 'text-sm' : size === 'sm' ? 'text-[12px]' : 'text-[11px]'
-  const caption = size === 'md' ? 'text-[10px]' : size === 'sm' ? 'text-[9px]' : 'text-[8px]'
+  const box =
+    size === 'lg' ? 'size-[4.75rem]' : size === 'md' ? 'size-14' : size === 'sm' ? 'size-11' : 'size-8'
+  const number =
+    size === 'lg' ? 'text-base' : size === 'md' ? 'text-sm' : size === 'sm' ? 'text-[12px]' : 'text-[11px]'
+  const caption =
+    size === 'lg' ? 'text-[11px]' : size === 'md' ? 'text-[10px]' : size === 'sm' ? 'text-[9px]' : 'text-[8px]'
   return (
     <div
-      className={`flex shrink-0 flex-col items-center justify-center rounded-full border bg-white text-center ${box} ${
-        overdue
-          ? 'border-ink-300 shadow-[0_4px_10px_rgba(20,40,40,0.08)]'
-          : 'border-mint-200 shadow-[0_4px_10px_rgba(63,214,190,0.18)]'
+      className={`live-board-days-badge flex shrink-0 flex-col items-center justify-center rounded-full border bg-white text-center ${box}${
+        overdue ? ' is-overdue' : ''
       }`}
       title={`${title} ${daysLabel}`}
       aria-label={`${title} ${daysLabel}`}
     >
-      <span
-        className={`font-bold tabular-nums leading-none ${number} ${
-          overdue ? 'text-ink-800' : 'text-mint-700'
-        }`}
-      >
+      <span className={`live-board-days-badge-value font-bold tabular-nums leading-none ${number}`}>
         {daysLabel}
       </span>
-      <span className={`mt-0.5 font-medium leading-none text-ink-500 ${caption}`}>{label}</span>
+      <span className={`live-board-days-badge-caption mt-0.5 font-medium leading-none ${caption}`}>
+        {label}
+      </span>
     </div>
   )
 }
@@ -432,42 +393,34 @@ function ProjectMapAttachments({
     },
   })
   const items = query.data ?? []
+  if (query.isLoading || items.length === 0) return null
   return (
     <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
       <FormSectionTitle icon={Paperclip}>{t('projectDocuments.section')}</FormSectionTitle>
-      {query.isLoading ? (
-        <p className="text-xs text-ink-400">{t('common.loading')}</p>
-      ) : items.length === 0 ? (
-        <FormEmptyHint>{t('projectDocuments.empty')}</FormEmptyHint>
-      ) : (
-        <ul className="space-y-1.5">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-start justify-between gap-2 rounded-2xl bg-white px-3 py-2 ring-1 ring-teal-100"
-            >
-              <div className="min-w-0 text-start">
-                <p className="truncate text-sm font-semibold text-ink-900">{item.title}</p>
-                {item.description ? (
-                  <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-ink-500">
-                    {item.description}
-                  </p>
-                ) : null}
-                <p className="mt-0.5 truncate text-[11px] text-ink-400">{item.originalName}</p>
-              </div>
-              <a
-                href={getProjectDocumentUrl(projectId, item.id)}
-                className="shrink-0"
-              >
-                <Button type="button" variant="ghost" className="h-8 px-3 py-0 text-xs">
-                  <Download className="size-3.5" aria-hidden />
-                  {t('projectDocuments.download')}
-                </Button>
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="space-y-1.5">
+        {items.map((item) => (
+          <li
+            key={item.id}
+            className="flex items-start justify-between gap-2 rounded-2xl bg-white px-3 py-2 ring-1 ring-teal-100"
+          >
+            <div className="min-w-0 text-start">
+              <p className="truncate text-sm font-semibold text-ink-900">{item.title}</p>
+              {item.description ? (
+                <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-ink-500">
+                  {item.description}
+                </p>
+              ) : null}
+              <p className="mt-0.5 truncate text-[11px] text-ink-400">{item.originalName}</p>
+            </div>
+            <a href={getProjectDocumentUrl(projectId, item.id)} className="shrink-0">
+              <Button type="button" variant="ghost" className="h-8 px-3 py-0 text-xs">
+                <Download className="size-3.5" aria-hidden />
+                {t('projectDocuments.download')}
+              </Button>
+            </a>
+          </li>
+        ))}
+      </ul>
       {canManage ? (
         <Link to={`/projects/${projectId}/documents`} className="block">
           <Button type="button" variant="soft" className={compact ? 'h-8 px-3 py-0 text-xs' : undefined}>
@@ -480,110 +433,94 @@ function ProjectMapAttachments({
   )
 }
 
-function ProjectMapDetails({
+function projectBoardMeta(
+  project: ProjectLiveBoardItem,
+  locale: string,
+  t: (key: string) => string,
+) {
+  const theme = liveBoardCardTheme[project.status ?? 'NOT_STARTED'] ?? liveBoardCardTheme.NOT_STARTED
+  const remainingDays = calendarDaysUntil(project.endDate)
+  const overdue = remainingDays != null && remainingDays < 0
+  const daysLabel = remainingDays == null ? '—' : formatNumber(Math.abs(remainingDays), locale)
+  const daysTitle = overdue ? t('projectLiveBoard.overdueDays') : t('projectLiveBoard.remainingDays')
+  const daysShort = overdue
+    ? t('projectLiveBoard.overdueDaysShort')
+    : t('projectLiveBoard.remainingDaysShort')
+  return { theme, overdue, daysLabel, daysTitle, daysShort }
+}
+
+export function LiveBoardHeaderStats({
   project,
   locale,
-  canManage,
-  variant = 'stack',
+  size = 'lg',
 }: {
   project: ProjectLiveBoardItem
   locale: string
-  canManage: boolean
-  variant?: 'stack' | 'inline'
+  size?: 'sm' | 'lg'
 }) {
   const { t } = useTranslation()
-  const inline = variant === 'inline'
-  const tileClass = inline ? 'min-w-[9.5rem] max-w-[13rem] shrink-0' : undefined
-  const facts = (
-    <>
-      <FormFactTile
-        icon={Landmark}
-        label={t('projects.operators')}
-        value={projectOperatorsText(project.operators) || '—'}
-        empty={!project.operators?.length}
-        compact
-        className={tileClass}
-      />
-      <FormFactTile
-        icon={Tags}
-        label={t('projects.importance')}
-        value={<ProjectImportanceBadge value={project.importance} />}
-        compact
-        className={tileClass}
-      />
-      <FormFactTile
-        icon={CalendarRange}
-        label={t('projects.startDate')}
-        value={project.startDate ? <DateText value={project.startDate} /> : '—'}
-        empty={!project.startDate}
-        compact
-        className={tileClass}
-      />
-      <FormFactTile
-        icon={CalendarRange}
-        label={t('projects.endDate')}
-        value={project.endDate ? <DateText value={project.endDate} /> : '—'}
-        empty={!project.endDate}
-        compact
-        tone="mint"
-        className={tileClass}
-      />
-      <FormFactTile
-        icon={ClipboardList}
-        label={t('projectLiveBoard.activityCount')}
-        value={formatNumber(project.activityCount, locale)}
-        compact
-        className={tileClass}
-      />
-      {project.systemUrl ? (
-        <FormFactTile
-          icon={Globe}
-          label={t('projects.systemUrl')}
-          value={<ProjectUrl value={project.systemUrl} />}
-          compact
-          className={tileClass}
-        />
-      ) : null}
-      {project.address ? (
-        <FormFactTile
-          icon={MapPin}
-          label={t('projects.address')}
-          value={project.address}
-          compact
-          className={inline ? 'min-w-[12rem] max-w-[16rem] shrink-0' : undefined}
-        />
-      ) : null}
-      {project.description ? (
-        <FormFactTile
-          icon={ScrollText}
-          label={t('projects.description')}
-          value={project.description}
-          compact
-          className={inline ? 'min-w-[14rem] max-w-[18rem] shrink-0' : undefined}
-        />
-      ) : null}
-    </>
-  )
-  const openProject = canManage ? (
-    <Link to={`/projects/${project.id}`} className={inline ? 'shrink-0' : 'block'}>
-      <Button type="button" className={inline ? 'h-8 px-3 py-0 text-xs' : 'w-full'}>
-        <FolderKanban className={inline ? 'size-3.5' : 'size-4'} aria-hidden />
-        {t('projectLiveBoard.openProject')}
-      </Button>
-    </Link>
-  ) : null
-  if (inline) {
-    return (
-      <div className="flex h-full min-w-0 items-center gap-1.5 overflow-x-auto [scrollbar-width:thin]">
-        {facts}
-        {openProject}
-      </div>
-    )
-  }
+  const { theme, overdue, daysLabel, daysTitle, daysShort } = projectBoardMeta(project, locale, t)
+  const compact = size === 'sm'
   return (
-    <div className="space-y-2">
-      {facts}
-      {openProject}
+    <div className={`flex shrink-0 items-center ${compact ? 'gap-1.5' : 'gap-2.5'}`}>
+      <div
+        className={`live-board-stat-chip${compact ? ' is-compact' : ''}`}
+        title={`${t('projects.progress')} ${
+          project.progressPercent == null ? '—' : `${formatNumber(project.progressPercent, locale)}٪`
+        }`}
+      >
+        <MiniProgressRing
+          value={project.progressPercent}
+          locale={locale}
+          color={theme.ring}
+          size={compact ? 'sm' : 'lg'}
+        />
+        {compact ? null : (
+          <span className="live-board-stat-chip-label">{t('projects.progress')}</span>
+        )}
+      </div>
+      <div
+        className={`live-board-stat-chip${overdue ? ' is-overdue' : ''}${compact ? ' is-compact' : ''}`}
+        title={`${daysTitle} ${daysLabel}`}
+      >
+        <MiniDaysBadge
+          daysLabel={daysLabel}
+          overdue={overdue}
+          title={daysTitle}
+          label={daysShort}
+          size={compact ? 'sm' : 'lg'}
+        />
+        {compact ? null : <span className="live-board-stat-chip-label">{daysTitle}</span>}
+      </div>
+    </div>
+  )
+}
+
+export function ProjectSystemNameBanner({
+  name,
+  color,
+  compact = false,
+}: {
+  name: string
+  color?: string | null
+  compact?: boolean
+}) {
+  return (
+    <div className={`live-board-system-name${compact ? ' is-compact' : ''}`}>
+      {compact ? null : (
+        <span className="live-board-system-name-orbit" aria-hidden>
+          <Sparkles className="live-board-system-name-icon is-a" />
+          <Radio className="live-board-system-name-icon is-b" />
+        </span>
+      )}
+      <ProjectColorLamp color={color} />
+      <span className="live-board-system-name-text">{name}</span>
+      {compact ? null : (
+        <span className="live-board-system-name-orbit" aria-hidden>
+          <FolderKanban className="live-board-system-name-icon is-c" />
+          <Sparkles className="live-board-system-name-icon is-d" />
+        </span>
+      )}
     </div>
   )
 }
@@ -601,60 +538,15 @@ function ProjectMapCard({
 }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const isMobile = useNarrowViewport()
-  const [showDetails, setShowDetails] = useState(false)
-  const [body, setBody] = useState('')
-  const [progressValue, setProgressValue] = useState(project.progressPercent ?? 0)
-  const [audioId, setAudioId] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [entered, setEntered] = useState(false)
-  const theme = liveBoardCardTheme[project.status ?? 'NOT_STARTED'] ?? liveBoardCardTheme.NOT_STARTED
+  const [openActivity, setOpenActivity] = useState<ProjectLiveBoardActivity | null>(null)
   const contractor = project.mainContractor?.name || project.companyName
-  const remainingDays = calendarDaysUntil(project.endDate)
-  const overdue = remainingDays != null && remainingDays < 0
-  const daysLabel = remainingDays == null ? '—' : formatNumber(Math.abs(remainingDays), locale)
-  const daysTitle = overdue ? t('projectLiveBoard.overdueDays') : t('projectLiveBoard.remainingDays')
-  const daysShort = overdue
-    ? t('projectLiveBoard.overdueDaysShort')
-    : t('projectLiveBoard.remainingDaysShort')
-  const reportRef = useStickToLastLine(body)
-  const { recording, start, stop } = useVoiceCapture({
-    processingMode: projectProgressProcessingModes.IMMEDIATE,
-    liveTranscript: body,
-    onAudio: (file, durationMs) => {
-      void uploadAudio(file, durationMs)
-    },
-    onLiveTranscript: setBody,
-  })
-
-  async function uploadAudio(file: File, durationMs: number) {
-    setUploading(true)
-    try {
-      const form = new FormData()
-      form.append('file', file)
-      form.append('durationMs', String(Math.round(durationMs)))
-      const { data } = await api.post<{ id: string }>('/files', form)
-      setAudioId(data.id)
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, t('common.error')))
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  function clearDraft() {
-    if (recording) stop()
-    setBody('')
-    setAudioId('')
-    setProgressValue(project.progressPercent ?? 0)
-  }
-
-  useEffect(() => {
-    clearDraft()
-    setShowDetails(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id])
+  const activities = (project.recentActivities?.length
+    ? project.recentActivities
+    : project.lastActivity
+      ? [project.lastActivity]
+      : []
+  ).slice(0, 3)
 
   useEffect(() => {
     const id = window.requestAnimationFrame(() => setEntered(true))
@@ -665,61 +557,16 @@ function ProjectMapCard({
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.repeat) return
       event.preventDefault()
-      if (recording) {
-        stop()
-        return
-      }
-      if (showDetails) {
-        setShowDetails(false)
-        return
-      }
       onClose()
     }
     document.addEventListener('keydown', onKey)
-    const previousOverflow = isMobile ? document.body.style.overflow : ''
-    if (isMobile) document.body.style.overflow = 'hidden'
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
-      if (isMobile) document.body.style.overflow = previousOverflow
+      document.body.style.overflow = previousOverflow
     }
-  }, [isMobile, onClose, recording, showDetails, stop])
-
-  async function toggleRecord() {
-    if (recording) {
-      stop()
-      return
-    }
-    await start()
-  }
-
-  async function saveProgress() {
-    if (recording) stop()
-    const text = body.trim()
-    if (!text && !audioId) {
-      toast.error(t('projectProgress.needContent'))
-      return
-    }
-    setSaving(true)
-    try {
-      await api.post(`/projects/${project.id}/progress`, {
-        occurredAt: todayIsoDate(),
-        body: text || null,
-        transcript: text || null,
-        progressPercent: progressValue,
-        processingMode: projectProgressProcessingModes.IMMEDIATE,
-        audioId: audioId || null,
-        imageIds: [],
-      })
-      toast.success(t('projectProgress.created'))
-      await queryClient.invalidateQueries({ queryKey: ['projects', 'live-board'] })
-      await queryClient.invalidateQueries({ queryKey: ['public', 'projects', 'live-board'] })
-      clearDraft()
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, t('common.error')))
-    } finally {
-      setSaving(false)
-    }
-  }
+  }, [onClose])
 
   async function saveProgressFromForm(payload: ProjectProgressPayload) {
     await api.post(`/projects/${project.id}/progress`, payload)
@@ -729,364 +576,276 @@ function ProjectMapCard({
     onClose()
   }
 
-  const lastActivity =
-    !showDetails && project.lastActivity ? (
-      <LastActivityDockLine
-        activity={project.lastActivity}
-        projectId={canManage ? project.id : undefined}
-        size="comfortable"
-      />
-    ) : null
-  const reportText = canManage
-    ? body
-    : project.description?.trim() ||
-      (project.lastActivity ? activityPreviewText(project.lastActivity) : '')
-  const displayProgress = canManage ? progressValue : (project.progressPercent ?? 0)
-
-  const identityRow = (
-    <div className="flex items-start gap-2 pl-12">
-      <div className="flex min-w-0 flex-1 items-start gap-2">
-        <ProjectColorLamp color={project.color} />
-        <div className="min-w-0 flex-1 text-start">
-          <h2
-            id="live-board-project-title"
-            className="whitespace-normal break-words text-sm font-bold leading-6 text-ink-900"
-          >
-            <button
-              type="button"
-              className="cursor-pointer text-start hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-              aria-pressed={showDetails}
-              title={showDetails ? t('projectLiveBoard.hideDetails') : t('projectLiveBoard.viewDetails')}
-              onClick={() => setShowDetails((open) => !open)}
-            >
-              {project.systemName}
-            </button>
-          </h2>
-          {contractor ? (
-            <p className="mt-1 flex items-center gap-1 text-xs text-ink-600">
-              <Handshake className="size-3.5 shrink-0 text-teal-600" aria-hidden />
-              <span className="whitespace-normal break-words">{contractor}</span>
-            </p>
-          ) : null}
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <MiniProgressRing
-          value={project.progressPercent}
-          locale={locale}
-          color={theme.ring}
-          size="xs"
-        />
-        <MiniDaysBadge
-          daysLabel={daysLabel}
-          overdue={overdue}
-          title={daysTitle}
-          label={daysShort}
-          size="xs"
-        />
-      </div>
-    </div>
-  )
-
-  const inner = (
-    <>
-      {identityRow}
-      {lastActivity ? <div className="mt-4">{lastActivity}</div> : null}
-      <div className="mt-5 flex flex-col items-center gap-3">
-        {canManage ? (
-          <Button
-            type="button"
-            className={`relative min-w-[12rem] gap-1.5 px-5 py-2.5 text-sm ${
-              recording ? '!bg-red-500 hover:!bg-red-600' : ''
-            }`}
-            onClick={() => void toggleRecord()}
-          >
-            {recording ? (
-              <span className="absolute inset-0 animate-ping rounded-2xl bg-red-400/30" aria-hidden />
-            ) : null}
-            <Mic className={`relative size-4 shrink-0 ${recording ? 'animate-pulse' : ''}`} aria-hidden />
-            <span className="relative">
-              {recording ? t('projectProgress.stopRecord') : t('projectProgress.record')}
-            </span>
-          </Button>
-        ) : null}
-        <textarea
-          ref={reportRef}
-          className={`${fieldClassName} progress-report-field ${
-            canManage ? 'progress-report-field-roomy' : 'max-h-28'
-          }`}
-          rows={canManage ? 4 : 3}
-          value={reportText}
-          readOnly={!canManage}
-          onChange={canManage ? (event) => setBody(event.target.value) : undefined}
-          placeholder={t('projectLiveBoard.reportPlaceholder')}
-        />
-        <div className="w-full space-y-1.5">
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            dir="ltr"
-            className={`progress-slider${canManage ? '' : ' pointer-events-none'}`}
-            style={{ '--slider-fill': `${displayProgress}%` } as CSSProperties}
-            value={displayProgress}
-            tabIndex={canManage ? undefined : -1}
-            readOnly={!canManage}
-            onChange={(event) => {
-              if (!canManage) return
-              setProgressValue(Number(event.target.value))
-            }}
-            aria-label={t('projectProgress.progress')}
-            aria-readonly={!canManage}
-          />
-          <p className="text-center text-sm tabular-nums text-ink-700">
-            {`${formatNumber(displayProgress, locale)}٪`}
-          </p>
-        </div>
-        {canManage ? (
-          <Button
-            type="button"
-            disabled={saving || uploading}
-            onClick={() => void saveProgress()}
-          >
-            <Check className="size-4" aria-hidden />
-            {t('projectProgress.save')}
-          </Button>
-        ) : null}
-      </div>
-      <div className="mt-5">
-        <ProjectMapAttachments projectId={project.id} canManage={canManage} />
-      </div>
-      {showDetails ? (
-        <div className="mt-5">
-          <ProjectMapDetails project={project} locale={locale} canManage={canManage} />
-        </div>
-      ) : null}
-    </>
-  )
-
-  if (isMobile) {
-    return createPortal(
+  return createPortal(
+    <div
+      className={`live-board-project-overlay ${entered ? 'is-open' : ''}`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="live-board-project-title"
+      onClick={onClose}
+    >
       <div
-        className={`fixed inset-0 z-[80] flex flex-col transition-opacity duration-300 ${
-          canManage ? 'bg-cream-50' : 'justify-end bg-ink-950/30'
-        } ${entered ? 'opacity-100' : 'opacity-0'}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="live-board-project-title"
+        className={`live-board-project-sheet ${entered ? 'is-open' : ''}${
+          canManage ? ' is-manage' : activities.length ? ' is-activities' : ''
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
-        <div
-          className={
-            canManage
-              ? 'relative flex min-h-0 flex-1 flex-col'
-              : 'relative max-h-[min(34rem,78vh)] overflow-hidden rounded-t-3xl bg-cream-50 shadow-[0_-12px_32px_rgba(28,39,37,0.16)]'
-          }
+        <div className="h-1 shrink-0" style={{ background: projectColor(project.color) }} />
+        <button
+          type="button"
+          className="absolute left-3 top-3 z-20 inline-flex size-9 cursor-pointer items-center justify-center rounded-2xl border border-teal-400 bg-white text-ink-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+          aria-label={t('common.close')}
+          onClick={onClose}
         >
-          <div className="h-0.5 shrink-0" style={{ background: projectColor(project.color) }} />
-          <button
-            type="button"
-            className="absolute left-3 top-3 z-20 inline-flex size-9 cursor-pointer items-center justify-center rounded-2xl border border-teal-400 bg-white text-ink-700 shadow-[0_4px_12px_rgba(46,189,182,0.16)] transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
-            aria-label={t('common.close')}
-            onClick={onClose}
-          >
-            <X className="size-4" aria-hidden />
-          </button>
-          {canManage ? (
-            <>
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-3">
-                <div className="mx-auto w-full max-w-xl space-y-4 pb-4">
-                  {identityRow}
-                  <ProjectProgressForm
-                    key={project.id}
-                    onSubmit={saveProgressFromForm}
-                  />
-                  <ProjectMapAttachments projectId={project.id} canManage={canManage} />
-                  {showDetails ? (
-                    <ProjectMapDetails project={project} locale={locale} canManage={canManage} />
-                  ) : null}
-                </div>
-              </div>
-              <div className="shrink-0 border-t border-line/70 bg-white/90 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
-                <div className="flex justify-center">
-                  <Button type="button" variant="ghost" className="w-auto" onClick={onClose}>
-                    <X className="size-4" aria-hidden />
-                    {t('common.close')}
-                  </Button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex min-h-0 flex-col overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
-              <div className="mx-auto my-3 w-full max-w-md">{inner}</div>
-            </div>
-          )}
-        </div>
-      </div>,
-      document.body,
-    )
-  }
-
-  const dockButtonClass = 'h-8 min-w-[7.75rem] px-2.5 py-0 text-xs'
-  const dockHeight = canManage ? WEB_DOCK_HEIGHT_TALL : WEB_DOCK_HEIGHT_PUBLIC
-
-  return (
-    <aside
-      className={`absolute inset-x-0 bottom-0 z-[1000] overflow-hidden rounded-t-2xl border border-b-0 bg-white transition-transform duration-300 ease-out ${
-        entered ? 'translate-y-0' : 'translate-y-full'
-      }`}
-      style={{
-        height: dockHeight,
-        borderColor: projectColorAlpha(project.color, 0.35),
-        boxShadow: `0 -8px 22px ${projectColorAlpha(project.color, 0.16)}`,
-      }}
-      onClick={(event) => event.stopPropagation()}
-    >
-      <div className="h-0.5" style={{ background: projectColor(project.color) }} />
-      <div className="flex h-[calc(100%-2px)] flex-col gap-1.5 px-3 py-1.5">
-        <div className="flex min-h-0 flex-1 items-center gap-2.5">
-          <div className="flex min-w-0 max-w-[15rem] shrink-0 items-start gap-2">
-            <ProjectColorLamp color={project.color} />
-            <div className="min-w-0">
-              <h2
-                id="live-board-project-title"
-                className="truncate text-sm font-bold leading-5 text-ink-900"
-              >
-                <button
-                  type="button"
-                  className="block w-full truncate cursor-pointer text-start hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
-                  title={showDetails ? t('projectLiveBoard.hideDetails') : t('projectLiveBoard.viewDetails')}
-                  aria-pressed={showDetails}
-                  onClick={() => setShowDetails((open) => !open)}
+          <X className="size-4" aria-hidden />
+        </button>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-[max(0.9rem,env(safe-area-inset-bottom))] pt-3 sm:px-5">
+          <div className="mx-auto w-full max-w-xl space-y-3">
+            <div className="flex items-start gap-2 pl-12" dir="ltr">
+              <div className="min-w-0 flex-1 text-start" dir={languageDir(locale)}>
+                <h2
+                  id="live-board-project-title"
+                  className="text-sm font-bold leading-5 text-ink-900"
                 >
                   {project.systemName}
-                </button>
-              </h2>
-              <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-medium text-teal-800 ring-1 ring-teal-200">
-                <Handshake className="size-3 shrink-0 text-teal-600" aria-hidden />
-                <span className="truncate">
-                  {contractor || t('projectLiveBoard.noContractors')}
-                </span>
-              </span>
+                </h2>
+                {contractor ? (
+                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-600">
+                    <Handshake className="size-3.5 shrink-0 text-teal-600" aria-hidden />
+                    <span className="whitespace-normal break-words">{contractor}</span>
+                  </p>
+                ) : null}
+              </div>
+              <LiveBoardHeaderStats project={project} locale={locale} size="sm" />
             </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <div className="flex items-center justify-center rounded-xl border border-teal-100 bg-white p-1 shadow-[0_4px_10px_rgba(46,189,182,0.1)]">
-              <MiniProgressRing
-                value={project.progressPercent}
-                locale={locale}
-                color={theme.ring}
-                size="xs"
-              />
-            </div>
-            <div className="flex items-center justify-center rounded-xl border border-mint-100 bg-white p-1 shadow-[0_4px_10px_rgba(63,214,190,0.1)]">
-              <MiniDaysBadge
-                daysLabel={daysLabel}
-                overdue={overdue}
-                title={daysTitle}
-                label={daysShort}
-                size="xs"
-              />
-            </div>
-          </div>
-          {canManage ? (
-            <Button
-              type="button"
-              className={`relative ${dockButtonClass} ${
-                recording ? '!bg-red-500 hover:!bg-red-600' : ''
-              }`}
-              variant={recording ? 'primary' : 'ghost'}
-              aria-pressed={recording}
-              onClick={() => void toggleRecord()}
-            >
-              {recording ? (
-                <span className="absolute inset-0 animate-ping rounded-2xl bg-red-400/30" aria-hidden />
-              ) : null}
-              <Mic className={`relative size-3.5 shrink-0 ${recording ? 'animate-pulse' : ''}`} aria-hidden />
-              <span className="relative">
-                {recording ? t('projectProgress.stopRecord') : t('projectProgress.record')}
-              </span>
-            </Button>
-          ) : null}
-          <div className="flex min-h-0 min-w-0 flex-1 items-center gap-2 self-stretch overflow-hidden pe-1">
-            <textarea
-              ref={reportRef}
-              className={`${fieldClassName} progress-report-field h-full min-h-0 max-h-none w-full min-w-[12rem] flex-1 resize-none border-teal-200 px-3 py-2 text-xs leading-5`}
-              rows={2}
-              value={reportText}
-              readOnly={!canManage}
-              onChange={canManage ? (event) => setBody(event.target.value) : undefined}
-              placeholder={t('projectLiveBoard.reportPlaceholder')}
-            />
-            {showDetails ? (
-              <div className="min-h-0 min-w-0 flex-1 self-stretch py-0.5">
-                <ProjectMapDetails
-                  project={project}
-                  locale={locale}
-                  canManage={canManage}
-                  variant="inline"
-                />
+            {canManage ? (
+              <ProjectProgressForm key={project.id} onSubmit={saveProgressFromForm} />
+            ) : activities.length ? (
+              <div className="live-board-activity-list">
+                {activities.map((activity) => (
+                  <LiveBoardActivityCard
+                    key={activity.id}
+                    activity={activity}
+                    onOpen={setOpenActivity}
+                  />
+                ))}
               </div>
             ) : null}
+            <ProjectMapAttachments projectId={project.id} canManage={canManage} compact />
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {project.lastActivity ? (
-            <>
-              <LastActivityDockLine
-                activity={project.lastActivity}
-                projectId={canManage ? project.id : undefined}
-              />
-              <DockStatChip
-                value={formatNumber(project.activityCount, locale)}
-                label={t('projectLiveBoard.activityCountShort')}
-                title={t('projectLiveBoard.activityCount')}
-              />
-            </>
-          ) : (
-            <div className="min-w-0 flex-1" />
-          )}
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            dir="ltr"
-            className={`progress-slider progress-slider-lg w-[10rem] min-w-[8rem] max-w-[11rem] shrink-0${
-              canManage ? '' : ' pointer-events-none'
-            }`}
-            style={{ '--slider-fill': `${displayProgress}%` } as CSSProperties}
-            value={displayProgress}
-            tabIndex={canManage ? undefined : -1}
-            readOnly={!canManage}
-            onChange={(event) => {
-              if (!canManage) return
-              setProgressValue(Number(event.target.value))
-            }}
-            aria-label={t('projectProgress.progress')}
-            aria-readonly={!canManage}
-          />
-          <span className="w-8 shrink-0 text-end text-[11px] font-semibold tabular-nums text-ink-700">
-            {`${formatNumber(displayProgress, locale)}٪`}
+      </div>
+      {openActivity ? (
+        <LiveBoardActivityFullModal activity={openActivity} onClose={() => setOpenActivity(null)} />
+      ) : null}
+    </div>,
+    document.body,
+  )
+}
+
+const ALL_GROUPS = 'all'
+const LAPTOP_MQ = '(min-width: 640px)'
+
+function shouldOpenSheetOnSelect(mode: boolean | 'mobile') {
+  if (mode === true) return true
+  if (mode === false) return false
+  return typeof window === 'undefined' ? false : !window.matchMedia(LAPTOP_MQ).matches
+}
+
+type LiveBoardGroupChip = {
+  id: string
+  name: string
+  color: string
+  count: number
+}
+
+function LiveBoardGroupBadge({
+  chip,
+  selected,
+  locale,
+  onSelect,
+}: {
+  chip: LiveBoardGroupChip
+  selected: boolean
+  locale: string
+  onSelect: (id: string) => void
+}) {
+  const color = projectColor(chip.color)
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={selected}
+      className={`live-board-group-badge${selected ? ' is-active' : ''}`}
+      style={
+        {
+          '--badge-color': color,
+          '--badge-soft': projectColorAlpha(color, 0.14),
+          '--badge-ring': projectColorAlpha(color, 0.32),
+          '--badge-glow': projectColorAlpha(color, 0.2),
+        } as CSSProperties
+      }
+      onClick={() => onSelect(chip.id)}
+    >
+      <span className="live-board-group-badge-dot" aria-hidden />
+      <span className="live-board-group-badge-label">{chip.name}</span>
+      <span className="live-board-group-badge-count">{formatNumber(chip.count, locale)}</span>
+    </button>
+  )
+}
+
+function LiveBoardGroupBadges({
+  located,
+  selectedId,
+  locale,
+  onSelect,
+}: {
+  located: ProjectLiveBoardItem[]
+  selectedId: string
+  locale: string
+  onSelect: (id: string) => void
+}) {
+  const { t } = useTranslation()
+  const chips = useMemo(() => {
+    const byId = new Map<string, LiveBoardGroupChip>()
+    for (const item of located) {
+      if (!item.group) continue
+      const current = byId.get(item.group.id)
+      if (current) {
+        current.count += 1
+      } else {
+        byId.set(item.group.id, {
+          id: item.group.id,
+          name: item.group.name,
+          color: projectColor(item.group.color),
+          count: 1,
+        })
+      }
+    }
+    const named = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, locale))
+    if (!named.length) return []
+    return [
+      {
+        id: ALL_GROUPS,
+        name: t('projectLiveBoard.allCategories'),
+        color: '#2ebdb6',
+        count: located.length,
+      },
+      ...named,
+    ]
+  }, [located, locale, t])
+
+  if (!chips.length) return null
+
+  return (
+    <div
+      className="live-board-group-badges"
+      role="tablist"
+      aria-label={t('projectLiveBoard.categories')}
+      dir={languageDir(locale)}
+    >
+      {chips.map((chip) => (
+        <LiveBoardGroupBadge
+          key={chip.id}
+          chip={chip}
+          selected={selectedId === chip.id}
+          locale={locale}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
+  )
+}
+
+function LiveBoardLastActivityPanel({
+  project,
+  locale,
+  canManage,
+}: {
+  project: ProjectLiveBoardItem
+  locale: string
+  canManage: boolean
+}) {
+  const { t } = useTranslation()
+  const activity = project.lastActivity
+  return (
+    <section
+      className="live-board-last-activity"
+      dir={languageDir(locale)}
+      aria-label={t('projectLiveBoard.lastActivity')}
+    >
+      <div className="live-board-last-activity-head">
+        <span className="live-board-last-activity-icon" aria-hidden>
+          <ClipboardList />
+        </span>
+        <p className="live-board-last-activity-title">{t('projectLiveBoard.lastActivity')}</p>
+        {activity ? (
+          <span className="live-board-last-activity-date">
+            <DateText value={activity.occurredAt} withTime />
           </span>
-          {canManage ? (
-            <Button
-              type="button"
-              className="h-8 shrink-0 px-2.5 py-0 text-xs"
-              disabled={saving || uploading}
-              onClick={() => void saveProgress()}
-            >
-              <Check className="size-3.5" aria-hidden />
-              {t('projectProgress.save')}
-            </Button>
-          ) : null}
+        ) : null}
+      </div>
+      <div className="live-board-last-activity-body">
+        {activity ? (
+          <LastActivityPreview
+            activity={activity}
+            projectId={canManage ? project.id : undefined}
+            empty={t('projectLiveBoard.noActivity')}
+            size="comfortable"
+          />
+        ) : (
+          <p className="live-board-last-activity-empty">{t('projectLiveBoard.noActivity')}</p>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function LiveBoardProgressPanel({
+  value,
+  locale,
+  color,
+}: {
+  value: number | null
+  locale: string
+  color: string
+}) {
+  const { t } = useTranslation()
+  const pct = Math.min(100, Math.max(0, value ?? 0))
+  const label = value == null ? '—' : `${formatNumber(Math.round(pct), locale)}٪`
+  const ticks = [100, 75, 50, 25, 0]
+  return (
+    <aside
+      className="live-board-progress-panel"
+      dir={languageDir(locale)}
+      aria-label={`${t('projectLiveBoard.progressPanel')} ${label}`}
+    >
+      <div className="live-board-progress-panel-head">
+        <span className="live-board-progress-panel-icon" aria-hidden>
+          <Percent />
+        </span>
+        <p className="live-board-progress-panel-title">{t('projectLiveBoard.progressPanel')}</p>
+      </div>
+      <p className="live-board-progress-panel-value">{label}</p>
+      <div className="live-board-progress-track" aria-hidden>
+        <div className="live-board-progress-ticks">
+          {ticks.map((tick) => (
+            <span key={tick} className="live-board-progress-tick" style={{ bottom: `${tick}%` }}>
+              {formatNumber(tick, locale)}
+            </span>
+          ))}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto pb-1">
-          <ProjectMapAttachments
-            projectId={project.id}
-            canManage={canManage}
-            compact
+        <div className="live-board-progress-bar">
+          <div
+            className="live-board-progress-fill"
+            style={
+              {
+                '--fill-pct': `${value == null ? 0 : pct}%`,
+                '--fill-color': color,
+                '--fill-soft': projectColorAlpha(color, 0.22),
+                '--fill-glow': projectColorAlpha(color, 0.42),
+              } as CSSProperties
+            }
           />
         </div>
       </div>
@@ -1099,19 +858,45 @@ export function ProjectLiveBoardMap({
   locale,
   className = 'relative h-[28rem] min-h-[20rem] overflow-hidden sm:h-[34rem]',
   canManage = true,
+  onSelectedChange,
+  openSheetOnSelect = true,
+  detailsOpen: detailsOpenProp,
+  onDetailsOpenChange,
 }: {
   items: ProjectLiveBoardItem[]
   locale: string
   className?: string
   canManage?: boolean
+  onSelectedChange?: (project: ProjectLiveBoardItem | null) => void
+  openSheetOnSelect?: boolean | 'mobile'
+  detailsOpen?: boolean
+  onDetailsOpenChange?: (open: boolean) => void
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [groupFilter, setGroupFilter] = useState(ALL_GROUPS)
+  const [detailsOpenState, setDetailsOpenState] = useState(false)
+  const detailsOpen = detailsOpenProp ?? detailsOpenState
   const selected = items.find((item) => item.id === selectedId) ?? null
+
+  function setDetailsOpen(open: boolean) {
+    onDetailsOpenChange?.(open)
+    if (detailsOpenProp === undefined) setDetailsOpenState(open)
+  }
+  const [progressProject, setProgressProject] = useState<ProjectLiveBoardItem | null>(null)
+  const onSelectedChangeRef = useRef(onSelectedChange)
+  onSelectedChangeRef.current = onSelectedChange
   const located = useMemo(() => items.filter(projectHasMapLocation), [items])
+  const visibleLocated = useMemo(() => {
+    if (groupFilter === ALL_GROUPS) return located
+    return located.filter((item) => item.groupId === groupFilter)
+  }, [located, groupFilter])
+  const progressSource = selected ?? progressProject
+  const progressValue = progressSource?.progressPercent ?? null
+  const progressColor = progressSource ? projectColor(progressSource.color) : '#2ebdb6'
   const overlays = useMemo(() => {
     const markers: MapOverlayMarker[] = []
     const polygons: MapOverlayPolygon[] = []
-    for (const item of located) {
+    for (const item of visibleLocated) {
       const rings = projectBoundaryPolygons(item.boundary)
       const selected = selectedId === item.id
       const color = projectColor(item.color)
@@ -1123,16 +908,18 @@ export function ProjectLiveBoardMap({
             latlngs,
             color,
             selected,
-            title,
           })
         }
-        continue
       }
-      if (item.latitude == null || item.longitude == null) continue
+      const pin =
+        item.latitude != null && item.longitude != null
+          ? { lat: item.latitude, lng: item.longitude }
+          : projectBoundaryCenter(item.boundary)
+      if (!pin) continue
       markers.push({
         id: item.id,
-        lat: item.latitude,
-        lng: item.longitude,
+        lat: pin.lat,
+        lng: pin.lng,
         kind: 'project' as const,
         tone: item.status ? statusTone[item.status] : 'not-started',
         color,
@@ -1148,42 +935,116 @@ export function ProjectLiveBoardMap({
       })
     }
     return { markers, polygons }
-  }, [located, selectedId])
+  }, [visibleLocated, selectedId])
 
   useEffect(() => {
-    if (selectedId && !items.some((item) => item.id === selectedId)) {
+    if (selectedId && !visibleLocated.some((item) => item.id === selectedId)) {
       setSelectedId(null)
     }
-  }, [items, selectedId])
+  }, [visibleLocated, selectedId])
+
+  useEffect(() => {
+    if (!selected && detailsOpen) setDetailsOpen(false)
+  }, [selected, detailsOpen])
+
+  useEffect(() => {
+    onSelectedChangeRef.current?.(selected)
+  }, [selected])
+
+  useEffect(() => {
+    return () => onSelectedChangeRef.current?.(null)
+  }, [])
+
+  useEffect(() => {
+    if (!selectedId) return
+    function onPagePointerDown(event: PointerEvent) {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (
+        target.closest(
+          '.leaflet-container, .leaflet-marker-icon, .leaflet-interactive, .leaflet-tooltip, .live-board-project-overlay, .live-board-activity-full-overlay, .live-board-group-badge, .live-board-last-activity, .live-board-progress-panel, button, a, input, textarea, [data-sonner-toast]',
+        )
+      ) {
+        return
+      }
+      setSelectedId(null)
+      setDetailsOpen(false)
+    }
+    document.addEventListener('pointerdown', onPagePointerDown)
+    return () => document.removeEventListener('pointerdown', onPagePointerDown)
+  }, [selectedId])
+
+  useEffect(() => {
+    if (selected) {
+      setProgressProject(selected)
+      return
+    }
+    const id = window.setTimeout(() => setProgressProject(null), 320)
+    return () => window.clearTimeout(id)
+  }, [selected])
 
   return (
-    <div className={`live-board-map-shell ${className}`}>
-      <div className="live-board-map-ring">
-        <div className="live-board-map-frame">
-          <OsmMapPicker
-            latitude=""
-            longitude=""
-            onChange={() => undefined}
-            variant="always"
-            readOnly
-            fill
-            plainChrome
-            maxBounds={QESHM_LIVE_BOARD_BOUNDS}
-            overlays={overlays}
-            onMapClick={() => setSelectedId(null)}
-            onMarkerClick={(id) => setSelectedId((current) => (current === id ? null : id))}
-          />
-          {selected ? (
-            <ProjectMapCard
-              key={selected.id}
-              project={selected}
-              locale={locale}
-              canManage={canManage}
-              onClose={() => setSelectedId(null)}
-            />
-          ) : null}
+    <>
+      <div className={`live-board-map-shell ${className}`}>
+        <LiveBoardGroupBadges
+          located={located}
+          selectedId={groupFilter}
+          locale={locale}
+          onSelect={(id) => setGroupFilter((current) => (current === id && id !== ALL_GROUPS ? ALL_GROUPS : id))}
+        />
+        <div className="live-board-map-stage">
+          <div className={`live-board-progress-slot${selected ? ' is-open' : ''}`}>
+            {progressSource ? (
+              <LiveBoardProgressPanel
+                value={progressValue}
+                locale={locale}
+                color={progressColor}
+              />
+            ) : null}
+          </div>
+          <div className="live-board-map-ring">
+            <div className="live-board-map-frame">
+              <OsmMapPicker
+                latitude=""
+                longitude=""
+                onChange={() => undefined}
+                variant="always"
+                readOnly
+                fill
+                plainChrome
+                maxBounds={QESHM_LIVE_BOARD_BOUNDS}
+                overlays={overlays}
+                zoomOnSelected
+                onMapClick={() => {
+                  setSelectedId(null)
+                  setDetailsOpen(false)
+                }}
+                onMarkerClick={(id) => {
+                  const next = selectedId === id ? null : id
+                  setSelectedId(next)
+                  setDetailsOpen(Boolean(next) && shouldOpenSheetOnSelect(openSheetOnSelect))
+                }}
+              />
+            </div>
+          </div>
         </div>
+        {selected?.lastActivity ? (
+          <LiveBoardLastActivityPanel
+            project={selected}
+            locale={locale}
+            canManage={canManage}
+          />
+        ) : null}
       </div>
-    </div>
+      {selected && detailsOpen ? (
+        <ProjectMapCard
+          key={selected.id}
+          project={selected}
+          locale={locale}
+          canManage={canManage}
+          onClose={() => setDetailsOpen(false)}
+        />
+      ) : null}
+    </>
   )
 }

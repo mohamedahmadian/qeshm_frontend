@@ -643,6 +643,7 @@ export type Project = {
   description: string | null;
   color: string | null;
   showOnLiveBoard: boolean;
+  showOnHomePage: boolean;
   importance: ProjectImportance;
   createdAt: string;
   updatedAt: string;
@@ -798,6 +799,7 @@ export type ProjectLiveBoardActivity = {
   occurredAt: string;
   title: string;
   excerpt: string;
+  text?: string;
 };
 
 export type ProjectLiveBoardItem = Project & {
@@ -805,6 +807,7 @@ export type ProjectLiveBoardItem = Project & {
   contractors: ProjectLiveBoardContractor[];
   activityCount: number;
   lastActivity: ProjectLiveBoardActivity | null;
+  recentActivities?: ProjectLiveBoardActivity[];
 };
 
 export type ProjectLiveBoardStats = {
