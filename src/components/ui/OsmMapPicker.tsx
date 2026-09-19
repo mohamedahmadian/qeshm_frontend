@@ -8,6 +8,7 @@ import {
   requestBrowserGeolocation,
   type GeoErrorKind,
 } from '../../lib/geolocation'
+import { layoutSpiderfyMarkers } from '../../lib/map-spiderfy'
 import { isProjectColor, projectColor, projectColorAlpha } from '../../lib/project-color'
 import { Button } from './Form'
 
@@ -64,6 +65,7 @@ export type MapOverlayMarker = {
   pulseStrong?: boolean
   hint?: string
   tipFooter?: string
+  spidered?: boolean
 }
 
 function markerVisibleTitle(marker: MapOverlayMarker, zoom: number) {
@@ -80,6 +82,7 @@ function projectPinHtml(marker: MapOverlayMarker) {
   const selected = marker.selected ? ' eskan-project-pin-selected' : ''
   const pulse = marker.pulse ? ' eskan-project-pin-pulse' : ''
   const pulseStrong = marker.pulseStrong ? ' eskan-project-pin-pulse-strong' : ''
+  const spidered = marker.spidered ? ' eskan-project-pin-spidered' : ''
   const color = isProjectColor(marker.color) ? projectColor(marker.color) : '#2ebdb6'
   const fill = `background:${color};color:${color};box-shadow:0 0 0 3px rgba(255,255,255,0.92),${
     marker.selected
@@ -89,10 +92,14 @@ function projectPinHtml(marker: MapOverlayMarker) {
   const hint = marker.hint
     ? `<span class="eskan-project-pin-tip-meta">${marker.hint}</span>`
     : ''
-  const code = marker.badge
-    ? `<span class="eskan-project-pin-code">${marker.badge}</span>`
+  const code =
+    !marker.spidered && marker.badge
+      ? `<span class="eskan-project-pin-code">${marker.badge}</span>`
+      : ''
+  const label = marker.spidered
+    ? `<span class="eskan-project-pin-label">${title}</span>`
     : ''
-  return `<span class="eskan-project-pin${selected}${pulse}${pulseStrong}" style="color:${color}"><span class="eskan-project-pin-pulse-ring" aria-hidden="true"></span><span class="eskan-project-pin-glyph" style="${fill}">${PROJECT_PIN_ICON}</span>${code}<span class="eskan-project-pin-tip" dir="rtl"><span class="eskan-project-pin-tip-title">${title}</span>${hint}</span></span>`
+  return `<span class="eskan-project-pin${selected}${pulse}${pulseStrong}${spidered}" style="color:${color}"><span class="eskan-project-pin-pulse-ring" aria-hidden="true"></span><span class="eskan-project-pin-glyph" style="${fill}">${PROJECT_PIN_ICON}</span>${code}${label}<span class="eskan-project-pin-tip" dir="rtl"><span class="eskan-project-pin-tip-title">${title}</span>${hint}</span></span>`
 }
 
 function overlayMarkerHtml(marker: MapOverlayMarker, zoom = 12) {
@@ -108,13 +115,16 @@ function overlayMarkerHtml(marker: MapOverlayMarker, zoom = 12) {
 function overlayMarkerIcon(marker: MapOverlayMarker, zoom: number) {
   const isHistory = marker.kind === 'history'
   const isProject = marker.kind === 'project'
+  const spidered = Boolean(marker.spidered)
   return L.divIcon({
     className: `eskan-route-pin-wrap eskan-route-pin-${marker.kind}${
       marker.tone ? ` eskan-route-pin-tone-${marker.tone}` : ''
-    }${marker.pulse ? ' eskan-route-pin-pulse' : ''}`,
+    }${marker.pulse ? ' eskan-route-pin-pulse' : ''}${
+      spidered ? ' eskan-route-pin-spidered' : ''
+    }`,
     html: overlayMarkerHtml(marker, zoom),
-    iconSize: isHistory ? [28, 28] : isProject ? [80, 54] : [132, 52],
-    iconAnchor: isHistory ? [14, 14] : isProject ? [40, 16] : [66, 50],
+    iconSize: isHistory ? [28, 28] : spidered ? [112, 86] : isProject ? [80, 54] : [132, 52],
+    iconAnchor: isHistory ? [14, 14] : isProject ? [spidered ? 56 : 40, 16] : [66, 50],
   })
 }
 
@@ -230,6 +240,129 @@ function stageMapView(map: L.Map, target: L.LatLng, targetZoom: number) {
   map.setView(target, endZoom, { animate: true, duration: 0.55 })
 }
 
+function paintOverlayContents(
+  map: L.Map,
+  layer: L.LayerGroup,
+  overlays: MapOverlays,
+  spiderfyOverlaps: boolean,
+  onMarkerClick: (id: string, point: MapOverlayClickPoint) => void,
+) {
+  if (overlays.path && overlays.path.length >= 2) {
+    L.polyline(
+      overlays.path.map((point) => [point.lat, point.lng] as L.LatLngTuple),
+      {
+        color: '#2EBDB6',
+        weight: 4,
+        opacity: 0.88,
+        dashArray: '10 8',
+        lineCap: 'round',
+      },
+    ).addTo(layer)
+  }
+  for (const polygon of overlays.polygons ?? []) {
+    if (polygon.latlngs.length < 3) continue
+    const color = isProjectColor(polygon.color) ? projectColor(polygon.color) : '#2ebdb6'
+    const shape = L.polygon(
+      polygon.latlngs.map((point) => [point.lat, point.lng] as L.LatLngTuple),
+      {
+        color,
+        weight: polygon.selected ? 4 : 3,
+        opacity: 0.95,
+        fillColor: color,
+        fillOpacity: polygon.selected ? 0.34 : 0.18,
+        bubblingMouseEvents: false,
+        interactive: true,
+      },
+    ).addTo(layer)
+    if (polygon.selected) shape.bringToFront()
+    const emitPolygonClick = (latlng: L.LatLng) => {
+      const point = map.latLngToContainerPoint(latlng)
+      onMarkerClick(polygon.id, { x: point.x, y: point.y })
+    }
+    if (polygon.title) {
+      shape.bindTooltip(polygon.title, {
+        permanent: true,
+        direction: 'center',
+        interactive: true,
+        className: `eskan-project-polygon-label${polygon.selected ? ' is-selected' : ''}`,
+        opacity: 1,
+      })
+      const tooltip = shape.getTooltip()
+      tooltip?.on('click', (event: L.LeafletMouseEvent) => {
+        L.DomEvent.stop(event)
+        emitPolygonClick(event.latlng ?? shape.getBounds().getCenter())
+      })
+    }
+    shape.on('click', (event: L.LeafletMouseEvent) => {
+      L.DomEvent.stop(event)
+      emitPolygonClick(event.latlng)
+    })
+  }
+
+  const layout = spiderfyOverlaps
+    ? layoutSpiderfyMarkers(map, overlays.markers)
+    : { markers: overlays.markers, legs: [], hubs: [] }
+
+  for (const hub of layout.hubs) {
+    L.circleMarker([hub.lat, hub.lng], {
+      radius: hub.selected ? 6 : 5,
+      color: hub.color,
+      weight: 2.2,
+      opacity: 0.95,
+      fillColor: '#fff',
+      fillOpacity: 1,
+      interactive: false,
+    }).addTo(layer)
+  }
+  for (const leg of layout.legs) {
+    const line = L.polyline(
+      [
+        [leg.from.lat, leg.from.lng],
+        [leg.to.lat, leg.to.lng],
+      ],
+      {
+        color: leg.color,
+        weight: leg.selected ? 2.4 : 1.7,
+        opacity: leg.selected ? 0.95 : 0.72,
+        dashArray: '5 7',
+        lineCap: 'round',
+        interactive: false,
+      },
+    ).addTo(layer)
+    if (leg.selected) line.bringToFront()
+  }
+
+  for (const marker of layout.markers) {
+    const isHistory = marker.kind === 'history'
+    const pin = L.marker([marker.lat, marker.lng], {
+      icon: overlayMarkerIcon(marker, map.getZoom()),
+      zIndexOffset:
+        marker.selected || marker.kind === 'current'
+          ? 500
+          : marker.spidered
+            ? 440
+            : marker.pulse
+              ? 430
+              : isHistory
+                ? 420
+                : 400,
+      keyboard: false,
+    }).addTo(layer)
+    pin.on('click', (event: L.LeafletMouseEvent) => {
+      L.DomEvent.stopPropagation(event)
+      const point = map.latLngToContainerPoint(event.latlng)
+      onMarkerClick(marker.id, { x: point.x, y: point.y })
+    })
+    if (marker.popupHtml) {
+      pin.bindPopup(marker.popupHtml, {
+        className: 'eskan-route-popup',
+        maxWidth: 280,
+        autoClose: false,
+      })
+    }
+  }
+}
+
 const DEFAULT_PIN_ZOOM = 16
 
 function addMapTiles(map: L.Map) {
@@ -261,6 +394,7 @@ export function OsmMapPicker({
   onSelectedContainerPoint,
   onMapClick,
   zoomOnSelected = false,
+  spiderfyOverlaps = false,
   onGeolocate,
   onGeoError,
   onGeoOutside,
@@ -289,6 +423,7 @@ export function OsmMapPicker({
   onSelectedContainerPoint?: (point: MapSelectedContainerPoint | null) => void
   onMapClick?: () => void
   zoomOnSelected?: boolean
+  spiderfyOverlaps?: boolean
   onGeolocate?: (latitude: string, longitude: string) => void
   onGeoError?: (kind: GeoErrorKind) => void
   onGeoOutside?: () => void
@@ -476,111 +611,44 @@ export function OsmMapPicker({
     if (!open || !map) return
     overlayLayerRef.current?.remove()
     overlayLayerRef.current = null
+    const current = overlays
     if (
-      !overlays?.markers.length &&
-      !overlays?.path?.length &&
-      !overlays?.polygons?.length
+      !current ||
+      (!current.markers.length && !current.path?.length && !current.polygons?.length)
     ) {
       overlayFitKeyRef.current = ''
       return
     }
 
-    const layer = L.layerGroup().addTo(map)
-    overlayLayerRef.current = layer
-    if (overlays.path && overlays.path.length >= 2) {
-      L.polyline(
-        overlays.path.map((point) => [point.lat, point.lng] as L.LatLngTuple),
-        {
-          color: '#2EBDB6',
-          weight: 4,
-          opacity: 0.88,
-          dashArray: '10 8',
-          lineCap: 'round',
-        },
-      ).addTo(layer)
-    }
-    for (const polygon of overlays.polygons ?? []) {
-      if (polygon.latlngs.length < 3) continue
-      const color = isProjectColor(polygon.color) ? projectColor(polygon.color) : '#2ebdb6'
-      const shape = L.polygon(
-        polygon.latlngs.map((point) => [point.lat, point.lng] as L.LatLngTuple),
-        {
-          color,
-          weight: polygon.selected ? 4 : 3,
-          opacity: 0.95,
-          fillColor: color,
-          fillOpacity: polygon.selected ? 0.34 : 0.18,
-          bubblingMouseEvents: false,
-          interactive: true,
-        },
-      ).addTo(layer)
-      if (polygon.selected) shape.bringToFront()
-      const emitPolygonClick = (latlng: L.LatLng) => {
-        const point = map.latLngToContainerPoint(latlng)
-        onMarkerClickRef.current?.(polygon.id, { x: point.x, y: point.y })
-      }
-      if (polygon.title) {
-        shape.bindTooltip(polygon.title, {
-          permanent: true,
-          direction: 'center',
-          interactive: true,
-          className: `eskan-project-polygon-label${polygon.selected ? ' is-selected' : ''}`,
-          opacity: 1,
-        })
-        const tooltip = shape.getTooltip()
-        tooltip?.on('click', (event: L.LeafletMouseEvent) => {
-          L.DomEvent.stop(event)
-          emitPolygonClick(event.latlng ?? shape.getBounds().getCenter())
-        })
-      }
-      shape.on('click', (event: L.LeafletMouseEvent) => {
-        L.DomEvent.stop(event)
-        emitPolygonClick(event.latlng)
+    function paint() {
+      overlayLayerRef.current?.remove()
+      const next = L.layerGroup().addTo(map)
+      overlayLayerRef.current = next
+      paintOverlayContents(map, next, current, spiderfyOverlaps, (id, point) => {
+        onMarkerClickRef.current?.(id, point)
       })
     }
-    for (const marker of overlays.markers) {
-      const isHistory = marker.kind === 'history'
-      const pin = L.marker([marker.lat, marker.lng], {
-        icon: overlayMarkerIcon(marker, map.getZoom()),
-        zIndexOffset:
-          marker.selected || marker.kind === 'current'
-            ? 500
-            : marker.pulse
-              ? 430
-              : isHistory
-                ? 420
-                : 400,
-        keyboard: false,
-      }).addTo(layer)
-      pin.on('click', (event: L.LeafletMouseEvent) => {
-        L.DomEvent.stopPropagation(event)
-        const point = map.latLngToContainerPoint(event.latlng)
-        onMarkerClickRef.current?.(marker.id, { x: point.x, y: point.y })
-      })
-      if (marker.popupHtml) {
-        pin.bindPopup(marker.popupHtml, {
-          className: 'eskan-route-popup',
-          maxWidth: 280,
-          autoClose: false,
-        })
-      }
-    }
-    if (overlays.fit) {
+
+    paint()
+    if (current.fit) {
       const here = parseLatLng(latitude, longitude)
-      const points = overlayFitLatLngs(overlays, here)
+      const points = overlayFitLatLngs(current, here)
       const fitKey = overlayFitKey(points)
       if (points.length && overlayFitKeyRef.current !== fitKey) {
         overlayFitKeyRef.current = fitKey
-        fitOverlayBounds(map, overlays, here)
+        fitOverlayBounds(map, current, here)
+        if (spiderfyOverlaps) paint()
       }
     } else {
       overlayFitKeyRef.current = ''
     }
+    if (spiderfyOverlaps) map.on('zoomend', paint)
     return () => {
-      layer.remove()
-      if (overlayLayerRef.current === layer) overlayLayerRef.current = null
+      if (spiderfyOverlaps) map.off('zoomend', paint)
+      overlayLayerRef.current?.remove()
+      if (overlayLayerRef.current) overlayLayerRef.current = null
     }
-  }, [latitude, longitude, open, overlays])
+  }, [latitude, longitude, open, overlays, spiderfyOverlaps])
 
   useEffect(() => {
     if (!zoomOnSelected || !open) return

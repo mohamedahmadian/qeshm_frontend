@@ -7,7 +7,7 @@ import {
   Stamp,
   Users,
 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -64,6 +64,24 @@ import {
 function useMinutesScope() {
   const { requestId, minutesId } = useParams()
   return { requestId, minutesId }
+}
+
+function syncMinutesQueries(queryClient: QueryClient, minutes?: BoardMinutes) {
+  if (minutes) {
+    queryClient.setQueryData(['board-minutes-item', minutes.id], minutes)
+    queryClient.setQueriesData<Paginated<BoardMinutes>>({ queryKey: ['board-minutes'] }, (current) => {
+      if (!current?.items) return current
+      if (!current.items.some((item) => item.id === minutes.id)) return current
+      return {
+        ...current,
+        items: current.items.map((item) => (item.id === minutes.id ? minutes : item)),
+      }
+    })
+    void queryClient.invalidateQueries({ queryKey: ['board-minutes-item', minutes.id] })
+    void queryClient.invalidateQueries({ queryKey: ['board-minutes-dossier', minutes.id] })
+  }
+  void queryClient.invalidateQueries({ queryKey: ['board-minutes'] })
+  void queryClient.invalidateQueries({ queryKey: ['board-minutes-stats'] })
 }
 
 export function BoardMinutesListPage() {
@@ -249,6 +267,7 @@ export function BoardMinutesListPage() {
 export function BoardMinutesCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { requestId } = useMinutesScope()
   const requestQuery = useQuery({
     queryKey: ['board-request', requestId],
@@ -276,7 +295,8 @@ export function BoardMinutesCreatePage() {
         lockedRequestId={requestId}
         onCancel={() => navigate(boardMinutesListPath(requestId))}
         onSubmit={async (payload) => {
-          await api.post('/board/minutes', payload)
+          const { data } = await api.post<BoardMinutes>('/board/minutes', payload)
+          syncMinutesQueries(queryClient, data)
           toast.success(t('boardMinutes.created'))
           navigate(boardMinutesListPath(requestId))
         }}
@@ -288,6 +308,7 @@ export function BoardMinutesCreatePage() {
 export function BoardMinutesEditPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { requestId, minutesId } = useMinutesScope()
   const query = useQuery({
     queryKey: ['board-minutes-item', minutesId],
@@ -306,11 +327,13 @@ export function BoardMinutesEditPage() {
         subtitle={<EntityNameSubtitle name={query.data.subject} icon={ScrollText} />}
       />
       <BoardMinutesForm
+        key={query.data.updatedAt}
         initial={query.data}
         lockedRequestId={requestId}
         onCancel={() => navigate(boardMinutesListPath(requestId))}
         onSubmit={async (payload) => {
-          await api.patch(`/board/minutes/${minutesId}`, payload)
+          const { data } = await api.patch<BoardMinutes>(`/board/minutes/${minutesId}`, payload)
+          syncMinutesQueries(queryClient, data)
           toast.success(t('boardMinutes.updated'))
           navigate(boardMinutesListPath(requestId))
         }}

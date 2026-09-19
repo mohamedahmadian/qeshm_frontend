@@ -522,7 +522,7 @@ th {
   font-size: 0.92rem;
   font-weight: 800;
   line-height: 1;
-  color: #2ebdb6;
+  color: #0f6f6a;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1486,7 +1486,8 @@ th {
 }
 
 .eskan-route-pin-project:hover,
-.eskan-route-pin-project.eskan-project-pin-selected {
+.eskan-route-pin-project.eskan-project-pin-selected,
+.eskan-route-pin-spidered:hover {
   z-index: 1200 !important;
 }
 
@@ -1499,6 +1500,37 @@ th {
   align-items: center;
   justify-content: flex-start;
   padding-top: 2px;
+}
+
+.eskan-project-pin-spidered {
+  width: 112px;
+  height: 86px;
+}
+
+.eskan-project-pin-label {
+  z-index: 1;
+  display: -webkit-box;
+  max-width: 6.8rem;
+  overflow: hidden;
+  margin-top: 4px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1d2a28;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(20, 40, 40, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.eskan-project-pin-selected.eskan-project-pin-spidered .eskan-project-pin-label {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0 0 2px currentColor, 0 6px 14px rgba(20, 40, 40, 0.16);
 }
 
 .eskan-project-pin-code {
@@ -1624,7 +1656,8 @@ th {
   visibility: visible;
 }
 
-.eskan-project-pin-selected .eskan-project-pin-tip {
+.eskan-project-pin-selected .eskan-project-pin-tip,
+.eskan-project-pin-spidered .eskan-project-pin-tip {
   display: none;
 }
 

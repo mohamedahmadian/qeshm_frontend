@@ -826,9 +826,7 @@ function LiveBoardProgressPanel({
         </span>
         <p className="live-board-progress-panel-title">{t('projectLiveBoard.progressPanel')}</p>
       </div>
-      <p className="live-board-progress-panel-value" style={{ color: tone }}>
-        {label}
-      </p>
+      <p className="live-board-progress-panel-value">{label}</p>
       <div className="live-board-progress-track" aria-hidden>
         <div className="live-board-progress-ticks">
           {ticks.map((tick) => (
@@ -1011,6 +1009,7 @@ export function ProjectLiveBoardMap({
                 plainChrome
                 maxBounds={QESHM_LIVE_BOARD_BOUNDS}
                 overlays={overlays}
+                spiderfyOverlaps
                 zoomOnSelected
                 onMapClick={() => {
                   setSelectedId(null)
