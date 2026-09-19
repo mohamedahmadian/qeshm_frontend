@@ -621,10 +621,12 @@ export function OsmMapPicker({
     }
 
     function paint() {
+      const leafletMap = mapRef.current
+      if (!leafletMap) return
       overlayLayerRef.current?.remove()
-      const next = L.layerGroup().addTo(map)
+      const next = L.layerGroup().addTo(leafletMap)
       overlayLayerRef.current = next
-      paintOverlayContents(map, next, current, spiderfyOverlaps, (id, point) => {
+      paintOverlayContents(leafletMap, next, current, spiderfyOverlaps, (id, point) => {
         onMarkerClickRef.current?.(id, point)
       })
     }
