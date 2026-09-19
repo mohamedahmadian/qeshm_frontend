@@ -611,14 +611,14 @@ export function OsmMapPicker({
     if (!open || !map) return
     overlayLayerRef.current?.remove()
     overlayLayerRef.current = null
-    const current = overlays
     if (
-      !current ||
-      (!current.markers.length && !current.path?.length && !current.polygons?.length)
+      !overlays ||
+      (!overlays.markers.length && !overlays.path?.length && !overlays.polygons?.length)
     ) {
       overlayFitKeyRef.current = ''
       return
     }
+    const current: MapOverlays = overlays
 
     function paint() {
       const leafletMap = mapRef.current
