@@ -222,6 +222,8 @@ import {
   BoardMinutesResolutionListPage,
 } from './pages/board/BoardMinutesResolutionPages'
 import { BoardResolutionsListPage } from './pages/board/BoardResolutionsListPage'
+import { BoardSmartSearchPage } from './pages/board/BoardSmartSearchPage'
+import { BoardReportsPage } from './pages/board/BoardReportsPage'
 import { ResolutionCalendarPage } from './pages/board/calendar/ResolutionCalendarPage'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 
@@ -436,6 +438,8 @@ export default function App() {
                   <Route path="/board/requests/:id" element={<BoardRequestDetailPage />} />
                   <Route path="/board/plans" element={<BoardPlansPage />} />
                   <Route path="/board/calendar" element={<ResolutionCalendarPage />} />
+                  <Route path="/board/reports" element={<BoardReportsPage />} />
+                  <Route path="/board/search" element={<BoardSmartSearchPage />} />
                   <Route path="/board/resolutions" element={<BoardResolutionsListPage />} />
                   <Route path="/board/minutes" element={<BoardMinutesListPage />} />
                   <Route path="/board/minutes/new" element={<BoardMinutesCreatePage />} />

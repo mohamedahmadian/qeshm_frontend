@@ -68,7 +68,7 @@ export function PublicHomePage() {
             ) : undefined
           }
           headerClassName={selected ? 'sm:py-4' : undefined}
-          className="flex min-h-[28rem] flex-1 flex-col"
+          className="live-board-map-card flex min-h-[28rem] flex-1 flex-col"
         >
           {selected ? (
             <div className="px-5 pb-3 pt-1 sm:hidden">

@@ -228,7 +228,7 @@ export function MonthCalendarGrid<T extends CalendarDayMark>({
               }
             : undefined
           const clickable = Boolean(onSelectDay && hasDeadline)
-          const className = `relative flex flex-col rounded-xl ${cell} ${
+          const className = `relative flex min-w-0 flex-col overflow-hidden rounded-xl ${cell} ${
             hasDeadline ? 'font-semibold text-ink-800' : 'font-medium text-ink-500'
           } ${isToday ? 'ring-1 ring-teal-400' : ''} ${
             selected ? 'ring-2 ring-teal-500' : ''

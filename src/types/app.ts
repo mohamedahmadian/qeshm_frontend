@@ -4532,6 +4532,56 @@ export type BoardMinutesStats = {
   resolutionCount: number;
 };
 
+export type BoardReportsOverview = {
+  kpis: {
+    totalMinutes: number;
+    linkedMinutes: number;
+    regularMinutes: number;
+    totalResolutions: number;
+    withDueDate: number;
+    withoutDueDate: number;
+    overdue: number;
+    dueToday: number;
+    dueSoon: number;
+    upcoming: number;
+    later: number;
+    withoutUnit: number;
+    withUnit: number;
+    meetingsWithResolutions: number;
+    meetingsWithoutResolutions: number;
+    meetingsWithAttachments: number;
+    meetingsWithMembers: number;
+    imageAttachments: number;
+    audioAttachments: number;
+    presentCount: number;
+    absentCount: number;
+    attendanceRate: number;
+    avgResolutionsPerMeeting: number;
+    avgMembersPerMeeting: number;
+    avgDueLeadDays: number;
+    topUnit: string | null;
+    topUnitCount: number;
+  };
+  byKind: { key: string; count: number }[];
+  byDueStatus: { key: string; count: number }[];
+  byAttendance: { key: string; count: number }[];
+  byCoverage: { key: string; count: number }[];
+  byAttachment: { key: string; count: number }[];
+  byWeekday: { key: string; count: number }[];
+  byMonth: { month: string; minutes: number; resolutions: number }[];
+  byUnit: {
+    id: string | null;
+    name: string;
+    count: number;
+    overdue: number;
+    soon: number;
+    upcoming: number;
+    later: number;
+    noDue: number;
+  }[];
+  byRequestUnit: { id: string; name: string; count: number }[];
+};
+
 export type BoardMinutesResolution = {
   id: string;
   minutesId: string;
@@ -4551,6 +4601,49 @@ export type BoardMinutesResolution = {
     request: { id: string; subject: string; status: BoardRequestStatus } | null;
   };
 };
+
+export const boardSmartSearchMatchKinds = ['minutes', 'request', 'resolution'] as const
+
+export type BoardSmartSearchMatchKind = (typeof boardSmartSearchMatchKinds)[number]
+
+export type BoardSmartSearchResult = Paginated<BoardSmartSearchHit> & {
+  minutesCount: number
+  requestCount: number
+  resolutionCount: number
+}
+
+export type BoardSmartSearchMinutesHit = {
+  kind: 'minutes'
+  id: string
+  subject: string
+  heldAt: string
+  body: string | null
+  request: { id: string; subject: string; status: BoardRequestStatus } | null
+  resolutionCount: number
+  matchIn: BoardSmartSearchMatchKind[]
+  snippet: string | null
+  matchedResolutions: { id: string; title: string }[]
+}
+
+export type BoardSmartSearchRequestHit = {
+  kind: 'request'
+  id: string
+  subject: string
+  requestedAt: string
+  status: BoardRequestStatus
+  unit: { id: string; name: string }
+  snippet: string | null
+  matchIn: BoardSmartSearchMatchKind[]
+  minutesCount: number
+}
+
+export type BoardSmartSearchHit = BoardSmartSearchMinutesHit | BoardSmartSearchRequestHit
+
+export type BoardMinutesDossier = {
+  minutes: BoardMinutes
+  request: BoardRequest | null
+  resolutions: BoardMinutesResolution[]
+}
 
 
 

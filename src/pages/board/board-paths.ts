@@ -26,6 +26,14 @@ export function boardCalendarPath() {
   return '/board/calendar'
 }
 
+export function boardReportsPath() {
+  return '/board/reports'
+}
+
+export function boardSmartSearchPath() {
+  return '/board/search'
+}
+
 export function boardResolutionsPath() {
   return '/board/resolutions'
 }

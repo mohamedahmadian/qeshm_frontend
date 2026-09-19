@@ -182,104 +182,110 @@ export function BoardMinutesForm({
             />
           </div>
         </FormField>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <FormSectionTitle icon={Users} className="mb-0">
-            {t('boardMinutes.members')}
-          </FormSectionTitle>
-          <Button type="button" variant="soft" onClick={() => setMembersModalOpen(true)}>
-            <Users className="size-4" aria-hidden />
-            {t('boardMinutes.manageMembers')}
-          </Button>
-        </div>
-        {members.length ? (
-          <div className="overflow-x-auto rounded-2xl border border-line">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line bg-cream-50">
-                  <th className="px-4 py-3 text-start font-medium text-ink-700">{t('users.fullName')}</th>
-                  <th className="px-4 py-3 text-start font-medium text-ink-700">{t('boardMinutes.present')}</th>
-                  <ActionsTh />
-                </tr>
-              </thead>
-              <tbody>
-                {members.map((row) => (
-                  <tr key={row.userId} className="border-b border-line last:border-b-0">
-                    <td className="px-4 py-3 font-medium text-ink-800">{row.name}</td>
-                    <td className="px-4 py-3">
-                      <ToggleField
-                        checked={row.attendance === boardMinutesAttendances.PRESENT}
-                        onChange={(checked) =>
-                          setMembers((current) =>
-                            current.map((item) =>
-                              item.userId === row.userId
-                                ? {
-                                    ...item,
-                                    attendance: checked
-                                      ? boardMinutesAttendances.PRESENT
-                                      : boardMinutesAttendances.ABSENT,
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                        onLabel={t('boardMinutes.present')}
-                        offLabel={t('boardMinutes.absent')}
-                      />
-                    </td>
-                    <td className={actionsColClassName}>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        icon
-                        aria-label={t('boardMinutes.removeMember')}
-                        title={t('boardMinutes.removeMember')}
-                        onClick={() => setMembers((current) => current.filter((item) => item.userId !== row.userId))}
-                      >
-                        <Trash2 className="size-4" aria-hidden />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="space-y-8 pt-2">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <FormSectionTitle icon={Users} className="mb-0">
+                {t('boardMinutes.members')}
+              </FormSectionTitle>
+              <Button type="button" variant="soft" onClick={() => setMembersModalOpen(true)}>
+                <Users className="size-4" aria-hidden />
+                {t('boardMinutes.manageMembers')}
+              </Button>
+            </div>
+            {members.length ? (
+              <div className="overflow-x-auto rounded-2xl border border-line">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-line bg-cream-50">
+                      <th className="px-4 py-3 text-start font-medium text-ink-700">{t('users.fullName')}</th>
+                      <th className="px-4 py-3 text-start font-medium text-ink-700">{t('boardMinutes.present')}</th>
+                      <ActionsTh />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {members.map((row) => (
+                      <tr key={row.userId} className="border-b border-line last:border-b-0">
+                        <td className="px-4 py-3 font-medium text-ink-800">{row.name}</td>
+                        <td className="px-4 py-3">
+                          <ToggleField
+                            checked={row.attendance === boardMinutesAttendances.PRESENT}
+                            onChange={(checked) =>
+                              setMembers((current) =>
+                                current.map((item) =>
+                                  item.userId === row.userId
+                                    ? {
+                                        ...item,
+                                        attendance: checked
+                                          ? boardMinutesAttendances.PRESENT
+                                          : boardMinutesAttendances.ABSENT,
+                                      }
+                                    : item,
+                                ),
+                              )
+                            }
+                            onLabel={t('boardMinutes.present')}
+                            offLabel={t('boardMinutes.absent')}
+                          />
+                        </td>
+                        <td className={actionsColClassName}>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            icon
+                            aria-label={t('boardMinutes.removeMember')}
+                            title={t('boardMinutes.removeMember')}
+                            onClick={() => setMembers((current) => current.filter((item) => item.userId !== row.userId))}
+                          >
+                            <Trash2 className="size-4" aria-hidden />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-ink-500">{t('boardMinutes.noMembers')}</p>
+            )}
           </div>
-        ) : (
-          <p className="text-sm text-ink-500">{t('boardMinutes.noMembers')}</p>
-        )}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <FormSectionTitle icon={Paperclip} className="mb-0">
-            {t('boardMinutes.attachments')}
-          </FormSectionTitle>
-          <Button
-            type="button"
-            variant="soft"
-            aria-expanded={attachmentsOpen}
-            onClick={() => setAttachmentsOpen((open) => !open)}
-          >
-            <Paperclip className="size-4" aria-hidden />
-            {t('boardMinutes.manageAttachments')}
-          </Button>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <FormSectionTitle icon={Paperclip} className="mb-0">
+                {t('boardMinutes.attachments')}
+              </FormSectionTitle>
+              <Button
+                type="button"
+                variant="soft"
+                aria-expanded={attachmentsOpen}
+                onClick={() => setAttachmentsOpen((open) => !open)}
+              >
+                <Paperclip className="size-4" aria-hidden />
+                {t('boardMinutes.manageAttachments')}
+              </Button>
+            </div>
+            {attachmentsOpen ? (
+              <BoardMinutesAttachmentsField value={files} onChange={setFiles} disabled={saving} />
+            ) : null}
+          </div>
+          <FormActions
+            submitLabel={initial ? t('boardMinutes.save') : t('boardMinutes.create')}
+            cancelLabel={t('common.cancel')}
+            onCancel={onCancel}
+            submitting={saving}
+            extraItems={
+              initial
+                ? [
+                    {
+                      to: boardMinuteResolutionsPath(initial.id, lockedRequestId),
+                      icon: FileText,
+                      label: t('boardResolutions.title'),
+                    },
+                  ]
+                : undefined
+            }
+          />
         </div>
-        {attachmentsOpen ? (
-          <BoardMinutesAttachmentsField value={files} onChange={setFiles} disabled={saving} />
-        ) : null}
-        <FormActions
-          submitLabel={initial ? t('boardMinutes.save') : t('boardMinutes.create')}
-          cancelLabel={t('common.cancel')}
-          onCancel={onCancel}
-          submitting={saving}
-          extraItems={
-            initial
-              ? [
-                  {
-                    to: boardMinuteResolutionsPath(initial.id, lockedRequestId),
-                    icon: FileText,
-                    label: t('boardResolutions.title'),
-                  },
-                ]
-              : undefined
-          }
-        />
       </AppForm>
       <MinutesMembersPickerModal
         open={membersModalOpen}

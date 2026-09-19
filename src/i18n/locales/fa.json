@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "تجربه دیجیتال قشم",
+    "name": "پلتفرم هوشمند تجربه دیجیتال سازمانی",
     "tagline": "قالب مدیریت کاربران و اطلاعات پایه"
   },
   "landing": {
@@ -64,7 +64,7 @@
     "changePassword": "تغییر رمز عبور",
     "openMenu": "باز کردن منو",
     "closeMenu": "بستن منو",
-    "panel": "تجربه دیجیتال قشم",
+    "panel": "پلتفرم هوشمند تجربه دیجیتال سازمانی",
     "searchMenu": "جستجوی منو...",
     "searchMenuHint": "دو بار کنترل جهت فعال‌سازی",
     "appVersion": "نسخه",
@@ -157,8 +157,10 @@
     "boardRequests": "درخواست طرح موضوع",
     "boardPlans": "مدیریت طرح‌خواست‌ها",
     "boardMinutes": "صورت‌جلسه‌ها",
+    "boardSmartSearch": "جستجوی هوشمند",
     "boardResolutions": "مدیریت مصوب‌ها",
     "boardCalendar": "تقویم مصوبات",
+    "boardReports": "گزارش صورت‌جلسه‌ها",
     "boardPermissions": "مدیریت مجوزها"
   },
   "settings": {
@@ -429,6 +431,7 @@
     "orgUnit": "واحد",
     "allOrgUnits": "همه واحدها",
     "group": "گروه",
+    "allGroups": "همه گروه‌ها",
     "unspecified": "نامشخص",
     "systemSection": "اطلاعات سامانه",
     "operators": "بهره‌بردار",
@@ -704,6 +707,11 @@
       "week": "این هفته",
       "month": "همین ماه",
       "later": "بعدتر"
+    },
+    "tabs": {
+      "timeline": "تقویم پروژه‌ها",
+      "nearest": "نزدیک‌ترین",
+      "yearStrip": "۱۲ ماهه"
     },
     "proposals": {
       "agenda": "فهرست نزدیک‌ترین تحویل‌ها",
@@ -2014,6 +2022,30 @@
     "filterKind": "نوع جلسه",
     "save": "ذخیره"
   },
+  "boardSmartSearch": {
+    "title": "جستجوی هوشمند",
+    "subtitle": "با یک جستجو طرح‌خواست، صورت‌جلسه و مصوبات مرتبط را ببینید",
+    "search": "جستجوی هوشمند",
+    "searchPlaceholder": "هر کلمه‌ای از جلسه، مصوبه یا طرح‌خواست",
+    "empty": "کلمه‌ای برای جستجو وارد کنید",
+    "noResults": "موردی با این جستجو یافت نشد",
+    "foundMinutes": "صورت‌جلسه‌های یافت‌شده",
+    "foundRequests": "طرح‌خواست‌های یافت‌شده",
+    "foundResolutions": "مصوبات یافت‌شده",
+    "linkedMinutes": "صورت‌جلسه‌های مرتبط",
+    "matchMinutes": "صورت‌جلسه",
+    "matchRequest": "طرح‌خواست",
+    "matchResolution": "مصوبه",
+    "matchedResolutions": "مصوبات منطبق",
+    "dossierTitle": "پرونده جلسه",
+    "requestSection": "طرح درخواست جلسه",
+    "minutesSection": "صورت‌جلسه",
+    "resolutionsSection": "مصوبات",
+    "noRequest": "این جلسه طرح‌خواست ندارد",
+    "noResolutions": "مصوبه‌ای برای این جلسه ثبت نشده است",
+    "resolutionN": "مصوبه {{n}}",
+    "reviewSection": "نتیجه بررسی‌ها"
+  },
   "boardResolutions": {
     "title": "مصوبات",
     "subtitle": "مصوبات این صورت‌جلسه",
@@ -2032,6 +2064,7 @@
     "searchAllPlaceholder": "عنوان، صورت‌جلسه یا درخواست",
     "listSubtitle": "فهرست همه مصوبات و مشاهده صورت‌جلسه یا درخواست مرتبط",
     "minutes": "صورت‌جلسه",
+    "viewMinutes": "مشاهده صورت‌جلسه",
     "noRequest": "بدون درخواست",
     "titleField": "عنوان",
     "description": "شرح مصوبه",
@@ -2078,6 +2111,11 @@
       "month": "همین ماه",
       "later": "بعدتر"
     },
+    "tabs": {
+      "timeline": "تقویم مصوبات",
+      "nearest": "نزدیک‌ترین",
+      "yearStrip": "۱۲ ماهه"
+    },
     "proposals": {
       "agenda": "فهرست نزدیک‌ترین مهلت‌ها",
       "agendaHint": "مرتب بر اساس مهلت انجام، با روز مانده یا تأخیر",
@@ -2087,6 +2125,49 @@
       "stripNote": "با انتخاب ماه، شبکهٔ روزهای همان ماه باز می‌شود.",
       "timeline": "تقویم مصوبات",
       "timelineHint": "زمان‌بندی و مهلت انجام مصوبات هیئت مدیره"
+    }
+  },
+  "boardReports": {
+    "subtitle": "نمای مدیریتی صورت‌جلسه‌ها، مصوبات و پیگیری واحدها",
+    "search": "جستجو در گزارش صورت‌جلسه‌ها",
+    "searchPlaceholder": "موضوع جلسه، متن صورت‌جلسه یا عنوان مصوبه",
+    "fromDate": "از تاریخ جلسه",
+    "toDate": "تا تاریخ جلسه",
+    "empty": "برای این فیلتر آماری ثبت نشده است",
+    "overview": "خلاصه جلسات و مصوبات",
+    "distributions": "توزیع وضعیت‌ها",
+    "trends": "روند زمانی",
+    "units": "تفکیک واحدها",
+    "unitTable": "جدول پیگیری واحدها",
+    "totalMinutes": "تعداد صورت‌جلسه",
+    "totalResolutions": "تعداد مصوبات",
+    "overdue": "مصوبات گذشته از موعد",
+    "dueSoon": "موعد تا ۷ روز",
+    "topUnit": "پرمصوبه‌ترین واحد",
+    "withoutUnit": "مصوبه بدون واحد مسئول",
+    "avgResolutions": "میانگین مصوبه در جلسه",
+    "avgMembers": "میانگین اعضا در جلسه",
+    "avgDueLeadDays": "میانگین فاصله تا مهلت (روز)",
+    "meetingsWithAttachments": "جلسات دارای پیوست",
+    "meetingsWithResolutions": "جلسه با مصوبه",
+    "meetingsWithoutResolutions": "جلسه بدون مصوبه",
+    "attendanceRate": "نرخ حضور اعضا",
+    "onTrack": "در مهلت",
+    "byDueStatus": "وضعیت مهلت مصوبات",
+    "byCoverage": "پوشش مصوبه در جلسات",
+    "byMonthBars": "مقایسه ماهانه صورت‌جلسه و مصوبه",
+    "byUnit": "مصوبات به تفکیک واحد مسئول",
+    "byUnitStatus": "وضعیت مهلت به تفکیک واحد",
+    "byRequestUnit": "جلسات مرتبط به تفکیک واحد درخواست‌کننده",
+    "byAttachment": "پیوست‌های جلسه",
+    "unitName": "واحد",
+    "dueStatus": {
+      "overdue": "گذشته از موعد",
+      "today": "موعد امروز",
+      "soon": "تا ۷ روز",
+      "upcoming": "تا ۳۰ روز",
+      "later": "بعدتر",
+      "noDue": "بدون مهلت"
     }
   }
 }

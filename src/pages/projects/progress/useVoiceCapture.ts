@@ -135,10 +135,12 @@ export function useVoiceCapture({
   const liveTranscriptRef = useRef(liveTranscript)
   const onAudioRef = useRef(onAudio)
   const onLiveTranscriptRef = useRef(onLiveTranscript)
+  const processingModeRef = useRef(processingMode)
 
   liveTranscriptRef.current = liveTranscript
   onAudioRef.current = onAudio
   onLiveTranscriptRef.current = onLiveTranscript
+  processingModeRef.current = processingMode
 
   useEffect(() => {
     return () => {
@@ -171,7 +173,7 @@ export function useVoiceCapture({
   }
 
   function startRecognition() {
-    if (processingMode !== projectProgressProcessingModes.IMMEDIATE) return
+    if (processingModeRef.current !== projectProgressProcessingModes.IMMEDIATE) return
     if (isAppleMobile()) return
     const Ctor = speechCtor()
     if (!Ctor) return
@@ -210,14 +212,15 @@ export function useVoiceCapture({
     }
   }
 
-  async function start() {
+  async function start(nextMode?: ProjectProgressProcessingMode) {
+    if (nextMode) processingModeRef.current = nextMode
     if (typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       toast.error(t('projectProgress.recordFailed'))
-      return
+      return false
     }
     if (!isSecureMicContext()) {
       toast.error(t('projectProgress.recordNeedsHttps'))
-      return
+      return false
     }
     try {
       const stream = await getMicStream()
@@ -265,6 +268,7 @@ export function useVoiceCapture({
         }
       }, 200)
       startRecognition()
+      return true
     } catch (error) {
       const denied =
         error instanceof DOMException &&
@@ -272,6 +276,7 @@ export function useVoiceCapture({
       toast.error(denied ? t('projectProgress.micDenied') : t('projectProgress.recordFailed'))
       stopTracks()
       setRecordingState(false)
+      return false
     }
   }
 

@@ -182,20 +182,23 @@ export function projectYearBar(project: DatedCalendarItem, year: number, locale:
 }
 
 export function yearTodayMarker(year: number, locale: string, today = todayIsoDate()) {
+  const empty = {
+    pastMonths: 0,
+    offsetPercent: null as number | null,
+    pastPercent: 0,
+  }
   const parts = displayDateParts(today, locale)
-  if (!parts) {
-    return { pastMonths: 0, offsetPercent: null as number | null }
-  }
+  if (!parts) return empty
   if (parts.year > year) {
-    return { pastMonths: 12, offsetPercent: null as number | null }
+    return { pastMonths: 12, offsetPercent: null as number | null, pastPercent: 100 }
   }
-  if (parts.year < year) {
-    return { pastMonths: 0, offsetPercent: null as number | null }
-  }
+  if (parts.year < year) return empty
   const { startIso, totalDays } = yearDaySpan(year, locale)
   const offset = Math.max(0, calendarDaysUntil(today, startIso) ?? 0)
+  const offsetPercent = totalDays > 0 ? (offset / totalDays) * 100 : 0
   return {
     pastMonths: Math.max(0, parts.month - 1),
-    offsetPercent: totalDays > 0 ? (offset / totalDays) * 100 : null,
+    offsetPercent,
+    pastPercent: offsetPercent,
   }
 }

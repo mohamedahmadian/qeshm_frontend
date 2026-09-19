@@ -1,7 +1,6 @@
 import { Building2, CalendarDays, ScrollText } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 import { DateText } from '../../../components/ui/DateText'
 import { FormEmptyHint } from '../../../components/ui/FormLayout'
 import { HoverTooltip } from '../../../components/ui/HoverTooltip'
@@ -9,6 +8,8 @@ import type { ResolutionCalendarItem } from '../../../lib/resolution-calendar'
 import { ProjectNameWithColor } from '../../projects/ProjectShared'
 import { DeadlineDaysBadge } from '../../projects/calendar/ProjectCalendarShared'
 import { boardMinuteResolutionPath } from '../board-paths'
+
+export type OpenResolutionDossier = (item: ResolutionCalendarItem) => void
 
 export function resolutionHref(item: ResolutionCalendarItem) {
   return boardMinuteResolutionPath(item.minutesId, item.id, item.minutes.requestId ?? undefined)
@@ -87,15 +88,18 @@ export function ResolutionNameHover({
 export function DeadlineResolutionRow({
   item,
   locale,
+  onOpen,
 }: {
   item: ResolutionCalendarItem
   locale: string
+  onOpen: OpenResolutionDossier
 }) {
   const { t } = useTranslation()
   return (
-    <Link
-      to={resolutionHref(item)}
-      className="flex cursor-pointer items-center gap-3 rounded-2xl border border-teal-50 bg-white px-3 py-2.5 shadow-[0_4px_14px_rgba(20,40,40,0.04)] transition hover:bg-teal-50/60"
+    <button
+      type="button"
+      onClick={() => onOpen(item)}
+      className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-teal-50 bg-white px-3 py-2.5 text-start shadow-[0_4px_14px_rgba(20,40,40,0.04)] transition hover:bg-teal-50/60"
     >
       <DeadlineDaysBadge endDate={item.endDate} locale={locale} />
       <div className="min-w-0 flex-1">
@@ -110,7 +114,7 @@ export function DeadlineResolutionRow({
           <span>{item.unit?.name || t('boardResolutions.withoutUnit')}</span>
         </div>
       </div>
-    </Link>
+    </button>
   )
 }
 
@@ -119,11 +123,13 @@ export function DeadlineResolutionGroup({
   items,
   locale,
   empty,
+  onOpen,
 }: {
   title: string
   items: ResolutionCalendarItem[]
   locale: string
   empty?: string
+  onOpen: OpenResolutionDossier
 }) {
   if (!items.length) {
     return empty ? <FormEmptyHint>{empty}</FormEmptyHint> : null
@@ -133,7 +139,7 @@ export function DeadlineResolutionGroup({
       <h3 className="text-xs font-semibold text-ink-500">{title}</h3>
       <div className="space-y-2">
         {items.map((item) => (
-          <DeadlineResolutionRow key={item.id} item={item} locale={locale} />
+          <DeadlineResolutionRow key={item.id} item={item} locale={locale} onOpen={onOpen} />
         ))}
       </div>
     </section>

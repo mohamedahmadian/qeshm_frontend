@@ -231,11 +231,21 @@ export function TimelineProposal({
               <div className="grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-3 text-[10px] font-medium text-ink-400">
                 <div />
                 <div className="relative grid grid-cols-12">
+                  {today.pastPercent > 0 ? (
+                    <div
+                      className="pointer-events-none absolute inset-y-0 z-0 bg-ink-900/[0.07]"
+                      style={{
+                        insetInlineStart: 0,
+                        inlineSize: `${today.pastPercent}%`,
+                      }}
+                      aria-hidden
+                    />
+                  ) : null}
                   {Array.from({ length: 12 }, (_, index) => (
                     <div
                       key={index}
-                      className={`truncate py-1 text-center ${
-                        index < today.pastMonths ? 'bg-ink-900/[0.07] text-ink-400' : 'text-ink-500'
+                      className={`relative z-[1] truncate py-1 text-center ${
+                        index < today.pastMonths ? 'text-ink-400' : 'text-ink-500'
                       }`}
                     >
                       {monthName(index + 1, locale)}
@@ -267,12 +277,12 @@ export function TimelineProposal({
                   ))}
                 </div>
                 <div className="relative space-y-2 overflow-hidden rounded-xl">
-                  {today.pastMonths > 0 ? (
+                  {today.pastPercent > 0 ? (
                     <div
                       className="pointer-events-none absolute inset-y-0 z-[2] bg-ink-900/[0.1]"
                       style={{
                         insetInlineStart: 0,
-                        width: `${(today.pastMonths / 12) * 100}%`,
+                        inlineSize: `${today.pastPercent}%`,
                       }}
                       aria-hidden
                     />
@@ -303,9 +313,7 @@ export function TimelineProposal({
                             width: bar.markerOnly
                               ? '1.75rem'
                               : `${Math.max(bar.widthPercent, 4.5)}%`,
-                            background: bar.markerOnly
-                              ? projectColor(project.color)
-                              : projectColorAlpha(project.color, 0.42),
+                            background: projectColor(project.color),
                             boxShadow: `0 4px 10px ${projectColorAlpha(project.color, 0.28)}`,
                           }}
                           title={project.systemName}
@@ -315,7 +323,7 @@ export function TimelineProposal({
                               className="absolute inset-y-0 inset-inline-start-0"
                               style={{
                                 width: `${Math.min(100, Math.max(0, project.progressPercent))}%`,
-                                background: projectColor(project.color),
+                                background: 'rgba(0,0,0,0.12)',
                               }}
                             />
                           ) : null}

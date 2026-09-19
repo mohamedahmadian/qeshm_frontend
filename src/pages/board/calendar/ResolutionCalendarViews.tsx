@@ -1,7 +1,6 @@
 import { ChartGantt, LayoutGrid, ListChecks } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 import { FormCard, FormEmptyHint } from '../../../components/ui/FormLayout'
 import { displayDateParts, formatDate, formatNumber, monthName } from '../../../lib/datetime'
 import {
@@ -19,7 +18,11 @@ import {
 import { projectColor, projectColorAlpha } from '../../../lib/project-color'
 import type { ResolutionCalendarItem } from '../../../lib/resolution-calendar'
 import { CalendarResolutionsModal } from './CalendarResolutionsModal'
-import { DeadlineResolutionGroup, ResolutionNameHover, resolutionHref } from './ResolutionCalendarShared'
+import {
+  DeadlineResolutionGroup,
+  ResolutionNameHover,
+  type OpenResolutionDossier,
+} from './ResolutionCalendarShared'
 import { MonthCalendarGrid, ProposalCardNote } from '../../projects/calendar/ProjectCalendarShared'
 
 type ResolutionsModalState = {
@@ -40,9 +43,11 @@ function useResolutionsModal() {
 export function ResolutionAgendaProposal({
   items,
   locale,
+  onOpenDossier,
 }: {
   items: ResolutionCalendarItem[]
   locale: string
+  onOpenDossier: OpenResolutionDossier
 }) {
   const { t } = useTranslation()
   const groups = useMemo(() => groupByDeadline(items, locale), [items, locale])
@@ -63,6 +68,7 @@ export function ResolutionAgendaProposal({
                 title={t(`boardCalendar.buckets.${key}`)}
                 items={groups[key]}
                 locale={locale}
+                onOpen={onOpenDossier}
               />
             ))
           : null}
@@ -75,10 +81,12 @@ export function ResolutionYearStripProposal({
   items,
   year,
   locale,
+  onOpenDossier,
 }: {
   items: ResolutionCalendarItem[]
   year: number
   locale: string
+  onOpenDossier: OpenResolutionDossier
 }) {
   const { t } = useTranslation()
   const counts = useMemo(() => monthDeadlineCounts(items, year, locale), [items, year, locale])
@@ -153,7 +161,7 @@ export function ResolutionYearStripProposal({
                 dayCountLabelKey="boardCalendar.dayWithCount"
                 moreOnDayKey="boardCalendar.moreOnDay"
                 renderItemLabel={(item, label) => (
-                  <ResolutionNameHover item={item} className="max-w-full">
+                  <ResolutionNameHover item={item} className="w-full min-w-0 overflow-hidden">
                     {label}
                   </ResolutionNameHover>
                 )}
@@ -173,6 +181,7 @@ export function ResolutionYearStripProposal({
           items={modal?.items ?? []}
           locale={locale}
           onClose={close}
+          onOpenDossier={onOpenDossier}
         />
       </div>
     </FormCard>
@@ -183,10 +192,12 @@ export function ResolutionTimelineProposal({
   items,
   year,
   locale,
+  onOpenDossier,
 }: {
   items: ResolutionCalendarItem[]
   year: number
   locale: string
+  onOpenDossier: OpenResolutionDossier
 }) {
   const { t } = useTranslation()
   const today = useMemo(() => yearTodayMarker(year, locale), [locale, year])
@@ -212,14 +223,24 @@ export function ResolutionTimelineProposal({
         {rows.length ? (
           <div className="overflow-x-auto">
             <div className="min-w-[46rem] space-y-2 pt-6">
-              <div className="grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-3 text-[10px] font-medium text-ink-400">
+              <div className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)] items-center gap-3 text-[10px] font-medium text-ink-400">
                 <div />
-                <div className="relative grid grid-cols-12">
+                <div className="relative min-w-0 grid grid-cols-12">
+                  {today.pastPercent > 0 ? (
+                    <div
+                      className="pointer-events-none absolute inset-y-0 z-0 bg-ink-900/[0.07]"
+                      style={{
+                        insetInlineStart: 0,
+                        inlineSize: `${today.pastPercent}%`,
+                      }}
+                      aria-hidden
+                    />
+                  ) : null}
                   {Array.from({ length: 12 }, (_, index) => (
                     <div
                       key={index}
-                      className={`truncate py-1 text-center ${
-                        index < today.pastMonths ? 'bg-ink-900/[0.07] text-ink-400' : 'text-ink-500'
+                      className={`relative z-[1] truncate py-1 text-center ${
+                        index < today.pastMonths ? 'text-ink-400' : 'text-ink-500'
                       }`}
                     >
                       {monthName(index + 1, locale)}
@@ -238,30 +259,32 @@ export function ResolutionTimelineProposal({
                   ) : null}
                 </div>
               </div>
-              <div className="grid grid-cols-[9rem_minmax(0,1fr)] items-stretch gap-3">
-                <div className="space-y-2">
+              <div className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)] items-stretch gap-3">
+                <div className="min-w-0 space-y-2 overflow-hidden">
                   {rows.map(({ item }) => (
                     <ResolutionNameHover
                       key={item.id}
                       item={item}
-                      className="flex h-9 min-w-0 max-w-full items-center"
+                      className="flex h-9 w-full min-w-0 max-w-full items-center overflow-hidden"
                     >
-                      <Link
-                        to={resolutionHref(item)}
-                        className="flex h-9 min-w-0 items-center truncate text-xs font-semibold text-ink-800 hover:text-teal-700"
+                      <button
+                        type="button"
+                        onClick={() => onOpenDossier(item)}
+                        className="block w-full min-w-0 cursor-pointer truncate text-start text-xs font-semibold text-ink-800 hover:text-teal-700"
+                        title={item.title}
                       >
                         {item.title}
-                      </Link>
+                      </button>
                     </ResolutionNameHover>
                   ))}
                 </div>
-                <div className="relative space-y-2 overflow-hidden rounded-xl">
-                  {today.pastMonths > 0 ? (
+                <div className="relative min-w-0 space-y-2 overflow-hidden rounded-xl">
+                  {today.pastPercent > 0 ? (
                     <div
                       className="pointer-events-none absolute inset-y-0 z-[2] bg-ink-900/[0.1]"
                       style={{
                         insetInlineStart: 0,
-                        width: `${(today.pastMonths / 12) * 100}%`,
+                        inlineSize: `${today.pastPercent}%`,
                       }}
                       aria-hidden
                     />
@@ -284,9 +307,10 @@ export function ResolutionTimelineProposal({
                         ))}
                       </div>
                       {bar ? (
-                        <Link
-                          to={resolutionHref(item)}
-                          className="absolute top-1 bottom-1 z-[1] overflow-hidden rounded-lg text-[11px] font-bold text-white"
+                        <button
+                          type="button"
+                          onClick={() => onOpenDossier(item)}
+                          className="absolute top-1 bottom-1 z-[1] cursor-pointer overflow-hidden rounded-lg text-[11px] font-bold text-white"
                           style={{
                             insetInlineStart: `${bar.offsetPercent}%`,
                             width: bar.markerOnly
@@ -313,7 +337,7 @@ export function ResolutionTimelineProposal({
                               </>
                             )}
                           </span>
-                        </Link>
+                        </button>
                       ) : null}
                     </div>
                   ))}

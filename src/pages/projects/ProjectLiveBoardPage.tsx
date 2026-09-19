@@ -9,6 +9,7 @@ import {
   FolderKanban,
   Handshake,
   Landmark,
+  Layers,
   LayoutGrid,
   Map as MapIcon,
   Percent,
@@ -17,7 +18,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react'
-import { type CSSProperties, useMemo } from 'react'
+import { type CSSProperties, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -39,11 +40,13 @@ import { api } from '../../lib/api'
 import { formatGroupedQuantity, formatNumber } from '../../lib/datetime'
 import { projectHasMapLocation } from '../../lib/geo'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
+import { LiveBoardAdminHeaderActions } from './LiveBoardQuickRecord'
 import { LastActivityPreview, ProjectLiveBoardMap, liveBoardCardTheme } from './ProjectLiveBoardMap'
 import {
   projectImportanceOrder,
   projectStatusOrder,
   type OrganizationUnit,
+  type ProjectGroup,
   type ProjectLiveBoard,
   type ProjectLiveBoardItem,
   type ProjectLookups,
@@ -55,6 +58,7 @@ import {
   ProjectsSummaryTable,
   projectOperatorsText,
   orgUnitFilterOptions,
+  unspecifiedProjectFilter,
   withCurrent,
 } from './ProjectShared'
 
@@ -90,16 +94,27 @@ export function ProjectLiveBoardPage() {
     rawView === 'table' || rawView === 'cards' ? rawView : 'map'
   const operatorUnitId = searchParams.get('operatorUnitId') ?? ''
   const orgUnitId = searchParams.get('orgUnitId') ?? ''
+  const groupId = searchParams.get('groupId') ?? ''
   const companyName = searchParams.get('companyName') ?? ''
   const isActive = searchParams.get('isActive') ?? ''
   const status = searchParams.get('status') ?? ''
   const isSupportActive = searchParams.get('isSupportActive') ?? ''
   const importance = searchParams.get('importance') ?? ''
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const orgUnits = useQuery({
     queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
       const { data } = await api.get<OrganizationUnit[]>('/organization/units')
+      return data
+    },
+  })
+
+  const groups = useQuery({
+    queryKey: ['project-groups', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<ProjectGroup[]>('/projects/groups')
       return data
     },
   })
@@ -119,6 +134,7 @@ export function ProjectLiveBoardPage() {
       q,
       operatorUnitId,
       orgUnitId,
+      groupId,
       companyName,
       isActive,
       status,
@@ -133,6 +149,7 @@ export function ProjectLiveBoardPage() {
           ...(q ? { q } : {}),
           ...(operatorUnitId ? { operatorUnitId } : {}),
           ...(orgUnitId ? { orgUnitId } : {}),
+          ...(groupId ? { groupId } : {}),
           ...(companyName ? { companyName } : {}),
           ...(isActive ? { isActive } : {}),
           ...(status ? { status } : {}),
@@ -148,16 +165,23 @@ export function ProjectLiveBoardPage() {
   const items = query.data?.items ?? []
   const stats = query.data?.stats
   const located = useMemo(() => items.filter(projectHasMapLocation), [items])
+  const selected = useMemo(
+    () => items.find((item) => item.id === selectedId) ?? null,
+    [items, selectedId],
+  )
   const tableRows = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const filtersActive = Boolean(
     operatorUnitId ||
       orgUnitId ||
+      groupId ||
       companyName ||
       isActive ||
       status ||
       isSupportActive ||
       importance,
   )
+  const selectedContractor =
+    selected?.mainContractor?.name || selected?.companyName || t('projectLiveBoard.noContractors')
   const emptyMessage = q || filtersActive ? t('projectLiveBoard.noResults') : t('projectLiveBoard.empty')
   const statusOptions = [
     { value: '', label: t('common.all') },
@@ -185,6 +209,22 @@ export function ProjectLiveBoardPage() {
                 placeholder={t('projects.allOrgUnits')}
                 onChange={(next) => setParams({ orgUnitId: next || undefined }, { resetPage: true })}
                 options={orgUnitFilterOptions(orgUnits.data ?? [], t)}
+              />
+            </FormField>
+            <FormField icon={Layers} label={t('projects.group')} htmlFor="live-group">
+              <SearchSelect
+                id="live-group"
+                value={groupId}
+                placeholder={t('projects.allGroups')}
+                onChange={(next) => setParams({ groupId: next || undefined }, { resetPage: true })}
+                options={[
+                  { value: '', label: t('projects.allGroups') },
+                  { value: unspecifiedProjectFilter, label: t('projects.unspecified') },
+                  ...(groups.data ?? []).map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  })),
+                ]}
               />
             </FormField>
             <FormField icon={Landmark} label={t('projects.operators')} htmlFor="live-operator">
@@ -305,14 +345,43 @@ export function ProjectLiveBoardPage() {
         <div className="space-y-4">
           <FormCard
             icon={Radio}
-            title={t('projectLiveBoard.tabs.map')}
+            className="live-board-map-card"
+            headerClassName={selected ? 'sm:py-4' : undefined}
+            title={selected ? selected.systemName : t('projectLiveBoard.tabs.map')}
             subtitle={
-              located.length
-                ? t('projectLiveBoard.selectHint')
-                : t('projectLiveBoard.noLocation')
+              selected ? (
+                <span className="mt-1 flex items-center gap-1.5">
+                  <Handshake className="size-3.5 shrink-0 text-teal-600" aria-hidden />
+                  <span className="truncate">{selectedContractor}</span>
+                </span>
+              ) : located.length ? (
+                t('projectLiveBoard.selectHint')
+              ) : (
+                t('projectLiveBoard.noLocation')
+              )
+            }
+            action={
+              selected ? (
+                <LiveBoardAdminHeaderActions
+                  project={selected}
+                  locale={locale}
+                  detailsOpen={detailsOpen}
+                  onAddProgress={() => setDetailsOpen(true)}
+                />
+              ) : undefined
             }
           >
-            <ProjectLiveBoardMap items={items} locale={locale} />
+            <ProjectLiveBoardMap
+              items={items}
+              locale={locale}
+              openSheetOnSelect={false}
+              detailsOpen={detailsOpen}
+              onDetailsOpenChange={setDetailsOpen}
+              onSelectedChange={(project) => {
+                setSelectedId(project?.id ?? null)
+                if (!project) setDetailsOpen(false)
+              }}
+            />
           </FormCard>
           {stats ? <LiveBoardStats stats={stats} locale={locale} /> : null}
         </div>
@@ -450,27 +519,6 @@ function ProjectBoardCard({
             </div>
           </div>
           <ProgressRing value={project.progressPercent} locale={locale} color={theme.ring} />
-        </div>
-
-        <div className="relative grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-teal-100 bg-white/80 px-2.5 py-2">
-            <p className="text-[10px] font-medium text-ink-500">{t('projectLiveBoard.activityCount')}</p>
-            <p className="mt-0.5 text-sm font-bold text-teal-800">
-              {formatNumber(project.activityCount, locale)}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-mint-100 bg-white/80 px-2.5 py-2">
-            <p className="text-[10px] font-medium text-ink-500">{t('projects.phaseCount')}</p>
-            <p className="mt-0.5 text-sm font-bold text-teal-800">
-              {formatNumber(project._count?.phases ?? 0, locale)}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-teal-100 bg-white/80 px-2.5 py-2">
-            <p className="text-[10px] font-medium text-ink-500">{t('projectReports.totalContractors')}</p>
-            <p className="mt-0.5 text-sm font-bold text-teal-800">
-              {formatNumber(project.contractors.length, locale)}
-            </p>
-          </div>
         </div>
 
         <div className="relative rounded-2xl border border-teal-100 bg-white/90 px-3 py-2.5">

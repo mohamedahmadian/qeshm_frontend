@@ -34,7 +34,7 @@ import {
   projectHasMapLocation,
   QESHM_LIVE_BOARD_BOUNDS,
 } from '../../lib/geo'
-import { projectColor, projectColorAlpha } from '../../lib/project-color'
+import { projectColor, projectColorAlpha, progressTone } from '../../lib/project-color'
 import { ProjectProgressForm, type ProjectProgressPayload } from './progress/ProjectProgressForm'
 import { projectProgressEntryPath } from './progress/progress-paths'
 import {
@@ -804,16 +804,16 @@ function LiveBoardLastActivityPanel({
 function LiveBoardProgressPanel({
   value,
   locale,
-  color,
 }: {
   value: number | null
   locale: string
-  color: string
 }) {
   const { t } = useTranslation()
   const pct = Math.min(100, Math.max(0, value ?? 0))
   const label = value == null ? '—' : `${formatNumber(Math.round(pct), locale)}٪`
   const ticks = [100, 75, 50, 25, 0]
+  const tone = progressTone(value)
+  const toneSoft = progressTone(pct * 0.35)
   return (
     <aside
       className="live-board-progress-panel"
@@ -826,7 +826,9 @@ function LiveBoardProgressPanel({
         </span>
         <p className="live-board-progress-panel-title">{t('projectLiveBoard.progressPanel')}</p>
       </div>
-      <p className="live-board-progress-panel-value">{label}</p>
+      <p className="live-board-progress-panel-value" style={{ color: tone }}>
+        {label}
+      </p>
       <div className="live-board-progress-track" aria-hidden>
         <div className="live-board-progress-ticks">
           {ticks.map((tick) => (
@@ -841,9 +843,9 @@ function LiveBoardProgressPanel({
             style={
               {
                 '--fill-pct': `${value == null ? 0 : pct}%`,
-                '--fill-color': color,
-                '--fill-soft': projectColorAlpha(color, 0.22),
-                '--fill-glow': projectColorAlpha(color, 0.42),
+                '--fill-color': tone,
+                '--fill-soft': toneSoft,
+                '--fill-glow': projectColorAlpha(tone, 0.42),
               } as CSSProperties
             }
           />
@@ -892,7 +894,6 @@ export function ProjectLiveBoardMap({
   }, [located, groupFilter])
   const progressSource = selected ?? progressProject
   const progressValue = progressSource?.progressPercent ?? null
-  const progressColor = progressSource ? projectColor(progressSource.color) : '#2ebdb6'
   const overlays = useMemo(() => {
     const markers: MapOverlayMarker[] = []
     const polygons: MapOverlayPolygon[] = []
@@ -962,7 +963,7 @@ export function ProjectLiveBoardMap({
       if (!(target instanceof Element)) return
       if (
         target.closest(
-          '.leaflet-container, .leaflet-marker-icon, .leaflet-interactive, .leaflet-tooltip, .live-board-project-overlay, .live-board-activity-full-overlay, .live-board-group-badge, .live-board-last-activity, .live-board-progress-panel, button, a, input, textarea, [data-sonner-toast]',
+          '.leaflet-container, .leaflet-marker-icon, .leaflet-interactive, .leaflet-tooltip, .live-board-project-overlay, .live-board-activity-full-overlay, .live-board-group-badge, .live-board-last-activity, .live-board-progress-panel, .live-board-map-card header, .live-board-map-toolbar, .live-board-quick-record, button, a, input, textarea, [data-sonner-toast]',
         )
       ) {
         return
@@ -995,11 +996,7 @@ export function ProjectLiveBoardMap({
         <div className="live-board-map-stage">
           <div className={`live-board-progress-slot${selected ? ' is-open' : ''}`}>
             {progressSource ? (
-              <LiveBoardProgressPanel
-                value={progressValue}
-                locale={locale}
-                color={progressColor}
-              />
+              <LiveBoardProgressPanel value={progressValue} locale={locale} />
             ) : null}
           </div>
           <div className="live-board-map-ring">

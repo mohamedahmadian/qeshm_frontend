@@ -2,14 +2,12 @@ import { Building2, CalendarDays, FileText, ScrollText, X } from 'lucide-react'
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 import { DateText } from '../../../components/ui/DateText'
-import { Button } from '../../../components/ui/Form'
 import { FormEmptyHint, FormFactTile } from '../../../components/ui/FormLayout'
 import type { ResolutionCalendarItem } from '../../../lib/resolution-calendar'
 import { ProjectNameWithColor } from '../../projects/ProjectShared'
 import { DeadlineDaysBadge } from '../../projects/calendar/ProjectCalendarShared'
-import { resolutionHref } from './ResolutionCalendarShared'
+import type { OpenResolutionDossier } from './ResolutionCalendarShared'
 
 export function CalendarResolutionsModal({
   open,
@@ -18,6 +16,7 @@ export function CalendarResolutionsModal({
   items,
   locale,
   onClose,
+  onOpenDossier,
 }: {
   open: boolean
   title: string
@@ -25,6 +24,7 @@ export function CalendarResolutionsModal({
   items: ResolutionCalendarItem[]
   locale: string
   onClose: () => void
+  onOpenDossier: OpenResolutionDossier
 }) {
   const { t } = useTranslation()
 
@@ -93,9 +93,14 @@ export function CalendarResolutionsModal({
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
           {!items.length ? <FormEmptyHint>{t('boardCalendar.noDeadlineOnDay')}</FormEmptyHint> : null}
           {items.map((item) => (
-            <article
+            <button
               key={item.id}
-              className="space-y-3 rounded-2xl border border-teal-50 bg-white p-3 shadow-[0_4px_14px_rgba(20,40,40,0.04)] sm:p-4"
+              type="button"
+              onClick={() => {
+                onOpenDossier(item)
+                onClose()
+              }}
+              className="w-full cursor-pointer space-y-3 rounded-2xl border border-teal-50 bg-white p-3 text-start shadow-[0_4px_14px_rgba(20,40,40,0.04)] transition hover:bg-teal-50/60 sm:p-4"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -137,13 +142,7 @@ export function CalendarResolutionsModal({
                   tone="mint"
                 />
               </div>
-              <Link to={resolutionHref(item)} onClick={onClose}>
-                <Button type="button" variant="ghost">
-                  <FileText className="size-4" aria-hidden />
-                  {t('common.view')}
-                </Button>
-              </Link>
-            </article>
+            </button>
           ))}
         </div>
       </section>

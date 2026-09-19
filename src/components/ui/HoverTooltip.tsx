@@ -92,7 +92,7 @@ export function HoverTooltip({
     <>
       <span
         ref={triggerRef}
-        className={`inline-flex min-w-0 ${className}`.trim()}
+        className={`inline-flex min-w-0 max-w-full ${className}`.trim()}
         aria-describedby={open ? tooltipId : undefined}
         onMouseEnter={show}
         onMouseLeave={hide}

@@ -62,7 +62,15 @@ export function hasMenuAccess(
     return true
   }
   if (moduleCode === 'board') {
-    if (menuCode === 'board.minutes' || menuCode === 'board.resolutions' || menuCode === 'board.calendar') return canAccessBoardMinutes(user)
+    if (
+      menuCode === 'board.minutes' ||
+      menuCode === 'board.search' ||
+      menuCode === 'board.resolutions' ||
+      menuCode === 'board.calendar' ||
+      menuCode === 'board.reports'
+    ) {
+      return canAccessBoardMinutes(user)
+    }
     return canAccessBoardModule(user)
   }
   return hasPermission(user, menuCode) || hasPermission(user, moduleCode)
@@ -100,6 +108,12 @@ export function canAccessPath(
     return canAccessBoardMinutes(user)
   }
   if (pathname === '/board/calendar' || pathname.startsWith('/board/calendar/')) {
+    return canAccessBoardMinutes(user)
+  }
+  if (pathname === '/board/search' || pathname.startsWith('/board/search/')) {
+    return canAccessBoardMinutes(user)
+  }
+  if (pathname === '/board/reports' || pathname.startsWith('/board/reports/')) {
     return canAccessBoardMinutes(user)
   }
 

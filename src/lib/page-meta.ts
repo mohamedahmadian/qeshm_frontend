@@ -461,11 +461,17 @@ export function getPageMeta(pathname: string): {
   if (pathname === '/singard') {
     return { titleKey: 'landing.singard', subtitleKey: 'singardWizard.subtitle' }
   }
+  if (pathname.startsWith('/board/search')) {
+    return { titleKey: 'menus.boardSmartSearch', subtitleKey: 'boardSmartSearch.subtitle' }
+  }
   if (pathname.startsWith('/board/permissions')) {
     return { titleKey: 'menus.boardPermissions', subtitleKey: 'boardPermissions.subtitle' }
   }
   if (pathname.startsWith('/board/calendar')) {
     return { titleKey: 'menus.boardCalendar', subtitleKey: 'boardCalendar.subtitle' }
+  }
+  if (pathname.startsWith('/board/reports')) {
+    return { titleKey: 'menus.boardReports', subtitleKey: 'boardReports.subtitle' }
   }
   if (pathname === '/board/resolutions' || pathname.startsWith('/board/resolutions/')) {
     return { titleKey: 'menus.boardResolutions', subtitleKey: 'boardResolutions.listSubtitle' }

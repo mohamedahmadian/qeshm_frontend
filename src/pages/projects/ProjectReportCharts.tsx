@@ -9,6 +9,9 @@ import {
   Legend,
   Pie,
   PieChart,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -126,17 +129,19 @@ export function ChartPanel({
   title,
   children,
   empty,
+  emptyLabel,
 }: {
   icon: LucideIcon
   title: string
   children: ReactNode
   empty?: boolean
+  emptyLabel?: string
 }) {
   const { t } = useTranslation()
   return (
     <div className="rounded-2xl border border-teal-100 bg-gradient-to-b from-white to-cream-50/40 p-4">
       <FormSectionTitle icon={Icon}>{title}</FormSectionTitle>
-      {empty ? <FormEmptyHint>{t('projectReports.empty')}</FormEmptyHint> : children}
+      {empty ? <FormEmptyHint>{emptyLabel ?? t('projectReports.empty')}</FormEmptyHint> : children}
     </div>
   )
 }
@@ -331,5 +336,227 @@ export function ReportGroupedBar({
         </BarChart>
       </ResponsiveContainer>
     </BarPlotFrame>
+  )
+}
+
+type TwinRow = { name: string; left: number; right: number }
+
+export function ReportTwinBar({
+  data,
+  locale,
+  leftLabel,
+  rightLabel,
+}: {
+  data: TwinRow[]
+  locale: string
+  leftLabel: string
+  rightLabel: string
+}) {
+  const rows = data.map((item) => ({ ...item, label: item.name }))
+  const { barCategoryGap } = barPlotLayout(rows.length)
+  return (
+    <BarPlotFrame count={rows.length}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={rows}
+          barCategoryGap={barCategoryGap}
+          margin={{ top: 36, right: 24, left: 8, bottom: 8 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2eeec" vertical={false} />
+          <XAxis
+            dataKey="label"
+            interval={0}
+            height={88}
+            tick={<BarCategoryTick />}
+            axisLine={{ stroke: '#d7e8e5' }}
+            tickLine={false}
+          />
+          <YAxis
+            orientation="left"
+            tickFormatter={(value) => formatBarValue(value, locale)}
+            tick={{ fill: '#5b6b6a', fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            width={48}
+          />
+          <Tooltip
+            formatter={(value, name) => [formatBarValue(value, locale), String(name)]}
+            contentStyle={tooltipStyle()}
+          />
+          <Legend verticalAlign="top" height={28} />
+          <Bar dataKey="left" name={leftLabel} fill={reportColors.teal} radius={[8, 8, 0, 0]} maxBarSize={28}>
+            <LabelList
+              dataKey="left"
+              position="top"
+              fill="#0f766e"
+              fontSize={10}
+              formatter={(value) => formatBarValue(value, locale)}
+            />
+          </Bar>
+          <Bar dataKey="right" name={rightLabel} fill={reportColors.mint} radius={[8, 8, 0, 0]} maxBarSize={28}>
+            <LabelList
+              dataKey="right"
+              position="top"
+              fill="#148f88"
+              fontSize={10}
+              formatter={(value) => formatBarValue(value, locale)}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </BarPlotFrame>
+  )
+}
+
+export function ReportHorizontalBar({
+  data,
+  locale,
+}: {
+  data: NamedValue[]
+  locale: string
+}) {
+  const rows = data.map((item) => ({ ...item, label: shortenLabel(item.name, 18) }))
+  const height = Math.max(240, rows.length * 42)
+  return (
+    <div className="overflow-x-auto">
+      <div style={{ height }} dir="ltr">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={rows}
+            layout="vertical"
+            margin={{ top: 8, right: 36, left: 8, bottom: 8 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2eeec" horizontal={false} />
+            <XAxis
+              type="number"
+              tickFormatter={(value) => formatBarValue(value, locale)}
+              tick={{ fill: '#5b6b6a', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="label"
+              width={108}
+              tick={{ fill: '#334155', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <ChartTooltip locale={locale} />
+            <Bar dataKey="value" fill={reportColors.teal} radius={[0, 8, 8, 0]} maxBarSize={22}>
+              <LabelList
+                dataKey="value"
+                position="right"
+                fill="#0f766e"
+                fontSize={11}
+                formatter={(value) => formatBarValue(value, locale)}
+              />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
+type StackedRow = { name: string; overdue: number; onTrack: number; noDue: number }
+
+export function ReportStackedBar({
+  data,
+  locale,
+  overdueLabel,
+  onTrackLabel,
+  noDueLabel,
+}: {
+  data: StackedRow[]
+  locale: string
+  overdueLabel: string
+  onTrackLabel: string
+  noDueLabel: string
+}) {
+  const rows = data.map((item) => ({ ...item, label: item.name }))
+  const { barCategoryGap } = barPlotLayout(rows.length)
+  return (
+    <BarPlotFrame count={rows.length}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={rows}
+          barCategoryGap={barCategoryGap}
+          margin={{ top: 28, right: 24, left: 8, bottom: 8 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2eeec" vertical={false} />
+          <XAxis
+            dataKey="label"
+            interval={0}
+            height={88}
+            tick={<BarCategoryTick />}
+            axisLine={{ stroke: '#d7e8e5' }}
+            tickLine={false}
+          />
+          <YAxis
+            orientation="left"
+            tickFormatter={(value) => formatBarValue(value, locale)}
+            tick={{ fill: '#5b6b6a', fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            width={48}
+          />
+          <Tooltip
+            formatter={(value, name) => [formatBarValue(value, locale), String(name)]}
+            contentStyle={tooltipStyle()}
+          />
+          <Legend verticalAlign="top" height={28} />
+          <Bar dataKey="overdue" name={overdueLabel} stackId="due" fill={reportColors.tealDeep} maxBarSize={36} />
+          <Bar dataKey="onTrack" name={onTrackLabel} stackId="due" fill={reportColors.mint} maxBarSize={36} />
+          <Bar
+            dataKey="noDue"
+            name={noDueLabel}
+            stackId="due"
+            fill={reportColors.ink}
+            radius={[8, 8, 0, 0]}
+            maxBarSize={36}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </BarPlotFrame>
+  )
+}
+
+export function ReportRadialScore({
+  value,
+  locale,
+  label,
+}: {
+  value: number
+  locale: string
+  label: string
+}) {
+  const score = Math.max(0, Math.min(100, value))
+  const rows = [{ name: label, value: score, fill: reportColors.teal }]
+  return (
+    <div className="relative h-56">
+      <ResponsiveContainer width="100%" height="100%">
+        <RadialBarChart
+          data={rows}
+          innerRadius="62%"
+          outerRadius="90%"
+          startAngle={210}
+          endAngle={-30}
+        >
+          <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+          <RadialBar dataKey="value" cornerRadius={10} background />
+          <Tooltip
+            formatter={(next) => [`${formatBarValue(next, locale)}٪`, label]}
+            contentStyle={tooltipStyle()}
+          />
+        </RadialBarChart>
+      </ResponsiveContainer>
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+        <div className="text-2xl font-semibold text-ink-900">
+          {formatGroupedNumber(Math.round(score), locale)}٪
+        </div>
+        <div className="text-xs text-ink-500">{label}</div>
+      </div>
+    </div>
   )
 }

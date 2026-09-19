@@ -1,4 +1,5 @@
-import { FileCheck } from 'lucide-react'
+import { FileCheck, ScrollText } from 'lucide-react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { DateText } from '../../components/ui/DateText'
@@ -11,12 +12,13 @@ import {
   TableCard,
   actionsColClassName,
 } from '../../components/ui/ListControls'
-import { PageHeader, listShellClassName } from '../../components/ui/Form'
+import { Button, PageHeader, listShellClassName } from '../../components/ui/Form'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
 import type { BoardMinutesResolution, Paginated } from '../../types/app'
+import { BoardMinutesDossierModal } from './BoardMinutesDossierModal'
 import { boardMinuteResolutionPath } from './board-paths'
 
 function relatedRequestId(item: BoardMinutesResolution) {
@@ -24,10 +26,12 @@ function relatedRequestId(item: BoardMinutesResolution) {
 }
 
 export function BoardResolutionsListPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
+  const [dossier, setDossier] = useState<{ minutesId: string; resolutionId: string } | null>(null)
   const query = useQuery({
     queryKey: ['board-resolutions', q, page, sortBy, sortDir],
     queryFn: async () => {
@@ -112,6 +116,17 @@ export function BoardResolutionsListPage() {
                   <td className={actionsColClassName}>
                     <EntityRowActions
                       viewTo={base}
+                      showView={false}
+                      extra={
+                        <Button
+                          type="button"
+                          variant="soft"
+                          onClick={() => setDossier({ minutesId: item.minutesId, resolutionId: item.id })}
+                        >
+                          <ScrollText className="size-4" aria-hidden />
+                          {t('boardResolutions.viewMinutes')}
+                        </Button>
+                      }
                       editTo={`${base}/edit`}
                       onDelete={() =>
                         confirmDelete({
@@ -137,6 +152,12 @@ export function BoardResolutionsListPage() {
           onPageChange={setPage}
         />
       ) : null}
+      <BoardMinutesDossierModal
+        minutesId={dossier?.minutesId ?? null}
+        focusResolutionId={dossier?.resolutionId}
+        locale={locale}
+        onClose={() => setDossier(null)}
+      />
     </div>
   )
 }
