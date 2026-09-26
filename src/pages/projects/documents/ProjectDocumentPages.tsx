@@ -24,8 +24,7 @@ import {
 } from '../../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
-import { useListParams } from '../../../hooks/useListParams'
-import { useListSort } from '../../../hooks/useListSort'
+import { useCrudListState } from '../../../hooks/useCrudListState'
 import { api, getProjectDocumentUrl } from '../../../lib/api'
 import { formatNumber } from '../../../lib/datetime'
 import type { Paginated, Project, ProjectDocument } from '../../../types/app'
@@ -65,13 +64,12 @@ function localizeSize(value: number, locale: string, unit: string) {
   return `${formatNumber(value, locale)} ${unit}`
 }
 
-export function ProjectDocumentListPage() {
+export function ProjectDocumentListPage({ embedded = false }: { embedded?: boolean }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { projectId, project } = useProject()
-  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
-    useListParams()
-  const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const { q, page, term, setTerm, applySearch, setPage, sortBy, sortDir, sortParams, onSort } =
+    useCrudListState(embedded)
   const { confirmDelete } = useConfirmDelete()
   const query = useQuery({
     queryKey: ['project-documents', projectId, q, page, sortBy, sortDir],
@@ -95,27 +93,23 @@ export function ProjectDocumentListPage() {
   }
   const rows = query.data?.items ?? []
   const base = projectDocumentsPath(projectId)
-  return (
-    <div className={listShellClassName}>
-      <PageHeader
-        icon={Paperclip}
-        title={t('projectDocuments.title')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={Paperclip} to={`/projects/${projectId}`} />}
-        action={
-          <Link to={`${base}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('projectDocuments.create')}
-            </Button>
-          </Link>
-        }
-      />
+  const createAction = (
+    <Link to={`${base}/new`}>
+      <Button>
+        <Plus className="size-4" />
+        {t('projectDocuments.create')}
+      </Button>
+    </Link>
+  )
+  const list = (
+    <>
       <SearchBar
         term={term}
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
         label={t('projectDocuments.search')}
         placeholder={t('projectDocuments.searchPlaceholder')}
+        {...(embedded ? { autoFocus: false } : {})}
       />
       <TableCard
         loading={query.isLoading}
@@ -192,6 +186,25 @@ export function ProjectDocumentListPage() {
           onPageChange={setPage}
         />
       ) : null}
+    </>
+  )
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">{createAction}</div>
+        {list}
+      </div>
+    )
+  }
+  return (
+    <div className={listShellClassName}>
+      <PageHeader
+        icon={Paperclip}
+        title={t('projectDocuments.title')}
+        subtitle={<EntityNameSubtitle name={project.systemName} icon={Paperclip} to={`/projects/${projectId}`} />}
+        action={createAction}
+      />
+      {list}
     </div>
   )
 }

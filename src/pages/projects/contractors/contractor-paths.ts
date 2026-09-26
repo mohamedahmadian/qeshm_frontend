@@ -6,6 +6,14 @@ export function globalContractorsPath() {
   return '/projects/contractors'
 }
 
+export function contractorTypesPath() {
+  return `${globalContractorsPath()}/types`
+}
+
+export function contractorTypePath(typeId: string) {
+  return `${contractorTypesPath()}/${typeId}`
+}
+
 export function globalContractorPath(contractorId: string) {
   return `${globalContractorsPath()}/${contractorId}`
 }
@@ -20,10 +28,6 @@ export function contractorPath(projectId: string, contractorId: string) {
 
 export function contractorTeamPath(projectId: string, contractorId: string) {
   return `${contractorPath(projectId, contractorId)}/team`
-}
-
-export function contractorPhasesPath(projectId: string, contractorId: string) {
-  return `${contractorPath(projectId, contractorId)}/phases`
 }
 
 export function contractorPaymentsPath(projectId: string, contractorId: string) {

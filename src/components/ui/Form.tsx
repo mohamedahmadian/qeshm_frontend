@@ -160,6 +160,7 @@ const PAGE_BACK_LEAVES = new Set([
   'pilgrimage-history',
   'location',
   'history',
+  'types',
 ])
 
 const PAGE_BACK_NESTED_LISTS = new Set([

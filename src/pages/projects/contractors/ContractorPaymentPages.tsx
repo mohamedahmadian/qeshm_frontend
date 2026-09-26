@@ -24,8 +24,7 @@ import {
 import { DateText } from '../../../components/ui/DateText'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
-import { useListParams } from '../../../hooks/useListParams'
-import { useListSort } from '../../../hooks/useListSort'
+import { useCrudListState } from '../../../hooks/useCrudListState'
 import { api } from '../../../lib/api'
 import { formatDate, formatNumber } from '../../../lib/datetime'
 import type { ContractorPayment, Paginated, ProjectContractor } from '../../../types/app'
@@ -47,13 +46,33 @@ function useContractor() {
   return { projectId, contractorId, contractor: query.data }
 }
 
-export function ContractorPaymentListPage() {
+export function ContractorPaymentListPage({
+  embedded = false,
+  projectId: projectIdProp,
+  contractorId: contractorIdProp,
+}: {
+  embedded?: boolean
+  projectId?: string
+  contractorId?: string
+} = {}) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
-  const { projectId, contractorId, contractor } = useContractor()
-  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
-    useListParams()
-  const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const params = useParams()
+  const projectId = projectIdProp ?? params.id
+  const contractorId = contractorIdProp ?? params.contractorId
+  const contractorQuery = useQuery({
+    queryKey: ['contractor', projectId, contractorId],
+    enabled: Boolean(projectId && contractorId) && !embedded,
+    queryFn: async () => {
+      const { data } = await api.get<ProjectContractor>(
+        `/projects/${projectId}/contractors/${contractorId}`,
+      )
+      return data
+    },
+  })
+  const contractor = contractorQuery.data
+  const { q, page, term, setTerm, applySearch, setPage, sortBy, sortDir, sortParams, onSort } =
+    useCrudListState(embedded)
   const { confirmDelete } = useConfirmDelete()
   const query = useQuery({
     queryKey: ['contractor-payments', projectId, contractorId, q, page, sortBy, sortDir],
@@ -66,27 +85,23 @@ export function ContractorPaymentListPage() {
       return data
     },
   })
-  if (!contractor || !projectId || !contractorId) {
+  if (!projectId || !contractorId || (!embedded && !contractor)) {
     return <LoadingState />
   }
   const rows = query.data?.items ?? []
   const base = contractorPaymentsPath(projectId, contractorId)
-  return (
-    <div className={listShellClassName}>
-      <PageHeader
-        icon={Wallet}
-        title={t('contractorPayments.title')}
-        subtitle={<EntityNameSubtitle name={contractor.name} icon={Wallet} />}
-        action={
-          <Link to={`${base}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('contractorPayments.create')}
-            </Button>
-          </Link>
-        }
-      />
+  const createAction = (
+    <Link to={`${base}/new`}>
+      <Button>
+        <Plus className="size-4" />
+        {t('contractorPayments.create')}
+      </Button>
+    </Link>
+  )
+  const list = (
+    <>
       <SearchBar
+        {...(embedded ? { autoFocus: false } : {})}
         term={term}
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
@@ -140,6 +155,25 @@ export function ContractorPaymentListPage() {
           onPageChange={setPage}
         />
       ) : null}
+    </>
+  )
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">{createAction}</div>
+        {list}
+      </div>
+    )
+  }
+  return (
+    <div className={listShellClassName}>
+      <PageHeader
+        icon={Wallet}
+        title={t('contractorPayments.title')}
+        subtitle={<EntityNameSubtitle name={contractor?.name ?? ''} icon={Wallet} />}
+        action={createAction}
+      />
+      {list}
     </div>
   )
 }

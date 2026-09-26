@@ -5,6 +5,7 @@ import {
   Car,
   FileText,
   Flag,
+  Handshake,
   IdCard,
   ImagePlus,
   KeyRound,
@@ -53,7 +54,7 @@ import {
   sanitizeUsername,
   USERNAME_ENGLISH_PATTERN,
 } from '../../lib/identity'
-import { CITIZEN_ROLE_CODE, EMPLOYEE_ROLE_CODE } from '../../lib/roles'
+import { CITIZEN_ROLE_CODE, CONTRACTOR_ROLE_CODE, EMPLOYEE_ROLE_CODE } from '../../lib/roles'
 import { optimizeImageFile } from '../../lib/optimize-image'
 import {
   religions,
@@ -126,6 +127,7 @@ export type UserPayload = {
   orgUnitId: string | null
   positionId: string | null
   roleIds: string[]
+  contractorId?: string | null
   isQeshmondi: boolean
   qeshmondiStartDate: string | null
   qeshmondiEndDate: string | null
@@ -195,6 +197,7 @@ export function UserForm({
   const [orgUnitId, setOrgUnitId] = useState(initial?.orgUnitId ?? '')
   const [positionId, setPositionId] = useState(initial?.positionId ?? '')
   const [roleIds, setRoleIds] = useState<string[]>(initial?.roles?.map((role) => role.id) ?? [])
+  const [contractorId, setContractorId] = useState(initial?.contractorId ?? '')
   const [isQeshmondi, setIsQeshmondi] = useState(initial?.isQeshmondi ?? qeshmondiMode)
   const [qeshmondiStartDate, setQeshmondiStartDate] = useState(initial?.qeshmondiStartDate ?? '')
   const [qeshmondiEndDate, setQeshmondiEndDate] = useState(initial?.qeshmondiEndDate ?? '')
@@ -275,6 +278,14 @@ export function UserForm({
       return data
     },
   })
+  const portalContractors = useQuery({
+    queryKey: ['stakeholders', 'contractors', 'user-form'],
+    enabled: !selfProfile && !qeshmondiMode,
+    queryFn: async () => {
+      const { data } = await api.get<{ id: string; name: string }[]>('/stakeholders/contractors')
+      return data
+    },
+  })
   const roles = useQuery({
     queryKey: ['roles', 'lookup'],
     enabled: !selfProfile,
@@ -295,6 +306,8 @@ export function UserForm({
     if (!employee) return
     setRoleIds((current) => (current.length ? current : [employee.id]))
   }, [isCreate, selfProfile, qeshmondiMode, roles.data])
+  const contractorRoleId = (roles.data ?? []).find((role) => role.code === CONTRACTOR_ROLE_CODE)?.id
+  const showContractor = Boolean(contractorRoleId && roleIds.includes(contractorRoleId))
   const iranCountryId = countries.data?.find((country) => country.iso2 === 'IR')?.id ?? ''
   const selectedCountryId = countryId || (isCreate ? iranCountryId : '')
   const isIranian = !iranCountryId || !selectedCountryId || selectedCountryId === iranCountryId
@@ -594,6 +607,10 @@ export function UserForm({
       failField('account', 'roleIds', t('users.rolesRequired'))
       return
     }
+    if (showContractor && !contractorId) {
+      failField('account', 'contractorId', t('users.contractorRequired'))
+      return
+    }
     const citizenId = (roles.data ?? []).find((role) => role.code === CITIZEN_ROLE_CODE)?.id
     const submittedRoleIds = qeshmondiMode
       ? [...new Set([...(initial?.roles?.map((role) => role.id) ?? roleIds), citizenId].filter(Boolean) as string[])]
@@ -632,6 +649,9 @@ export function UserForm({
         orgUnitId: emptyToNull(orgUnitId),
         positionId: emptyToNull(positionId),
         roleIds: submittedRoleIds,
+        ...(!selfProfile && !qeshmondiMode
+          ? { contractorId: showContractor ? contractorId : null }
+          : {}),
         isQeshmondi: submittedQeshmondi,
         qeshmondiStartDate: emptyToNull(qeshmondiStartDate),
         qeshmondiEndDate: emptyToNull(qeshmondiEndDate),
@@ -984,6 +1004,26 @@ export function UserForm({
                     />
                   ))}
                 </div>
+              </FormField>
+            )}
+            {selfProfile || qeshmondiMode || !showContractor ? null : (
+              <FormField icon={Handshake} label={t('users.contractor')} htmlFor="contractorId" error={fieldErrors.contractorId}>
+                <SearchSelect
+                  id="contractorId"
+                  value={contractorId}
+                  onChange={(value) => {
+                    setContractorId(value)
+                    clearError('contractorId')
+                  }}
+                  placeholder={t('users.selectContractor')}
+                  options={[
+                    { value: '', label: t('users.selectContractor') },
+                    ...(portalContractors.data ?? []).map((item) => ({
+                      value: item.id,
+                      label: item.name,
+                    })),
+                  ]}
+                />
               </FormField>
             )}
           </div>

@@ -1,4 +1,4 @@
-import { Building2 } from 'lucide-react'
+import { Building2, FolderKanban } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -33,10 +33,21 @@ export function ContractorEditPage() {
       <PageHeader
         icon={Building2}
         title={t('contractors.edit')}
-        subtitle={<EntityNameSubtitle name={query.data.name} icon={Building2} />}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            <EntityNameSubtitle
+              name={query.data.project.systemName}
+              icon={FolderKanban}
+              label={t('contractors.projectLabel')}
+              to={`/projects/${projectId}`}
+            />
+            <EntityNameSubtitle name={query.data.name} icon={Building2} />
+          </span>
+        }
       />
       <ContractorForm
         initial={query.data}
+        manage={{ projectId, contractorId }}
         onSubmit={async (payload) => {
           await api.patch(`/projects/${projectId}/contractors/${contractorId}`, payload)
           toast.success(t('contractors.updated'))

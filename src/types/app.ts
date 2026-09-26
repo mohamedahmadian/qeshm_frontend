@@ -788,19 +788,37 @@ export type ProjectProgressEntry = {
   images: { id: string; imageId: string; sortOrder: number }[];
 };
 
+export type ContractorType = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { contractors: number };
+};
+
 export type ProjectContractor = {
   id: string;
   projectId: string;
+  typeId: string | null;
   name: string;
   nationalId: string | null;
+  registrationNumber: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
   description: string | null;
   ceoName: string | null;
   timeEstimate: string | null;
   costEstimate: number | null;
+  contractStartDate: string | null;
+  contractEndDate: string | null;
+  supportStartDate: string | null;
+  supportEndDate: string | null;
   createdAt: string;
   updatedAt: string;
+  type: { id: string; name: string } | null;
   project: { id: string; systemName: string };
-  _count?: { members: number; phases: number; payments: number; projectLinks?: number };
+  _count?: { members: number; payments: number; projectLinks?: number };
 };
 
 export type ContractorProject = {
@@ -821,17 +839,6 @@ export type ContractorMember = {
   phone: string | null;
   role: string | null;
   description: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type ContractorPhase = {
-  id: string;
-  contractorId: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  goals: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -961,7 +968,6 @@ export type ProjectReportsOverview = {
     projectId: string;
     projectName: string;
     memberCount: number;
-    phaseCount: number;
     estimate: number;
     paid: number;
   }[];
@@ -1056,8 +1062,10 @@ export type ManagedUser = {
   } | null;
   orgUnitId?: string | null;
   positionId?: string | null;
+  contractorId?: string | null;
   orgUnit?: { id: string; name: string } | null;
   position?: { id: string; name: string } | null;
+  contractor?: { id: string; name: string } | null;
   isQeshmondi?: boolean;
   qeshmondiStartDate?: string | null;
   qeshmondiEndDate?: string | null;

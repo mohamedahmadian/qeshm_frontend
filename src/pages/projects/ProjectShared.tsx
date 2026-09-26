@@ -69,9 +69,14 @@ export function projectOperatorsText(operators?: { name: string }[]) {
 export function projectManageExtraItems(
   projectId: string,
   t: TFunction,
-  options?: { onChecklist?: () => void; showChecklist?: boolean },
+  options?: {
+    onChecklist?: () => void
+    showChecklist?: boolean
+    omit?: Array<'progress' | 'checklist' | 'phases' | 'documents' | 'contractors'>
+  },
 ): DetailActionExtraItem[] {
-  const showChecklist = options?.showChecklist !== false
+  const omit = new Set(options?.omit ?? [])
+  const showChecklist = options?.showChecklist !== false && !omit.has('checklist')
   const checklistItem: DetailActionExtraItem | null = showChecklist
     ? options?.onChecklist
       ? {
@@ -86,27 +91,43 @@ export function projectManageExtraItems(
         }
     : null
   return [
-    {
-      to: `/projects/${projectId}/progress`,
-      icon: ClipboardList,
-      label: t('projectProgress.manage'),
-    },
+    ...(!omit.has('progress')
+      ? [
+          {
+            to: `/projects/${projectId}/progress`,
+            icon: ClipboardList,
+            label: t('projectProgress.manage'),
+          },
+        ]
+      : []),
     ...(checklistItem ? [checklistItem] : []),
-    {
-      to: `/projects/${projectId}/phases`,
-      icon: Flag,
-      label: t('projectPhases.manage'),
-    },
-    {
-      to: `/projects/${projectId}/documents`,
-      icon: Paperclip,
-      label: t('projectDocuments.manage'),
-    },
-    {
-      to: `/projects/${projectId}/contractors`,
-      icon: Handshake,
-      label: t('contractors.manage'),
-    },
+    ...(!omit.has('phases')
+      ? [
+          {
+            to: `/projects/${projectId}/phases`,
+            icon: Flag,
+            label: t('projectPhases.manage'),
+          },
+        ]
+      : []),
+    ...(!omit.has('documents')
+      ? [
+          {
+            to: `/projects/${projectId}/documents`,
+            icon: Paperclip,
+            label: t('projectDocuments.manage'),
+          },
+        ]
+      : []),
+    ...(!omit.has('contractors')
+      ? [
+          {
+            to: `/projects/${projectId}/contractors`,
+            icon: Handshake,
+            label: t('contractors.manage'),
+          },
+        ]
+      : []),
   ]
 }
 

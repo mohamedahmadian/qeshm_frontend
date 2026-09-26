@@ -7,13 +7,18 @@ export const ADMIN_ROLE_CODE = 'ADMIN'
 export const EMPLOYEE_ROLE_CODE = 'EMPLOYEE'
 export const CITIZEN_ROLE_CODE = 'CITIZEN'
 export const BOARD_ADMIN_ROLE_CODE = 'BOARD_ADMIN'
+export const CONTRACTOR_ROLE_CODE = 'CONTRACTOR'
 
 export function isSystemRoleLocked(role?: { isSystem?: boolean; code?: string } | null) {
   return Boolean(role?.isSystem || role?.code === ADMIN_ROLE_CODE)
 }
 
 export function isRolePermissionsLocked(role?: { code?: string } | null) {
-  return role?.code === ADMIN_ROLE_CODE || role?.code === CITIZEN_ROLE_CODE
+  return (
+    role?.code === ADMIN_ROLE_CODE ||
+    role?.code === CITIZEN_ROLE_CODE ||
+    role?.code === CONTRACTOR_ROLE_CODE
+  )
 }
 
 export function isAdmin(user?: { isAdmin?: boolean; roles?: { code: string }[] } | null) {

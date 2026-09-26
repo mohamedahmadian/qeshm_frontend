@@ -16,6 +16,7 @@ import {
   MapPinned,
   MessageCircle,
   Phone,
+  Handshake,
   Share2,
   Shield,
   ToggleRight,
@@ -199,6 +200,13 @@ export function UserDetailPage() {
                   value={user.position?.name || empty}
                   empty={!user.position}
                   tone="mint"
+                />
+                <FormFactTile
+                  icon={Handshake}
+                  label={t('users.contractor')}
+                  value={user.contractor?.name || empty}
+                  empty={!user.contractor}
+                  tone="teal"
                 />
                 <FormFactTile
                   icon={Share2}

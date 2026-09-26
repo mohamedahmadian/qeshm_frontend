@@ -40,6 +40,19 @@ import { ProjectCalendarPage } from './pages/projects/calendar/ProjectCalendarPa
 import { ProjectReportsPage } from './pages/projects/ProjectReportsPage'
 import { ProjectsListPage } from './pages/projects/ProjectsListPage'
 import {
+  StakeholderCorrespondenceCreatePage,
+  StakeholderCorrespondenceDetailPage,
+  StakeholderCorrespondenceEditPage,
+  StakeholderCorrespondenceListPage,
+} from './pages/stakeholders/CorrespondencePages'
+import {
+  StakeholderProgressCreatePage,
+  StakeholderProgressDetailPage,
+  StakeholderProgressEditPage,
+  StakeholderProgressListPage,
+} from './pages/stakeholders/ProgressPages'
+import { StakeholderProjectDetailPage, StakeholderProjectsPage } from './pages/stakeholders/ProjectsPages'
+import {
   ProjectGroupCreatePage,
   ProjectGroupDetailPage,
   ProjectGroupEditPage,
@@ -49,6 +62,12 @@ import { ContractorCreatePage } from './pages/projects/contractors/ContractorCre
 import { ContractorDetailPage } from './pages/projects/contractors/ContractorDetailPage'
 import { ContractorEditPage } from './pages/projects/contractors/ContractorEditPage'
 import { ContractorsListPage } from './pages/projects/contractors/ContractorsListPage'
+import {
+  ContractorTypeCreatePage,
+  ContractorTypeDetailPage,
+  ContractorTypeEditPage,
+  ContractorTypeListPage,
+} from './pages/projects/contractors/ContractorTypePages'
 import {
   GlobalContractorCreatePage,
   GlobalContractorDetailPage,
@@ -65,12 +84,6 @@ import {
   ContractorPaymentEditPage,
   ContractorPaymentListPage,
 } from './pages/projects/contractors/ContractorPaymentPages'
-import {
-  ContractorPhaseCreatePage,
-  ContractorPhaseDetailPage,
-  ContractorPhaseEditPage,
-  ContractorPhaseListPage,
-} from './pages/projects/contractors/ContractorPhasePages'
 import {
   ContractorTeamCreatePage,
   ContractorTeamDetailPage,
@@ -320,6 +333,10 @@ export default function App() {
                   <Route path="/projects/calendar" element={<ProjectCalendarPage />} />
                   <Route path="/projects/live-board" element={<ProjectLiveBoardPage />} />
                   <Route path="/projects/contractors" element={<GlobalContractorsListPage />} />
+                  <Route path="/projects/contractors/types" element={<ContractorTypeListPage />} />
+                  <Route path="/projects/contractors/types/new" element={<ContractorTypeCreatePage />} />
+                  <Route path="/projects/contractors/types/:typeId/edit" element={<ContractorTypeEditPage />} />
+                  <Route path="/projects/contractors/types/:typeId" element={<ContractorTypeDetailPage />} />
                   <Route path="/projects/contractors/new" element={<GlobalContractorCreatePage />} />
                   <Route path="/projects/contractors/:contractorId/projects" element={<ContractorProjectListPage />} />
                   <Route path="/projects/contractors/:contractorId/projects/new" element={<ContractorProjectCreatePage />} />
@@ -353,10 +370,6 @@ export default function App() {
                   <Route path="/projects/:id/contractors/:contractorId/team/new" element={<ContractorTeamCreatePage />} />
                   <Route path="/projects/:id/contractors/:contractorId/team/:memberId" element={<ContractorTeamDetailPage />} />
                   <Route path="/projects/:id/contractors/:contractorId/team/:memberId/edit" element={<ContractorTeamEditPage />} />
-                  <Route path="/projects/:id/contractors/:contractorId/phases" element={<ContractorPhaseListPage />} />
-                  <Route path="/projects/:id/contractors/:contractorId/phases/new" element={<ContractorPhaseCreatePage />} />
-                  <Route path="/projects/:id/contractors/:contractorId/phases/:phaseId" element={<ContractorPhaseDetailPage />} />
-                  <Route path="/projects/:id/contractors/:contractorId/phases/:phaseId/edit" element={<ContractorPhaseEditPage />} />
                   <Route path="/projects/:id/contractors/:contractorId/payments" element={<ContractorPaymentListPage />} />
                   <Route path="/projects/:id/contractors/:contractorId/payments/new" element={<ContractorPaymentCreatePage />} />
                   <Route path="/projects/:id/contractors/:contractorId/payments/:paymentId" element={<ContractorPaymentDetailPage />} />
@@ -365,6 +378,20 @@ export default function App() {
                   <Route path="/projects/:id/contractors/:contractorId/edit" element={<ContractorEditPage />} />
                   <Route path="/projects/:id" element={<ProjectDetailPage />} />
                   <Route path="/projects/:id/edit" element={<ProjectEditPage />} />
+                  <Route path="/stakeholders/projects" element={<StakeholderProjectsPage />} />
+                  <Route path="/stakeholders/projects/:id" element={<StakeholderProjectDetailPage />} />
+                  <Route path="/stakeholders/progress" element={<StakeholderProgressListPage mode="contractor" />} />
+                  <Route path="/stakeholders/progress/new" element={<StakeholderProgressCreatePage />} />
+                  <Route path="/stakeholders/progress/:id" element={<StakeholderProgressDetailPage mode="contractor" />} />
+                  <Route path="/stakeholders/progress/:id/edit" element={<StakeholderProgressEditPage />} />
+                  <Route path="/stakeholders/correspondence" element={<StakeholderCorrespondenceListPage mode="contractor" />} />
+                  <Route path="/stakeholders/correspondence/new" element={<StakeholderCorrespondenceCreatePage />} />
+                  <Route path="/stakeholders/correspondence/:id" element={<StakeholderCorrespondenceDetailPage mode="contractor" />} />
+                  <Route path="/stakeholders/correspondence/:id/edit" element={<StakeholderCorrespondenceEditPage />} />
+                  <Route path="/stakeholders/inbox" element={<StakeholderCorrespondenceListPage mode="org" />} />
+                  <Route path="/stakeholders/inbox/:id" element={<StakeholderCorrespondenceDetailPage mode="org" />} />
+                  <Route path="/stakeholders/reports" element={<StakeholderProgressListPage mode="org" />} />
+                  <Route path="/stakeholders/reports/:id" element={<StakeholderProgressDetailPage mode="org" />} />
                   <Route path="/food-reservation/foods" element={<FoodsListPage />} />
                   <Route path="/food-reservation/foods/new" element={<FoodCreatePage />} />
                   <Route path="/food-reservation/foods/:id" element={<FoodDetailPage />} />

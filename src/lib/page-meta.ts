@@ -14,6 +14,48 @@ export function getPageMeta(pathname: string): {
   if (pathname.includes('/location')) {
     return { titleKey: 'location.register', subtitleKey: 'location.registerSubtitle' }
   }
+  if (pathname === '/stakeholders/projects') {
+    return { titleKey: 'menus.stakeholderProjects', subtitleKey: 'stakeholders.projectsSubtitle' }
+  }
+  if (pathname.startsWith('/stakeholders/projects/')) {
+    return { titleKey: 'stakeholders.projectDetails', subtitleKey: 'stakeholders.projectDetailsSubtitle' }
+  }
+  if (pathname === '/stakeholders/progress/new') {
+    return { titleKey: 'stakeholders.progressCreate', subtitleKey: 'stakeholders.progressCreateSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/stakeholders/progress/')) {
+    return { titleKey: 'stakeholders.progressEdit', subtitleKey: 'stakeholders.progressEditSubtitle' }
+  }
+  if (pathname.startsWith('/stakeholders/progress/')) {
+    return { titleKey: 'stakeholders.progressDetails', subtitleKey: 'stakeholders.progressDetailsSubtitle' }
+  }
+  if (pathname.startsWith('/stakeholders/progress')) {
+    return { titleKey: 'menus.stakeholderProgress', subtitleKey: 'stakeholders.progressSubtitle' }
+  }
+  if (pathname === '/stakeholders/correspondence/new') {
+    return { titleKey: 'stakeholders.correspondenceCreate', subtitleKey: 'stakeholders.correspondenceCreateSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/stakeholders/correspondence/')) {
+    return { titleKey: 'stakeholders.correspondenceEdit', subtitleKey: 'stakeholders.correspondenceEditSubtitle' }
+  }
+  if (pathname.startsWith('/stakeholders/correspondence/')) {
+    return { titleKey: 'stakeholders.correspondenceDetails', subtitleKey: 'stakeholders.correspondenceDetailsSubtitle' }
+  }
+  if (pathname.startsWith('/stakeholders/correspondence')) {
+    return { titleKey: 'menus.stakeholderCorrespondence', subtitleKey: 'stakeholders.correspondenceSubtitle' }
+  }
+  if (pathname.startsWith('/stakeholders/inbox/')) {
+    return { titleKey: 'stakeholders.inboxDetails', subtitleKey: 'stakeholders.inboxDetailsSubtitle' }
+  }
+  if (pathname.startsWith('/stakeholders/inbox')) {
+    return { titleKey: 'menus.stakeholderInbox', subtitleKey: 'stakeholders.inboxSubtitle' }
+  }
+  if (pathname.startsWith('/stakeholders/reports/')) {
+    return { titleKey: 'stakeholders.reportDetails', subtitleKey: 'stakeholders.reportDetailsSubtitle' }
+  }
+  if (pathname.startsWith('/stakeholders/reports')) {
+    return { titleKey: 'menus.stakeholderReports', subtitleKey: 'stakeholders.reportsSubtitle' }
+  }
   if (pathname.startsWith('/account')) {
     return { titleKey: 'account.title', subtitleKey: 'account.subtitle' }
   }
@@ -116,6 +158,18 @@ export function getPageMeta(pathname: string): {
       subtitleKey: 'projectLiveBoard.subtitle',
     }
   }
+  if (pathname === '/projects/contractors/types/new') {
+    return { titleKey: 'contractorTypes.create', subtitleKey: 'contractorTypes.createSubtitle' }
+  }
+  if (/^\/projects\/contractors\/types\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'contractorTypes.edit', subtitleKey: 'contractorTypes.editSubtitle' }
+  }
+  if (/^\/projects\/contractors\/types\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'contractorTypes.details', subtitleKey: 'contractorTypes.detailsSubtitle' }
+  }
+  if (pathname === '/projects/contractors/types') {
+    return { titleKey: 'contractorTypes.title', subtitleKey: 'contractorTypes.subtitle' }
+  }
   if (pathname === '/projects/contractors/new') {
     return { titleKey: 'contractors.create', subtitleKey: 'contractors.createSubtitle' }
   }
@@ -169,18 +223,6 @@ export function getPageMeta(pathname: string): {
   }
   if (/\/payments$/.test(pathname)) {
     return { titleKey: 'contractorPayments.title', subtitleKey: 'contractorPayments.subtitle' }
-  }
-  if (/\/contractors\/[^/]+\/phases\/new$/.test(pathname)) {
-    return { titleKey: 'contractorPhases.create', subtitleKey: 'contractorPhases.createSubtitle' }
-  }
-  if (/\/contractors\/[^/]+\/phases\/[^/]+\/edit$/.test(pathname)) {
-    return { titleKey: 'contractorPhases.edit', subtitleKey: 'contractorPhases.editSubtitle' }
-  }
-  if (/\/contractors\/[^/]+\/phases\/[^/]+$/.test(pathname)) {
-    return { titleKey: 'contractorPhases.details', subtitleKey: 'contractorPhases.detailsSubtitle' }
-  }
-  if (/\/contractors\/[^/]+\/phases$/.test(pathname)) {
-    return { titleKey: 'contractorPhases.title', subtitleKey: 'contractorPhases.subtitle' }
   }
   if (/^\/projects\/[^/]+\/documents\/new$/.test(pathname)) {
     return { titleKey: 'projectDocuments.create', subtitleKey: 'projectDocuments.createSubtitle' }

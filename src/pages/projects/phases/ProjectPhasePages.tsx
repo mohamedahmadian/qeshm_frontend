@@ -26,8 +26,7 @@ import {
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
 import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
-import { useListParams } from '../../../hooks/useListParams'
-import { useListSort } from '../../../hooks/useListSort'
+import { useCrudListState } from '../../../hooks/useCrudListState'
 import { api } from '../../../lib/api'
 import {
   phaseProgressModes,
@@ -58,12 +57,11 @@ function useProject() {
   return { projectId, project: query.data }
 }
 
-export function ProjectPhaseListPage() {
+export function ProjectPhaseListPage({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation()
   const { projectId, project } = useProject()
-  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
-    useListParams()
-  const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams, sortBy, sortDir, sortParams, onSort } =
+    useCrudListState(embedded)
   const { confirmDelete } = useConfirmDelete()
   const status = searchParams.get('status') ?? ''
   const query = useQuery({
@@ -90,27 +88,18 @@ export function ProjectPhaseListPage() {
   const rows = query.data?.items ?? []
   const base = projectPhasesPath(projectId)
   const filtersActive = Boolean(status)
-  return (
-    <div className={listShellClassName}>
-      <PageHeader
-        icon={Flag}
-        title={t('projectPhases.title')}
-        subtitle={
-          <span className="inline-flex items-center gap-2">
-            <EntityNameSubtitle name={project.systemName} icon={Flag} to={`/projects/${projectId}`} />
-            <ProjectProgressRing value={project.progressPercent} progressMode={project.progressMode} />
-          </span>
-        }
-        action={
-          <Link to={`${base}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('projectPhases.create')}
-            </Button>
-          </Link>
-        }
-      />
+  const createAction = (
+    <Link to={`${base}/new`}>
+      <Button>
+        <Plus className="size-4" />
+        {t('projectPhases.create')}
+      </Button>
+    </Link>
+  )
+  const list = (
+    <>
       <SearchBar
+        {...(embedded ? { autoFocus: false } : {})}
         term={term}
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
@@ -224,6 +213,30 @@ export function ProjectPhaseListPage() {
           onPageChange={setPage}
         />
       ) : null}
+    </>
+  )
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">{createAction}</div>
+        {list}
+      </div>
+    )
+  }
+  return (
+    <div className={listShellClassName}>
+      <PageHeader
+        icon={Flag}
+        title={t('projectPhases.title')}
+        subtitle={
+          <span className="inline-flex items-center gap-2">
+            <EntityNameSubtitle name={project.systemName} icon={Flag} to={`/projects/${projectId}`} />
+            <ProjectProgressRing value={project.progressPercent} progressMode={project.progressMode} />
+          </span>
+        }
+        action={createAction}
+      />
+      {list}
     </div>
   )
 }

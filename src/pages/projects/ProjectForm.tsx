@@ -4,7 +4,6 @@ import {
   FolderKanban,
   Gauge,
   Globe,
-  Handshake,
   Hash,
   Home,
   Landmark,
@@ -24,7 +23,6 @@ import {
 import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '../../auth/AuthProvider'
 import { AppForm, Button, FormField, FormActions, ToggleField, fieldClassName } from '../../components/ui/Form'
@@ -39,6 +37,9 @@ import { projectBoundaryPolygons, QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../
 import { DEFAULT_PROJECT_COLOR, PROJECT_COLOR_SWATCHES, projectColor } from '../../lib/project-color'
 import { useChecklistManage } from './checklist/ChecklistManageModal'
 import { ProjectDetailChecklist } from './checklist/ProjectChecklistBoard'
+import { ContractorsListPage } from './contractors/ContractorsListPage'
+import { ProjectDocumentListPage } from './documents/ProjectDocumentPages'
+import { ProjectPhaseListPage } from './phases/ProjectPhasePages'
 import { projectManageExtraItems } from './ProjectShared'
 import {
   projectImportanceOrder,
@@ -57,8 +58,9 @@ import {
   type ProjectStatus,
 } from '../../types/app'
 
-const tabs = ['info', 'details', 'timeline', 'location'] as const
-type ProjectFormTab = (typeof tabs)[number]
+const formTabs = ['info', 'operators', 'details', 'timeline', 'location'] as const
+const manageTabs = ['contractors', 'documents', 'phases'] as const
+type ProjectFormTab = (typeof formTabs)[number] | (typeof manageTabs)[number]
 
 export type ProjectPayload = {
   operatorIds: string[]
@@ -163,7 +165,6 @@ export function ProjectForm({
   const [latitude, setLatitude] = useState(toCoordString(initial?.latitude))
   const [longitude, setLongitude] = useState(toCoordString(initial?.longitude))
   const [address, setAddress] = useState(initial?.address ?? '')
-  const [companyName, setCompanyName] = useState(initial?.companyName ?? '')
   const [systemUrl, setSystemUrl] = useState(initial?.systemUrl ?? '')
   const [launchYear, setLaunchYear] = useState(
     initial?.launchYear != null ? String(initial.launchYear) : '',
@@ -258,7 +259,7 @@ export function ProjectForm({
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!operatorIds.length) {
-      goTab('info')
+      goTab('operators')
       toast.error(t('projects.operatorRequired'))
       return
     }
@@ -306,7 +307,7 @@ export function ProjectForm({
         latitude: toOptionalNumber(latitude),
         longitude: toOptionalNumber(longitude),
         address: emptyToNull(address),
-        companyName: emptyToNull(companyName),
+        companyName: initial?.companyName ?? null,
         systemUrl: emptyToNull(systemUrl),
         launchYear: toOptionalYear(launchYear),
         isSupportActive,
@@ -324,6 +325,9 @@ export function ProjectForm({
     }
   }
 
+  const visibleTabs: ProjectFormTab[] = projectId ? [...formTabs, ...manageTabs] : [...formTabs]
+  const isManageTab = (manageTabs as readonly string[]).includes(tab)
+
   return (
     <>
     <FormCard
@@ -333,7 +337,7 @@ export function ProjectForm({
     >
       <div className="space-y-4 p-5 sm:p-6">
         <nav className="flex flex-wrap gap-2 rounded-2xl border border-line bg-cream-50/80 p-3">
-          {tabs.map((item) => (
+          {visibleTabs.map((item) => (
             <button
               key={item}
               type="button"
@@ -349,7 +353,11 @@ export function ProjectForm({
           ))}
         </nav>
 
-        <AppForm noValidate onSubmit={submit} className="space-y-4">
+        <AppForm
+          noValidate
+          onSubmit={submit}
+          className={`space-y-4 ${isManageTab ? 'hidden' : ''}`}
+        >
           <div className={`space-y-4 ${tab === 'info' ? '' : 'hidden'}`}>
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField icon={Landmark} label={t('projects.orgUnit')} htmlFor="projectOrgUnit">
@@ -395,17 +403,6 @@ export function ProjectForm({
                 />
               </FormField>
             </div>
-            <FormField icon={Landmark} label={t('projects.operators')} htmlFor="projectOperators-search">
-              <p className="mb-2 text-xs leading-6 text-ink-500">{t('projects.operatorHint')}</p>
-              <OrgUnitTreeSelect
-                id="projectOperators"
-                value={operatorIds}
-                onChange={setOperatorIds}
-                units={orgUnits.data ?? []}
-                loading={orgUnits.isLoading}
-                required
-              />
-            </FormField>
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField icon={Monitor} label={t('projects.systemName')} htmlFor="systemName">
                 <input
@@ -434,14 +431,6 @@ export function ProjectForm({
                   minLength={1}
                   maxLength={40}
                   placeholder={t('projects.codeHint')}
-                />
-              </FormField>
-              <FormField icon={Handshake} label={t('projects.companyName')} htmlFor="companyName">
-                <input
-                  id="companyName"
-                  className={fieldClassName}
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
                 />
               </FormField>
               <FormField icon={Globe} label={t('projects.systemUrl')} htmlFor="systemUrl">
@@ -493,6 +482,20 @@ export function ProjectForm({
                 </FormField>
               </div>
             </div>
+          </div>
+
+          <div className={`space-y-4 ${tab === 'operators' ? '' : 'hidden'}`}>
+            <FormField icon={Landmark} label={t('projects.operators')} htmlFor="projectOperators-search">
+              <p className="mb-2 text-xs leading-6 text-ink-500">{t('projects.operatorHint')}</p>
+              <OrgUnitTreeSelect
+                id="projectOperators"
+                value={operatorIds}
+                onChange={setOperatorIds}
+                units={orgUnits.data ?? []}
+                loading={orgUnits.isLoading}
+                required
+              />
+            </FormField>
           </div>
 
           <div className={`space-y-4 ${tab === 'details' ? '' : 'hidden'}`}>
@@ -670,12 +673,10 @@ export function ProjectForm({
                       </Button>
                     ) : null}
                     {projectId && progressMode === projectProgressModes.PHASE_CHECKLIST ? (
-                      <Link to={`/projects/${projectId}/phases`} className="inline-flex">
-                        <Button type="button" variant="ghost">
-                          <Flag className="size-4" aria-hidden />
-                          {t('projectPhases.manage')}
-                        </Button>
-                      </Link>
+                      <Button type="button" variant="ghost" onClick={() => setTab('phases')}>
+                        <Flag className="size-4" aria-hidden />
+                        {t('projectPhases.manage')}
+                      </Button>
                     ) : null}
                   </div>
                 </FormField>
@@ -724,11 +725,17 @@ export function ProjectForm({
             onCancel={() => history.back()}
             extraItems={
               projectId
-                ? projectManageExtraItems(projectId, t, { onChecklist: checklist.openList })
+                ? projectManageExtraItems(projectId, t, {
+                    onChecklist: checklist.openList,
+                    omit: ['phases', 'documents', 'contractors'],
+                  })
                 : undefined
             }
           />
         </AppForm>
+        {projectId && tab === 'contractors' ? <ContractorsListPage embedded /> : null}
+        {projectId && tab === 'documents' ? <ProjectDocumentListPage embedded /> : null}
+        {projectId && tab === 'phases' ? <ProjectPhaseListPage embedded /> : null}
       </div>
     </FormCard>
     {checklist.modal}

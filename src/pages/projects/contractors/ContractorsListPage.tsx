@@ -13,20 +13,18 @@ import {
 } from '../../../components/ui/ListControls'
 import { Button, EntityNameSubtitle, LoadingState, PageHeader, listShellClassName } from '../../../components/ui/Form'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
-import { useListParams } from '../../../hooks/useListParams'
-import { useListSort } from '../../../hooks/useListSort'
+import { useCrudListState } from '../../../hooks/useCrudListState'
 import { api } from '../../../lib/api'
 import { formatNumber, localizeDigits } from '../../../lib/datetime'
 import type { Paginated, Project, ProjectContractor } from '../../../types/app'
 import { contractorPath, contractorsPath } from './contractor-paths'
 
-export function ContractorsListPage() {
+export function ContractorsListPage({ embedded = false }: { embedded?: boolean }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { id: projectId } = useParams()
-  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
-    useListParams()
-  const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const { q, page, term, setTerm, applySearch, setPage, sortBy, sortDir, sortParams, onSort } =
+    useCrudListState(embedded)
   const { confirmDelete } = useConfirmDelete()
 
   const project = useQuery({
@@ -56,27 +54,24 @@ export function ContractorsListPage() {
 
   const rows = query.data?.items ?? []
 
-  return (
-    <div className={listShellClassName}>
-      <PageHeader
-        icon={Building2}
-        title={t('contractors.title')}
-        subtitle={<EntityNameSubtitle name={project.data.systemName} icon={FolderKanban} to={`/projects/${projectId}`} />}
-        action={
-          <Link to={`${contractorsPath(projectId)}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('contractors.create')}
-            </Button>
-          </Link>
-        }
-      />
+  const createAction = (
+    <Link to={`${contractorsPath(projectId)}/new`}>
+      <Button>
+        <Plus className="size-4" />
+        {t('contractors.create')}
+      </Button>
+    </Link>
+  )
+
+  const list = (
+    <>
       <SearchBar
         term={term}
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
         label={t('contractors.search')}
         placeholder={t('contractors.searchPlaceholder')}
+        {...(embedded ? { autoFocus: false } : {})}
       />
       <TableCard
         loading={query.isLoading}
@@ -87,6 +82,7 @@ export function ContractorsListPage() {
           <thead className="bg-cream-50 text-ink-700">
             <tr>
               <SortableTh column="name" label={t('contractors.name')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="type" label={t('contractors.type')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="nationalId" label={t('contractors.nationalId')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="ceoName" label={t('contractors.ceoName')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="timeEstimate" label={t('contractors.timeEstimate')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
@@ -98,6 +94,7 @@ export function ContractorsListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{item.name}</td>
+                <td className="px-4 py-3">{item.type?.name || '—'}</td>
                 <td className="px-4 py-3">
                   {item.nationalId ? localizeDigits(item.nationalId, locale) : '—'}
                 </td>
@@ -133,6 +130,27 @@ export function ContractorsListPage() {
           onPageChange={setPage}
         />
       ) : null}
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">{createAction}</div>
+        {list}
+      </div>
+    )
+  }
+
+  return (
+    <div className={listShellClassName}>
+      <PageHeader
+        icon={Building2}
+        title={t('contractors.title')}
+        subtitle={<EntityNameSubtitle name={project.data.systemName} icon={FolderKanban} to={`/projects/${projectId}`} />}
+        action={createAction}
+      />
+      {list}
     </div>
   )
 }

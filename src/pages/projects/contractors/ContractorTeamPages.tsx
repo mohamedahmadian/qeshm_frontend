@@ -23,8 +23,7 @@ import {
 } from '../../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
-import { useListParams } from '../../../hooks/useListParams'
-import { useListSort } from '../../../hooks/useListSort'
+import { useCrudListState } from '../../../hooks/useCrudListState'
 import { api } from '../../../lib/api'
 import { localizeDigits } from '../../../lib/datetime'
 import type { ContractorMember, Paginated, ProjectContractor } from '../../../types/app'
@@ -46,13 +45,33 @@ function useContractor() {
   return { projectId, contractorId, contractor: query.data }
 }
 
-export function ContractorTeamListPage() {
+export function ContractorTeamListPage({
+  embedded = false,
+  projectId: projectIdProp,
+  contractorId: contractorIdProp,
+}: {
+  embedded?: boolean
+  projectId?: string
+  contractorId?: string
+} = {}) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
-  const { projectId, contractorId, contractor } = useContractor()
-  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
-    useListParams()
-  const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const params = useParams()
+  const projectId = projectIdProp ?? params.id
+  const contractorId = contractorIdProp ?? params.contractorId
+  const contractorQuery = useQuery({
+    queryKey: ['contractor', projectId, contractorId],
+    enabled: Boolean(projectId && contractorId) && !embedded,
+    queryFn: async () => {
+      const { data } = await api.get<ProjectContractor>(
+        `/projects/${projectId}/contractors/${contractorId}`,
+      )
+      return data
+    },
+  })
+  const contractor = contractorQuery.data
+  const { q, page, term, setTerm, applySearch, setPage, sortBy, sortDir, sortParams, onSort } =
+    useCrudListState(embedded)
   const { confirmDelete } = useConfirmDelete()
   const query = useQuery({
     queryKey: ['contractor-team', projectId, contractorId, q, page, sortBy, sortDir],
@@ -66,29 +85,24 @@ export function ContractorTeamListPage() {
     },
   })
 
-  if (!contractor || !projectId || !contractorId) {
+  if (!projectId || !contractorId || (!embedded && !contractor)) {
     return <LoadingState />
   }
 
   const rows = query.data?.items ?? []
   const base = contractorTeamPath(projectId, contractorId)
-
-  return (
-    <div className={listShellClassName}>
-      <PageHeader
-        icon={Users}
-        title={t('contractorTeam.title')}
-        subtitle={<EntityNameSubtitle name={contractor.name} icon={Users} />}
-        action={
-          <Link to={`${base}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('contractorTeam.create')}
-            </Button>
-          </Link>
-        }
-      />
+  const createAction = (
+    <Link to={`${base}/new`}>
+      <Button>
+        <Plus className="size-4" />
+        {t('contractorTeam.create')}
+      </Button>
+    </Link>
+  )
+  const list = (
+    <>
       <SearchBar
+        {...(embedded ? { autoFocus: false } : {})}
         term={term}
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
@@ -146,6 +160,25 @@ export function ContractorTeamListPage() {
           onPageChange={setPage}
         />
       ) : null}
+    </>
+  )
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">{createAction}</div>
+        {list}
+      </div>
+    )
+  }
+  return (
+    <div className={listShellClassName}>
+      <PageHeader
+        icon={Users}
+        title={t('contractorTeam.title')}
+        subtitle={<EntityNameSubtitle name={contractor?.name ?? ''} icon={Users} />}
+        action={createAction}
+      />
+      {list}
     </div>
   )
 }

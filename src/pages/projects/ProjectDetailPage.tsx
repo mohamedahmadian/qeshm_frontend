@@ -21,11 +21,12 @@ import {
   Tags,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { DateText } from '../../components/ui/DateText'
 import { Button, DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../components/ui/Form'
-import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
+import { FormCard, FormFactTile } from '../../components/ui/FormLayout'
 import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { api } from '../../lib/api'
@@ -34,8 +35,11 @@ import { projectBoundaryPolygons } from '../../lib/geo'
 import { projectColor } from '../../lib/project-color'
 import { projectProgressModes, type Project } from '../../types/app'
 import { useChecklistManage } from './checklist/ChecklistManageModal'
-import { projectProgressCreatePath } from './progress/progress-paths'
 import { ProjectDetailChecklist } from './checklist/ProjectChecklistBoard'
+import { ContractorsListPage } from './contractors/ContractorsListPage'
+import { ProjectDocumentListPage } from './documents/ProjectDocumentPages'
+import { ProjectPhaseListPage } from './phases/ProjectPhasePages'
+import { projectProgressCreatePath } from './progress/progress-paths'
 import {
   ProjectColorDot,
   ProjectImportanceBadge,
@@ -47,6 +51,19 @@ import {
   projectLabelOrUnspecified,
   projectManageExtraItems,
 } from './ProjectShared'
+
+const detailTabs = [
+  'info',
+  'operators',
+  'details',
+  'timeline',
+  'location',
+  'contractors',
+  'documents',
+  'phases',
+] as const
+type ProjectDetailTab = (typeof detailTabs)[number]
+const manageTabs = ['contractors', 'documents', 'phases'] as const
 
 export function ProjectDetailPage() {
   const { t, i18n } = useTranslation()
@@ -64,6 +81,7 @@ export function ProjectDetailPage() {
     },
   })
 
+  const [tab, setTab] = useState<ProjectDetailTab>('info')
   const project = query.data
   if (!project) {
     return <LoadingState />
@@ -76,6 +94,7 @@ export function ProjectDetailPage() {
     hasPoint
       ? localizeDigits(`${project.latitude}, ${project.longitude}`, locale)
       : '—'
+  const isManageTab = (manageTabs as readonly string[]).includes(tab)
 
   return (
     <div className={formShellClassName}>
@@ -103,9 +122,25 @@ export function ProjectDetailPage() {
           </Link>
         }
       >
-        <div className="space-y-6 p-5 sm:p-6">
-          <FormSectionTitle icon={Landmark}>{t('projects.orgSection')}</FormSectionTitle>
-          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+        <div className="space-y-4 p-5 sm:p-6">
+          <nav className="flex flex-wrap gap-2 rounded-2xl border border-line bg-cream-50/80 p-3">
+            {detailTabs.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setTab(item)}
+                className={`cursor-pointer rounded-2xl px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 ${
+                  tab === item
+                    ? 'bg-teal-500 text-white shadow-sm'
+                    : 'bg-white text-ink-700 hover:bg-cream-100'
+                }`}
+              >
+                {t(`projects.tabs.${item}`)}
+              </button>
+            ))}
+          </nav>
+
+          <div className={tab === 'info' ? 'grid gap-2 sm:grid-cols-2 sm:gap-3' : 'hidden'}>
             <FormFactTile
               icon={Landmark}
               label={t('projects.orgUnit')}
@@ -127,22 +162,6 @@ export function ProjectDetailPage() {
               }
               tone="mint"
             />
-            {(project.operators ?? []).length ? (
-              (project.operators ?? []).map((item, index) => (
-                <FormFactTile
-                  key={item.id}
-                  icon={Landmark}
-                  label={item.kind.name || t('projects.operators')}
-                  value={item.pathLabel || item.name}
-                  tone={index % 2 === 0 ? 'teal' : 'mint'}
-                />
-              ))
-            ) : (
-              <FormFactTile icon={Landmark} label={t('projects.operators')} value="—" empty />
-            )}
-          </div>
-          <FormSectionTitle icon={Monitor}>{t('projects.systemSection')}</FormSectionTitle>
-          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile
               icon={Monitor}
               label={t('projects.systemName')}
@@ -167,10 +186,34 @@ export function ProjectDetailPage() {
               value={<ProjectUrl value={project.systemUrl} />}
             />
             <FormFactTile
-              icon={CalendarRange}
-              label={t('projects.launchYear')}
-              value={project.launchYear != null ? formatNumber(project.launchYear, locale) : '—'}
+              icon={Palette}
+              label={t('projects.color')}
+              value={
+                <span className="inline-flex items-center gap-2">
+                  <ProjectColorDot color={project.color} className="size-4" />
+                  <span dir="ltr">{projectColor(project.color)}</span>
+                </span>
+              }
             />
+          </div>
+
+          <div className={tab === 'operators' ? 'grid gap-2 sm:grid-cols-2 sm:gap-3' : 'hidden'}>
+            {(project.operators ?? []).length ? (
+              (project.operators ?? []).map((item, index) => (
+                <FormFactTile
+                  key={item.id}
+                  icon={Landmark}
+                  label={item.kind.name || t('projects.operators')}
+                  value={item.pathLabel || item.name}
+                  tone={index % 2 === 0 ? 'teal' : 'mint'}
+                />
+              ))
+            ) : (
+              <FormFactTile icon={Landmark} label={t('projects.operators')} value="—" empty />
+            )}
+          </div>
+
+          <div className={tab === 'details' ? 'grid gap-2 sm:grid-cols-2 sm:gap-3' : 'hidden'}>
             <FormFactTile
               icon={Monitor}
               label={t('projects.isActive')}
@@ -181,6 +224,16 @@ export function ProjectDetailPage() {
               label={t('projects.status')}
               value={<ProjectLifecycleBadge value={project.status} />}
               tone="mint"
+            />
+            <FormFactTile
+              icon={CalendarRange}
+              label={t('projects.launchYear')}
+              value={project.launchYear != null ? formatNumber(project.launchYear, locale) : '—'}
+            />
+            <FormFactTile
+              icon={Tags}
+              label={t('projects.importance')}
+              value={<ProjectImportanceBadge value={project.importance} />}
             />
             <FormFactTile
               icon={Shield}
@@ -224,104 +277,99 @@ export function ProjectDetailPage() {
               }
             />
             <FormFactTile
-              icon={Tags}
-              label={t('projects.importance')}
-              value={<ProjectImportanceBadge value={project.importance} />}
-            />
-            <FormFactTile
-              icon={Palette}
-              label={t('projects.color')}
-              value={
-                <span className="inline-flex items-center gap-2">
-                  <ProjectColorDot color={project.color} className="size-4" />
-                  <span dir="ltr">{projectColor(project.color)}</span>
-                </span>
-              }
-            />
-            <FormFactTile
               icon={ScrollText}
               label={t('projects.description')}
               value={project.description || '—'}
             />
           </div>
-          <FormSectionTitle icon={CalendarRange}>{t('projects.timelineSection')}</FormSectionTitle>
-          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-            <FormFactTile
-              icon={CalendarRange}
-              label={t('projects.startDate')}
-              value={project.startDate ? <DateText value={project.startDate} /> : '—'}
-              empty={!project.startDate}
-              tone="teal"
-            />
-            <FormFactTile
-              icon={CalendarRange}
-              label={t('projects.endDate')}
-              value={project.endDate ? <DateText value={project.endDate} /> : '—'}
-              empty={!project.endDate}
-              tone="mint"
-            />
-            <FormFactTile
-              icon={ListChecks}
-              label={t('projects.progressMode')}
-              value={t(`projects.progressModes.${project.progressMode ?? 'MANUAL'}`)}
-              tone="teal"
-            />
-            <FormFactTile
-              icon={Percent}
-              label={t('projects.progress')}
-              value={<ProjectProgress value={project.progressPercent} />}
-              empty={project.progressPercent == null}
-            />
-            <FormFactTile
-              icon={Flag}
-              label={t('projects.phaseCount')}
-              value={formatNumber(project._count?.phases ?? 0, locale)}
-              tone="mint"
-            />
-          </div>
-          <FormSectionTitle icon={MapPin}>{t('projects.locationSection')}</FormSectionTitle>
-          <FormFactTile
-            icon={MapPin}
-            label={t('projects.address')}
-            value={project.address || '—'}
-            empty={!project.address}
-          />
-          <FormFactTile
-            icon={MapPin}
-            label={t('projects.coordinates')}
-            value={coords}
-            empty={project.latitude == null || project.longitude == null}
-          />
-          {hasPolygon || hasPoint ? (
-            <div className="overflow-hidden rounded-2xl ring-1 ring-teal-100">
-              <OsmMapPicker
-                variant="always"
-                readOnly
-                latitude={hasPolygon || !hasPoint ? '' : String(project.latitude)}
-                longitude={hasPolygon || !hasPoint ? '' : String(project.longitude)}
-                onChange={() => undefined}
-                heightClass="h-56"
-                overlays={
-                  hasPolygon
-                    ? {
-                        markers: [],
-                        polygons: rings.map((latlngs) => ({
-                          id: project.id,
-                          latlngs,
-                          color: projectColor(project.color),
-                          title: project.systemName,
-                        })),
-                      }
-                    : undefined
-                }
+
+          <div className={tab === 'timeline' ? 'space-y-4' : 'hidden'}>
+            <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+              <FormFactTile
+                icon={CalendarRange}
+                label={t('projects.startDate')}
+                value={project.startDate ? <DateText value={project.startDate} /> : '—'}
+                empty={!project.startDate}
+                tone="teal"
+              />
+              <FormFactTile
+                icon={CalendarRange}
+                label={t('projects.endDate')}
+                value={project.endDate ? <DateText value={project.endDate} /> : '—'}
+                empty={!project.endDate}
+                tone="mint"
+              />
+              <FormFactTile
+                icon={ListChecks}
+                label={t('projects.progressMode')}
+                value={t(`projects.progressModes.${project.progressMode ?? 'MANUAL'}`)}
+                tone="teal"
+              />
+              <FormFactTile
+                icon={Percent}
+                label={t('projects.progress')}
+                value={<ProjectProgress value={project.progressPercent} />}
+                empty={project.progressPercent == null}
+              />
+              <FormFactTile
+                icon={Flag}
+                label={t('projects.phaseCount')}
+                value={formatNumber(project._count?.phases ?? 0, locale)}
+                tone="mint"
               />
             </div>
-          ) : null}
+            {project.progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
+              <ProjectDetailChecklist projectId={project.id} onEditItem={checklist.openEdit} />
+            ) : null}
+          </div>
+
+          <div className={tab === 'location' ? 'space-y-4' : 'hidden'}>
+            <FormFactTile
+              icon={MapPin}
+              label={t('projects.address')}
+              value={project.address || '—'}
+              empty={!project.address}
+            />
+            <FormFactTile
+              icon={MapPin}
+              label={t('projects.coordinates')}
+              value={coords}
+              empty={project.latitude == null || project.longitude == null}
+            />
+            {hasPolygon || hasPoint ? (
+              <div className="overflow-hidden rounded-2xl ring-1 ring-teal-100">
+                <OsmMapPicker
+                  variant="always"
+                  readOnly
+                  active={tab === 'location'}
+                  look="tablet"
+                  latitude={hasPolygon || !hasPoint ? '' : String(project.latitude)}
+                  longitude={hasPolygon || !hasPoint ? '' : String(project.longitude)}
+                  onChange={() => undefined}
+                  heightClass="h-[22rem] sm:h-[28rem] lg:h-[34rem]"
+                  overlays={
+                    hasPolygon
+                      ? {
+                          markers: [],
+                          polygons: rings.map((latlngs) => ({
+                            id: project.id,
+                            latlngs,
+                            color: projectColor(project.color),
+                            title: project.systemName,
+                          })),
+                        }
+                      : undefined
+                  }
+                />
+              </div>
+            ) : null}
+          </div>
+
+          {isManageTab && tab === 'contractors' ? <ContractorsListPage embedded /> : null}
+          {isManageTab && tab === 'documents' ? <ProjectDocumentListPage embedded /> : null}
+          {isManageTab && tab === 'phases' ? <ProjectPhaseListPage embedded /> : null}
         </div>
       </FormCard>
-      {project.progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
-        <ProjectDetailChecklist projectId={project.id} onEditItem={checklist.openEdit} />
-      ) : null}
       <DetailActions
         editTo={`/projects/${project.id}/edit`}
         editLabel={t('common.edit')}
@@ -338,6 +386,7 @@ export function ProjectDetailPage() {
         extraItems={projectManageExtraItems(project.id, t, {
           onChecklist: checklist.openList,
           showChecklist: project.progressMode === projectProgressModes.PROJECT_CHECKLIST,
+          omit: ['phases', 'documents', 'contractors'],
         })}
       />
       {checklist.modal}

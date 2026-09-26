@@ -1,5 +1,6 @@
-import { Building2, CalendarClock, Filter, FolderKanban, Handshake, IdCard, Layers, Plus, ScrollText, UserRound, Users, Wallet } from 'lucide-react'
+import { Building2, CalendarClock, CalendarRange, Filter, FolderKanban, Globe, Handshake, Hash, IdCard, Mail, Phone, Plus, ScrollText, Tags, UserRound, Users, Wallet } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -22,6 +23,7 @@ import {
   formShellClassName,
   listShellClassName,
 } from '../../../components/ui/Form'
+import { DateText } from '../../../components/ui/DateText'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
 import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
@@ -31,11 +33,12 @@ import { api } from '../../../lib/api'
 import { formatNumber, localizeDigits } from '../../../lib/datetime'
 import type { Paginated, Project, ProjectContractor } from '../../../types/app'
 import { ContractorForm } from './ContractorForm'
+import { ContractorPaymentListPage } from './ContractorPaymentPages'
+import { ContractorTabNav, type ContractorManageTab } from './ContractorTabs'
+import { ContractorTeamListPage } from './ContractorTeamPages'
 import {
-  contractorPaymentsPath,
-  contractorPhasesPath,
   contractorProjectsPath,
-  contractorTeamPath,
+  contractorTypesPath,
   globalContractorPath,
   globalContractorsPath,
 } from './contractor-paths'
@@ -94,12 +97,20 @@ export function GlobalContractorsListPage() {
         title={t('menus.contractorManagement')}
         subtitle={t('contractors.globalSubtitle')}
         action={
-          <Link to={`${globalContractorsPath()}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('contractors.create')}
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to={contractorTypesPath()}>
+              <Button variant="soft">
+                <Tags className="size-4" />
+                {t('contractorTypes.title')}
+              </Button>
+            </Link>
+            <Link to={`${globalContractorsPath()}/new`}>
+              <Button>
+                <Plus className="size-4" />
+                {t('contractors.create')}
+              </Button>
+            </Link>
+          </div>
         }
       />
       <SearchBar
@@ -136,6 +147,7 @@ export function GlobalContractorsListPage() {
           <thead className="bg-cream-50 text-ink-700">
             <tr>
               <SortableTh column="name" label={t('contractors.name')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="type" label={t('contractors.type')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="project" label={t('contractors.project')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="nationalId" label={t('contractors.nationalId')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="ceoName" label={t('contractors.ceoName')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
@@ -154,6 +166,7 @@ export function GlobalContractorsListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{item.name}</td>
+                <td className="px-4 py-3">{item.type?.name || '—'}</td>
                 <td className="px-4 py-3">{item.project?.systemName || '—'}</td>
                 <td className="px-4 py-3">
                   {item.nationalId ? localizeDigits(item.nationalId, locale) : '—'}
@@ -237,6 +250,7 @@ export function GlobalContractorEditPage() {
       />
       <ContractorForm
         initial={query.data}
+        manage={{ projectId: query.data.projectId, contractorId }}
         onSubmit={async (payload) => {
           await api.patch(`/contractors/${contractorId}`, payload)
           toast.success(t('contractors.updated'))
@@ -255,12 +269,11 @@ export function GlobalContractorDetailPage() {
   const { confirmDelete } = useConfirmDelete()
   const query = useGlobalContractor(contractorId)
 
+  const [tab, setTab] = useState<ContractorManageTab>('info')
   const contractor = query.data
   if (!contractor || !contractorId) {
     return <LoadingState />
   }
-
-  const projectId = contractor.projectId
 
   return (
     <div className={formShellClassName}>
@@ -270,20 +283,68 @@ export function GlobalContractorDetailPage() {
         subtitle={<EntityNameSubtitle name={contractor.name} icon={Building2} />}
       />
       <FormCard icon={Building2} title={contractor.name}>
-        <div className="space-y-6 p-5 sm:p-6">
+        <ContractorTabNav tab={tab} onChange={setTab} />
+        {tab === 'payments' ? (
+          <div className="p-5 sm:p-6">
+            <ContractorPaymentListPage
+              embedded
+              projectId={contractor.projectId}
+              contractorId={contractorId}
+            />
+          </div>
+        ) : null}
+        {tab === 'team' ? (
+          <div className="p-5 sm:p-6">
+            <ContractorTeamListPage
+              embedded
+              projectId={contractor.projectId}
+              contractorId={contractorId}
+            />
+          </div>
+        ) : null}
+        <div className={tab === 'info' ? 'space-y-6 p-5 sm:p-6' : 'hidden'}>
           <FormSectionTitle icon={Handshake}>{t('contractors.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile icon={Building2} label={t('contractors.name')} value={contractor.name} tone="teal" />
             <FormFactTile
+              icon={Tags}
+              label={t('contractors.type')}
+              value={contractor.type?.name || '—'}
+              tone="mint"
+            />
+            <FormFactTile
               icon={FolderKanban}
               label={t('contractors.projectCount')}
               value={formatNumber(contractor._count?.projectLinks ?? 0, locale)}
-              tone="mint"
             />
             <FormFactTile
               icon={IdCard}
               label={t('contractors.nationalId')}
               copyValue={contractor.nationalId}
+            />
+            <FormFactTile
+              icon={Hash}
+              label={t('contractors.registrationNumber')}
+              value={
+                contractor.registrationNumber
+                  ? localizeDigits(contractor.registrationNumber, locale)
+                  : '—'
+              }
+            />
+            <FormFactTile
+              icon={Phone}
+              label={t('contractors.phone')}
+              value={contractor.phone ? localizeDigits(contractor.phone, locale) : '—'}
+            />
+            <FormFactTile
+              icon={Mail}
+              label={t('contractors.email')}
+              value={contractor.email ? <span dir="ltr">{contractor.email}</span> : '—'}
+            />
+            <FormFactTile
+              icon={Globe}
+              label={t('contractors.website')}
+              value={contractor.website ? <span dir="ltr">{contractor.website}</span> : '—'}
             />
             <FormFactTile icon={UserRound} label={t('contractors.ceoName')} value={contractor.ceoName || '—'} />
             <FormFactTile
@@ -306,11 +367,6 @@ export function GlobalContractorDetailPage() {
               value={formatNumber(contractor._count?.members ?? 0, locale)}
             />
             <FormFactTile
-              icon={Layers}
-              label={t('contractors.phaseCount')}
-              value={formatNumber(contractor._count?.phases ?? 0, locale)}
-            />
-            <FormFactTile
               icon={Wallet}
               label={t('contractors.paymentCount')}
               value={formatNumber(contractor._count?.payments ?? 0, locale)}
@@ -319,6 +375,31 @@ export function GlobalContractorDetailPage() {
               icon={ScrollText}
               label={t('contractors.description')}
               value={contractor.description || '—'}
+            />
+          </div>
+          <FormSectionTitle icon={CalendarRange}>{t('contractors.contractSection')}</FormSectionTitle>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <FormFactTile
+              icon={CalendarRange}
+              label={t('contractors.contractStartDate')}
+              value={contractor.contractStartDate ? <DateText value={contractor.contractStartDate} /> : '—'}
+              tone="teal"
+            />
+            <FormFactTile
+              icon={CalendarRange}
+              label={t('contractors.contractEndDate')}
+              value={contractor.contractEndDate ? <DateText value={contractor.contractEndDate} /> : '—'}
+              tone="mint"
+            />
+            <FormFactTile
+              icon={CalendarRange}
+              label={t('contractors.supportStartDate')}
+              value={contractor.supportStartDate ? <DateText value={contractor.supportStartDate} /> : '—'}
+            />
+            <FormFactTile
+              icon={CalendarRange}
+              label={t('contractors.supportEndDate')}
+              value={contractor.supportEndDate ? <DateText value={contractor.supportEndDate} /> : '—'}
             />
           </div>
         </div>
@@ -341,21 +422,6 @@ export function GlobalContractorDetailPage() {
             to: contractorProjectsPath(contractorId),
             icon: FolderKanban,
             label: t('contractors.viewProjects'),
-          },
-          {
-            to: contractorTeamPath(projectId, contractorId),
-            icon: Users,
-            label: t('contractorTeam.manage'),
-          },
-          {
-            to: contractorPhasesPath(projectId, contractorId),
-            icon: Layers,
-            label: t('contractorPhases.manage'),
-          },
-          {
-            to: contractorPaymentsPath(projectId, contractorId),
-            icon: Wallet,
-            label: t('contractorPayments.manage'),
           },
         ]}
       />
