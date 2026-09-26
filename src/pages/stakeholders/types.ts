@@ -4,6 +4,7 @@ export type StakeholderProject = {
   code: string
   status: string
   progressPercent: number | null
+  reportedPercent?: number | null
   startDate: string | null
   endDate: string | null
   address: string | null

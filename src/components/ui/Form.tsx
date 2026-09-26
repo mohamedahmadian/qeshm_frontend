@@ -232,7 +232,7 @@ export function PageHeader({
   icon,
   className = 'mb-6',
 }: {
-  title: string
+  title: ReactNode
   subtitle?: ReactNode
   action?: ReactNode
   icon: LucideIcon

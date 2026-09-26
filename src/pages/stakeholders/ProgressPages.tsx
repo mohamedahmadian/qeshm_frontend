@@ -1,8 +1,10 @@
-import { ClipboardList, Filter, FolderKanban, Gauge, Handshake, ListChecks, Plus, ScrollText } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { ClipboardList, Filter, FolderKanban, Gauge, Handshake, ListChecks, Percent, Plus, ScrollText } from 'lucide-react'
+import { type CSSProperties, type FormEvent, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthProvider'
+import { isAdmin, isContractor } from '../../lib/roles'
 import { toast } from 'sonner'
 import {
   ActionsTh,
@@ -34,7 +36,7 @@ import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api, getApiErrorMessage } from '../../lib/api'
-import { formatNumber } from '../../lib/datetime'
+import { formatNumber, todayIsoDate } from '../../lib/datetime'
 import type { Paginated, Project } from '../../types/app'
 import {
   AttachmentList,
@@ -49,7 +51,27 @@ function percentText(value: number | null | undefined, locale: string) {
   return value == null ? '—' : `${formatNumber(value, locale)}٪`
 }
 
+function ProgressTotalRing({ value }: { value: number | null }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const pct = Math.min(100, Math.max(0, value ?? 0))
+  const label = percentText(value, locale)
+  return (
+    <span
+      className="relative inline-flex size-12 shrink-0 rounded-full p-1"
+      style={{ background: `conic-gradient(#2ebdb6 ${pct * 3.6}deg, #e7f6f4 0deg)` }}
+      role="img"
+      aria-label={`${t('stakeholders.progressTotal')} ${label}`}
+    >
+      <span className="flex size-full items-center justify-center rounded-full bg-white">
+        <span className="text-[11px] font-bold tabular-nums leading-none text-ink-900">{label}</span>
+      </span>
+    </span>
+  )
+}
+
 export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'org' }) {
+  const { user } = useAuth()
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
@@ -80,7 +102,7 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
   const query = useQuery({
     queryKey: ['stakeholders', mode, 'progress', q, page, projectId, contractorId, sortBy, sortDir],
     queryFn: async () => {
-      const { data } = await api.get<Paginated<StakeholderProgressListItem>>(base, {
+      const { data } = await api.get<Paginated<StakeholderProgressListItem> & { avgProgressPercent: number | null }>(base, {
         params: {
           q: q || undefined,
           page,
@@ -94,12 +116,24 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
   })
   const rows = query.data?.items ?? []
   const filtersActive = Boolean(projectId || contractorId)
+  if (mode === 'org' && isContractor(user) && !isAdmin(user)) {
+    return <Navigate to="/stakeholders/progress" replace />
+  }
 
   return (
     <div className={listShellClassName}>
       <PageHeader
         icon={ClipboardList}
-        title={t(mode === 'org' ? 'menus.stakeholderReports' : 'menus.stakeholderProgress')}
+        title={
+          mode === 'contractor' || projectId || contractorId ? (
+            <span className="inline-flex items-center gap-3">
+              {t(mode === 'contractor' ? 'menus.stakeholderProgress' : 'menus.stakeholderReports')}
+              <ProgressTotalRing value={query.data?.avgProgressPercent ?? null} />
+            </span>
+          ) : (
+            t('menus.stakeholderReports')
+          )
+        }
         subtitle={t(mode === 'org' ? 'stakeholders.reportsSubtitle' : 'stakeholders.progressSubtitle')}
         action={
           mode === 'contractor' ? (
@@ -215,12 +249,11 @@ function ProgressForm({
   initial?: StakeholderProgressListItem
   onSubmit: (payload: Record<string, unknown>) => Promise<void>
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   const [projectId, setProjectId] = useState(initial?.project?.id ?? '')
-  const [occurredAt, setOccurredAt] = useState(initial?.occurredAt ?? '')
-  const [progressPercent, setProgressPercent] = useState(
-    initial?.progressPercent == null ? '' : String(initial.progressPercent),
-  )
+  const [occurredAt, setOccurredAt] = useState(initial?.occurredAt || todayIsoDate())
+  const [progressPercent, setProgressPercent] = useState<number | null>(initial?.progressPercent ?? null)
   const [actionsDone, setActionsDone] = useState(initial?.actionsDone ?? '')
   const [nextPlan, setNextPlan] = useState(initial?.nextPlan ?? '')
   const [blockers, setBlockers] = useState(initial?.blockers ?? '')
@@ -244,8 +277,7 @@ function ProgressForm({
       toast.error(t('stakeholders.projectDateRequired'))
       return
     }
-    const percent = progressPercent.trim() === '' ? null : Number(progressPercent)
-    if (!actionsDone.trim() && !nextPlan.trim() && !blockers.trim() && !needs.trim() && percent == null && files.labels.length === 0) {
+    if (!actionsDone.trim() && !nextPlan.trim() && !blockers.trim() && !needs.trim() && progressPercent == null && files.labels.length === 0) {
       toast.error(t('stakeholders.contentRequired'))
       return
     }
@@ -254,7 +286,7 @@ function ProgressForm({
       await onSubmit({
         projectId,
         occurredAt,
-        progressPercent: percent,
+        progressPercent,
         actionsDone: actionsDone.trim() || null,
         nextPlan: nextPlan.trim() || null,
         blockers: blockers.trim() || null,
@@ -276,37 +308,49 @@ function ProgressForm({
       subtitle={initial ? undefined : t('stakeholders.progressCreateSubtitle')}
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
-        <FormField icon={FolderKanban} label={t('stakeholders.project')} htmlFor="progress-project">
-          <SearchSelect
-            id="progress-project"
-            value={projectId}
-            onChange={setProjectId}
-            placeholder={t('stakeholders.selectProject')}
-            options={(projects.data ?? []).map((item) => ({ value: item.id, label: item.systemName }))}
-          />
-        </FormField>
-        <FormField icon={ClipboardList} label={t('stakeholders.occurredAt')} htmlFor="progress-date">
-          <PersianDateField id="progress-date" value={occurredAt} onChange={(value) => setOccurredAt(value ?? '')} />
-        </FormField>
-        <FormField icon={Gauge} label={t('stakeholders.proposedPercent')} htmlFor="progress-percent">
-          <input
-            id="progress-percent"
-            type="number"
-            min={0}
-            max={100}
-            className={fieldClassName}
-            value={progressPercent}
-            onChange={(event) => setProgressPercent(event.target.value)}
-          />
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-2">
+            <FormField icon={FolderKanban} label={t('stakeholders.project')} htmlFor="progress-project">
+              <SearchSelect
+                id="progress-project"
+                value={projectId}
+                onChange={setProjectId}
+                placeholder={t('stakeholders.selectProject')}
+                options={(projects.data ?? []).map((item) => ({ value: item.id, label: item.systemName }))}
+              />
+            </FormField>
+          </div>
+          <FormField icon={ClipboardList} label={t('stakeholders.occurredAt')} htmlFor="progress-date">
+            <PersianDateField id="progress-date" value={occurredAt} onChange={(value) => setOccurredAt(value ?? '')} />
+          </FormField>
+        </div>
+        <FormField icon={Percent} label={t('stakeholders.proposedPercent')} htmlFor="progress-percent">
+          <div className="space-y-1.5">
+            <input
+              id="progress-percent"
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              dir="ltr"
+              className="progress-slider"
+              style={{ '--slider-fill': `${progressPercent ?? 0}%` } as CSSProperties}
+              value={progressPercent ?? 0}
+              onChange={(event) => setProgressPercent(Number(event.target.value))}
+            />
+            <p className="text-center text-sm tabular-nums text-ink-700">
+              {progressPercent == null ? '—' : `${formatNumber(progressPercent, locale)}٪`}
+            </p>
+          </div>
         </FormField>
         <FormField icon={ListChecks} label={t('stakeholders.actionsDone')} htmlFor="progress-actions">
-          <textarea id="progress-actions" className={fieldClassName} rows={3} value={actionsDone} onChange={(event) => setActionsDone(event.target.value)} />
+          <textarea id="progress-actions" className={fieldClassName} rows={6} value={actionsDone} onChange={(event) => setActionsDone(event.target.value)} />
         </FormField>
         <FormField icon={ScrollText} label={t('stakeholders.nextPlan')} htmlFor="progress-next">
-          <textarea id="progress-next" className={fieldClassName} rows={3} value={nextPlan} onChange={(event) => setNextPlan(event.target.value)} />
+          <textarea id="progress-next" className={fieldClassName} rows={6} value={nextPlan} onChange={(event) => setNextPlan(event.target.value)} />
         </FormField>
         <FormField icon={ScrollText} label={t('stakeholders.blockers')} htmlFor="progress-blockers">
-          <textarea id="progress-blockers" className={fieldClassName} rows={3} value={blockers} onChange={(event) => setBlockers(event.target.value)} />
+          <textarea id="progress-blockers" className={fieldClassName} rows={6} value={blockers} onChange={(event) => setBlockers(event.target.value)} />
         </FormField>
         <FormField icon={ScrollText} label={t('stakeholders.needs')} htmlFor="progress-needs">
           <textarea id="progress-needs" className={fieldClassName} rows={3} value={needs} onChange={(event) => setNeeds(event.target.value)} />
@@ -375,6 +419,7 @@ export function StakeholderProgressEditPage() {
 }
 
 export function StakeholderProgressDetailPage({ mode }: { mode: 'contractor' | 'org' }) {
+  const { user } = useAuth()
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { id } = useParams()
@@ -389,6 +434,9 @@ export function StakeholderProgressDetailPage({ mode }: { mode: 'contractor' | '
       return data
     },
   })
+  if (mode === 'org' && id && isContractor(user) && !isAdmin(user)) {
+    return <Navigate to={`/stakeholders/progress/${id}`} replace />
+  }
   if (!query.data || !id) return <LoadingState />
   const item = query.data
   const title = item.project?.systemName || t('stakeholders.progressDetails')

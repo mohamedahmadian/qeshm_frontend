@@ -26,6 +26,10 @@ export function contractorPath(projectId: string, contractorId: string) {
   return `${contractorsPath(projectId)}/${contractorId}`
 }
 
+export function contractorUsersPath(projectId: string, contractorId: string) {
+  return `${contractorPath(projectId, contractorId)}/users`
+}
+
 export function contractorTeamPath(projectId: string, contractorId: string) {
   return `${contractorPath(projectId, contractorId)}/team`
 }

@@ -12,6 +12,7 @@ import { formatNumber, localizeDigits } from '../../../lib/datetime'
 import type { ProjectContractor } from '../../../types/app'
 import { ContractorPaymentListPage } from './ContractorPaymentPages'
 import { ContractorTabNav, type ContractorManageTab } from './ContractorTabs'
+import { ContractorPortalUserListPage } from './ContractorPortalUserPages'
 import { ContractorTeamListPage } from './ContractorTeamPages'
 import { contractorPath, contractorsPath } from './contractor-paths'
 
@@ -65,6 +66,11 @@ export function ContractorDetailPage() {
         {tab === 'team' ? (
           <div className="p-5 sm:p-6">
             <ContractorTeamListPage embedded projectId={projectId} contractorId={contractorId} />
+          </div>
+        ) : null}
+        {tab === 'users' ? (
+          <div className="p-5 sm:p-6">
+            <ContractorPortalUserListPage embedded projectId={projectId} contractorId={contractorId} />
           </div>
         ) : null}
         <div className={tab === 'info' ? 'space-y-6 p-5 sm:p-6' : 'hidden'}>

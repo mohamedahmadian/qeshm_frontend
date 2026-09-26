@@ -21,6 +21,16 @@ export function isRolePermissionsLocked(role?: { code?: string } | null) {
   )
 }
 
+const contractorPortalMenus = new Set([
+  'stakeholders.projects',
+  'stakeholders.progress',
+  'stakeholders.correspondence',
+])
+
+export function isContractor(user?: { roles?: { code: string }[] } | null) {
+  return Boolean(user?.roles?.some((role) => role.code === CONTRACTOR_ROLE_CODE))
+}
+
 export function isAdmin(user?: { isAdmin?: boolean; roles?: { code: string }[] } | null) {
   if (!user) return false
   if (user.isAdmin) return true
@@ -66,6 +76,14 @@ export function hasMenuAccess(
   if (menuCode === 'dashboard.home' || menuCode === 'singard.submit' || menuCode === 'singard.mine') {
     return true
   }
+  if (
+    isContractor(user) &&
+    !isAdmin(user) &&
+    moduleCode === 'stakeholders' &&
+    !contractorPortalMenus.has(menuCode)
+  ) {
+    return false
+  }
   if (moduleCode === 'board') {
     if (
       menuCode === 'board.minutes' ||
@@ -81,17 +99,53 @@ export function hasMenuAccess(
   return hasPermission(user, menuCode) || hasPermission(user, moduleCode)
 }
 
+function withoutContractorPortal(nav: NavModule[]) {
+  return nav
+    .map((mod) =>
+      mod.code === 'stakeholders'
+        ? { ...mod, menus: mod.menus.filter((menu) => !contractorPortalMenus.has(menu.code)) }
+        : mod,
+    )
+    .filter((mod) => mod.menus.length > 0)
+}
+
 export function filterNavByAccess(
   nav: NavModule[],
   user: Pick<AuthUser, 'isAdmin' | 'permissionCodes' | 'roles' | 'position'> | null | undefined,
 ) {
-  if (isAdmin(user)) return nav
+  if (isAdmin(user)) {
+    return isContractor(user) ? nav : withoutContractorPortal(nav)
+  }
   return nav
     .map((mod) => ({
       ...mod,
       menus: mod.menus.filter((menu) => hasMenuAccess(user, menu.code, mod.code)),
     }))
     .filter((mod) => mod.menus.length > 0)
+}
+
+/** مدیر را از صفحات مخصوص پیمانکار به صفحهٔ سازمان می‌برد. */
+export function orgStakeholderRedirect(
+  user: Pick<AuthUser, 'isAdmin' | 'roles'> | null | undefined,
+  pathname: string,
+) {
+  if (!isAdmin(user) || isContractor(user)) return null
+  const projectDetail = pathname.match(/^\/stakeholders\/projects\/([^/]+)$/)
+  if (projectDetail) return `/projects/${projectDetail[1]}`
+  if (pathname === '/stakeholders/projects' || pathname.startsWith('/stakeholders/projects/')) {
+    return '/projects'
+  }
+  const progressItem = pathname.match(/^\/stakeholders\/progress\/([^/]+)/)
+  if (progressItem && progressItem[1] !== 'new') return `/stakeholders/reports/${progressItem[1]}`
+  if (pathname === '/stakeholders/progress' || pathname.startsWith('/stakeholders/progress/')) {
+    return '/stakeholders/reports'
+  }
+  const mailItem = pathname.match(/^\/stakeholders\/correspondence\/([^/]+)/)
+  if (mailItem && mailItem[1] !== 'new') return `/stakeholders/inbox/${mailItem[1]}`
+  if (pathname === '/stakeholders/correspondence' || pathname.startsWith('/stakeholders/correspondence/')) {
+    return '/stakeholders/inbox'
+  }
+  return null
 }
 
 const ALWAYS_ALLOWED_PREFIXES = ['/account', '/settings', '/singard/submit', '/singard/mine']
@@ -101,7 +155,7 @@ export function canAccessPath(
   pathname: string,
 ) {
   if (!user) return false
-  if (isAdmin(user)) return true
+  if (isAdmin(user)) return orgStakeholderRedirect(user, pathname) == null
   if (pathname === '/' || pathname === '/dashboard') return true
   if (ALWAYS_ALLOWED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return true

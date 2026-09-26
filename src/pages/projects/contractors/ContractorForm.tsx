@@ -28,6 +28,7 @@ import { isValidIranianLegalNationalId, normalizeLegalNationalId } from '../../.
 import type { ContractorType, Project, ProjectContractor } from '../../../types/app'
 import { ContractorPaymentListPage } from './ContractorPaymentPages'
 import { ContractorTabNav, type ContractorManageTab } from './ContractorTabs'
+import { ContractorPortalUserListPage } from './ContractorPortalUserPages'
 import { ContractorTeamListPage } from './ContractorTeamPages'
 
 export type ContractorPayload = {
@@ -195,6 +196,15 @@ export function ContractorForm({
       {manage && tab === 'team' ? (
         <div className="p-5 sm:p-6">
           <ContractorTeamListPage
+            embedded
+            projectId={manage.projectId}
+            contractorId={manage.contractorId}
+          />
+        </div>
+      ) : null}
+      {manage && tab === 'users' ? (
+        <div className="p-5 sm:p-6">
+          <ContractorPortalUserListPage
             embedded
             projectId={manage.projectId}
             contractorId={manage.contractorId}

@@ -85,6 +85,12 @@ import {
   ContractorPaymentListPage,
 } from './pages/projects/contractors/ContractorPaymentPages'
 import {
+  ContractorPortalUserCreatePage,
+  ContractorPortalUserDetailPage,
+  ContractorPortalUserEditPage,
+  ContractorPortalUserListPage,
+} from './pages/projects/contractors/ContractorPortalUserPages'
+import {
   ContractorTeamCreatePage,
   ContractorTeamDetailPage,
   ContractorTeamEditPage,
@@ -366,6 +372,10 @@ export default function App() {
                   <Route path="/projects/:id/documents/:documentId/edit" element={<ProjectDocumentEditPage />} />
                   <Route path="/projects/:id/contractors" element={<ContractorsListPage />} />
                   <Route path="/projects/:id/contractors/new" element={<ContractorCreatePage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/users" element={<ContractorPortalUserListPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/users/new" element={<ContractorPortalUserCreatePage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/users/:userId" element={<ContractorPortalUserDetailPage />} />
+                  <Route path="/projects/:id/contractors/:contractorId/users/:userId/edit" element={<ContractorPortalUserEditPage />} />
                   <Route path="/projects/:id/contractors/:contractorId/team" element={<ContractorTeamListPage />} />
                   <Route path="/projects/:id/contractors/:contractorId/team/new" element={<ContractorTeamCreatePage />} />
                   <Route path="/projects/:id/contractors/:contractorId/team/:memberId" element={<ContractorTeamDetailPage />} />

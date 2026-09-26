@@ -1,14 +1,15 @@
 import type { LucideIcon } from 'lucide-react'
-import { Handshake, Users, Wallet } from 'lucide-react'
+import { Handshake, KeyRound, Users, Wallet } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-export const contractorManageTabs = ['info', 'payments', 'team'] as const
+export const contractorManageTabs = ['info', 'payments', 'team', 'users'] as const
 export type ContractorManageTab = (typeof contractorManageTabs)[number]
 
 const tabIcons: Record<ContractorManageTab, LucideIcon> = {
   info: Handshake,
   payments: Wallet,
   team: Users,
+  users: KeyRound,
 }
 
 export function ContractorTabNav({

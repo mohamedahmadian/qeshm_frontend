@@ -60,6 +60,7 @@ export function StakeholderProjectsPage() {
               <SortableTh column="code" label={t('stakeholders.code')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="status" label={t('stakeholders.status')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="progressPercent" label={t('stakeholders.officialPercent')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="reportedPercent" label={t('stakeholders.reportedPercent')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <ActionsTh />
             </tr>
           </thead>
@@ -71,6 +72,9 @@ export function StakeholderProjectsPage() {
                 <td className="px-4 py-3">{t(`projects.statuses.${item.status}`)}</td>
                 <td className="px-4 py-3">
                   {item.progressPercent == null ? '—' : `${formatNumber(item.progressPercent, locale)}٪`}
+                </td>
+                <td className="px-4 py-3">
+                  {item.reportedPercent == null ? '—' : `${formatNumber(item.reportedPercent, locale)}٪`}
                 </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions viewTo={`/stakeholders/projects/${item.id}`} />

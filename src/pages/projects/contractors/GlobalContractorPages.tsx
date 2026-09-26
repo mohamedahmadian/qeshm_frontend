@@ -35,6 +35,7 @@ import type { Paginated, Project, ProjectContractor } from '../../../types/app'
 import { ContractorForm } from './ContractorForm'
 import { ContractorPaymentListPage } from './ContractorPaymentPages'
 import { ContractorTabNav, type ContractorManageTab } from './ContractorTabs'
+import { ContractorPortalUserListPage } from './ContractorPortalUserPages'
 import { ContractorTeamListPage } from './ContractorTeamPages'
 import {
   contractorProjectsPath,
@@ -296,6 +297,15 @@ export function GlobalContractorDetailPage() {
         {tab === 'team' ? (
           <div className="p-5 sm:p-6">
             <ContractorTeamListPage
+              embedded
+              projectId={contractor.projectId}
+              contractorId={contractorId}
+            />
+          </div>
+        ) : null}
+        {tab === 'users' ? (
+          <div className="p-5 sm:p-6">
+            <ContractorPortalUserListPage
               embedded
               projectId={contractor.projectId}
               contractorId={contractorId}

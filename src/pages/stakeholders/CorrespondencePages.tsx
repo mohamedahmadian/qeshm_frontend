@@ -2,7 +2,9 @@ import { Filter, FolderKanban, Handshake, MessagesSquare, Plus, ScrollText, Send
 import { type FormEvent, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthProvider'
+import { isAdmin, isContractor } from '../../lib/roles'
 import { toast } from 'sonner'
 import {
   ActionsTh,
@@ -53,6 +55,7 @@ import {
 } from './types'
 
 export function StakeholderCorrespondenceListPage({ mode }: { mode: 'contractor' | 'org' }) {
+  const { user } = useAuth()
   const { t } = useTranslation()
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
@@ -100,6 +103,9 @@ export function StakeholderCorrespondenceListPage({ mode }: { mode: 'contractor'
   })
   const rows = query.data?.items ?? []
   const filtersActive = Boolean(kind || status || projectId || contractorId)
+  if (mode === 'org' && isContractor(user) && !isAdmin(user)) {
+    return <Navigate to="/stakeholders/correspondence" replace />
+  }
 
   return (
     <div className={listShellClassName}>
@@ -397,6 +403,7 @@ export function StakeholderCorrespondenceEditPage() {
 }
 
 export function StakeholderCorrespondenceDetailPage({ mode }: { mode: 'contractor' | 'org' }) {
+  const { user } = useAuth()
   const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
@@ -418,6 +425,9 @@ export function StakeholderCorrespondenceDetailPage({ mode }: { mode: 'contracto
       return data
     },
   })
+  if (mode === 'org' && id && isContractor(user) && !isAdmin(user)) {
+    return <Navigate to={`/stakeholders/correspondence/${id}`} replace />
+  }
   if (!query.data || !id) return <LoadingState />
   const item = query.data
   const editable = mode === 'contractor' && item.status === 'SENT'
