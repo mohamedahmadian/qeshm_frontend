@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../components/ui/Form'
+import { ProjectProgressRing } from './ProjectShared'
 import { api } from '../../lib/api'
 import { DEFAULT_PROJECT_COLOR } from '../../lib/project-color'
 import type { Project } from '../../types/app'
@@ -31,7 +32,18 @@ export function ProjectEditPage() {
       <PageHeader
         icon={FolderKanban}
         title={t('projects.edit')}
-        subtitle={<EntityNameSubtitle name={query.data.systemName} icon={FolderKanban} to={`/projects/${query.data.id}`} />}
+        subtitle={
+          <span className="inline-flex items-center gap-2">
+            <EntityNameSubtitle
+              name={query.data.systemName}
+              icon={FolderKanban}
+              to={`/projects/${query.data.id}`}
+            />
+            {query.data.progressPercent ? (
+              <ProjectProgressRing value={query.data.progressPercent} progressMode={query.data.progressMode} />
+            ) : null}
+          </span>
+        }
       />
       <ProjectForm
         excludeId={query.data.id}

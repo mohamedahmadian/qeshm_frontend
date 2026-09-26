@@ -118,9 +118,12 @@ export function ProgressQuickRecord({ projectId }: { projectId: string }) {
           )}
         </button>
       </div>
-      <p className={`live-board-quick-record-clock${showClock ? '' : ' is-idle'}`} dir="ltr">
-        {showClock ? clock : '\u00a0'}
-      </p>
+      <p className="live-board-quick-record-label">{t('projectProgress.quickRecord')}</p>
+      {showClock ? (
+        <p className="live-board-quick-record-clock" dir="ltr">
+          {clock}
+        </p>
+      ) : null}
     </div>
   )
 }

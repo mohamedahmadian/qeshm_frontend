@@ -17,8 +17,10 @@ import { formatNumber } from '../../lib/datetime'
 import { projectColor, projectColorAlpha } from '../../lib/project-color'
 import {
   projectImportances,
+  projectProgressModes,
   projectStatuses,
   type Project,
+  type ProjectProgressMode,
   type ProjectImportance,
   type ProjectStatus as ProjectLifecycle,
 } from '../../types/app'
@@ -238,6 +240,44 @@ export function ProjectLifecycleBadge({ value }: { value: ProjectLifecycle | nul
     >
       {t(`projects.statuses.${value}`)}
     </span>
+  )
+}
+
+const progressRingCaption: Record<ProjectProgressMode, string> = {
+  [projectProgressModes.MANUAL]: 'projects.manualProgress',
+  [projectProgressModes.PROJECT_CHECKLIST]: 'projects.checklistProgress',
+  [projectProgressModes.PHASE_CHECKLIST]: 'projects.phaseAverageProgress',
+}
+
+export function ProjectProgressRing({
+  value,
+  progressMode,
+}: {
+  value: number | null
+  progressMode?: ProjectProgressMode
+}) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const pct = Math.min(100, Math.max(0, value ?? 0))
+  const label = value == null ? '—' : `${formatNumber(value, locale)}٪`
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div
+        className="relative size-12 shrink-0 rounded-full p-1"
+        style={{ background: `conic-gradient(#2ebdb6 ${pct * 3.6}deg, #e7f6f4 0deg)` }}
+        role="img"
+        aria-label={`${t('projects.progress')} ${label}`}
+      >
+        <div className="flex size-full items-center justify-center rounded-full bg-white">
+          <span className="text-[11px] font-bold tabular-nums leading-none text-ink-900">{label}</span>
+        </div>
+      </div>
+      {progressMode ? (
+        <p className="max-w-24 text-center text-[10px] leading-4 text-ink-500">
+          {t(progressRingCaption[progressMode])}
+        </p>
+      ) : null}
+    </div>
   )
 }
 

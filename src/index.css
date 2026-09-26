@@ -1154,10 +1154,18 @@ th {
 
 .live-board-quick-record {
   display: flex;
-  min-width: 4.75rem;
+  min-width: max-content;
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
+}
+
+.live-board-quick-record-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #0f766e;
 }
 
 @media (max-width: 639.98px) {

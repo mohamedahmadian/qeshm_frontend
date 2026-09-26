@@ -38,7 +38,7 @@ import {
 } from '../../../types/app'
 import { useChecklistManage } from '../checklist/ChecklistManageModal'
 import { ProjectDetailChecklist } from '../checklist/ProjectChecklistBoard'
-import { ProjectLifecycleBadge, ProjectProgress } from '../ProjectShared'
+import { ProjectLifecycleBadge, ProjectProgress, ProjectProgressRing } from '../ProjectShared'
 import { ProjectPhaseForm } from './ProjectPhaseForm'
 
 function projectPhasesPath(projectId: string) {
@@ -95,7 +95,12 @@ export function ProjectPhaseListPage() {
       <PageHeader
         icon={Flag}
         title={t('projectPhases.title')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={Flag} to={`/projects/${projectId}`} />}
+        subtitle={
+          <span className="inline-flex items-center gap-2">
+            <EntityNameSubtitle name={project.systemName} icon={Flag} to={`/projects/${projectId}`} />
+            <ProjectProgressRing value={project.progressPercent} progressMode={project.progressMode} />
+          </span>
+        }
         action={
           <Link to={`${base}/new`}>
             <Button>

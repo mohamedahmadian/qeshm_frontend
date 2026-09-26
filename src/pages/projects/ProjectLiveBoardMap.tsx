@@ -1051,9 +1051,9 @@ export function ProjectLiveBoardMap({
                   setDetailsOpen(false)
                 }}
                 onMarkerClick={(id) => {
-                  const next = selectedId === id ? null : id
-                  setSelectedId(next)
-                  setDetailsOpen(Boolean(next) && shouldOpenSheetOnSelect(openSheetOnSelect))
+                  if (selectedId === id) return
+                  setSelectedId(id)
+                  setDetailsOpen(shouldOpenSheetOnSelect(openSheetOnSelect))
                 }}
               />
             </div>

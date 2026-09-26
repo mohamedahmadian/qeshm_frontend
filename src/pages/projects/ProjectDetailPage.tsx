@@ -41,6 +41,7 @@ import {
   ProjectImportanceBadge,
   ProjectLifecycleBadge,
   ProjectProgress,
+  ProjectProgressRing,
   ProjectStatus,
   ProjectUrl,
   projectLabelOrUnspecified,
@@ -81,7 +82,14 @@ export function ProjectDetailPage() {
       <PageHeader
         icon={FolderKanban}
         title={t('projects.details')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={FolderKanban} />}
+        subtitle={
+          <span className="inline-flex items-center gap-2">
+            <EntityNameSubtitle name={project.systemName} icon={FolderKanban} />
+            {project.progressPercent ? (
+              <ProjectProgressRing value={project.progressPercent} progressMode={project.progressMode} />
+            ) : null}
+          </span>
+        }
       />
       <FormCard
         icon={FolderKanban}

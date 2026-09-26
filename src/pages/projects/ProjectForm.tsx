@@ -22,7 +22,7 @@ import {
   ToggleRight,
 } from 'lucide-react'
 import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -114,6 +114,7 @@ export function ProjectForm({
   onSubmit: (payload: ProjectPayload) => Promise<void>
 }) {
   const { t, i18n } = useTranslation()
+  const queryClient = useQueryClient()
   const checklist = useChecklistManage(projectId)
   const { user } = useAuth()
   const locale = i18n.language.split('-')[0] ?? 'fa'
@@ -228,6 +229,27 @@ export function ProjectForm({
       bounds: QESHM_MAP_BOUNDS,
     }
   }, [hasPin])
+
+  async function changeProgressMode(next: string) {
+    const mode = next as ProjectProgressMode
+    if (mode === progressMode) return
+    const previous = progressMode
+    setProgressMode(mode)
+    if (!projectId) return
+    try {
+      const { data } = await api.patch<Project>(`/projects/${projectId}`, { progressMode: mode })
+      setProgressPercent(data.progressPercent)
+      if (data.status) setStatus(data.status)
+      toast.success(t('projects.updated'))
+      await queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+      await queryClient.invalidateQueries({ queryKey: ['projects'] })
+      await queryClient.invalidateQueries({ queryKey: ['project-checklist', projectId] })
+      await queryClient.invalidateQueries({ queryKey: ['project-phases', projectId] })
+    } catch (error) {
+      setProgressMode(previous)
+      toast.error(getApiErrorMessage(error, t('common.error')))
+    }
+  }
 
   function goTab(next: ProjectFormTab) {
     if (tab !== next) setTab(next)
@@ -599,7 +621,7 @@ export function ProjectForm({
                   <SearchSelect
                     id="progressMode"
                     value={progressMode}
-                    onChange={(next) => setProgressMode(next as ProjectProgressMode)}
+                    onChange={(next) => void changeProgressMode(next)}
                     options={projectProgressModeOrder.map((item) => ({
                       value: item,
                       label: t(`projects.progressModes.${item}`),
