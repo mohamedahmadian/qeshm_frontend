@@ -1,4 +1,4 @@
-import { CalendarRange, Filter, Flag, Gauge, Percent, Plus } from 'lucide-react'
+import { CalendarRange, Filter, Flag, Gauge, ListChecks, Percent, Plus } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -30,11 +30,13 @@ import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api } from '../../../lib/api'
 import {
+  projectProgressModes,
   projectStatusOrder,
   type Paginated,
   type Project,
   type ProjectPhase,
 } from '../../../types/app'
+import { projectPhaseChecklistPath } from '../checklist/checklist-paths'
 import { ProjectLifecycleBadge, ProjectProgress } from '../ProjectShared'
 import { ProjectPhaseForm } from './ProjectPhaseForm'
 
@@ -235,6 +237,7 @@ export function ProjectPhaseCreatePage() {
         subtitle={<EntityNameSubtitle name={project.systemName} icon={Flag} />}
       />
       <ProjectPhaseForm
+        progressLocked={project.progressMode === projectProgressModes.PHASE_CHECKLIST}
         onSubmit={async (payload) => {
           await api.post(`/projects/${projectId}/phases`, payload)
           toast.success(t('projectPhases.created'))
@@ -249,7 +252,7 @@ export function ProjectPhaseEditPage() {
   const { t } = useTranslation()
   const { phaseId } = useParams()
   const navigate = useNavigate()
-  const { projectId } = useProject()
+  const { projectId, project } = useProject()
   const query = useQuery({
     queryKey: ['project-phase', projectId, phaseId],
     enabled: Boolean(projectId && phaseId),
@@ -260,7 +263,7 @@ export function ProjectPhaseEditPage() {
       return data
     },
   })
-  if (!query.data || !projectId || !phaseId) {
+  if (!query.data || !projectId || !phaseId || !project) {
     return <LoadingState />
   }
   return (
@@ -272,6 +275,8 @@ export function ProjectPhaseEditPage() {
       />
       <ProjectPhaseForm
         initial={query.data}
+        progressLocked={project.progressMode === projectProgressModes.PHASE_CHECKLIST}
+        checklistTo={projectPhaseChecklistPath(projectId, phaseId)}
         onSubmit={async (payload) => {
           await api.patch(`/projects/${projectId}/phases/${phaseId}`, payload)
           toast.success(t('projectPhases.updated'))
@@ -347,6 +352,13 @@ export function ProjectPhaseDetailPage() {
             editTo={`${base}/${phaseId}/edit`}
             editLabel={t('common.edit')}
             deleteLabel={t('projectPhases.delete')}
+            extraItems={[
+              {
+                to: projectPhaseChecklistPath(projectId, phaseId),
+                icon: ListChecks,
+                label: t('projectChecklist.manage'),
+              },
+            ]}
             onDelete={() =>
               confirmDelete({
                 message: t('projectPhases.confirmDelete'),

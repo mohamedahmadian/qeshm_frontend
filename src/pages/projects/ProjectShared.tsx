@@ -1,4 +1,4 @@
-import { ClipboardList, Flag, Handshake, Paperclip } from 'lucide-react'
+import { ClipboardList, Flag, Handshake, ListChecks, Paperclip } from 'lucide-react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -73,6 +73,11 @@ export function projectManageExtraItems(
       to: `/projects/${projectId}/progress`,
       icon: ClipboardList,
       label: t('projectProgress.manage'),
+    },
+    {
+      to: `/projects/${projectId}/checklist`,
+      icon: ListChecks,
+      label: t('projectChecklist.manage'),
     },
     {
       to: `/projects/${projectId}/phases`,

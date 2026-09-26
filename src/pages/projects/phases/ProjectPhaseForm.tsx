@@ -1,8 +1,9 @@
-import { CalendarRange, Flag, Gauge, Percent } from 'lucide-react'
+import { CalendarRange, Flag, Gauge, ListChecks, Percent } from 'lucide-react'
 import { type CSSProperties, type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { AppForm, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
+import { AppForm, Button, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
 import { FormCard, formCardBodyClassName } from '../../../components/ui/FormLayout'
 import { PersianDateField } from '../../../components/ui/PersianDateField'
 import { SearchSelect } from '../../../components/ui/SearchSelect'
@@ -20,9 +21,13 @@ export type ProjectPhasePayload = {
 
 export function ProjectPhaseForm({
   initial,
+  progressLocked = false,
+  checklistTo,
   onSubmit,
 }: {
   initial?: Pick<ProjectPhase, 'name' | 'startDate' | 'endDate' | 'status' | 'progressPercent'>
+  progressLocked?: boolean
+  checklistTo?: string
   onSubmit: (payload: ProjectPhasePayload) => Promise<void>
 }) {
   const { t, i18n } = useTranslation()
@@ -115,14 +120,29 @@ export function ProjectPhaseForm({
               max={100}
               step={1}
               dir="ltr"
-              className="progress-slider"
+              disabled={progressLocked}
+              className="progress-slider disabled:cursor-not-allowed disabled:opacity-60"
               style={{ '--slider-fill': `${progressPercent ?? 0}%` } as CSSProperties}
               value={progressPercent ?? 0}
-              onChange={(e) => setProgressPercent(Number(e.target.value))}
+              onChange={(e) => {
+                if (progressLocked) return
+                setProgressPercent(Number(e.target.value))
+              }}
             />
             <p className="text-center text-sm tabular-nums text-ink-700">
               {progressPercent == null ? '—' : `${formatNumber(progressPercent, locale)}٪`}
             </p>
+            {progressLocked ? (
+              <p className="text-xs leading-6 text-ink-500">{t('projectPhases.progressFromChecklist')}</p>
+            ) : null}
+            {checklistTo ? (
+              <Link to={checklistTo} className="inline-flex">
+                <Button type="button" variant="ghost">
+                  <ListChecks className="size-4" aria-hidden />
+                  {t('projectChecklist.manage')}
+                </Button>
+              </Link>
+            ) : null}
           </div>
         </FormField>
         <FormActions

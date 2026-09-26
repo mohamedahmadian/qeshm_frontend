@@ -1,4 +1,4 @@
-import { UserRound } from 'lucide-react'
+import { UserRound, UserRoundCheck } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -12,6 +12,7 @@ import {
 import { api } from '../../lib/api'
 import type { ManagedUser } from '../../types/app'
 import { isOrganizationEmployeePath, organizationEmployeePath, organizationEmployeesPath } from '../organization/organization-paths'
+import { isQeshmondiPath, qeshmondiCitizenPath, qeshmondiPath } from '../qeshmondi/qeshmondi-paths'
 import { UserForm } from './UserForm'
 
 export function UserEditPage() {
@@ -20,8 +21,24 @@ export function UserEditPage() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const employeeView = isOrganizationEmployeePath(pathname)
-  const listPath = employeeView ? organizationEmployeesPath() : '/users'
-  const detailPath = employeeView && id ? organizationEmployeePath(id) : `/users/${id}`
+  const qeshmondiView = isQeshmondiPath(pathname)
+  const listPath = employeeView
+    ? organizationEmployeesPath()
+    : qeshmondiView
+      ? qeshmondiPath()
+      : '/users'
+  const detailPath =
+    employeeView && id
+      ? organizationEmployeePath(id)
+      : qeshmondiView && id
+        ? qeshmondiCitizenPath(id)
+        : `/users/${id}`
+  const headerIcon = qeshmondiView ? UserRoundCheck : UserRound
+  const title = employeeView
+    ? t('employees.edit')
+    : qeshmondiView
+      ? t('qeshmondi.edit')
+      : t('users.edit')
   const query = useQuery({
     queryKey: ['user', id],
     enabled: Boolean(id),
@@ -38,17 +55,18 @@ export function UserEditPage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
-        icon={UserRound}
-        title={employeeView ? t('employees.edit') : t('users.edit')}
-        subtitle={<EntityNameSubtitle name={query.data.fullName} icon={UserRound} />}
+        icon={headerIcon}
+        title={title}
+        subtitle={<EntityNameSubtitle name={query.data.fullName} icon={headerIcon} />}
       />
       <UserForm
         initial={query.data}
         requirePassword={false}
+        qeshmondiMode={qeshmondiView}
         onCancel={() => navigate(detailPath)}
         onSubmit={async (payload) => {
           await api.patch(`/users/${query.data.id}`, payload)
-          toast.success(t('users.updated'))
+          toast.success(qeshmondiView ? t('qeshmondi.updated') : t('users.updated'))
           navigate(listPath)
         }}
       />

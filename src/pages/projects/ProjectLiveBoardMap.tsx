@@ -36,7 +36,7 @@ import {
 } from '../../lib/geo'
 import { projectColor, projectColorAlpha, progressTone } from '../../lib/project-color'
 import { ProjectProgressForm, type ProjectProgressPayload } from './progress/ProjectProgressForm'
-import { projectProgressEntryPath } from './progress/progress-paths'
+import { projectProgressEntryPath, projectProgressPath } from './progress/progress-paths'
 import {
   projectImportances,
   type ProjectLiveBoardActivity,
@@ -138,8 +138,13 @@ export function LastActivityPreview({
   const excerpt = excerptPreview(leftover, comfortable ? 16 : 22)
   const body =
     !title && !excerpt ? (
-      <span className={comfortable ? 'text-sm text-ink-500' : 'text-[11px] text-ink-500'}>
+      <span
+        className={`inline-flex flex-wrap items-center gap-1.5 ${
+          comfortable ? 'text-sm text-ink-500' : 'text-[11px] text-ink-500'
+        }`}
+      >
         <DateText value={activity.occurredAt} />
+        {activity.hasAudio ? <span>{t('projectLiveBoard.audioProcessing')}</span> : null}
       </span>
     ) : (
       <div className={comfortable ? 'min-w-0 space-y-1' : 'min-w-0 space-y-0.5'}>
@@ -198,6 +203,10 @@ function activityFullText(activity: ProjectLiveBoardActivity) {
   return [activity.title, activity.excerpt].filter(Boolean).join('\n').trim()
 }
 
+function activityNeedsAudioNote(activity: ProjectLiveBoardActivity) {
+  return Boolean(activity.hasAudio) && !activityFullText(activity)
+}
+
 function truncateActivityPreview(text: string, maxChars = 150) {
   const compact = text.replace(/\s+/g, ' ').trim()
   if (compact.length <= maxChars) return compact
@@ -211,17 +220,26 @@ function LiveBoardActivityCard({
   activity: ProjectLiveBoardActivity
   onOpen: (activity: ProjectLiveBoardActivity) => void
 }) {
+  const { t } = useTranslation()
   const preview = truncateActivityPreview(activityFullText(activity))
+  const audioNote = activityNeedsAudioNote(activity)
   return (
     <button
       type="button"
       className="live-board-activity-card"
       onClick={() => onOpen(activity)}
     >
-      <span className="live-board-activity-card-date">
-        <DateText value={activity.occurredAt} />
+      <span className="live-board-activity-card-head">
+        <span className="live-board-activity-card-date">
+          <DateText value={activity.occurredAt} />
+        </span>
+        {audioNote ? (
+          <span className="live-board-activity-card-pending">
+            {t('projectLiveBoard.audioProcessing')}
+          </span>
+        ) : null}
       </span>
-      <p className="live-board-activity-card-text">{preview || '—'}</p>
+      {preview ? <p className="live-board-activity-card-text">{preview}</p> : null}
     </button>
   )
 }
@@ -265,10 +283,19 @@ function LiveBoardActivityFullModal({
         </button>
         <div className="live-board-activity-full-body">
           <p className="live-board-activity-full-title">{t('projectLiveBoard.activityFull')}</p>
-          <span className="live-board-activity-card-date">
-            <DateText value={activity.occurredAt} />
+          <span className="live-board-activity-card-head">
+            <span className="live-board-activity-card-date">
+              <DateText value={activity.occurredAt} />
+            </span>
+            {activityNeedsAudioNote(activity) ? (
+              <span className="live-board-activity-card-pending">
+                {t('projectLiveBoard.audioProcessing')}
+              </span>
+            ) : null}
           </span>
-          <p className="live-board-activity-full-text mt-3">{activityFullText(activity) || '—'}</p>
+          {activityFullText(activity) ? (
+            <p className="live-board-activity-full-text mt-3">{activityFullText(activity)}</p>
+          ) : null}
         </div>
       </div>
     </div>,
@@ -459,7 +486,7 @@ export function LiveBoardHeaderStats({
   size?: 'sm' | 'lg'
 }) {
   const { t } = useTranslation()
-  const { theme, overdue, daysLabel, daysTitle, daysShort } = projectBoardMeta(project, locale, t)
+  const { overdue, daysLabel, daysTitle, daysShort } = projectBoardMeta(project, locale, t)
   const compact = size === 'sm'
   return (
     <div className={`flex shrink-0 items-center ${compact ? 'gap-1.5' : 'gap-2.5'}`}>
@@ -472,7 +499,7 @@ export function LiveBoardHeaderStats({
         <MiniProgressRing
           value={project.progressPercent}
           locale={locale}
-          color={theme.ring}
+          color={progressTone(project.progressPercent)}
           size={compact ? 'sm' : 'lg'}
         />
         {compact ? null : (
@@ -769,6 +796,7 @@ function LiveBoardLastActivityPanel({
   const { t } = useTranslation()
   const activity = project.lastActivity
   return (
+    <div>
     <section
       className="live-board-last-activity"
       dir={languageDir(locale)}
@@ -798,6 +826,17 @@ function LiveBoardLastActivityPanel({
         )}
       </div>
     </section>
+    {canManage ? (
+      <div className="mt-2 flex justify-center">
+        <Link to={projectProgressPath(project.id)}>
+          <Button type="button" variant="ghost" className="!h-8 !rounded-xl !px-3 !py-0 !text-xs">
+            <ClipboardList className="size-3.5" aria-hidden />
+            {t('projectLiveBoard.openActivities')}
+          </Button>
+        </Link>
+      </div>
+    ) : null}
+    </div>
   )
 }
 
@@ -856,7 +895,7 @@ function LiveBoardProgressPanel({
 export function ProjectLiveBoardMap({
   items,
   locale,
-  className = 'relative h-[28rem] min-h-[20rem] overflow-hidden sm:h-[34rem]',
+  className = 'relative sm:h-[34rem] sm:overflow-hidden',
   canManage = true,
   onSelectedChange,
   openSheetOnSelect = true,
@@ -953,25 +992,6 @@ export function ProjectLiveBoardMap({
   useEffect(() => {
     return () => onSelectedChangeRef.current?.(null)
   }, [])
-
-  useEffect(() => {
-    if (!selectedId) return
-    function onPagePointerDown(event: PointerEvent) {
-      const target = event.target
-      if (!(target instanceof Element)) return
-      if (
-        target.closest(
-          '.leaflet-container, .leaflet-marker-icon, .leaflet-interactive, .leaflet-tooltip, .live-board-project-overlay, .live-board-activity-full-overlay, .live-board-group-badge, .live-board-last-activity, .live-board-progress-panel, .live-board-map-card header, .live-board-map-toolbar, .live-board-quick-record, button, a, input, textarea, [data-sonner-toast]',
-        )
-      ) {
-        return
-      }
-      setSelectedId(null)
-      setDetailsOpen(false)
-    }
-    document.addEventListener('pointerdown', onPagePointerDown)
-    return () => document.removeEventListener('pointerdown', onPagePointerDown)
-  }, [selectedId])
 
   useEffect(() => {
     if (selected) {

@@ -20,6 +20,7 @@ import {
   Shield,
   ToggleRight,
   UserRound,
+  UserRoundCheck,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -56,8 +57,9 @@ import {
   organizationEmployeePath,
   organizationEmployeesPath,
 } from '../organization/organization-paths'
+import { isQeshmondiPath, qeshmondiCitizenPath, qeshmondiPath } from '../qeshmondi/qeshmondi-paths'
 
-const tabs = ['personal', 'account', 'location', 'documents', 'social', 'other'] as const
+const tabs = ['personal', 'account', 'location', 'documents', 'social', 'qeshmondi', 'other'] as const
 type UserDetailTab = (typeof tabs)[number]
 
 const tabIcons: Record<UserDetailTab, LucideIcon> = {
@@ -66,6 +68,7 @@ const tabIcons: Record<UserDetailTab, LucideIcon> = {
   location: MapPin,
   documents: ImagePlus,
   social: Share2,
+  qeshmondi: UserRoundCheck,
   other: FileText,
 }
 
@@ -76,6 +79,13 @@ export function UserDetailPage() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const employeeView = isOrganizationEmployeePath(pathname)
+  const qeshmondiView = isQeshmondiPath(pathname)
+  const headerIcon = qeshmondiView ? UserRoundCheck : UserRound
+  const listPath = employeeView
+    ? organizationEmployeesPath()
+    : qeshmondiView
+      ? qeshmondiPath()
+      : '/users'
   const geoName = useGeoName()
   const { confirmDelete } = useConfirmDelete()
   const [tab, setTab] = useState<UserDetailTab>('personal')
@@ -94,6 +104,11 @@ export function UserDetailPage() {
   }
 
   const empty = '—'
+  const editPath = employeeView
+    ? `${organizationEmployeePath(user.id)}/edit`
+    : qeshmondiView
+      ? `${qeshmondiCitizenPath(user.id)}/edit`
+      : `/users/${user.id}/edit`
   const locale = user.locale as AppLanguage
   const religionLabel = user.religion
     ? user.religion === 'OTHER' && user.religionOther
@@ -104,12 +119,18 @@ export function UserDetailPage() {
   return (
     <div className={userFormShellClassName}>
       <PageHeader
-        icon={UserRound}
-        title={employeeView ? t('employees.details') : t('users.details')}
-        subtitle={<EntityNameSubtitle name={user.fullName} icon={UserRound} />}
+        icon={headerIcon}
+        title={
+          employeeView
+            ? t('employees.details')
+            : qeshmondiView
+              ? t('qeshmondi.details')
+              : t('users.details')
+        }
+        subtitle={<EntityNameSubtitle name={user.fullName} icon={headerIcon} />}
       />
       <FormCard
-        icon={UserRound}
+        icon={headerIcon}
         title={user.fullName}
         action={<OpenUserPanelButton userId={user.id} status={user.status} />}
       >
@@ -142,6 +163,20 @@ export function UserDetailPage() {
               <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
                 <FormFactTile icon={UserRound} label={t('users.firstName')} value={user.firstName} tone="teal" />
                 <FormFactTile icon={UserRound} label={t('users.lastName')} value={user.lastName} tone="mint" />
+                <FormFactTile
+                  icon={UserRound}
+                  label={t('users.fatherName')}
+                  value={user.fatherName || empty}
+                  empty={!user.fatherName}
+                  tone="ink"
+                />
+                <FormFactTile
+                  icon={Calendar}
+                  label={t('users.birthDate')}
+                  value={user.birthDate ? <DateText value={user.birthDate} /> : empty}
+                  empty={!user.birthDate}
+                  tone="teal"
+                />
                 <FormFactTile
                   icon={UserRound}
                   label={t('users.gender')}
@@ -345,6 +380,53 @@ export function UserDetailPage() {
             </section>
           ) : null}
 
+          {tab === 'qeshmondi' ? (
+            <section>
+              <FormSectionTitle icon={UserRoundCheck}>{t('users.tabs.qeshmondi')}</FormSectionTitle>
+              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+                <FormFactTile
+                  icon={UserRoundCheck}
+                  label={t('users.isQeshmondi')}
+                  value={user.isQeshmondi ? t('users.qeshmondi') : t('users.nonQeshmondi')}
+                  tone="teal"
+                />
+                <FormFactTile
+                  icon={ToggleRight}
+                  label={t('users.isResident')}
+                  value={user.isResident ? t('users.resident') : t('users.nonResident')}
+                  tone="mint"
+                />
+                <FormFactTile
+                  icon={Briefcase}
+                  label={t('users.occupation')}
+                  value={user.occupation || empty}
+                  empty={!user.occupation}
+                  tone="ink"
+                />
+                <FormFactTile
+                  icon={IdCard}
+                  label={t('users.passportNumber')}
+                  copyValue={user.passportNumber}
+                  tone="teal"
+                />
+                <FormFactTile
+                  icon={Calendar}
+                  label={t('users.qeshmondiStartDate')}
+                  value={user.qeshmondiStartDate ? <DateText value={user.qeshmondiStartDate} /> : empty}
+                  empty={!user.qeshmondiStartDate}
+                  tone="mint"
+                />
+                <FormFactTile
+                  icon={Calendar}
+                  label={t('users.qeshmondiEndDate')}
+                  value={user.qeshmondiEndDate ? <DateText value={user.qeshmondiEndDate} /> : empty}
+                  empty={!user.qeshmondiEndDate}
+                  tone="ink"
+                />
+              </div>
+            </section>
+          ) : null}
+
           {tab === 'other' ? (
             <section>
               <FormSectionTitle icon={FileText}>{t('users.tabs.other')}</FormSectionTitle>
@@ -377,16 +459,16 @@ export function UserDetailPage() {
           ) : null}
 
           <DetailActions
-            editTo={employeeView ? `${organizationEmployeePath(user.id)}/edit` : `/users/${user.id}/edit`}
+            editTo={editPath}
             editLabel={t('common.edit')}
-            deleteLabel={t('users.delete')}
+            deleteLabel={qeshmondiView ? t('qeshmondi.delete') : t('users.delete')}
             onDelete={() =>
               confirmDelete({
-                message: t('users.confirmDelete'),
-                successMessage: t('users.deleted'),
+                message: qeshmondiView ? t('qeshmondi.confirmDelete') : t('users.confirmDelete'),
+                successMessage: qeshmondiView ? t('qeshmondi.deleted') : t('users.deleted'),
                 path: `/users/${user.id}`,
-                queryKey: employeeView ? ['employees'] : ['users'],
-                onDeleted: () => navigate(employeeView ? organizationEmployeesPath() : '/users'),
+                queryKey: employeeView ? ['employees'] : qeshmondiView ? ['qeshmondi'] : ['users'],
+                onDeleted: () => navigate(listPath),
               })
             }
             extraItems={[

@@ -216,10 +216,47 @@ export const APP_NAV: NavModule[] = withManagementLast([
     ],
   },
   {
+    code: 'qeshmondi',
+    nameKey: 'modules.qeshmondi',
+    icon: 'user-round-check',
+    sortOrder: 6,
+    menus: [
+      {
+        code: 'qeshmondi.citizens',
+        nameKey: 'menus.qeshmondiCitizens',
+        path: '/qeshmondi',
+        icon: 'users',
+        sortOrder: 1,
+      },
+      {
+        code: 'qeshmondi.update',
+        nameKey: 'menus.qeshmondiUpdate',
+        path: '/qeshmondi/update',
+        icon: 'refresh-cw',
+        sortOrder: 2,
+      },
+    ],
+  },
+  {
+    code: 'ports',
+    nameKey: 'modules.ports',
+    icon: 'ship',
+    sortOrder: 7,
+    menus: [
+      {
+        code: 'ports.sales-reports',
+        nameKey: 'menus.portSalesReports',
+        path: '/port-sales-reports',
+        icon: 'ticket',
+        sortOrder: 1,
+      },
+    ],
+  },
+  {
     code: 'light-assets',
     nameKey: 'modules.lightAssets',
     icon: 'car',
-    sortOrder: 6,
+    sortOrder: 8,
     menus: [
       {
         code: 'light-assets.vehicles',
@@ -248,7 +285,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: 'base-info',
     nameKey: 'modules.baseInfo',
     icon: 'globe',
-    sortOrder: 7,
+    sortOrder: 9,
     menus: [
       {
         code: 'base-info.countries',
@@ -277,7 +314,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: 'board',
     nameKey: 'modules.board',
     icon: 'gavel',
-    sortOrder: 8,
+    sortOrder: 10,
     menus: [
       {
         code: 'board.search',
@@ -341,7 +378,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: 'management',
     nameKey: 'modules.management',
     icon: 'user-cog',
-    sortOrder: 9,
+    sortOrder: 11,
     menus: [
       {
         code: 'management.users',

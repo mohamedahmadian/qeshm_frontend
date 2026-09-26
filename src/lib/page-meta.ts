@@ -20,6 +20,33 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/settings')) {
     return { titleKey: 'settings.title', subtitleKey: 'settings.subtitle' }
   }
+  if (pathname.startsWith('/qeshmondi/update')) {
+    return { titleKey: 'qeshmondiUpdate.title', subtitleKey: 'qeshmondiUpdate.subtitle' }
+  }
+  if (pathname === '/qeshmondi/new') {
+    return { titleKey: 'qeshmondi.create', subtitleKey: 'qeshmondi.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/qeshmondi/')) {
+    return { titleKey: 'qeshmondi.edit', subtitleKey: 'qeshmondi.editSubtitle' }
+  }
+  if (pathname.startsWith('/qeshmondi/')) {
+    return { titleKey: 'qeshmondi.details', subtitleKey: 'qeshmondi.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/qeshmondi')) {
+    return { titleKey: 'qeshmondi.title', subtitleKey: 'qeshmondi.subtitle' }
+  }
+  if (pathname === '/port-sales-reports/new') {
+    return { titleKey: 'portSalesReports.create', subtitleKey: 'portSalesReports.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/port-sales-reports/')) {
+    return { titleKey: 'portSalesReports.edit', subtitleKey: 'portSalesReports.editSubtitle' }
+  }
+  if (pathname.startsWith('/port-sales-reports/')) {
+    return { titleKey: 'portSalesReports.details', subtitleKey: 'portSalesReports.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/port-sales-reports')) {
+    return { titleKey: 'menus.portSalesReports', subtitleKey: 'portSalesReports.subtitle' }
+  }
   if (pathname === '/users/new') {
     return { titleKey: 'users.create', subtitleKey: 'users.createSubtitle' }
   }
@@ -178,6 +205,30 @@ export function getPageMeta(pathname: string): {
   }
   if (/^\/projects\/[^/]+\/progress$/.test(pathname)) {
     return { titleKey: 'projectProgress.title', subtitleKey: 'projectProgress.subtitle' }
+  }
+  if (/^\/projects\/[^/]+\/phases\/[^/]+\/checklist\/new$/.test(pathname)) {
+    return { titleKey: 'projectChecklist.create', subtitleKey: 'projectChecklist.createSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/phases\/[^/]+\/checklist\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'projectChecklist.edit', subtitleKey: 'projectChecklist.editSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/phases\/[^/]+\/checklist\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'projectChecklist.details', subtitleKey: 'projectChecklist.detailsSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/phases\/[^/]+\/checklist$/.test(pathname)) {
+    return { titleKey: 'projectChecklist.phaseTitle', subtitleKey: 'projectChecklist.phaseSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/checklist\/new$/.test(pathname)) {
+    return { titleKey: 'projectChecklist.create', subtitleKey: 'projectChecklist.createSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/checklist\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'projectChecklist.edit', subtitleKey: 'projectChecklist.editSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/checklist\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'projectChecklist.details', subtitleKey: 'projectChecklist.detailsSubtitle' }
+  }
+  if (/^\/projects\/[^/]+\/checklist$/.test(pathname)) {
+    return { titleKey: 'projectChecklist.title', subtitleKey: 'projectChecklist.subtitle' }
   }
   if (/^\/projects\/[^/]+\/phases\/new$/.test(pathname)) {
     return { titleKey: 'projectPhases.create', subtitleKey: 'projectPhases.createSubtitle' }

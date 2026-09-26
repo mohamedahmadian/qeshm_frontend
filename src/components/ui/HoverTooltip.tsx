@@ -31,14 +31,16 @@ export function HoverTooltip({
   children,
   label,
   className = '',
+  as: Tag = 'span',
 }: {
   content: ReactNode
   children: ReactNode
   label?: string
   className?: string
+  as?: 'span' | 'tr'
 }) {
   const tooltipId = useId()
-  const triggerRef = useRef<HTMLSpanElement>(null)
+  const triggerRef = useRef<HTMLElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const hideTimer = useRef<number>(0)
   const [open, setOpen] = useState(false)
@@ -90,9 +92,11 @@ export function HoverTooltip({
 
   return (
     <>
-      <span
-        ref={triggerRef}
-        className={`inline-flex min-w-0 max-w-full ${className}`.trim()}
+      <Tag
+        ref={triggerRef as never}
+        className={
+          Tag === 'tr' ? className : `inline-flex min-w-0 max-w-full ${className}`.trim()
+        }
         aria-describedby={open ? tooltipId : undefined}
         onMouseEnter={show}
         onMouseLeave={hide}
@@ -100,7 +104,7 @@ export function HoverTooltip({
         onBlur={hide}
       >
         {children}
-      </span>
+      </Tag>
       {open
         ? createPortal(
             <div

@@ -2,6 +2,7 @@ import {
   CalendarRange,
   ClipboardList,
   Filter,
+  FolderKanban,
   ImagePlus,
   Mic,
   Percent,
@@ -448,12 +449,24 @@ export function ProjectProgressDetailPage() {
       <PageHeader
         icon={ClipboardList}
         title={t('projectProgress.details')}
-        subtitle={<EntityNameSubtitle name={title} icon={ClipboardList} />}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            <EntityNameSubtitle name={entry.project.systemName} icon={FolderKanban} />
+            <EntityNameSubtitle name={title} icon={ClipboardList} />
+          </span>
+        }
       />
       <FormCard icon={ClipboardList} title={title}>
         <div className="space-y-6 p-5 sm:p-6">
           <FormSectionTitle icon={ClipboardList}>{t('projectProgress.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <FormFactTile
+              icon={FolderKanban}
+              label={t('projects.systemName')}
+              value={entry.project.systemName}
+              tone="teal"
+              className="sm:col-span-2"
+            />
             <FormFactTile
               icon={CalendarRange}
               label={t('projectProgress.occurredAt')}

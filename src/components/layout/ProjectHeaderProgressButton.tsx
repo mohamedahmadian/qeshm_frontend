@@ -25,11 +25,17 @@ export function ProjectHeaderProgressButton() {
   const project = projectIdFromPath(pathname)
   if (!project || project.rest === 'progress/new') return null
 
+  const label = t('projectProgress.create')
   return (
-    <Link to={`/projects/${project.id}/progress/new`} className="hidden lg:block">
-      <Button type="button">
+    <Link to={`/projects/${project.id}/progress/new`} className="shrink-0">
+      <Button
+        type="button"
+        aria-label={label}
+        title={label}
+        className="size-9 !p-0 lg:h-auto lg:w-auto lg:!px-[0.9rem] lg:!py-2.5"
+      >
         <Plus className="size-4" aria-hidden />
-        {t('projectProgress.create')}
+        <span className="sr-only lg:not-sr-only">{label}</span>
       </Button>
     </Link>
   )

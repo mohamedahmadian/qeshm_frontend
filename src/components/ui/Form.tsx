@@ -170,6 +170,7 @@ const PAGE_BACK_NESTED_LISTS = new Set([
   'contractors',
   'team',
   'phases',
+  'checklist',
   'payments',
   'progress',
   'projects',
@@ -265,9 +266,9 @@ export function PageHeader({
         title={title}
         subtitle={subtitle}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
             {action}
-            <div id={PAGE_HEADER_ACTIONS_SLOT_ID} className="flex items-center gap-2" />
+            <div id={PAGE_HEADER_ACTIONS_SLOT_ID} className="flex flex-wrap items-center gap-2" />
           </div>
         }
         leading={backButton}
@@ -289,9 +290,9 @@ export function EntityNameSubtitle({
   label?: string
 }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-2 rounded-2xl bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-800">
+    <span className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-800">
       <Icon className="size-4 shrink-0" aria-hidden />
-      <span className="truncate">
+      <span className="min-w-0 truncate">
         {label ? <span>{label} : </span> : null}
         {copyValue ? <CopyableDigits value={copyValue} /> : name}
       </span>

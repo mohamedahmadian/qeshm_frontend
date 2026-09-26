@@ -586,6 +586,21 @@ export const projectStatusOrder: ProjectStatus[] = [
   projectStatuses.COMPLETED,
 ];
 
+export const projectProgressModes = {
+  MANUAL: "MANUAL",
+  PROJECT_CHECKLIST: "PROJECT_CHECKLIST",
+  PHASE_CHECKLIST: "PHASE_CHECKLIST",
+} as const;
+
+export type ProjectProgressMode =
+  (typeof projectProgressModes)[keyof typeof projectProgressModes];
+
+export const projectProgressModeOrder: ProjectProgressMode[] = [
+  projectProgressModes.MANUAL,
+  projectProgressModes.PROJECT_CHECKLIST,
+  projectProgressModes.PHASE_CHECKLIST,
+];
+
 export type ProjectOperator = {
   id: string;
   name: string;
@@ -627,6 +642,7 @@ export type Project = {
   code: string;
   isActive: boolean;
   status: ProjectStatus | null;
+  progressMode: ProjectProgressMode;
   progressPercent: number | null;
   startDate: string | null;
   endDate: string | null;
@@ -674,6 +690,33 @@ export type ProjectPhase = {
   createdAt: string;
   updatedAt: string;
   project: { id: string; systemName: string };
+};
+
+export type ProjectChecklistItem = {
+  id: string;
+  projectId: string;
+  phaseId: string | null;
+  title: string;
+  weightPercent: number;
+  isDone: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  project: {
+    id: string;
+    systemName: string;
+    progressMode: ProjectProgressMode;
+    progressPercent: number | null;
+  };
+  phase: { id: string; name: string } | null;
+};
+
+export type ProjectChecklistSummary = {
+  allocatedWeight: number;
+  doneWeight: number;
+  remainingWeight: number;
+  progressMode: ProjectProgressMode;
+  drivesProgress: boolean;
 };
 
 export const projectProgressProcessingModes = {
@@ -800,6 +843,7 @@ export type ProjectLiveBoardActivity = {
   title: string;
   excerpt: string;
   text?: string;
+  hasAudio?: boolean;
 };
 
 export type ProjectLiveBoardItem = Project & {
@@ -1000,6 +1044,13 @@ export type ManagedUser = {
   positionId?: string | null;
   orgUnit?: { id: string; name: string } | null;
   position?: { id: string; name: string } | null;
+  isQeshmondi?: boolean;
+  qeshmondiStartDate?: string | null;
+  qeshmondiEndDate?: string | null;
+  occupation?: string | null;
+  isResident?: boolean;
+  passportNumber?: string | null;
+  fatherName?: string | null;
   photoId: string | null;
   nationalCardPhotoId: string | null;
   passportPhotoId: string | null;
@@ -4643,6 +4694,82 @@ export type BoardMinutesDossier = {
   minutes: BoardMinutes
   request: BoardRequest | null
   resolutions: BoardMinutesResolution[]
+}
+
+export const portTicketStatuses = {
+  IN_TRIP: 'IN_TRIP',
+  OPERATOR_CANCELLED: 'OPERATOR_CANCELLED',
+  EXPIRED: 'EXPIRED',
+  OTHER: 'OTHER',
+} as const
+
+export type PortTicketStatus = (typeof portTicketStatuses)[keyof typeof portTicketStatuses]
+
+export const portTicketQeshmondiStatuses = {
+  UNKNOWN: 'UNKNOWN',
+  VALID: 'VALID',
+  INVALID: 'INVALID',
+} as const
+
+export type PortTicketQeshmondiStatus =
+  (typeof portTicketQeshmondiStatuses)[keyof typeof portTicketQeshmondiStatuses]
+
+export type PortSalesReportFile = {
+  id: string
+  originalName: string | null
+  mimeType: string
+  byteSize: number
+}
+
+export type PortTicketStatusCounts = Record<PortTicketStatus, number>
+
+export type PortSalesReport = {
+  id: string
+  reportDate: string
+  origin: string
+  destination: string
+  fileId: string
+  originalFileName: string
+  recordCount: number
+  uniqueNationalIdCount: number
+  nationalIdPrefix?: string
+  nationalIdPrefixCount?: number
+  validQeshmondiCount?: number
+  invalidQeshmondiCount?: number
+  invalidQeshmondiTotal?: number
+  createdAt: string
+  updatedAt: string
+  file: PortSalesReportFile
+  statusCounts?: PortTicketStatusCounts
+}
+
+export type PortTicketSale = {
+  id: string
+  reportId: string
+  rowNumber: number | null
+  ticketNumber: string | null
+  reservationCode: string | null
+  nationalId: string | null
+  firstName: string | null
+  lastName: string | null
+  fullName: string | null
+  fatherName: string | null
+  gender: string | null
+  phone: string | null
+  travelDate: string | null
+  travelTime: string | null
+  origin: string | null
+  destination: string | null
+  ticketStatus: PortTicketStatus
+  ticketStatusRaw: string | null
+  qeshmondiStatus: PortTicketQeshmondiStatus
+  amount: number | null
+  seatNumber: string | null
+  ticketType: string | null
+  vesselName: string | null
+  extras: Record<string, string> | null
+  createdAt: string
+  qeshmondiEndDate?: string | null
 }
 
 

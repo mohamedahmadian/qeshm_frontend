@@ -53,9 +53,9 @@ export function mixHexColors(from: string, to: string, amount: number) {
 }
 
 const PROGRESS_EMPTY = '#ffffff'
-const PROGRESS_FULL = '#2ebdb6'
+const PROGRESS_FULL = '#16a34a'
 
-/** White at 0% → brand teal at 100%. */
+/** White at 0% → green at 100%. */
 export function progressTone(percent: number | null | undefined) {
   const pct = Math.min(100, Math.max(0, percent ?? 0))
   return mixHexColors(PROGRESS_EMPTY, PROGRESS_FULL, pct / 100)

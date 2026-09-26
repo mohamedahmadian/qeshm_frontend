@@ -78,6 +78,12 @@ import {
   ContractorTeamListPage,
 } from './pages/projects/contractors/ContractorTeamPages'
 import {
+  ProjectChecklistCreatePage,
+  ProjectChecklistDetailPage,
+  ProjectChecklistEditPage,
+  ProjectChecklistListPage,
+} from './pages/projects/checklist/ProjectChecklistPages'
+import {
   ProjectPhaseCreatePage,
   ProjectPhaseDetailPage,
   ProjectPhaseEditPage,
@@ -161,6 +167,14 @@ import {
   OrganizationUnitRestaurantListPage,
 } from './pages/organization/units/restaurants/OrganizationUnitRestaurantPages'
 import { PublicProfilePage } from './pages/public-profile/PublicProfilePage'
+import { QeshmondiListPage } from './pages/qeshmondi/QeshmondiListPage'
+import { QeshmondiUpdatePage } from './pages/qeshmondi/QeshmondiUpdatePage'
+import {
+  PortSalesReportCreatePage,
+  PortSalesReportDetailPage,
+  PortSalesReportEditPage,
+  PortSalesReportListPage,
+} from './pages/port-sales-reports/PortSalesReportPages'
 import { UserCreatePage } from './pages/users/UserCreatePage'
 import { UserDetailPage } from './pages/users/UserDetailPage'
 import { UserEditPage } from './pages/users/UserEditPage'
@@ -272,6 +286,15 @@ export default function App() {
                   <Route path="/users/:id/edit" element={<UserEditPage />} />
                   <Route path="/users/:id/location" element={<UserLocationPage />} />
                   <Route path="/users/:id/location/history" element={<UserLocationHistoryPage />} />
+                  <Route path="/qeshmondi" element={<QeshmondiListPage />} />
+                  <Route path="/qeshmondi/new" element={<UserCreatePage />} />
+                  <Route path="/qeshmondi/update" element={<QeshmondiUpdatePage />} />
+                  <Route path="/qeshmondi/:id" element={<UserDetailPage />} />
+                  <Route path="/qeshmondi/:id/edit" element={<UserEditPage />} />
+                  <Route path="/port-sales-reports" element={<PortSalesReportListPage />} />
+                  <Route path="/port-sales-reports/new" element={<PortSalesReportCreatePage />} />
+                  <Route path="/port-sales-reports/:id" element={<PortSalesReportDetailPage />} />
+                  <Route path="/port-sales-reports/:id/edit" element={<PortSalesReportEditPage />} />
                   <Route path="/base-info/countries" element={<CountriesListPage />} />
                   <Route path="/base-info/countries/new" element={<CountryCreatePage />} />
                   <Route path="/base-info/countries/:id" element={<CountryDetailPage />} />
@@ -308,6 +331,14 @@ export default function App() {
                   <Route path="/projects/:id/progress/new" element={<ProjectProgressCreatePage />} />
                   <Route path="/projects/:id/progress/:entryId" element={<ProjectProgressDetailPage />} />
                   <Route path="/projects/:id/progress/:entryId/edit" element={<ProjectProgressEditPage />} />
+                  <Route path="/projects/:id/checklist" element={<ProjectChecklistListPage />} />
+                  <Route path="/projects/:id/checklist/new" element={<ProjectChecklistCreatePage />} />
+                  <Route path="/projects/:id/checklist/:itemId" element={<ProjectChecklistDetailPage />} />
+                  <Route path="/projects/:id/checklist/:itemId/edit" element={<ProjectChecklistEditPage />} />
+                  <Route path="/projects/:id/phases/:phaseId/checklist" element={<ProjectChecklistListPage />} />
+                  <Route path="/projects/:id/phases/:phaseId/checklist/new" element={<ProjectChecklistCreatePage />} />
+                  <Route path="/projects/:id/phases/:phaseId/checklist/:itemId" element={<ProjectChecklistDetailPage />} />
+                  <Route path="/projects/:id/phases/:phaseId/checklist/:itemId/edit" element={<ProjectChecklistEditPage />} />
                   <Route path="/projects/:id/phases" element={<ProjectPhaseListPage />} />
                   <Route path="/projects/:id/phases/new" element={<ProjectPhaseCreatePage />} />
                   <Route path="/projects/:id/phases/:phaseId" element={<ProjectPhaseDetailPage />} />

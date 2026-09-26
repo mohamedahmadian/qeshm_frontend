@@ -44,6 +44,7 @@ export function ProjectEditPage() {
           code: query.data.code,
           isActive: query.data.isActive,
           status: query.data.status ?? 'NOT_STARTED',
+          progressMode: query.data.progressMode ?? 'MANUAL',
           progressPercent: query.data.progressPercent,
           startDate: query.data.startDate,
           endDate: query.data.endDate,

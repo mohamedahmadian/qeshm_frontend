@@ -46,6 +46,10 @@ export function AccountPage() {
             roleIds: _roleIds,
             orgUnitId: _orgUnitId,
             positionId: _positionId,
+            isQeshmondi: _isQeshmondi,
+            qeshmondiStartDate: _qeshmondiStartDate,
+            qeshmondiEndDate: _qeshmondiEndDate,
+            isResident: _isResident,
             ...body
           } = payload
           await api.patch('/account', body)

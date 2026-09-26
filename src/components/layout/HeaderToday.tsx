@@ -107,14 +107,14 @@ export function HeaderToday() {
       {...(expanded ? { 'data-enter-ignore': '' } : {})}
       aria-label={t('nav.todayCalendars')}
       onClick={() => setExpanded((value) => !value)}
-      className="flex cursor-pointer shrink-0 items-center gap-2 overflow-hidden rounded-2xl border border-line bg-white py-1.5 pe-2 ps-1.5 text-start shadow-sm transition hover:border-teal-300 hover:shadow-[0_6px_12px_rgba(46,189,182,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/80 sm:gap-2.5 sm:py-2 sm:pe-3 sm:ps-2"
+      className="relative flex shrink-0 cursor-pointer items-center gap-2 rounded-2xl border border-line bg-white py-1.5 pe-1.5 ps-1.5 text-start shadow-sm transition hover:border-teal-300 hover:shadow-[0_6px_12px_rgba(46,189,182,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/80 sm:gap-2.5 sm:py-2 sm:pe-3 sm:ps-2"
     >
       <time dateTime={iso} className="flex min-w-0 items-center gap-2 sm:gap-2.5">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-mint-500 text-white shadow-[0_6px_12px_rgba(46,189,182,0.28)]">
           <CalendarDays className="size-4" aria-hidden />
         </span>
         {weekday ? (
-          <span className="flex min-w-0 flex-col justify-center">
+          <span className="hidden min-w-0 flex-col justify-center sm:flex">
             <span className="text-[10px] font-medium leading-none text-ink-400">
               {t('common.today')}
             </span>
@@ -123,7 +123,7 @@ export function HeaderToday() {
             </span>
           </span>
         ) : null}
-        <span className="flex min-w-0 items-stretch">
+        <span className="hidden min-w-0 items-stretch sm:flex">
           <CalendarCol label={t('common.calendarJalali')} value={jalali} dir="ltr" />
           <span
             className="grid min-w-0 transition-[grid-template-columns] duration-300 ease-out"
@@ -153,6 +153,34 @@ export function HeaderToday() {
           </span>
         </span>
       </time>
+      {expanded ? (
+        <span className="absolute end-0 top-full z-40 mt-2 flex w-max max-w-[calc(100vw-1.5rem)] items-stretch rounded-2xl border border-line bg-white py-2 shadow-lg sm:hidden">
+          {weekday ? (
+            <span className="flex min-w-0 flex-col justify-center px-3">
+              <span className="text-[10px] font-medium leading-none text-ink-400">
+                {t('common.today')}
+              </span>
+              <span className="mt-0.5 text-xs font-semibold leading-tight text-teal-800">
+                {weekday}
+              </span>
+            </span>
+          ) : null}
+          <CalendarCol label={t('common.calendarJalali')} value={jalali} dir="ltr" />
+          <CalendarCol
+            className="border-s border-line"
+            label={t('common.calendarHijri')}
+            value={hijri}
+            dir="rtl"
+            lang="ar"
+          />
+          <CalendarCol
+            className="border-s border-line"
+            label={t('common.calendarGregorian')}
+            value={gregorian}
+            dir="ltr"
+          />
+        </span>
+      ) : null}
     </button>
   )
 }

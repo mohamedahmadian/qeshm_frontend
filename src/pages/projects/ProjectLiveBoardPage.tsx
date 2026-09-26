@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   Map as MapIcon,
   Percent,
+  SlidersHorizontal,
   Radio,
   Table2,
   TrendingDown,
@@ -23,7 +24,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { DateText } from '../../components/ui/DateText'
-import { FormField, PageHeader, cardClassName, listShellClassName } from '../../components/ui/Form'
+import { Button, FormField, PageHeader, cardClassName, listShellClassName } from '../../components/ui/Form'
 import {
   FormCard,
   FormEmptyHint,
@@ -102,6 +103,7 @@ export function ProjectLiveBoardPage() {
   const importance = searchParams.get('importance') ?? ''
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const orgUnits = useQuery({
     queryKey: ['organization-units', 'lookup'],
@@ -192,16 +194,61 @@ export function ProjectLiveBoardPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader icon={Radio} title={t('projectLiveBoard.title')} subtitle={t('projectLiveBoard.subtitle')} />
-      <SearchBar
-        term={term}
-        onTermChange={setTerm}
-        onSubmit={() => applySearch()}
-        label={t('projectLiveBoard.search')}
-        placeholder={t('projectLiveBoard.searchPlaceholder')}
-        filtersActive={filtersActive}
-        extraClassName="sm:grid-cols-2 xl:grid-cols-3"
-        extra={
-          <>
+
+      <div className="mb-4 flex items-center gap-2">
+        <nav className="flex min-w-0 flex-wrap gap-2">
+          {views.map((item) => {
+            const Icon = viewIcons[item]
+            const active = view === item
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setParams({ view: item === 'map' ? undefined : item })}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition ${
+                  active
+                    ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
+                    : 'bg-white text-ink-700 ring-1 ring-teal-400 shadow-[0_6px_14px_rgba(46,189,182,0.12)] hover:bg-cream-50'
+                }`}
+              >
+                <Icon className={`size-3.5 ${active ? 'text-white' : 'text-teal-600'}`} aria-hidden />
+                {t(`projectLiveBoard.tabs.${item}`)}
+              </button>
+            )
+          })}
+        </nav>
+        <Button
+          type="button"
+          variant={filtersOpen ? 'primary' : 'ghost'}
+          icon
+          className="relative ms-auto shrink-0"
+          aria-expanded={filtersOpen}
+          aria-label={t('common.filters')}
+          title={t('common.filters')}
+          onClick={() => setFiltersOpen((open) => !open)}
+        >
+          <SlidersHorizontal className="size-4" aria-hidden />
+          {filtersActive || q ? (
+            <span
+              className={`absolute end-1.5 top-1.5 size-1.5 rounded-full ${
+                filtersOpen ? 'bg-white' : 'bg-teal-500'
+              }`}
+              aria-hidden
+            />
+          ) : null}
+        </Button>
+      </div>
+      {filtersOpen ? (
+        <div className={`mb-4 p-4 ${cardClassName}`}>
+          <SearchBar
+            bare
+            term={term}
+            onTermChange={setTerm}
+            onSubmit={() => applySearch()}
+            label={t('projectLiveBoard.search')}
+            placeholder={t('projectLiveBoard.searchPlaceholder')}
+          />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <FormField icon={Landmark} label={t('projects.orgUnit')} htmlFor="live-org-unit">
               <SearchSelect
                 id="live-org-unit"
@@ -313,31 +360,9 @@ export function ProjectLiveBoardPage() {
                 ]}
               />
             </FormField>
-          </>
-        }
-      />
-
-      <nav className="mb-4 flex flex-wrap gap-2">
-        {views.map((item) => {
-          const Icon = viewIcons[item]
-          const active = view === item
-          return (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setParams({ view: item === 'map' ? undefined : item })}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition ${
-                active
-                  ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
-                  : 'bg-white text-ink-700 ring-1 ring-teal-400 shadow-[0_6px_14px_rgba(46,189,182,0.12)] hover:bg-cream-50'
-              }`}
-            >
-              <Icon className={`size-3.5 ${active ? 'text-white' : 'text-teal-600'}`} aria-hidden />
-              {t(`projectLiveBoard.tabs.${item}`)}
-            </button>
-          )
-        })}
-      </nav>
+          </div>
+        </div>
+      ) : null}
 
       {query.isLoading ? (
         <LoadingState />
@@ -345,9 +370,27 @@ export function ProjectLiveBoardPage() {
         <div className="space-y-4">
           <FormCard
             icon={Radio}
-            className="live-board-map-card"
+            className="live-board-map-card live-board-admin-map"
             headerClassName={selected ? 'sm:py-4' : undefined}
-            title={selected ? selected.systemName : t('projectLiveBoard.tabs.map')}
+            title={
+              selected ? (
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="min-w-0 truncate">{selected.systemName}</span>
+                  <Link to={`/projects/${selected.id}`} className="shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="!h-7 !gap-1 !rounded-xl !px-2 !py-0 !text-xs"
+                    >
+                      <Eye className="size-3.5" aria-hidden />
+                      {t('projectLiveBoard.details')}
+                    </Button>
+                  </Link>
+                </span>
+              ) : (
+                t('projectLiveBoard.tabs.map')
+              )
+            }
             subtitle={
               selected ? (
                 <span className="mt-1 flex items-center gap-1.5">

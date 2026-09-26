@@ -1,6 +1,7 @@
 import {
   Briefcase,
   Building2,
+  CalendarRange,
   Car,
   FileText,
   Flag,
@@ -17,6 +18,7 @@ import {
   Shield,
   ToggleRight,
   UserRound,
+  UserRoundCheck,
   UserRoundPlus,
 } from 'lucide-react'
 import axios from 'axios'
@@ -26,6 +28,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { CheckboxField } from '../../components/ui/CheckboxField'
 import { FileDropField } from '../../components/ui/FileDropField'
+import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import {
   AppForm,
@@ -50,7 +53,7 @@ import {
   sanitizeUsername,
   USERNAME_ENGLISH_PATTERN,
 } from '../../lib/identity'
-import { EMPLOYEE_ROLE_CODE } from '../../lib/roles'
+import { CITIZEN_ROLE_CODE, EMPLOYEE_ROLE_CODE } from '../../lib/roles'
 import { optimizeImageFile } from '../../lib/optimize-image'
 import {
   religions,
@@ -68,7 +71,7 @@ import {
   type UserStatus,
 } from '../../types/app'
 
-const tabs = ['personal', 'account', 'location', 'documents', 'social', 'other'] as const
+const allTabs = ['personal', 'account', 'location', 'documents', 'social', 'qeshmondi', 'other'] as const
 
 type PhotoField = 'photo' | 'nationalCard' | 'passport' | 'identityBooklet'
 
@@ -123,6 +126,14 @@ export type UserPayload = {
   orgUnitId: string | null
   positionId: string | null
   roleIds: string[]
+  isQeshmondi: boolean
+  qeshmondiStartDate: string | null
+  qeshmondiEndDate: string | null
+  occupation: string | null
+  isResident: boolean
+  passportNumber: string | null
+  fatherName: string | null
+  birthDate: string | null
 }
 
 export function UserForm({
@@ -132,6 +143,7 @@ export function UserForm({
   requirePassword = true,
   identityCheckPath = '/users/identity-check',
   selfProfile = false,
+  qeshmondiMode = false,
   onCancel,
   onSubmit,
 }: {
@@ -141,6 +153,7 @@ export function UserForm({
   requirePassword?: boolean
   identityCheckPath?: string
   selfProfile?: boolean
+  qeshmondiMode?: boolean
   onCancel: () => void
   onSubmit: (payload: UserPayload) => Promise<void>
 }) {
@@ -182,6 +195,15 @@ export function UserForm({
   const [orgUnitId, setOrgUnitId] = useState(initial?.orgUnitId ?? '')
   const [positionId, setPositionId] = useState(initial?.positionId ?? '')
   const [roleIds, setRoleIds] = useState<string[]>(initial?.roles?.map((role) => role.id) ?? [])
+  const [isQeshmondi, setIsQeshmondi] = useState(initial?.isQeshmondi ?? qeshmondiMode)
+  const [qeshmondiStartDate, setQeshmondiStartDate] = useState(initial?.qeshmondiStartDate ?? '')
+  const [qeshmondiEndDate, setQeshmondiEndDate] = useState(initial?.qeshmondiEndDate ?? '')
+  const [occupation, setOccupation] = useState(initial?.occupation ?? '')
+  const [isResident, setIsResident] = useState(initial?.isResident ?? false)
+  const [passportNumber, setPassportNumber] = useState(initial?.passportNumber ?? '')
+  const [fatherName, setFatherName] = useState(initial?.fatherName ?? '')
+  const [birthDate, setBirthDate] = useState(initial?.birthDate ?? '')
+  const tabs = selfProfile ? allTabs.filter((item) => item !== 'qeshmondi') : allTabs
   const [uploading, setUploading] = useState<PhotoField>()
   const [saving, setSaving] = useState(false)
   const [checkingNationalId, setCheckingNationalId] = useState(false)
@@ -263,10 +285,16 @@ export function UserForm({
   })
   useEffect(() => {
     if (!isCreate || selfProfile) return
+    if (qeshmondiMode) {
+      const citizen = (roles.data ?? []).find((role) => role.code === CITIZEN_ROLE_CODE)
+      if (!citizen) return
+      setRoleIds((current) => (current.length ? current : [citizen.id]))
+      return
+    }
     const employee = (roles.data ?? []).find((role) => role.code === EMPLOYEE_ROLE_CODE)
     if (!employee) return
     setRoleIds((current) => (current.length ? current : [employee.id]))
-  }, [isCreate, selfProfile, roles.data])
+  }, [isCreate, selfProfile, qeshmondiMode, roles.data])
   const iranCountryId = countries.data?.find((country) => country.iso2 === 'IR')?.id ?? ''
   const selectedCountryId = countryId || (isCreate ? iranCountryId : '')
   const isIranian = !iranCountryId || !selectedCountryId || selectedCountryId === iranCountryId
@@ -562,10 +590,15 @@ export function UserForm({
       if (tab !== 'account') setTab('account')
       return
     }
-    if (!selfProfile && roleIds.length === 0) {
+    if (!selfProfile && !qeshmondiMode && roleIds.length === 0) {
       failField('account', 'roleIds', t('users.rolesRequired'))
       return
     }
+    const citizenId = (roles.data ?? []).find((role) => role.code === CITIZEN_ROLE_CODE)?.id
+    const submittedRoleIds = qeshmondiMode
+      ? [...new Set([...(initial?.roles?.map((role) => role.id) ?? roleIds), citizenId].filter(Boolean) as string[])]
+      : roleIds
+    const submittedQeshmondi = qeshmondiMode ? true : isQeshmondi
 
     setSaving(true)
     try {
@@ -598,7 +631,15 @@ export function UserForm({
         identityBookletPhotoId: emptyToNull(identityBookletPhotoId),
         orgUnitId: emptyToNull(orgUnitId),
         positionId: emptyToNull(positionId),
-        roleIds,
+        roleIds: submittedRoleIds,
+        isQeshmondi: submittedQeshmondi,
+        qeshmondiStartDate: emptyToNull(qeshmondiStartDate),
+        qeshmondiEndDate: emptyToNull(qeshmondiEndDate),
+        occupation: emptyToNull(occupation),
+        isResident,
+        passportNumber: emptyToNull(toLatinDigits(passportNumber)),
+        fatherName: emptyToNull(fatherName),
+        birthDate: emptyToNull(birthDate),
         ...(password ? { password } : {}),
       })
     } catch (error) {
@@ -628,9 +669,9 @@ export function UserForm({
 
   return (
     <FormCard
-      icon={UserRound}
-      title={isEdit ? displayName || t('users.edit') : t('users.create')}
-      subtitle={isEdit ? undefined : t('users.createSubtitle')}
+      icon={qeshmondiMode ? UserRoundCheck : UserRound}
+      title={isEdit ? displayName || (qeshmondiMode ? t('qeshmondi.edit') : t('users.edit')) : qeshmondiMode ? t('qeshmondi.create') : t('users.create')}
+      subtitle={isEdit ? undefined : qeshmondiMode ? t('qeshmondi.createSubtitle') : t('users.createSubtitle')}
     >
       <div className="space-y-4 p-5 sm:p-6">
         <nav className="flex flex-wrap gap-2 rounded-2xl border border-line bg-cream-50/80 p-3">
@@ -712,6 +753,22 @@ export function UserForm({
                       setLastName(e.target.value)
                       clearError('lastName')
                     }}
+                  />
+                </FormField>
+                <FormField icon={UserRound} label={t('users.fatherName')} htmlFor="fatherName">
+                  <input
+                    id="fatherName"
+                    className={`${fieldClassName} disabled:cursor-not-allowed`}
+                    value={fatherName}
+                    disabled={personalFieldsLocked}
+                    onChange={(e) => setFatherName(e.target.value)}
+                  />
+                </FormField>
+                <FormField icon={CalendarRange} label={t('users.birthDate')} htmlFor="birthDate">
+                  <PersianDateField
+                    id="birthDate"
+                    value={birthDate}
+                    onChange={(value) => setBirthDate(value ?? '')}
                   />
                 </FormField>
               </div>
@@ -907,7 +964,7 @@ export function UserForm({
                 </FormField>
               )}
             </div>
-            {selfProfile ? null : (
+            {selfProfile || qeshmondiMode ? null : (
               <FormField icon={Shield} label={t('users.roles')} htmlFor="roleIds" error={fieldErrors.roleIds}>
                 <div id="roleIds" className="grid gap-2">
                   {(roles.data ?? []).map((role) => (
@@ -1064,6 +1121,63 @@ export function UserForm({
               </FormField>
               <FormField icon={Share2} label={t('users.otherSocial')} htmlFor="otherSocial">
                 <input id="otherSocial" className={`${fieldClassName} latin-field`} dir="ltr" value={otherSocial} onChange={(e) => setOtherSocial(e.target.value)} />
+              </FormField>
+            </div>
+          </div>
+
+          <div className={`space-y-4 ${tab === 'qeshmondi' ? '' : 'hidden'}`}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={UserRoundCheck} label={t('users.isQeshmondi')} htmlFor="isQeshmondi">
+                <ToggleField
+                  id="isQeshmondi"
+                  checked={qeshmondiMode ? true : isQeshmondi}
+                  disabled={qeshmondiMode}
+                  onChange={setIsQeshmondi}
+                  onLabel={t('users.qeshmondi')}
+                  offLabel={t('users.nonQeshmondi')}
+                />
+              </FormField>
+              <FormField icon={ToggleRight} label={t('users.isResident')} htmlFor="isResident">
+                <ToggleField
+                  id="isResident"
+                  checked={isResident}
+                  onChange={setIsResident}
+                  onLabel={t('users.resident')}
+                  offLabel={t('users.nonResident')}
+                />
+              </FormField>
+              <FormField icon={Briefcase} label={t('users.occupation')} htmlFor="occupation">
+                <input
+                  id="occupation"
+                  className={fieldClassName}
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                />
+              </FormField>
+              <FormField icon={IdCard} label={t('users.passportNumber')} htmlFor="passportNumber">
+                <input
+                  id="passportNumber"
+                  className={`${fieldClassName} digit-field`}
+                  dir="ltr"
+                  value={passportNumber}
+                  onChange={(e) => setPassportNumber(toLatinDigits(e.target.value))}
+                />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('users.qeshmondiStartDate')} htmlFor="qeshmondiStartDate">
+                <PersianDateField
+                  id="qeshmondiStartDate"
+                  value={qeshmondiStartDate}
+                  maxDate={qeshmondiEndDate || undefined}
+                  onChange={(value) => setQeshmondiStartDate(value ?? '')}
+                />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('users.qeshmondiEndDate')} htmlFor="qeshmondiEndDate">
+                <PersianDateField
+                  id="qeshmondiEndDate"
+                  value={qeshmondiEndDate}
+                  minDate={qeshmondiStartDate || undefined}
+                  onChange={(value) => setQeshmondiEndDate(value ?? '')}
+                />
               </FormField>
             </div>
           </div>

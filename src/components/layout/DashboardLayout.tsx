@@ -397,17 +397,17 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
 
           <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col">
             <ImpersonationBanner />
-            <header className="z-20 flex shrink-0 items-center gap-3 bg-cream-50/90 px-4 py-4 backdrop-blur sm:px-8">
+            <header className="z-20 flex min-w-0 shrink-0 items-center gap-2 bg-cream-50/90 px-3 py-3 backdrop-blur sm:gap-3 sm:px-8 sm:py-4">
               <button
                 type="button"
-                className="rounded-xl p-2 text-ink-700 lg:hidden"
+                className="shrink-0 rounded-xl p-2 text-ink-700 lg:hidden"
                 onClick={() => setOpen(true)}
                 aria-label={t('nav.openMenu')}
               >
                 <Menu className="size-5" />
               </button>
               <PageBreadcrumb pathname={location.pathname} modules={APP_NAV} />
-              <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <div className="ms-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
                 <HeaderToday />
                 <ProjectHeaderProgressButton />
                 <UserMenu />

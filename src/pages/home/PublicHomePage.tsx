@@ -101,7 +101,7 @@ export function PublicHomePage() {
                 setSelected(project)
                 if (!project) setDetailsOpen(false)
               }}
-              className="relative min-h-[22rem] flex-1 overflow-hidden sm:min-h-[28rem]"
+              className="relative sm:min-h-[28rem] sm:flex-1 sm:overflow-hidden"
             />
           )}
         </FormCard>

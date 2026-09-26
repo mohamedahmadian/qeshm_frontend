@@ -132,26 +132,30 @@ export function FormCardHeader({
   const Heading = heading
   const titleClass =
     heading === 'h1'
-      ? 'text-xl font-semibold leading-snug text-ink-900 sm:text-2xl'
-      : 'text-base font-semibold leading-snug text-ink-900'
+      ? 'break-words text-xl font-semibold leading-snug text-ink-900 sm:text-2xl'
+      : 'break-words text-base font-semibold leading-snug text-ink-900'
   const subtitleClass =
     heading === 'h1' ? 'mt-1 text-sm leading-6 text-ink-500' : 'mt-0.5 text-xs leading-5 text-ink-600'
   return (
-    <header className={`relative shrink-0 overflow-hidden bg-gradient-to-e from-mint-50 via-white to-teal-50 px-5 py-5 sm:px-6 ${className}`}>
+    <header className={`relative shrink-0 overflow-hidden bg-gradient-to-e from-mint-50 via-white to-teal-50 px-4 py-4 sm:px-6 sm:py-5 ${className}`}>
       <FormCardHeaderDecor />
-      <div className="relative flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="form-card-header-body relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="form-card-header-main flex min-w-0 items-center gap-2.5 sm:flex-1 sm:gap-3">
           {leading}
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-[0_10px_22px_rgba(46,189,182,0.32)]">
-            <Icon className="size-6" aria-hidden />
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-[0_10px_22px_rgba(46,189,182,0.32)] sm:size-12">
+            <Icon className="size-5 sm:size-6" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
             <Heading className={titleClass}>{title}</Heading>
-            {subtitle ? <div className={subtitleClass}>{subtitle}</div> : null}
+            {subtitle ? <div className={`${subtitleClass} min-w-0`}>{subtitle}</div> : null}
             {chips ? <div className="mt-3 flex flex-wrap gap-1.5">{chips}</div> : null}
           </div>
         </div>
-        {action ? <div className="relative z-10 shrink-0">{action}</div> : null}
+        {action ? (
+          <div className="form-card-header-action relative z-10 flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto [&:not(:has(a,button))]:!hidden">
+            {action}
+          </div>
+        ) : null}
       </div>
     </header>
   )
@@ -211,6 +215,7 @@ export function FormFactTile({
   tone = 'teal',
   compact = false,
   className = '',
+  extra,
 }: {
   icon: LucideIcon
   label: string
@@ -220,6 +225,7 @@ export function FormFactTile({
   tone?: FormTone
   compact?: boolean
   className?: string
+  extra?: ReactNode
 }) {
   const colors = formToneClass[tone]
   const copyDigits = useCopyDigits()
@@ -250,6 +256,7 @@ export function FormFactTile({
         >
           {display}
         </div>
+        {extra}
       </div>
     </article>
   )

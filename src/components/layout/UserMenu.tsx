@@ -29,18 +29,18 @@ export function UserMenu() {
     <div className="relative" ref={ref}>
       <button
         type="button"
-        className="flex cursor-pointer items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-sm shadow-sm sm:min-w-[16.5rem]"
+        className="flex max-w-full cursor-pointer items-center gap-2 rounded-2xl border border-line bg-white px-2 py-2 text-sm shadow-sm sm:px-3 lg:min-w-[16.5rem]"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
       >
         <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-800">
           {user?.fullName.slice(0, 1)}
         </span>
-        <span className="hidden min-w-0 flex-1 text-start sm:block">
-          <span className="block font-medium text-ink-900">{user?.fullName}</span>
-          <span className="block text-xs text-ink-400">{user?.username}</span>
+        <span className="hidden min-w-0 max-w-[9rem] flex-1 text-start sm:block lg:max-w-[12rem]">
+          <span className="block truncate font-medium text-ink-900">{user?.fullName}</span>
+          <span className="block truncate text-xs text-ink-400">{user?.username}</span>
         </span>
-        <ChevronDown className="size-4 shrink-0 text-ink-400" />
+        <ChevronDown className="hidden size-4 shrink-0 text-ink-400 sm:block" />
       </button>
       {open ? (
         <div

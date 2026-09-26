@@ -1,5 +1,6 @@
 import {
   CalendarRange,
+  Flag,
   FolderKanban,
   Gauge,
   Globe,
@@ -12,6 +13,7 @@ import {
   MapPin,
   Monitor,
   Palette,
+  ListChecks,
   Percent,
   Radio,
   ScrollText,
@@ -19,12 +21,13 @@ import {
   Tags,
   ToggleRight,
 } from 'lucide-react'
-import { type CSSProperties, type FormEvent, useMemo, useState } from 'react'
+import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '../../auth/AuthProvider'
-import { AppForm, FormField, FormActions, ToggleField, fieldClassName } from '../../components/ui/Form'
+import { AppForm, Button, FormField, FormActions, ToggleField, fieldClassName } from '../../components/ui/Form'
 import { FormCard } from '../../components/ui/FormLayout'
 import { OrgUnitTreeSelect } from '../../components/ui/OrgUnitTreeSelect'
 import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
@@ -34,10 +37,14 @@ import { getApiErrorMessage, api } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
 import { projectBoundaryPolygons, QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
 import { DEFAULT_PROJECT_COLOR, PROJECT_COLOR_SWATCHES, projectColor } from '../../lib/project-color'
+import { ProjectDetailChecklist } from './checklist/ProjectChecklistBoard'
+import { projectChecklistPath } from './checklist/checklist-paths'
 import { projectManageExtraItems } from './ProjectShared'
 import {
   projectImportanceOrder,
   projectImportances,
+  projectProgressModeOrder,
+  projectProgressModes,
   projectStatusOrder,
   projectStatuses,
   type OrganizationUnit,
@@ -45,6 +52,8 @@ import {
   type ProjectBoundary,
   type ProjectGroup,
   type ProjectImportance,
+  type ProjectChecklistSummary,
+  type ProjectProgressMode,
   type ProjectStatus,
 } from '../../types/app'
 
@@ -59,6 +68,7 @@ export type ProjectPayload = {
   code: string
   isActive: boolean
   status: ProjectStatus
+  progressMode: ProjectProgressMode
   progressPercent: number | null
   startDate: string | null
   endDate: string | null
@@ -117,9 +127,35 @@ export function ProjectForm({
   const [codeTouched, setCodeTouched] = useState(Boolean(initial?.code))
   const [isActive, setIsActive] = useState(initial?.isActive ?? true)
   const [status, setStatus] = useState<string>(initial?.status ?? projectStatusOrder[0])
+  const [progressMode, setProgressMode] = useState<ProjectProgressMode>(
+    initial?.progressMode ?? projectProgressModes.MANUAL,
+  )
   const [progressPercent, setProgressPercent] = useState<number | null>(
     initial?.progressPercent ?? null,
   )
+  const checklistDriven = progressMode !== projectProgressModes.MANUAL
+  const projectChecklist = useQuery({
+    queryKey: ['project-checklist', projectId, 'project', 'summary'],
+    enabled: Boolean(projectId) && progressMode === projectProgressModes.PROJECT_CHECKLIST,
+    queryFn: async () => {
+      const { data } = await api.get<ProjectChecklistSummary>(
+        `/projects/${projectId}/checklist/summary`,
+      )
+      return data
+    },
+  })
+  useEffect(() => {
+    if (progressMode !== projectProgressModes.PROJECT_CHECKLIST || !projectChecklist.data) return
+    const next = projectChecklist.data.doneWeight
+    setProgressPercent(next)
+    if (next >= 100) {
+      setStatus(projectStatuses.COMPLETED)
+      return
+    }
+    setStatus((current) =>
+      current === projectStatuses.COMPLETED ? projectStatuses.IN_PROGRESS : current,
+    )
+  }, [progressMode, projectChecklist.data])
   const [startDate, setStartDate] = useState(initial?.startDate ?? '')
   const [endDate, setEndDate] = useState(initial?.endDate ?? '')
   const [latitude, setLatitude] = useState(toCoordString(initial?.latitude))
@@ -218,11 +254,18 @@ export function ProjectForm({
       toast.error(t('projects.rangeInvalid'))
       return
     }
+    const manualProgress = progressMode === projectProgressModes.MANUAL
     const progressChanged =
-      Boolean(initial) && progressPercent !== (initial?.progressPercent ?? null)
-    const nextStatus = progressChanged
-      ? projectStatuses.IN_PROGRESS
-      : ((status || projectStatusOrder[0]) as ProjectStatus)
+      manualProgress &&
+      Boolean(initial) &&
+      progressPercent !== (initial?.progressPercent ?? null)
+    const nextStatus = (
+      manualProgress && progressPercent === 100
+        ? projectStatuses.COMPLETED
+        : progressChanged
+          ? projectStatuses.IN_PROGRESS
+          : (status || projectStatusOrder[0])
+    ) as ProjectStatus
     setSaving(true)
     try {
       await onSubmit({
@@ -233,6 +276,7 @@ export function ProjectForm({
         code: code.trim(),
         isActive,
         status: nextStatus,
+        progressMode,
         progressPercent,
         startDate: emptyToNull(startDate),
         endDate: emptyToNull(endDate),
@@ -549,6 +593,20 @@ export function ProjectForm({
                 />
               </FormField>
               <div className="sm:col-span-2">
+                <FormField icon={ListChecks} label={t('projects.progressMode')} htmlFor="progressMode">
+                  <SearchSelect
+                    id="progressMode"
+                    value={progressMode}
+                    onChange={(next) => setProgressMode(next as ProjectProgressMode)}
+                    options={projectProgressModeOrder.map((item) => ({
+                      value: item,
+                      label: t(`projects.progressModes.${item}`),
+                    }))}
+                  />
+                  <p className="text-xs leading-6 text-ink-500">{t('projects.progressModeHint')}</p>
+                </FormField>
+              </div>
+              <div className="sm:col-span-2">
                 <FormField icon={Percent} label={t('projects.progress')} htmlFor="progressPercent">
                   <div className="space-y-1.5">
                     <input
@@ -558,13 +616,19 @@ export function ProjectForm({
                       max={100}
                       step={1}
                       dir="ltr"
-                      className="progress-slider"
+                      disabled={checklistDriven}
+                      className="progress-slider disabled:cursor-not-allowed disabled:opacity-60"
                       style={{ '--slider-fill': `${progressPercent ?? 0}%` } as CSSProperties}
                       value={progressPercent ?? 0}
                       onChange={(e) => {
                         const next = Number(e.target.value)
                         setProgressPercent(next)
-                        if (initial && next !== (initial.progressPercent ?? 0)) {
+                        if (next === 100) {
+                          setStatus(projectStatuses.COMPLETED)
+                        } else if (
+                          progressPercent === 100 ||
+                          (initial && next !== (initial.progressPercent ?? 0))
+                        ) {
                           setStatus(projectStatuses.IN_PROGRESS)
                         }
                       }}
@@ -572,6 +636,25 @@ export function ProjectForm({
                     <p className="text-center text-sm tabular-nums text-ink-700">
                       {progressPercent == null ? '—' : `${formatNumber(progressPercent, locale)}٪`}
                     </p>
+                    {checklistDriven ? (
+                      <p className="text-xs leading-6 text-ink-500">{t('projects.progressFromChecklist')}</p>
+                    ) : null}
+                    {projectId && progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
+                      <Link to={projectChecklistPath(projectId)} className="inline-flex">
+                        <Button type="button" variant="ghost">
+                          <ListChecks className="size-4" aria-hidden />
+                          {t('projectChecklist.manage')}
+                        </Button>
+                      </Link>
+                    ) : null}
+                    {projectId && progressMode === projectProgressModes.PHASE_CHECKLIST ? (
+                      <Link to={`/projects/${projectId}/phases`} className="inline-flex">
+                        <Button type="button" variant="ghost">
+                          <Flag className="size-4" aria-hidden />
+                          {t('projectPhases.manage')}
+                        </Button>
+                      </Link>
+                    ) : null}
                   </div>
                 </FormField>
               </div>
@@ -607,6 +690,10 @@ export function ProjectForm({
               />
             </div>
           </div>
+
+          {projectId && progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
+            <ProjectDetailChecklist projectId={projectId} />
+          ) : null}
 
           <FormActions
             submitLabel={t('projects.save')}

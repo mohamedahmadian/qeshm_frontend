@@ -8,6 +8,7 @@ import {
   Home,
   Landmark,
   Layers,
+  ListChecks,
   Link2,
   MapPin,
   Monitor,
@@ -30,7 +31,8 @@ import { api } from '../../lib/api'
 import { formatNumber, localizeDigits } from '../../lib/datetime'
 import { projectBoundaryPolygons } from '../../lib/geo'
 import { projectColor } from '../../lib/project-color'
-import type { Project } from '../../types/app'
+import { projectProgressModes, type Project } from '../../types/app'
+import { ProjectDetailChecklist } from './checklist/ProjectChecklistBoard'
 import {
   ProjectColorDot,
   ProjectImportanceBadge,
@@ -236,6 +238,12 @@ export function ProjectDetailPage() {
               tone="mint"
             />
             <FormFactTile
+              icon={ListChecks}
+              label={t('projects.progressMode')}
+              value={t(`projects.progressModes.${project.progressMode ?? 'MANUAL'}`)}
+              tone="teal"
+            />
+            <FormFactTile
               icon={Percent}
               label={t('projects.progress')}
               value={<ProjectProgress value={project.progressPercent} />}
@@ -288,6 +296,9 @@ export function ProjectDetailPage() {
           ) : null}
         </div>
       </FormCard>
+      {project.progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
+        <ProjectDetailChecklist projectId={project.id} />
+      ) : null}
       <DetailActions
         editTo={`/projects/${project.id}/edit`}
         editLabel={t('common.edit')}
