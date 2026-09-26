@@ -112,8 +112,10 @@ export function ProjectChecklistBoard({
   remaining,
   pendingId,
   listPath,
+  idPrefix = 'checklist',
   onToggle,
   onDelete,
+  onEdit,
   empty,
 }: {
   items: ProjectChecklistItem[]
@@ -121,9 +123,11 @@ export function ProjectChecklistBoard({
   allocated?: number
   remaining?: number
   pendingId: string | null
-  listPath: string
+  listPath?: string
+  idPrefix?: string
   onToggle: (item: ProjectChecklistItem, isDone: boolean) => void
   onDelete: (item: ProjectChecklistItem) => void
+  onEdit?: (item: ProjectChecklistItem) => void
   empty: string
 }) {
   const { t, i18n } = useTranslation()
@@ -144,7 +148,7 @@ export function ProjectChecklistBoard({
             >
               <CheckboxField
                 compact
-                id={`checklist-${item.id}`}
+                id={`${idPrefix}-${item.id}`}
                 checked={item.isDone}
                 disabled={pendingId === item.id}
                 label={item.title}
@@ -165,11 +169,24 @@ export function ProjectChecklistBoard({
                 </p>
               </div>
               <div className="ms-auto flex shrink-0 items-center gap-1">
-                <Link to={`${listPath}/${item.id}/edit`} aria-label={t('common.edit')} title={t('common.edit')}>
-                  <Button type="button" variant="ghost" icon>
+                {onEdit ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    icon
+                    aria-label={t('common.edit')}
+                    title={t('common.edit')}
+                    onClick={() => onEdit(item)}
+                  >
                     <Pencil className="size-4" aria-hidden />
                   </Button>
-                </Link>
+                ) : listPath ? (
+                  <Link to={`${listPath}/${item.id}/edit`} aria-label={t('common.edit')} title={t('common.edit')}>
+                    <Button type="button" variant="ghost" icon>
+                      <Pencil className="size-4" aria-hidden />
+                    </Button>
+                  </Link>
+                ) : null}
                 <Button
                   type="button"
                   variant="ghost"
@@ -190,33 +207,40 @@ export function ProjectChecklistBoard({
   )
 }
 
-export function ProjectDetailChecklist({ projectId }: { projectId: string }) {
+export function ProjectDetailChecklist({
+  projectId,
+  phaseId,
+  onEditItem,
+}: {
+  projectId: string
+  phaseId?: string
+  onEditItem?: (item: ProjectChecklistItem) => void
+}) {
   const { t } = useTranslation()
+  const scopeKey = phaseId ?? 'project'
+  const apiBase = phaseId
+    ? `/projects/${projectId}/phases/${phaseId}/checklist`
+    : `/projects/${projectId}/checklist`
   const itemsQuery = useQuery({
-    queryKey: ['project-checklist', projectId, 'project', 'board'],
+    queryKey: ['project-checklist', projectId, scopeKey, 'board'],
     queryFn: async () => {
-      const { data } = await api.get<ProjectChecklistItem[]>(`/projects/${projectId}/checklist`)
+      const { data } = await api.get<ProjectChecklistItem[]>(apiBase)
       return data
     },
   })
   const summaryQuery = useQuery({
-    queryKey: ['project-checklist', projectId, 'project', 'summary'],
+    queryKey: ['project-checklist', projectId, scopeKey, 'summary'],
     queryFn: async () => {
-      const { data } = await api.get<ProjectChecklistSummary>(
-        `/projects/${projectId}/checklist/summary`,
-      )
+      const { data } = await api.get<ProjectChecklistSummary>(`${apiBase}/summary`)
       return data
     },
   })
-  const { pendingId, toggleItem, deleteItem } = useChecklistActions(
-    projectId,
-    `/projects/${projectId}/checklist`,
-  )
+  const { pendingId, toggleItem, deleteItem } = useChecklistActions(projectId, apiBase)
   const summary = summaryQuery.data
   return (
     <FormCard
       icon={ListChecks}
-      title={t('projectChecklist.title')}
+      title={phaseId ? t('projectChecklist.phaseTitle') : t('projectChecklist.title')}
       className="mt-6"
       onDoubleClick={() => undefined}
     >
@@ -230,7 +254,9 @@ export function ProjectDetailChecklist({ projectId }: { projectId: string }) {
             allocated={summary?.allocatedWeight}
             remaining={summary?.remainingWeight}
             pendingId={pendingId}
-            listPath={`/projects/${projectId}/checklist`}
+            listPath={apiBase}
+            idPrefix={phaseId ? `phase-detail-${phaseId}` : 'project-detail'}
+            onEdit={onEditItem}
             onToggle={(item, isDone) => void toggleItem(item, isDone)}
             onDelete={deleteItem}
             empty={t('projectChecklist.empty')}

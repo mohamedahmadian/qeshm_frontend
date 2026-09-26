@@ -473,52 +473,67 @@ function projectBoardMeta(
   const daysShort = overdue
     ? t('projectLiveBoard.overdueDaysShort')
     : t('projectLiveBoard.remainingDaysShort')
-  return { theme, overdue, daysLabel, daysTitle, daysShort }
+  return { theme, overdue, daysLabel, daysTitle, daysShort, remainingDays }
 }
 
 export function LiveBoardHeaderStats({
   project,
   locale,
   size = 'lg',
+  hideEmpty = false,
 }: {
   project: ProjectLiveBoardItem
   locale: string
   size?: 'sm' | 'lg'
+  hideEmpty?: boolean
 }) {
   const { t } = useTranslation()
-  const { overdue, daysLabel, daysTitle, daysShort } = projectBoardMeta(project, locale, t)
+  const { overdue, daysLabel, daysTitle, daysShort, remainingDays } = projectBoardMeta(
+    project,
+    locale,
+    t,
+  )
   const compact = size === 'sm'
+  const showProgress = !hideEmpty || project.progressPercent != null
+  const showDays = !hideEmpty || remainingDays != null
+  if (!showProgress && !showDays) return null
   return (
     <div className={`flex shrink-0 items-center ${compact ? 'gap-1.5' : 'gap-2.5'}`}>
-      <div
-        className={`live-board-stat-chip${compact ? ' is-compact' : ''}`}
-        title={`${t('projects.progress')} ${
-          project.progressPercent == null ? '—' : `${formatNumber(project.progressPercent, locale)}٪`
-        }`}
-      >
-        <MiniProgressRing
-          value={project.progressPercent}
-          locale={locale}
-          color={progressTone(project.progressPercent)}
-          size={compact ? 'sm' : 'lg'}
-        />
-        {compact ? null : (
-          <span className="live-board-stat-chip-label">{t('projects.progress')}</span>
-        )}
-      </div>
-      <div
-        className={`live-board-stat-chip${overdue ? ' is-overdue' : ''}${compact ? ' is-compact' : ''}`}
-        title={`${daysTitle} ${daysLabel}`}
-      >
-        <MiniDaysBadge
-          daysLabel={daysLabel}
-          overdue={overdue}
-          title={daysTitle}
-          label={daysShort}
-          size={compact ? 'sm' : 'lg'}
-        />
-        {compact ? null : <span className="live-board-stat-chip-label">{daysTitle}</span>}
-      </div>
+      {showProgress ? (
+        <div
+          className={`live-board-stat-chip${compact ? ' is-compact' : ''}`}
+          title={`${t('projects.progress')} ${
+            project.progressPercent == null
+              ? '—'
+              : `${formatNumber(project.progressPercent, locale)}٪`
+          }`}
+        >
+          <MiniProgressRing
+            value={project.progressPercent}
+            locale={locale}
+            color={progressTone(project.progressPercent)}
+            size={compact ? 'sm' : 'lg'}
+          />
+          {compact ? null : (
+            <span className="live-board-stat-chip-label">{t('projects.progress')}</span>
+          )}
+        </div>
+      ) : null}
+      {showDays ? (
+        <div
+          className={`live-board-stat-chip${overdue ? ' is-overdue' : ''}${compact ? ' is-compact' : ''}`}
+          title={`${daysTitle} ${daysLabel}`}
+        >
+          <MiniDaysBadge
+            daysLabel={daysLabel}
+            overdue={overdue}
+            title={daysTitle}
+            label={daysShort}
+            size={compact ? 'sm' : 'lg'}
+          />
+          {compact ? null : <span className="live-board-stat-chip-label">{daysTitle}</span>}
+        </div>
+      ) : null}
     </div>
   )
 }

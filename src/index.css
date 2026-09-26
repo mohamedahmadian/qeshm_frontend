@@ -1311,12 +1311,13 @@ th {
 }
 
 .live-board-quick-record-clock {
-  min-height: 1rem;
+  min-height: 1.35rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
     monospace;
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
   line-height: 1;
+  letter-spacing: 0.04em;
   color: #0f766e;
 }
 

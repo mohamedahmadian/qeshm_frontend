@@ -31,7 +31,7 @@ export function ContractorCreatePage() {
       <PageHeader
         icon={Building2}
         title={t('contractors.create')}
-        subtitle={<EntityNameSubtitle name={project.data.systemName} icon={FolderKanban} />}
+        subtitle={<EntityNameSubtitle name={project.data.systemName} icon={FolderKanban} to={`/projects/${projectId}`} />}
       />
       <ContractorForm
         onSubmit={async (payload) => {

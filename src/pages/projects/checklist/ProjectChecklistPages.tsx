@@ -159,9 +159,7 @@ export function ProjectChecklistListPage() {
   const weightHint = scope.phaseId
     ? t('projectChecklist.phaseWeightHint')
     : t('projectChecklist.weightHint')
-  const activeMode = scope.phaseId
-    ? projectProgressModes.PHASE_CHECKLIST
-    : projectProgressModes.PROJECT_CHECKLIST
+  const activeMode = projectProgressModes.PROJECT_CHECKLIST
 
   const boardItems = boardQuery.data ?? []
 
@@ -174,6 +172,7 @@ export function ProjectChecklistListPage() {
           <EntityNameSubtitle
             name={scope.phase?.name ?? scope.project.systemName}
             icon={scope.phase ? Flag : ListChecks}
+            to={scope.phase ? undefined : `/projects/${scope.projectId}`}
           />
         }
         action={
@@ -186,11 +185,15 @@ export function ProjectChecklistListPage() {
         }
       />
       <p className="mb-4 rounded-2xl border border-teal-100 bg-teal-50/70 px-4 py-3 text-sm leading-6 text-ink-700">
-        {summary?.drivesProgress
-          ? t('projectChecklist.drivesHint')
-          : t('projectChecklist.idleHint', {
-              mode: t(`projects.progressModes.${activeMode}`),
-            })}
+        {scope.phaseId
+          ? summary?.drivesProgress
+            ? t('projectChecklist.phaseDrivesHint')
+            : t('projectChecklist.phaseIdleHint')
+          : summary?.drivesProgress
+            ? t('projectChecklist.drivesHint')
+            : t('projectChecklist.idleHint', {
+                mode: t(`projects.progressModes.${activeMode}`),
+              })}
       </p>
       {scope.phaseId && summary ? (
         <div className="mb-4 grid gap-2 sm:grid-cols-3 sm:gap-3">
@@ -202,7 +205,7 @@ export function ProjectChecklistListPage() {
           />
           <FormFactTile
             icon={ListChecks}
-            label={t('projectChecklist.doneWeight')}
+            label={t('projectChecklist.phaseDoneWeight')}
             value={`${formatNumber(summary.doneWeight, locale)}٪`}
             tone="mint"
           />
@@ -346,6 +349,7 @@ export function ProjectChecklistCreatePage() {
           <EntityNameSubtitle
             name={scope.phase?.name ?? scope.project.systemName}
             icon={scope.phase ? Flag : ListChecks}
+            to={scope.phase ? undefined : `/projects/${scope.projectId}`}
           />
         }
       />

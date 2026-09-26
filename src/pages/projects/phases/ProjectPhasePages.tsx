@@ -30,13 +30,14 @@ import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api } from '../../../lib/api'
 import {
-  projectProgressModes,
+  phaseProgressModes,
   projectStatusOrder,
   type Paginated,
   type Project,
   type ProjectPhase,
 } from '../../../types/app'
-import { projectPhaseChecklistPath } from '../checklist/checklist-paths'
+import { useChecklistManage } from '../checklist/ChecklistManageModal'
+import { ProjectDetailChecklist } from '../checklist/ProjectChecklistBoard'
 import { ProjectLifecycleBadge, ProjectProgress } from '../ProjectShared'
 import { ProjectPhaseForm } from './ProjectPhaseForm'
 
@@ -94,7 +95,7 @@ export function ProjectPhaseListPage() {
       <PageHeader
         icon={Flag}
         title={t('projectPhases.title')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={Flag} />}
+        subtitle={<EntityNameSubtitle name={project.systemName} icon={Flag} to={`/projects/${projectId}`} />}
         action={
           <Link to={`${base}/new`}>
             <Button>
@@ -234,10 +235,10 @@ export function ProjectPhaseCreatePage() {
       <PageHeader
         icon={Flag}
         title={t('projectPhases.create')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={Flag} />}
+        subtitle={<EntityNameSubtitle name={project.systemName} icon={Flag} to={`/projects/${projectId}`} />}
       />
       <ProjectPhaseForm
-        progressLocked={project.progressMode === projectProgressModes.PHASE_CHECKLIST}
+        projectId={projectId}
         onSubmit={async (payload) => {
           await api.post(`/projects/${projectId}/phases`, payload)
           toast.success(t('projectPhases.created'))
@@ -275,8 +276,8 @@ export function ProjectPhaseEditPage() {
       />
       <ProjectPhaseForm
         initial={query.data}
-        progressLocked={project.progressMode === projectProgressModes.PHASE_CHECKLIST}
-        checklistTo={projectPhaseChecklistPath(projectId, phaseId)}
+        projectId={projectId}
+        phaseId={phaseId}
         onSubmit={async (payload) => {
           await api.patch(`/projects/${projectId}/phases/${phaseId}`, payload)
           toast.success(t('projectPhases.updated'))
@@ -293,6 +294,7 @@ export function ProjectPhaseDetailPage() {
   const navigate = useNavigate()
   const { confirmDelete } = useConfirmDelete()
   const { projectId } = useProject()
+  const checklist = useChecklistManage(projectId, phaseId)
   const query = useQuery({
     queryKey: ['project-phase', projectId, phaseId],
     enabled: Boolean(projectId && phaseId),
@@ -341,6 +343,12 @@ export function ProjectPhaseDetailPage() {
               tone="teal"
             />
             <FormFactTile
+              icon={ListChecks}
+              label={t('projectPhases.progressMode')}
+              value={t(`projectPhases.progressModes.${phase.progressMode ?? 'MANUAL'}`)}
+              tone="mint"
+            />
+            <FormFactTile
               icon={Percent}
               label={t('projectPhases.progress')}
               value={<ProjectProgress value={phase.progressPercent} />}
@@ -352,13 +360,17 @@ export function ProjectPhaseDetailPage() {
             editTo={`${base}/${phaseId}/edit`}
             editLabel={t('common.edit')}
             deleteLabel={t('projectPhases.delete')}
-            extraItems={[
-              {
-                to: projectPhaseChecklistPath(projectId, phaseId),
-                icon: ListChecks,
-                label: t('projectChecklist.manage'),
-              },
-            ]}
+            extraItems={
+              phase.progressMode === phaseProgressModes.CHECKLIST
+                ? [
+                    {
+                      icon: ListChecks,
+                      label: t('projectChecklist.manage'),
+                      onClick: checklist.openList,
+                    },
+                  ]
+                : undefined
+            }
             onDelete={() =>
               confirmDelete({
                 message: t('projectPhases.confirmDelete'),
@@ -371,6 +383,14 @@ export function ProjectPhaseDetailPage() {
           />
         </div>
       </FormCard>
+      {phase.progressMode === phaseProgressModes.CHECKLIST ? (
+        <ProjectDetailChecklist
+          projectId={projectId}
+          phaseId={phaseId}
+          onEditItem={checklist.openEdit}
+        />
+      ) : null}
+      {checklist.modal}
     </div>
   )
 }

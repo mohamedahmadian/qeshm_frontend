@@ -1,17 +1,12 @@
-import { ClipboardList, Mic, Square } from 'lucide-react'
+import { Mic, Square } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Button } from '../../components/ui/Form'
-import { api, getApiErrorMessage } from '../../lib/api'
-import { localizeDigits, todayIsoDate } from '../../lib/datetime'
-import {
-  projectProgressProcessingModes,
-  type ProjectLiveBoardItem,
-} from '../../types/app'
-import { LiveBoardHeaderStats } from './ProjectLiveBoardMap'
-import { useVoiceCapture } from './progress/useVoiceCapture'
+import { api, getApiErrorMessage } from '../../../lib/api'
+import { localizeDigits, todayIsoDate } from '../../../lib/datetime'
+import { projectProgressProcessingModes } from '../../../types/app'
+import { useVoiceCapture } from './useVoiceCapture'
 
 function formatClock(ms: number, locale: string) {
   const total = Math.max(0, Math.round(ms / 1000))
@@ -23,13 +18,7 @@ function formatClock(ms: number, locale: string) {
 
 const SAVE_AND_PROCESS = projectProgressProcessingModes.DEFERRED
 
-function LiveBoardQuickRecord({
-  project,
-  detailsOpen = false,
-}: {
-  project: ProjectLiveBoardItem
-  detailsOpen?: boolean
-}) {
+export function ProgressQuickRecord({ projectId }: { projectId: string }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const queryClient = useQueryClient()
@@ -37,10 +26,10 @@ function LiveBoardQuickRecord({
   const [busy, setBusy] = useState(false)
   const wantSaveRef = useRef(false)
   const startingRef = useRef(false)
-  const projectIdRef = useRef(project.id)
+  const projectIdRef = useRef(projectId)
   const liveTranscriptSaveRef = useRef('')
 
-  projectIdRef.current = project.id
+  projectIdRef.current = projectId
   liveTranscriptSaveRef.current = liveTranscript
 
   const { recording, elapsed, start, stop } = useVoiceCapture({
@@ -55,21 +44,15 @@ function LiveBoardQuickRecord({
   stopRef.current = stop
 
   useEffect(() => {
-    if (!detailsOpen) return
-    wantSaveRef.current = false
-    stopRef.current()
-  }, [detailsOpen])
-
-  useEffect(() => {
     return () => {
       wantSaveRef.current = false
+      stopRef.current()
     }
-  }, [project.id])
+  }, [])
 
   async function saveRecording(file: File, durationMs: number) {
     if (!wantSaveRef.current) return
     wantSaveRef.current = false
-    const projectId = projectIdRef.current
     const text = liveTranscriptSaveRef.current.trim()
     setBusy(true)
     try {
@@ -77,7 +60,7 @@ function LiveBoardQuickRecord({
       form.append('file', file)
       form.append('durationMs', String(Math.round(durationMs)))
       const { data } = await api.post<{ id: string }>('/files', form)
-      await api.post(`/projects/${projectId}/progress`, {
+      await api.post(`/projects/${projectIdRef.current}/progress`, {
         occurredAt: todayIsoDate(),
         body: text || null,
         transcript: null,
@@ -87,8 +70,9 @@ function LiveBoardQuickRecord({
         imageIds: [],
       })
       toast.success(t('projectProgress.created'))
-      await queryClient.invalidateQueries({ queryKey: ['projects', 'live-board'] })
-      await queryClient.invalidateQueries({ queryKey: ['public', 'projects', 'live-board'] })
+      await queryClient.invalidateQueries({ queryKey: ['project-progress', projectIdRef.current] })
+      await queryClient.invalidateQueries({ queryKey: ['project', projectIdRef.current] })
+      await queryClient.invalidateQueries({ queryKey: ['projects'] })
       setLiveTranscript('')
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
@@ -119,13 +103,10 @@ function LiveBoardQuickRecord({
       <div className="live-board-quick-record-row">
         <button
           type="button"
-          disabled={busy || detailsOpen}
-          title={t('projectLiveBoard.saveAndProcess')}
-          aria-label={
-            recording ? t('projectProgress.stopRecord') : t('projectLiveBoard.saveAndProcess')
-          }
+          disabled={busy}
+          title={recording ? t('projectProgress.stopRecord') : t('projectProgress.record')}
+          aria-label={recording ? t('projectProgress.stopRecord') : t('projectProgress.record')}
           aria-pressed={recording}
-          onPointerDown={(event) => event.stopPropagation()}
           onClick={() => void toggle()}
           className={`live-board-quick-record-btn${recording ? ' is-recording' : ''}`}
         >
@@ -140,42 +121,6 @@ function LiveBoardQuickRecord({
       <p className={`live-board-quick-record-clock${showClock ? '' : ' is-idle'}`} dir="ltr">
         {showClock ? clock : '\u00a0'}
       </p>
-    </div>
-  )
-}
-
-export function LiveBoardAdminHeaderActions({
-  project,
-  locale,
-  detailsOpen = false,
-  onAddProgress,
-}: {
-  project: ProjectLiveBoardItem
-  locale: string
-  detailsOpen?: boolean
-  onAddProgress: () => void
-}) {
-  const { t } = useTranslation()
-  return (
-    <div
-      className="live-board-map-toolbar flex flex-wrap items-center justify-end gap-2"
-      onPointerDown={(event) => event.stopPropagation()}
-    >
-      <div className="live-board-toolbar-stats">
-        <LiveBoardHeaderStats project={project} locale={locale} size="sm" hideEmpty />
-      </div>
-      <div className="live-board-toolbar-actions">
-        <LiveBoardQuickRecord key={project.id} project={project} detailsOpen={detailsOpen} />
-        <Button
-          type="button"
-          variant="soft"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={onAddProgress}
-        >
-          <ClipboardList className="size-4" aria-hidden />
-          {t('projectLiveBoard.addProgress')}
-        </Button>
-      </div>
     </div>
   )
 }

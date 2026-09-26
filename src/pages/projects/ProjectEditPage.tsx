@@ -31,7 +31,7 @@ export function ProjectEditPage() {
       <PageHeader
         icon={FolderKanban}
         title={t('projects.edit')}
-        subtitle={<EntityNameSubtitle name={query.data.systemName} icon={FolderKanban} />}
+        subtitle={<EntityNameSubtitle name={query.data.systemName} icon={FolderKanban} to={`/projects/${query.data.id}`} />}
       />
       <ProjectForm
         excludeId={query.data.id}

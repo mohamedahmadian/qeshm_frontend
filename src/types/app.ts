@@ -601,6 +601,19 @@ export const projectProgressModeOrder: ProjectProgressMode[] = [
   projectProgressModes.PHASE_CHECKLIST,
 ];
 
+export const phaseProgressModes = {
+  MANUAL: "MANUAL",
+  CHECKLIST: "CHECKLIST",
+} as const;
+
+export type PhaseProgressMode =
+  (typeof phaseProgressModes)[keyof typeof phaseProgressModes];
+
+export const phaseProgressModeOrder: PhaseProgressMode[] = [
+  phaseProgressModes.MANUAL,
+  phaseProgressModes.CHECKLIST,
+];
+
 export type ProjectOperator = {
   id: string;
   name: string;
@@ -686,6 +699,7 @@ export type ProjectPhase = {
   startDate: string | null;
   endDate: string | null;
   status: ProjectStatus | null;
+  progressMode: PhaseProgressMode;
   progressPercent: number | null;
   createdAt: string;
   updatedAt: string;

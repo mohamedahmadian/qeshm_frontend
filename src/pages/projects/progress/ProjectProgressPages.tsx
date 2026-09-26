@@ -53,6 +53,7 @@ import {
   type ProjectProgressTranscriptionStatus,
 } from '../../../types/app'
 import { ProjectProgress } from '../ProjectShared'
+import { ProgressQuickRecord } from './ProgressQuickRecord'
 import { ProjectProgressForm } from './ProjectProgressForm'
 import { ProjectProgressProjectPicker } from './ProjectProgressProjectPicker'
 import { projectProgressCreatePath, projectProgressPath } from './progress-paths'
@@ -141,14 +142,17 @@ export function ProjectProgressListPage() {
       <PageHeader
         icon={ClipboardList}
         title={t('projectProgress.title')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={ClipboardList} />}
+        subtitle={<EntityNameSubtitle name={project.systemName} icon={ClipboardList} to={`/projects/${projectId}`} />}
         action={
-          <Link to={projectProgressCreatePath(projectId)}>
-            <Button>
-              <Plus className="size-4" />
-              {t('projectProgress.create')}
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <ProgressQuickRecord projectId={projectId} />
+            <Link to={projectProgressCreatePath(projectId)}>
+              <Button>
+                <Plus className="size-4" />
+                {t('projectProgress.create')}
+              </Button>
+            </Link>
+          </div>
         }
       />
       <SearchBar
@@ -285,7 +289,7 @@ export function ProjectProgressCreatePage() {
       <PageHeader
         icon={ClipboardList}
         title={t('projectProgress.create')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={ClipboardList} />}
+        subtitle={<EntityNameSubtitle name={project.systemName} icon={ClipboardList} to={`/projects/${projectId}`} />}
       />
       <ProjectProgressForm
         onSubmit={async (payload) => {
@@ -329,7 +333,7 @@ export function ProjectProgressCreateGlobalPage() {
         title={t('projectProgress.create')}
         subtitle={
           selected ? (
-            <EntityNameSubtitle name={selected.systemName} icon={ClipboardList} />
+            <EntityNameSubtitle name={selected.systemName} icon={ClipboardList} to={`/projects/${selected.id}`} />
           ) : (
             t('projectProgress.createSubtitle')
           )
@@ -451,7 +455,7 @@ export function ProjectProgressDetailPage() {
         title={t('projectProgress.details')}
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
-            <EntityNameSubtitle name={entry.project.systemName} icon={FolderKanban} />
+            <EntityNameSubtitle name={entry.project.systemName} icon={FolderKanban} to={`/projects/${entry.project.id}`} />
             <EntityNameSubtitle name={title} icon={ClipboardList} />
           </span>
         }

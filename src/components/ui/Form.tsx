@@ -283,20 +283,35 @@ export function EntityNameSubtitle({
   icon: Icon,
   copyValue,
   label,
+  to,
 }: {
   name: string
   icon: LucideIcon
   copyValue?: string | null
   label?: string
+  to?: string
 }) {
-  return (
-    <span className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-800">
+  const className =
+    'inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-800'
+  const content = (
+    <>
       <Icon className="size-4 shrink-0" aria-hidden />
       <span className="min-w-0 truncate">
         {label ? <span>{label} : </span> : null}
         {copyValue ? <CopyableDigits value={copyValue} /> : name}
       </span>
-    </span>
+    </>
+  )
+  if (!to) {
+    return <span className={className}>{content}</span>
+  }
+  return (
+    <Link
+      to={to}
+      className={`${className} cursor-pointer transition hover:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300`}
+    >
+      {content}
+    </Link>
   )
 }
 

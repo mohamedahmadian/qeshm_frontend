@@ -100,7 +100,7 @@ export function ProjectDocumentListPage() {
       <PageHeader
         icon={Paperclip}
         title={t('projectDocuments.title')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={Paperclip} />}
+        subtitle={<EntityNameSubtitle name={project.systemName} icon={Paperclip} to={`/projects/${projectId}`} />}
         action={
           <Link to={`${base}/new`}>
             <Button>

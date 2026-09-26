@@ -16,10 +16,14 @@ export function ProjectChecklistForm({
   initial,
   weightHint,
   onSubmit,
+  onCancel,
+  embedded = false,
 }: {
   initial?: ProjectChecklistPayload
   weightHint: string
   onSubmit: (payload: ProjectChecklistPayload) => Promise<void>
+  onCancel?: () => void
+  embedded?: boolean
 }) {
   const { t } = useTranslation()
   const [title, setTitle] = useState(initial?.title ?? '')
@@ -50,13 +54,8 @@ export function ProjectChecklistForm({
     }
   }
 
-  return (
-    <FormCard
-      icon={ListChecks}
-      title={initial ? initial.title || t('projectChecklist.edit') : t('projectChecklist.create')}
-      subtitle={initial ? undefined : t('projectChecklist.createSubtitle')}
-    >
-      <AppForm onSubmit={submit} className={formCardBodyClassName}>
+  const form = (
+      <AppForm onSubmit={submit} className={embedded ? 'space-y-4' : formCardBodyClassName}>
         <FormField icon={Type} label={t('projectChecklist.name')} htmlFor="checklistTitle">
           <input
             id="checklistTitle"
@@ -95,9 +94,21 @@ export function ProjectChecklistForm({
           submitLabel={t('projectChecklist.save')}
           cancelLabel={t('projectChecklist.cancel')}
           submitting={saving}
-          onCancel={() => history.back()}
+          headerIcons={embedded ? false : undefined}
+          onCancel={onCancel ?? (() => history.back())}
         />
       </AppForm>
+  )
+
+  if (embedded) return form
+
+  return (
+    <FormCard
+      icon={ListChecks}
+      title={initial ? initial.title || t('projectChecklist.edit') : t('projectChecklist.create')}
+      subtitle={initial ? undefined : t('projectChecklist.createSubtitle')}
+    >
+      {form}
     </FormCard>
   )
 }

@@ -61,7 +61,7 @@ export function ContractorsListPage() {
       <PageHeader
         icon={Building2}
         title={t('contractors.title')}
-        subtitle={<EntityNameSubtitle name={project.data.systemName} icon={FolderKanban} />}
+        subtitle={<EntityNameSubtitle name={project.data.systemName} icon={FolderKanban} to={`/projects/${projectId}`} />}
         action={
           <Link to={`${contractorsPath(projectId)}/new`}>
             <Button>

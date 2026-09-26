@@ -19,8 +19,8 @@ export function ProcessingModeField({
     value: ProjectProgressProcessingMode
     icon: typeof Zap
   }[] = [
-    { value: projectProgressProcessingModes.IMMEDIATE, icon: Zap },
     { value: projectProgressProcessingModes.DEFERRED, icon: Clock3 },
+    { value: projectProgressProcessingModes.IMMEDIATE, icon: Zap },
   ]
 
   return (

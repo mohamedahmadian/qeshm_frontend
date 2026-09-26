@@ -67,18 +67,29 @@ export function projectOperatorsText(operators?: { name: string }[]) {
 export function projectManageExtraItems(
   projectId: string,
   t: TFunction,
+  options?: { onChecklist?: () => void; showChecklist?: boolean },
 ): DetailActionExtraItem[] {
+  const showChecklist = options?.showChecklist !== false
+  const checklistItem: DetailActionExtraItem | null = showChecklist
+    ? options?.onChecklist
+      ? {
+          icon: ListChecks,
+          label: t('projectChecklist.manage'),
+          onClick: options.onChecklist,
+        }
+      : {
+          to: `/projects/${projectId}/checklist`,
+          icon: ListChecks,
+          label: t('projectChecklist.manage'),
+        }
+    : null
   return [
     {
       to: `/projects/${projectId}/progress`,
       icon: ClipboardList,
       label: t('projectProgress.manage'),
     },
-    {
-      to: `/projects/${projectId}/checklist`,
-      icon: ListChecks,
-      label: t('projectChecklist.manage'),
-    },
+    ...(checklistItem ? [checklistItem] : []),
     {
       to: `/projects/${projectId}/phases`,
       icon: Flag,

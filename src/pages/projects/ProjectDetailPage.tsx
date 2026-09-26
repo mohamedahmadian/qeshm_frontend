@@ -1,5 +1,6 @@
 import {
   CalendarRange,
+  ClipboardList,
   FolderKanban,
   Gauge,
   Globe,
@@ -23,7 +24,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { DateText } from '../../components/ui/DateText'
-import { DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../components/ui/Form'
+import { Button, DetailActions, EntityNameSubtitle, LoadingState, PageHeader, formShellClassName } from '../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
 import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
@@ -32,6 +33,8 @@ import { formatNumber, localizeDigits } from '../../lib/datetime'
 import { projectBoundaryPolygons } from '../../lib/geo'
 import { projectColor } from '../../lib/project-color'
 import { projectProgressModes, type Project } from '../../types/app'
+import { useChecklistManage } from './checklist/ChecklistManageModal'
+import { projectProgressCreatePath } from './progress/progress-paths'
 import { ProjectDetailChecklist } from './checklist/ProjectChecklistBoard'
 import {
   ProjectColorDot,
@@ -48,6 +51,7 @@ export function ProjectDetailPage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { id } = useParams()
+  const checklist = useChecklistManage(id)
   const navigate = useNavigate()
   const { confirmDelete } = useConfirmDelete()
   const query = useQuery({
@@ -79,7 +83,18 @@ export function ProjectDetailPage() {
         title={t('projects.details')}
         subtitle={<EntityNameSubtitle name={project.systemName} icon={FolderKanban} />}
       />
-      <FormCard icon={FolderKanban} title={project.systemName}>
+      <FormCard
+        icon={FolderKanban}
+        title={project.systemName}
+        action={
+          <Link to={projectProgressCreatePath(project.id)}>
+            <Button type="button" variant="soft">
+              <ClipboardList className="size-4" aria-hidden />
+              {t('projectProgress.create')}
+            </Button>
+          </Link>
+        }
+      >
         <div className="space-y-6 p-5 sm:p-6">
           <FormSectionTitle icon={Landmark}>{t('projects.orgSection')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
@@ -297,7 +312,7 @@ export function ProjectDetailPage() {
         </div>
       </FormCard>
       {project.progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
-        <ProjectDetailChecklist projectId={project.id} />
+        <ProjectDetailChecklist projectId={project.id} onEditItem={checklist.openEdit} />
       ) : null}
       <DetailActions
         editTo={`/projects/${project.id}/edit`}
@@ -312,8 +327,12 @@ export function ProjectDetailPage() {
             onDeleted: () => navigate('/projects'),
           })
         }
-        extraItems={projectManageExtraItems(project.id, t)}
+        extraItems={projectManageExtraItems(project.id, t, {
+          onChecklist: checklist.openList,
+          showChecklist: project.progressMode === projectProgressModes.PROJECT_CHECKLIST,
+        })}
       />
+      {checklist.modal}
     </div>
   )
 }

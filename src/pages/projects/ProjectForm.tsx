@@ -37,8 +37,8 @@ import { getApiErrorMessage, api } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
 import { projectBoundaryPolygons, QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
 import { DEFAULT_PROJECT_COLOR, PROJECT_COLOR_SWATCHES, projectColor } from '../../lib/project-color'
+import { useChecklistManage } from './checklist/ChecklistManageModal'
 import { ProjectDetailChecklist } from './checklist/ProjectChecklistBoard'
-import { projectChecklistPath } from './checklist/checklist-paths'
 import { projectManageExtraItems } from './ProjectShared'
 import {
   projectImportanceOrder,
@@ -114,6 +114,7 @@ export function ProjectForm({
   onSubmit: (payload: ProjectPayload) => Promise<void>
 }) {
   const { t, i18n } = useTranslation()
+  const checklist = useChecklistManage(projectId)
   const { user } = useAuth()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const [tab, setTab] = useState<ProjectFormTab>('info')
@@ -302,6 +303,7 @@ export function ProjectForm({
   }
 
   return (
+    <>
     <FormCard
       icon={FolderKanban}
       title={initial ? initial.systemName || t('projects.edit') : t('projects.create')}
@@ -640,12 +642,10 @@ export function ProjectForm({
                       <p className="text-xs leading-6 text-ink-500">{t('projects.progressFromChecklist')}</p>
                     ) : null}
                     {projectId && progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
-                      <Link to={projectChecklistPath(projectId)} className="inline-flex">
-                        <Button type="button" variant="ghost">
-                          <ListChecks className="size-4" aria-hidden />
-                          {t('projectChecklist.manage')}
-                        </Button>
-                      </Link>
+                      <Button type="button" variant="ghost" onClick={checklist.openList}>
+                        <ListChecks className="size-4" aria-hidden />
+                        {t('projectChecklist.manage')}
+                      </Button>
                     ) : null}
                     {projectId && progressMode === projectProgressModes.PHASE_CHECKLIST ? (
                       <Link to={`/projects/${projectId}/phases`} className="inline-flex">
@@ -692,7 +692,7 @@ export function ProjectForm({
           </div>
 
           {projectId && progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
-            <ProjectDetailChecklist projectId={projectId} />
+            <ProjectDetailChecklist projectId={projectId} onEditItem={checklist.openEdit} />
           ) : null}
 
           <FormActions
@@ -700,11 +700,17 @@ export function ProjectForm({
             cancelLabel={t('projects.cancel')}
             submitting={saving}
             onCancel={() => history.back()}
-            extraItems={projectId ? projectManageExtraItems(projectId, t) : undefined}
+            extraItems={
+              projectId
+                ? projectManageExtraItems(projectId, t, { onChecklist: checklist.openList })
+                : undefined
+            }
           />
         </AppForm>
       </div>
     </FormCard>
+    {checklist.modal}
+    </>
   )
 }
 
