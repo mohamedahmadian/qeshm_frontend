@@ -70,6 +70,28 @@ function ProgressTotalRing({ value }: { value: number | null }) {
   )
 }
 
+function RelatedReportCount({ count }: { count: number | null }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const label = t('stakeholders.relatedReportCount')
+  const value = count == null ? '—' : formatNumber(count, locale)
+  return (
+    <span
+      className="inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl bg-white px-2.5 shadow-[0_6px_16px_rgba(46,189,182,0.16)] ring-1 ring-teal-100"
+      role="img"
+      aria-label={`${label} ${value}`}
+    >
+      <span className="flex size-8 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+        <ClipboardList className="size-4" aria-hidden />
+      </span>
+      <span className="flex min-w-8 flex-col items-start leading-none">
+        <span className="text-sm font-bold tabular-nums text-ink-900">{value}</span>
+        <span className="mt-0.5 text-[10px] font-medium text-ink-500">{label}</span>
+      </span>
+    </span>
+  )
+}
+
 export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'org' }) {
   const { user } = useAuth()
   const { t, i18n } = useTranslation()
@@ -126,9 +148,12 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
         icon={ClipboardList}
         title={
           mode === 'contractor' || projectId || contractorId ? (
-            <span className="inline-flex items-center gap-3">
+            <span className="inline-flex flex-wrap items-center gap-3">
               {t(mode === 'contractor' ? 'menus.stakeholderProgress' : 'menus.stakeholderReports')}
               <ProgressTotalRing value={query.data?.avgProgressPercent ?? null} />
+              {mode === 'org' && (projectId || contractorId) ? (
+                <RelatedReportCount count={query.data?.total ?? null} />
+              ) : null}
             </span>
           ) : (
             t('menus.stakeholderReports')
