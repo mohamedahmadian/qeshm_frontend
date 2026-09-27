@@ -14,11 +14,7 @@ export function isSystemRoleLocked(role?: { isSystem?: boolean; code?: string } 
 }
 
 export function isRolePermissionsLocked(role?: { code?: string } | null) {
-  return (
-    role?.code === ADMIN_ROLE_CODE ||
-    role?.code === CITIZEN_ROLE_CODE ||
-    role?.code === CONTRACTOR_ROLE_CODE
-  )
+  return role?.code === ADMIN_ROLE_CODE || role?.code === CITIZEN_ROLE_CODE
 }
 
 /** منوهای مخصوص درگاه پیمانکار؛ در سایدبار مدیر سازمان نمی‌آیند. */
@@ -27,11 +23,6 @@ const contractorOnlyMenus = new Set([
   'stakeholders.progress',
   'stakeholders.correspondence',
 ])
-
-/** منوهای مشترک درگاه پیمانکار و مدیر. */
-const contractorSharedMenus = new Set(['stakeholders.port-sales-reports'])
-
-const contractorPortalMenus = new Set([...contractorOnlyMenus, ...contractorSharedMenus])
 
 export function isContractor(user?: { roles?: { code: string }[] } | null) {
   return Boolean(user?.roles?.some((role) => role.code === CONTRACTOR_ROLE_CODE))
@@ -80,15 +71,11 @@ export function hasMenuAccess(
   moduleCode: string,
 ) {
   if (menuCode === 'dashboard.home') return true
-  if (isContractor(user) && !isAdmin(user) && moduleCode === 'singard') return false
-  if (menuCode === 'singard.submit' || menuCode === 'singard.mine') return true
   if (
-    isContractor(user) &&
-    !isAdmin(user) &&
-    moduleCode === 'stakeholders' &&
-    !contractorPortalMenus.has(menuCode)
+    !(isContractor(user) && !isAdmin(user)) &&
+    (menuCode === 'singard.submit' || menuCode === 'singard.mine')
   ) {
-    return false
+    return true
   }
   if (moduleCode === 'board') {
     if (
@@ -154,7 +141,8 @@ export function orgStakeholderRedirect(
   return null
 }
 
-const ALWAYS_ALLOWED_PREFIXES = ['/account', '/settings', '/singard/submit', '/singard/mine']
+const ALWAYS_ALLOWED_PREFIXES = ['/account', '/settings']
+const OPEN_SINGARD_PREFIXES = ['/singard/submit', '/singard/mine']
 
 export function canAccessPath(
   user: Pick<AuthUser, 'isAdmin' | 'permissionCodes' | 'roles' | 'position'> | null | undefined,
@@ -163,10 +151,13 @@ export function canAccessPath(
   if (!user) return false
   if (isAdmin(user)) return orgStakeholderRedirect(user, pathname) == null
   if (pathname === '/' || pathname === '/dashboard') return true
-  if (isContractor(user) && (pathname === '/singard' || pathname.startsWith('/singard/'))) {
-    return false
-  }
   if (ALWAYS_ALLOWED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    return true
+  }
+  if (
+    !isContractor(user) &&
+    OPEN_SINGARD_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  ) {
     return true
   }
   if (pathname === '/board/minutes' || pathname.startsWith('/board/minutes/') || /\/board\/requests\/[^/]+\/minutes/.test(pathname)) {

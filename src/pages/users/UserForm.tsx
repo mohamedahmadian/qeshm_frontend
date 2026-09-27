@@ -27,6 +27,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { OpenUserPanelButton } from '../../components/auth/OpenUserPanelButton'
 import { CheckboxField } from '../../components/ui/CheckboxField'
 import { FileDropField } from '../../components/ui/FileDropField'
 import { PersianDateField } from '../../components/ui/PersianDateField'
@@ -692,6 +693,11 @@ export function UserForm({
       icon={qeshmondiMode ? UserRoundCheck : UserRound}
       title={isEdit ? displayName || (qeshmondiMode ? t('qeshmondi.edit') : t('users.edit')) : qeshmondiMode ? t('qeshmondi.create') : t('users.create')}
       subtitle={isEdit ? undefined : qeshmondiMode ? t('qeshmondi.createSubtitle') : t('users.createSubtitle')}
+      action={
+        isEdit && initial?.id && !selfProfile ? (
+          <OpenUserPanelButton userId={initial.id} status={initial.status} />
+        ) : undefined
+      }
     >
       <div className="space-y-4 p-5 sm:p-6">
         <nav className="flex flex-wrap gap-2 rounded-2xl border border-line bg-cream-50/80 p-3">
