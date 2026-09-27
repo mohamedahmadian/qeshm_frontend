@@ -22,12 +22,37 @@ type ImportResult = {
   skippedRows: { rowNumber: number; reason: string }[]
 }
 
+type ImportStep = 'lookup' | 'writing' | 'roles'
+
+type ImportProgress = {
+  phase: 'uploading' | 'parsing' | 'saving'
+  step?: ImportStep | null
+  percent: number
+  processed?: number
+  total?: number
+}
+
+type ImportJob = {
+  phase: 'parsing' | 'saving' | 'done' | 'error'
+  step: ImportStep | null
+  percent: number
+  processed: number
+  total: number
+  error: string | null
+  result: ImportResult | null
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export function QeshmondiUpdatePage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const navigate = useNavigate()
   const [file, setFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
+  const [progress, setProgress] = useState<ImportProgress | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
 
   async function submit() {
@@ -36,21 +61,63 @@ export function QeshmondiUpdatePage() {
       return
     }
     setSaving(true)
+    setResult(null)
+    setProgress({ phase: 'uploading', percent: 0 })
     try {
+      const started = Date.now()
       const body = new FormData()
       body.append('file', file)
-      const { data } = await api.post<ImportResult>('/users/qeshmondi-import', body)
-      setResult(data)
+      const { data } = await api.post<{ jobId: string }>('/users/qeshmondi-import', body, {
+        onUploadProgress: (event) => {
+          const total = event.total || file.size || 0
+          const ratio = total > 0 ? event.loaded / total : 0
+          setProgress({
+            phase: 'uploading',
+            percent: Math.min(35, Math.round(ratio * 35)),
+          })
+        },
+      })
+      setProgress({ phase: 'parsing', percent: 35 })
+      let outcome: ImportResult | null = null
+      for (;;) {
+        if (Date.now() - started > 20 * 60 * 1000) {
+          throw new Error(t('qeshmondiUpdate.importFailed'))
+        }
+        await wait(400)
+        const { data: job } = await api.get<ImportJob>(`/users/qeshmondi-imports/${data.jobId}`)
+        if (job.phase === 'error') {
+          throw new Error(job.error || t('qeshmondiUpdate.importFailed'))
+        }
+        const phase: ImportProgress['phase'] = job.phase === 'parsing' ? 'parsing' : 'saving'
+        setProgress({
+          phase,
+          step: job.step,
+          percent: 35 + Math.round((job.percent / 100) * 65),
+          processed: job.processed,
+          total: job.total,
+        })
+        if (job.phase === 'done') {
+          outcome = job.result
+          break
+        }
+      }
+      if (!outcome) throw new Error(t('qeshmondiUpdate.importFailed'))
+      setResult(outcome)
       toast.success(
         t('qeshmondiUpdate.done', {
-          created: formatNumber(data.created, locale),
-          updated: formatNumber(data.updated, locale),
+          created: formatNumber(outcome.created, locale),
+          updated: formatNumber(outcome.updated, locale),
         }),
       )
     } catch (error) {
-      toast.error(getApiErrorMessage(error, t('common.error')))
+      const message =
+        error instanceof Error && error.message && !('isAxiosError' in error)
+          ? error.message
+          : getApiErrorMessage(error, t('qeshmondiUpdate.importFailed'))
+      toast.error(message)
     } finally {
       setSaving(false)
+      setProgress(null)
     }
   }
 
@@ -84,12 +151,13 @@ export function QeshmondiUpdatePage() {
             />
             <p className="text-xs leading-6 text-ink-500">{t('qeshmondiUpdate.fileHint')}</p>
           </FormField>
+          {progress ? <ImportProgressBar progress={progress} locale={locale} /> : null}
           <FormActions
             headerIcons={false}
             submitLabel={t('qeshmondiUpdate.submit')}
-            cancelLabel={t('users.cancel')}
+            cancelLabel={saving ? undefined : t('users.cancel')}
             submitting={saving}
-            onCancel={() => navigate(qeshmondiPath())}
+            onCancel={saving ? undefined : () => navigate(qeshmondiPath())}
           />
         </AppForm>
       </FormCard>
@@ -140,6 +208,52 @@ export function QeshmondiUpdatePage() {
           ) : null}
         </FormCard>
       ) : null}
+    </div>
+  )
+}
+
+function ImportProgressBar({
+  progress,
+  locale,
+}: {
+  progress: ImportProgress
+  locale: string
+}) {
+  const { t } = useTranslation()
+  const percent = Math.max(0, Math.min(100, Math.round(progress.percent)))
+  const total = progress.total ?? 0
+  const processed = progress.processed ?? 0
+  const remaining = Math.max(0, total - processed)
+  const counted =
+    progress.phase === 'saving' && progress.step && total > 0
+      ? t(`qeshmondiUpdate.progress.${progress.step}`, {
+          processed: formatNumber(processed, locale),
+          total: formatNumber(total, locale),
+          remaining: formatNumber(remaining, locale),
+        })
+      : t(`qeshmondiUpdate.progress.${progress.phase === 'saving' ? 'saving' : progress.phase}`)
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3 text-sm text-ink-600">
+        <span>{counted}</span>
+        <span className="tabular-nums" dir="ltr">
+          {formatNumber(percent, locale)}٪
+        </span>
+      </div>
+      <div
+        className="h-2 overflow-hidden rounded-full bg-cream-100"
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={counted}
+      >
+        <div
+          className="h-full rounded-full bg-teal-500 transition-[width] duration-200"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
     </div>
   )
 }

@@ -57,12 +57,28 @@ import type {
   PortTicketStatus,
 } from '../../types/app'
 import { portTicketQeshmondiStatuses, portTicketStatuses } from '../../types/app'
-import { PortSalesReportForm, type PortSalesReportPayload } from './PortSalesReportForm'
+import {
+  PortSalesReportForm,
+  type PortSalesImportProgress,
+  type PortSalesReportPayload,
+} from './PortSalesReportForm'
 import {
   portSalesReportDisplayName,
   portSalesReportPath,
   portSalesReportsPath,
 } from './port-sales-report-paths'
+
+type PortSalesImportJob = {
+  phase: 'parsing' | 'saving' | 'done' | 'error'
+  percent: number
+  processed: number
+  total: number
+  error: string | null
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 function toFormData(payload: PortSalesReportPayload) {
   const form = new FormData()
@@ -316,8 +332,40 @@ export function PortSalesReportCreatePage() {
     <div className={formShellClassName}>
       <PageHeader icon={Ship} title={t('portSalesReports.create')} subtitle={t('portSalesReports.createSubtitle')} />
       <PortSalesReportForm
-        onSubmit={async (payload) => {
-          await api.post('/port-sales-reports', toFormData(payload))
+        onSubmit={async (payload, onProgress) => {
+          const started = Date.now()
+          onProgress?.({ phase: 'uploading', percent: 0 })
+          const { data } = await api.post<{ jobId: string }>('/port-sales-reports', toFormData(payload), {
+            onUploadProgress: (event) => {
+              const total = event.total || payload.file?.size || 0
+              const ratio = total > 0 ? event.loaded / total : 0
+              onProgress?.({
+                phase: 'uploading',
+                percent: Math.min(35, Math.round(ratio * 35)),
+              })
+            },
+          })
+          onProgress?.({ phase: 'parsing', percent: 35 })
+          for (;;) {
+            if (Date.now() - started > 20 * 60 * 1000) {
+              throw new Error(t('portSalesReports.importFailed'))
+            }
+            await wait(400)
+            const { data: job } = await api.get<PortSalesImportJob>(
+              `/port-sales-reports/imports/${data.jobId}`,
+            )
+            if (job.phase === 'error') {
+              throw new Error(job.error || t('portSalesReports.importFailed'))
+            }
+            const phase: PortSalesImportProgress['phase'] = job.phase === 'parsing' ? 'parsing' : 'saving'
+            onProgress?.({
+              phase,
+              percent: 35 + Math.round((job.percent / 100) * 65),
+              processed: job.processed,
+              total: job.total,
+            })
+            if (job.phase === 'done') break
+          }
           toast.success(t('portSalesReports.created'))
           navigate(portSalesReportsPath())
         }}

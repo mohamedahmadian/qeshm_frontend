@@ -1,28 +1,19 @@
 import { LayoutDashboard } from 'lucide-react'
-import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthProvider'
 import { PageHeader, formShellClassName } from '../components/ui/Form'
-import { filterCalendarProjects, projectsWithEndDate } from '../lib/project-calendar'
 import { hasMenuAccess } from '../lib/roles'
-import { DeadlineWidget } from './projects/calendar/DeadlineWidget'
-import { useProjectCalendarItems } from './projects/calendar/useProjectCalendarItems'
+import { DashboardImportantProjects } from './dashboard/DashboardImportantProjects'
+import { DashboardQuickAccess } from './dashboard/DashboardQuickAccess'
+import { DashboardReports } from './dashboard/DashboardReports'
+import { DashboardStats } from './dashboard/DashboardStats'
 
 export function DashboardPage() {
-  const { t, i18n } = useTranslation()
-  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const { t } = useTranslation()
   const { user } = useAuth()
-  const query = useProjectCalendarItems()
-  const items = useMemo(
-    () =>
-      projectsWithEndDate(
-        filterCalendarProjects(query.data ?? [], {
-          includeCompleted: false,
-          includeInactive: false,
-        }),
-      ),
-    [query.data],
-  )
+  const showPanels =
+    hasMenuAccess(user, 'stakeholders.reports', 'stakeholders') ||
+    hasMenuAccess(user, 'projects.list', 'projects')
 
   return (
     <div className={`${formShellClassName} space-y-5`}>
@@ -31,13 +22,14 @@ export function DashboardPage() {
         title={t('dashboard.title')}
         subtitle={t('dashboard.welcomeUser', { name: user?.fullName ?? '' })}
       />
-      <DeadlineWidget
-        items={items}
-        locale={locale}
-        loading={query.isLoading}
-        compact
-        showCalendarLink={hasMenuAccess(user, 'projects.calendar', 'projects')}
-      />
+      <DashboardStats />
+      <DashboardQuickAccess />
+      {showPanels ? (
+        <div className="grid gap-4 lg:grid-cols-2 lg:[&>*:only-child]:col-span-2">
+          <DashboardReports />
+          <DashboardImportantProjects />
+        </div>
+      ) : null}
     </div>
   )
 }

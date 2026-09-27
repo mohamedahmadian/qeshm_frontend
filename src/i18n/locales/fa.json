@@ -122,7 +122,6 @@
     "singard": "سینگارد",
     "board": "هیئت مدیره",
     "qeshmondi": "قشموندی",
-    "ports": "بنادر",
     "stakeholders": "درگاه یکپارچه ذی‌نفعان"
   },
   "menus": {
@@ -307,7 +306,37 @@
     "deadlineWidget": "نزدیک‌ترین تحویل‌ها",
     "deadlineWidgetSubtitle": "پروژه‌های باز، مرتب‌شده بر اساس تاریخ پایان",
     "deadlineEmpty": "پروژهٔ بازی با تاریخ پایان ثبت نشده است.",
-    "seeCalendar": "تقویم پروژه‌ها"
+    "seeCalendar": "تقویم پروژه‌ها",
+    "quickAccess": "دسترسی سریع",
+    "receivedReports": "گزارش‌های دریافتی",
+    "receivedReportsSubtitle": "درگاه یکپارچه ذی‌نفعان",
+    "receivedReportsEmpty": "هنوز گزارش دریافتی ثبت نشده است.",
+    "reportTypeLabel": "نوع گزارش",
+    "reportTypeProgress": "گزارش پیشرفت",
+    "newBadge": "جدید",
+    "seeReports": "همه گزارش‌ها",
+    "importantProjects": "پروژه‌های حائز اهمیت",
+    "importantProjectsSubtitle": "پروژه‌های مهم، نزدیک به تاریخ پایان",
+    "importantProjectsEmpty": "پروژهٔ مهمی برای نمایش نیست.",
+    "seeProjects": "مدیریت پروژه‌ها",
+    "shortcuts": {
+      "users": "مدیریت کاربران",
+      "liveBoard": "تابلوی زنده تحول دیجیتال",
+      "projects": "مدیریت پروژه‌ها",
+      "qeshmondi": "سامانه قشموندی"
+    },
+    "shortcutHints": {
+      "users": "حساب‌ها و دسترسی‌ها",
+      "liveBoard": "وضعیت لحظه‌ای پروژه‌ها",
+      "projects": "فهرست و پیگیری پروژه‌ها",
+      "qeshmondi": "شهروندان قشم"
+    },
+    "stats": {
+      "projects": "تعداد پروژه‌ها",
+      "contractors": "تعداد پیمانکاران",
+      "resolutions": "تعداد مصوبات هیئت مدیره",
+      "qeshmondi": "تعداد قشموندان"
+    }
   },
   "users": {
     "title": "کاربران",
@@ -445,7 +474,16 @@
     "updated": "افراد به‌روزشده",
     "skipped": "ردیف‌های نادیده",
     "skippedRow": "ردیف {{row}}: {{reason}}",
-    "skippedMore": "و {{count}} ردیف دیگر"
+    "skippedMore": "و {{count}} ردیف دیگر",
+    "importFailed": "به‌روزرسانی اطلاعات انجام نشد",
+    "progress": {
+      "uploading": "در حال ارسال فایل",
+      "parsing": "در حال خواندن فایل اکسل",
+      "lookup": "در حال تطبیق کد ملی ({{processed}} از {{total}}، {{remaining}} باقی‌مانده)",
+      "writing": "در حال به‌روزرسانی ({{processed}} از {{total}}، {{remaining}} باقی‌مانده)",
+      "roles": "در حال ثبت نقش شهروند ({{processed}} از {{total}}، {{remaining}} باقی‌مانده)",
+      "saving": "در حال به‌روزرسانی"
+    }
   },
   "userStatuses": {
     "ACTIVE": "فعال",
@@ -634,7 +672,9 @@
     "manualProgress": "پیشرفت دستی",
     "checklistProgress": "چک‌لیست",
     "progressMode": "منبع درصد پیشرفت",
-    "progressModeHint": "تنظیم دستی یعنی خودتان درصد را تعیین می‌کنید. در چک‌لیست پروژه، تیک هر آیتم به اندازه وزن آن درصد پروژه را تغییر می‌دهد. در درصد پیشرفت فازها، درصد پروژه میانگین درصد فازهاست.",
+    "progressModeHint": "در چک‌لیست پروژه، تیک هر آیتم به اندازه وزن آن درصد پروژه را تغییر می‌دهد. در درصد پیشرفت فازها، درصد پروژه میانگین درصد فازهاست.",
+    "progressModePlaceholder": "چک‌لیست پروژه یا درصد پیشرفت فازها",
+    "progressModeRequired": "منبع درصد پیشرفت را انتخاب کنید: چک‌لیست پروژه یا درصد پیشرفت فازها",
     "progressFromChecklist": "این درصد از چک‌لیست محاسبه می‌شود و با جابه‌جایی نوار عوض نمی‌شود.",
     "progressModes": {
       "MANUAL": "تنظیم دستی",
@@ -2519,6 +2559,13 @@
     "delete": "حذف گزارش",
     "confirmDelete": "این گزارش و همه بلیت‌های مرتبط حذف شود؟",
     "created": "گزارش فروش ثبت شد",
+    "importFailed": "بارگذاری گزارش فروش انجام نشد",
+    "progress": {
+      "uploading": "در حال ارسال فایل",
+      "parsing": "در حال خواندن فایل اکسل",
+      "saving": "در حال ثبت بلیت‌ها",
+      "savingCount": "در حال ثبت بلیت‌ها ({{processed}} از {{total}})"
+    },
     "updated": "گزارش فروش به‌روز شد",
     "deleted": "گزارش فروش حذف شد",
     "downloadFile": "دانلود فایل",

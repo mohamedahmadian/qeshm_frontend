@@ -293,7 +293,7 @@ export function ProjectProgressRing({
           <span className="text-[11px] font-bold tabular-nums leading-none text-ink-900">{label}</span>
         </div>
       </div>
-      {progressMode ? (
+      {progressMode && progressMode !== projectProgressModes.MANUAL ? (
         <p className="max-w-24 text-center text-[10px] leading-4 text-ink-500">
           {t(progressRingCaption[progressMode])}
         </p>

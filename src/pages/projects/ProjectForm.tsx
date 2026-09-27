@@ -44,8 +44,8 @@ import { projectManageExtraItems } from './ProjectShared'
 import {
   projectImportanceOrder,
   projectImportances,
-  projectProgressModeOrder,
   projectProgressModes,
+  selectableProjectProgressModes,
   projectStatusOrder,
   projectStatuses,
   type OrganizationUnit,
@@ -132,7 +132,7 @@ export function ProjectForm({
   const [isActive, setIsActive] = useState(initial?.isActive ?? true)
   const [status, setStatus] = useState<string>(initial?.status ?? projectStatusOrder[0])
   const [progressMode, setProgressMode] = useState<ProjectProgressMode>(
-    initial?.progressMode ?? projectProgressModes.MANUAL,
+    initial?.progressMode ?? projectProgressModes.PROJECT_CHECKLIST,
   )
   const [progressPercent, setProgressPercent] = useState<number | null>(
     initial?.progressPercent ?? null,
@@ -278,18 +278,12 @@ export function ProjectForm({
       toast.error(t('projects.rangeInvalid'))
       return
     }
-    const manualProgress = progressMode === projectProgressModes.MANUAL
-    const progressChanged =
-      manualProgress &&
-      Boolean(initial) &&
-      progressPercent !== (initial?.progressPercent ?? null)
-    const nextStatus = (
-      manualProgress && progressPercent === 100
-        ? projectStatuses.COMPLETED
-        : progressChanged
-          ? projectStatuses.IN_PROGRESS
-          : (status || projectStatusOrder[0])
-    ) as ProjectStatus
+    if (progressMode === projectProgressModes.MANUAL) {
+      goTab('timeline')
+      toast.error(t('projects.progressModeRequired'))
+      return
+    }
+    const nextStatus = (status || projectStatusOrder[0]) as ProjectStatus
     setSaving(true)
     try {
       await onSubmit({
@@ -625,7 +619,8 @@ export function ProjectForm({
                     id="progressMode"
                     value={progressMode}
                     onChange={(next) => void changeProgressMode(next)}
-                    options={projectProgressModeOrder.map((item) => ({
+                    placeholder={t('projects.progressModePlaceholder')}
+                    options={selectableProjectProgressModes.map((item) => ({
                       value: item,
                       label: t(`projects.progressModes.${item}`),
                     }))}
@@ -643,7 +638,7 @@ export function ProjectForm({
                       max={100}
                       step={1}
                       dir="ltr"
-                      disabled={checklistDriven}
+                      disabled
                       className="progress-slider disabled:cursor-not-allowed disabled:opacity-60"
                       style={{ '--slider-fill': `${progressPercent ?? 0}%` } as CSSProperties}
                       value={progressPercent ?? 0}

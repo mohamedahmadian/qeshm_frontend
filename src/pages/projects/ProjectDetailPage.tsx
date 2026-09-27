@@ -299,12 +299,14 @@ export function ProjectDetailPage() {
                 empty={!project.endDate}
                 tone="mint"
               />
-              <FormFactTile
-                icon={ListChecks}
-                label={t('projects.progressMode')}
-                value={t(`projects.progressModes.${project.progressMode ?? 'MANUAL'}`)}
-                tone="teal"
-              />
+              {project.progressMode && project.progressMode !== projectProgressModes.MANUAL ? (
+                <FormFactTile
+                  icon={ListChecks}
+                  label={t('projects.progressMode')}
+                  value={t(`projects.progressModes.${project.progressMode}`)}
+                  tone="teal"
+                />
+              ) : null}
               <FormFactTile
                 icon={Percent}
                 label={t('projects.progress')}

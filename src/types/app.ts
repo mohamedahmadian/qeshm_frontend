@@ -601,6 +601,12 @@ export const projectProgressModeOrder: ProjectProgressMode[] = [
   projectProgressModes.PHASE_CHECKLIST,
 ];
 
+/** Manual project progress is temporarily hidden. */
+export const selectableProjectProgressModes: ProjectProgressMode[] = [
+  projectProgressModes.PROJECT_CHECKLIST,
+  projectProgressModes.PHASE_CHECKLIST,
+];
+
 export const phaseProgressModes = {
   MANUAL: "MANUAL",
   CHECKLIST: "CHECKLIST",

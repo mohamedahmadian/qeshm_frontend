@@ -8,7 +8,7 @@ import { FormCard, formCardBodyClassName } from '../../components/ui/FormLayout'
 import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { getApiErrorMessage } from '../../lib/api'
-import { todayIsoDate } from '../../lib/datetime'
+import { formatNumber, todayIsoDate } from '../../lib/datetime'
 import type { PortSalesReport } from '../../types/app'
 import {
   DEFAULT_PORT_DESTINATION,
@@ -28,20 +28,31 @@ export type PortSalesReportPayload = {
   file: File | null
 }
 
+export type PortSalesImportProgress = {
+  phase: 'uploading' | 'parsing' | 'saving'
+  percent: number
+  processed?: number
+  total?: number
+}
+
 export function PortSalesReportForm({
   initial,
   onSubmit,
 }: {
   initial?: Pick<PortSalesReport, 'reportDate' | 'origin' | 'destination' | 'originalFileName'>
-  onSubmit: (payload: PortSalesReportPayload) => Promise<void>
+  onSubmit: (
+    payload: PortSalesReportPayload,
+    onProgress?: (progress: PortSalesImportProgress) => void,
+  ) => Promise<void>
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [reportDate, setReportDate] = useState(initial?.reportDate ?? todayIsoDate())
   const [origin, setOrigin] = useState(initial?.origin ?? DEFAULT_PORT_ORIGIN)
   const [destination, setDestination] = useState(initial?.destination ?? DEFAULT_PORT_DESTINATION)
   const [customPorts, setCustomPorts] = useState<string[]>([])
   const [file, setFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
+  const [progress, setProgress] = useState<PortSalesImportProgress | null>(null)
   const isEdit = Boolean(initial)
 
   const portOptions = useMemo(() => {
@@ -67,17 +78,26 @@ export function PortSalesReportForm({
       return
     }
     setSaving(true)
+    if (!isEdit) setProgress({ phase: 'uploading', percent: 0 })
     try {
-      await onSubmit({
-        reportDate,
-        origin: origin.trim() || DEFAULT_PORT_ORIGIN,
-        destination: destination.trim() || DEFAULT_PORT_DESTINATION,
-        file,
-      })
+      await onSubmit(
+        {
+          reportDate,
+          origin: origin.trim() || DEFAULT_PORT_ORIGIN,
+          destination: destination.trim() || DEFAULT_PORT_DESTINATION,
+          file,
+        },
+        setProgress,
+      )
     } catch (error) {
-      toast.error(getApiErrorMessage(error, t('common.error')))
+      const message =
+        error instanceof Error && error.message && !('isAxiosError' in error)
+          ? error.message
+          : getApiErrorMessage(error, t('portSalesReports.importFailed'))
+      toast.error(message)
     } finally {
       setSaving(false)
+      setProgress(null)
     }
   }
 
@@ -129,14 +149,59 @@ export function PortSalesReportForm({
             <p className="text-xs leading-6 text-ink-500">{t('portSalesReports.fileHint')}</p>
           </FormField>
         )}
+        {progress ? (
+          <ImportProgressBar progress={progress} locale={i18n.language} />
+        ) : null}
         <FormActions
           submitLabel={t('portSalesReports.save')}
-          cancelLabel={t('portSalesReports.cancel')}
+          cancelLabel={saving ? undefined : t('portSalesReports.cancel')}
           submitting={saving}
-          onCancel={() => history.back()}
+          onCancel={saving ? undefined : () => history.back()}
         />
       </AppForm>
     </FormCard>
+  )
+}
+
+function ImportProgressBar({
+  progress,
+  locale,
+}: {
+  progress: PortSalesImportProgress
+  locale: string
+}) {
+  const { t } = useTranslation()
+  const percent = Math.max(0, Math.min(100, Math.round(progress.percent)))
+  const label =
+    progress.phase === 'saving' && progress.total
+      ? t('portSalesReports.progress.savingCount', {
+          processed: formatNumber(progress.processed ?? 0, locale),
+          total: formatNumber(progress.total, locale),
+        })
+      : t(`portSalesReports.progress.${progress.phase}`)
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3 text-sm text-ink-600">
+        <span>{label}</span>
+        <span className="tabular-nums" dir="ltr">
+          {formatNumber(percent, locale)}٪
+        </span>
+      </div>
+      <div
+        className="h-2 overflow-hidden rounded-full bg-cream-100"
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={label}
+      >
+        <div
+          className="h-full rounded-full bg-teal-500 transition-[width] duration-200"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
   )
 }
 

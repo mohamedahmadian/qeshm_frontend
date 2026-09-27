@@ -163,6 +163,13 @@ export const APP_NAV: NavModule[] = withManagementLast([
         icon: 'chart-column',
         sortOrder: 5,
       },
+      {
+        code: 'stakeholders.port-sales-reports',
+        nameKey: 'menus.portSalesReports',
+        path: '/port-sales-reports',
+        icon: 'ticket',
+        sortOrder: 6,
+      },
     ],
   },
   {
@@ -277,21 +284,6 @@ export const APP_NAV: NavModule[] = withManagementLast([
         path: '/qeshmondi/update',
         icon: 'refresh-cw',
         sortOrder: 2,
-      },
-    ],
-  },
-  {
-    code: 'ports',
-    nameKey: 'modules.ports',
-    icon: 'ship',
-    sortOrder: 7,
-    menus: [
-      {
-        code: 'ports.sales-reports',
-        nameKey: 'menus.portSalesReports',
-        path: '/port-sales-reports',
-        icon: 'ticket',
-        sortOrder: 1,
       },
     ],
   },
