@@ -1,4 +1,4 @@
-import { KeyRound, Lock, User } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Lock, User } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
@@ -20,6 +20,7 @@ export function LoginPage() {
   const afterAuth = afterAuthPath(next)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   if (user) {
@@ -60,16 +61,31 @@ export function LoginPage() {
             />
           </FormField>
           <FormField icon={Lock} label={t('auth.password')} htmlFor="password">
-            <input
-              id="password"
-              type="password"
-              className={fieldClassName}
-              value={password}
-              onChange={(e) => setPassword(toLatinDigits(e.target.value))}
-              minLength={8}
-              autoComplete="current-password"
-              required
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                className={`${fieldClassName} pe-11 [&::-ms-clear]:hidden [&::-ms-reveal]:hidden`}
+                value={password}
+                onChange={(e) => setPassword(toLatinDigits(e.target.value))}
+                minLength={8}
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                className="absolute end-1.5 top-1/2 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-xl text-teal-600 transition hover:bg-teal-50 hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+                aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" aria-hidden />
+                ) : (
+                  <Eye className="size-4" aria-hidden />
+                )}
+              </button>
+            </div>
           </FormField>
           <Button type="submit" className="w-full" disabled={submitting}>
             <KeyRound className="size-4" />

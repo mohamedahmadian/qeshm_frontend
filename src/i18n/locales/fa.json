@@ -18,6 +18,8 @@
     "identifier": "کد ملی، نام کاربری، تلفن یا ایمیل",
     "username": "نام کاربری",
     "password": "رمز عبور",
+    "showPassword": "نمایش رمز عبور",
+    "hidePassword": "پنهان کردن رمز عبور",
     "login": "ورود",
     "logout": "خروج از سامانه",
     "currentPassword": "رمز عبور فعلی",
