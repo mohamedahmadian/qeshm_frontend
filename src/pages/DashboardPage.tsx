@@ -2,7 +2,8 @@ import { LayoutDashboard } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthProvider'
 import { PageHeader, formShellClassName } from '../components/ui/Form'
-import { hasMenuAccess } from '../lib/roles'
+import { hasMenuAccess, isAdmin, isContractor } from '../lib/roles'
+import { ContractorDashboard } from './dashboard/ContractorDashboard'
 import { DashboardImportantProjects } from './dashboard/DashboardImportantProjects'
 import { DashboardQuickAccess } from './dashboard/DashboardQuickAccess'
 import { DashboardReports } from './dashboard/DashboardReports'
@@ -22,8 +23,14 @@ export function DashboardPage() {
         title={t('dashboard.title')}
         subtitle={t('dashboard.welcomeUser', { name: user?.fullName ?? '' })}
       />
-      <DashboardStats />
-      <DashboardQuickAccess />
+      {isContractor(user) && !isAdmin(user) ? (
+        <ContractorDashboard />
+      ) : (
+        <>
+          <DashboardStats />
+          <DashboardQuickAccess />
+        </>
+      )}
       {showPanels ? (
         <div className="grid gap-4 lg:grid-cols-2 lg:[&>*:only-child]:col-span-2">
           <DashboardReports />

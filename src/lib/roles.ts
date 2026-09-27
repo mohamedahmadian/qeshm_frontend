@@ -21,11 +21,17 @@ export function isRolePermissionsLocked(role?: { code?: string } | null) {
   )
 }
 
-const contractorPortalMenus = new Set([
+/** منوهای مخصوص درگاه پیمانکار؛ در سایدبار مدیر سازمان نمی‌آیند. */
+const contractorOnlyMenus = new Set([
   'stakeholders.projects',
   'stakeholders.progress',
   'stakeholders.correspondence',
 ])
+
+/** منوهای مشترک درگاه پیمانکار و مدیر. */
+const contractorSharedMenus = new Set(['stakeholders.port-sales-reports'])
+
+const contractorPortalMenus = new Set([...contractorOnlyMenus, ...contractorSharedMenus])
 
 export function isContractor(user?: { roles?: { code: string }[] } | null) {
   return Boolean(user?.roles?.some((role) => role.code === CONTRACTOR_ROLE_CODE))
@@ -73,9 +79,9 @@ export function hasMenuAccess(
   menuCode: string,
   moduleCode: string,
 ) {
-  if (menuCode === 'dashboard.home' || menuCode === 'singard.submit' || menuCode === 'singard.mine') {
-    return true
-  }
+  if (menuCode === 'dashboard.home') return true
+  if (isContractor(user) && !isAdmin(user) && moduleCode === 'singard') return false
+  if (menuCode === 'singard.submit' || menuCode === 'singard.mine') return true
   if (
     isContractor(user) &&
     !isAdmin(user) &&
@@ -103,7 +109,7 @@ function withoutContractorPortal(nav: NavModule[]) {
   return nav
     .map((mod) =>
       mod.code === 'stakeholders'
-        ? { ...mod, menus: mod.menus.filter((menu) => !contractorPortalMenus.has(menu.code)) }
+        ? { ...mod, menus: mod.menus.filter((menu) => !contractorOnlyMenus.has(menu.code)) }
         : mod,
     )
     .filter((mod) => mod.menus.length > 0)
@@ -157,6 +163,9 @@ export function canAccessPath(
   if (!user) return false
   if (isAdmin(user)) return orgStakeholderRedirect(user, pathname) == null
   if (pathname === '/' || pathname === '/dashboard') return true
+  if (isContractor(user) && (pathname === '/singard' || pathname.startsWith('/singard/'))) {
+    return false
+  }
   if (ALWAYS_ALLOWED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return true
   }

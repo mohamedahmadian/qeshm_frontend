@@ -336,6 +336,18 @@
       "contractors": "تعداد پیمانکاران",
       "resolutions": "تعداد مصوبات هیئت مدیره",
       "qeshmondi": "تعداد قشموندان"
+    },
+    "contractor": {
+      "myProjects": "پروژه‌های من",
+      "newProgress": "ثبت گزارش پیشرفت",
+      "newCorrespondence": "ثبت مکاتبات جدید",
+      "correspondenceList": "لیست مکاتبات",
+      "recentReports": "لیست گزارش‌های اخیر",
+      "projectCount": "تعداد پروژه‌ها",
+      "correspondenceCount": "تعداد مکاتبات",
+      "reportCount": "تعداد گزارش‌ها",
+      "seeCorrespondence": "همه مکاتبات",
+      "seeReports": "همه گزارش‌ها"
     }
   },
   "users": {

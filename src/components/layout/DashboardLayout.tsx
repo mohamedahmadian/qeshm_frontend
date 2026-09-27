@@ -268,7 +268,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
                   <NavLink
                     to="/dashboard"
                     onClick={() => setOpen(false)}
-                    className="block truncate font-semibold text-ink-900"
+                    className="min-w-0 flex-1 text-sm font-semibold leading-snug text-ink-900"
                   >
                     {t('nav.panel')}
                   </NavLink>
