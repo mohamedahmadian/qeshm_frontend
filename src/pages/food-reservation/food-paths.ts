@@ -34,6 +34,18 @@ export function foodReserveItemPath(id: string) {
   return `${foodReservePath()}/${id}`
 }
 
+export function foodMyOrdersPath() {
+  return '/food-reservation/my-orders'
+}
+
+export function foodMyOrderItemPath(id: string) {
+  return `${foodMyOrdersPath()}/${id}`
+}
+
+export function foodMyReportPath() {
+  return '/food-reservation/my-report'
+}
+
 export function foodReservationHistoryPath() {
   return '/food-reservation/history'
 }
@@ -48,4 +60,12 @@ export function foodReservationReportPath() {
 
 export function foodCostEstimatePath() {
   return '/food-reservation/cost-estimate'
+}
+
+export function unitRepsPath() {
+  return '/food-reservation/unit-reps'
+}
+
+export function unitRepPath(unitId: string) {
+  return `${unitRepsPath()}/${unitId}`
 }

@@ -35,6 +35,7 @@ export function RestaurantEditPage() {
       />
       <RestaurantForm
         initial={query.data}
+        restaurantId={id}
         onSubmit={async (payload) => {
           await api.patch(`/restaurants/${id}`, payload)
           toast.success(t('restaurants.updated'))

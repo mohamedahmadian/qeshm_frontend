@@ -21,8 +21,7 @@ import {
   listShellClassName,
 } from '../../../../components/ui/Form'
 import { useConfirmDelete } from '../../../../hooks/useConfirmDelete'
-import { useListParams } from '../../../../hooks/useListParams'
-import { useListSort } from '../../../../hooks/useListSort'
+import { useCrudListState } from '../../../../hooks/useCrudListState'
 import { api } from '../../../../lib/api'
 import { localizeDigits } from '../../../../lib/datetime'
 import type { OrganizationUnit, Paginated, Restaurant, RestaurantUnit } from '../../../../types/app'
@@ -63,12 +62,28 @@ function useTakenUnitIds(restaurantId?: string, currentId?: string) {
   })
 }
 
-export function RestaurantUnitListPage() {
+export function RestaurantUnitListPage({
+  embedded = false,
+  restaurantId: restaurantIdProp,
+}: {
+  embedded?: boolean
+  restaurantId?: string
+} = {}) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
-  const { restaurantId, restaurant } = useRestaurant()
-  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
-  const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const params = useParams()
+  const restaurantId = restaurantIdProp ?? params.id
+  const restaurantQuery = useQuery({
+    queryKey: ['restaurant', restaurantId],
+    enabled: Boolean(restaurantId) && !embedded,
+    queryFn: async () => {
+      const { data } = await api.get<Restaurant>(`/restaurants/${restaurantId}`)
+      return data
+    },
+  })
+  const restaurant = restaurantQuery.data
+  const { q, page, term, setTerm, applySearch, setPage, sortBy, sortDir, sortParams, onSort } =
+    useCrudListState(embedded)
   const { confirmDelete } = useConfirmDelete()
   const query = useQuery({
     queryKey: ['restaurant-units', restaurantId, q, page, sortBy, sortDir],
@@ -80,28 +95,23 @@ export function RestaurantUnitListPage() {
       return data
     },
   })
-  if (!restaurant || !restaurantId) {
+  if (!restaurantId || (!embedded && !restaurant)) {
     return <LoadingState />
   }
   const rows = query.data?.items ?? []
   const base = restaurantUnitsPath(restaurantId)
-
-  return (
-    <div className={listShellClassName}>
-      <PageHeader
-        icon={Building2}
-        title={t('restaurantUnits.title')}
-        subtitle={<EntityNameSubtitle name={restaurant.name} icon={Store} />}
-        action={
-          <Link to={`${base}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('restaurantUnits.create')}
-            </Button>
-          </Link>
-        }
-      />
+  const createAction = (
+    <Link to={`${base}/new`}>
+      <Button>
+        <Plus className="size-4" />
+        {t('restaurantUnits.create')}
+      </Button>
+    </Link>
+  )
+  const list = (
+    <>
       <SearchBar
+        {...(embedded ? { autoFocus: false } : {})}
         term={term}
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
@@ -182,6 +192,25 @@ export function RestaurantUnitListPage() {
           onPageChange={setPage}
         />
       ) : null}
+    </>
+  )
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">{createAction}</div>
+        {list}
+      </div>
+    )
+  }
+  return (
+    <div className={listShellClassName}>
+      <PageHeader
+        icon={Building2}
+        title={t('restaurantUnits.title')}
+        subtitle={<EntityNameSubtitle name={restaurant?.name ?? ''} icon={Store} />}
+        action={createAction}
+      />
+      {list}
     </div>
   )
 }

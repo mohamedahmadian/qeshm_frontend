@@ -1,3 +1,6 @@
+import { useMemo } from 'react'
+import { useLocation } from 'react-router-dom'
+
 export function organizationPath() {
   return '/organization'
 }
@@ -34,8 +37,17 @@ export function organizationUnitKindPath(id: string) {
   return `${organizationUnitKindsPath()}/${id}`
 }
 
+export const FOOD_RESERVATION_UNITS_PATH = '/food-reservation/units'
+
 export function organizationUnitsPath() {
   return `${organizationPath()}/units`
+}
+
+export function organizationUnitsBase(pathname: string) {
+  return pathname === FOOD_RESERVATION_UNITS_PATH ||
+    pathname.startsWith(`${FOOD_RESERVATION_UNITS_PATH}/`)
+    ? FOOD_RESERVATION_UNITS_PATH
+    : organizationUnitsPath()
 }
 
 export function organizationUnitPath(id: string) {
@@ -60,4 +72,17 @@ export function organizationUnitRestaurantsPath(unitId: string) {
 
 export function organizationUnitRestaurantPath(unitId: string, id: string) {
   return `${organizationUnitRestaurantsPath(unitId)}/${id}`
+}
+
+export function useOrganizationUnitRoutes() {
+  const { pathname } = useLocation()
+  return useMemo(() => {
+    const base = organizationUnitsBase(pathname)
+    return {
+      list: () => base,
+      unit: (id: string) => `${base}/${id}`,
+      restaurants: (unitId: string) => `${base}/${unitId}/restaurants`,
+      restaurant: (unitId: string, linkId: string) => `${base}/${unitId}/restaurants/${linkId}`,
+    }
+  }, [pathname])
 }

@@ -374,6 +374,51 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/food-reservation/restaurants')) {
     return { titleKey: 'menus.restaurantManagement', subtitleKey: 'restaurants.subtitle' }
   }
+  if (pathname === '/food-reservation/unit-reps/new') {
+    return { titleKey: 'unitReps.create', subtitleKey: 'unitReps.createSubtitle' }
+  }
+  if (/\/food-reservation\/unit-reps\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'unitReps.edit', subtitleKey: 'unitReps.editSubtitle' }
+  }
+  if (/\/food-reservation\/unit-reps\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'unitReps.details', subtitleKey: 'unitReps.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/unit-reps')) {
+    return { titleKey: 'menus.unitReps', subtitleKey: 'unitReps.subtitle' }
+  }
+  if (/\/food-reservation\/units\/[^/]+\/restaurants\/new$/.test(pathname)) {
+    return { titleKey: 'organizationUnitRestaurants.create', subtitleKey: 'organizationUnitRestaurants.createSubtitle' }
+  }
+  if (/\/food-reservation\/units\/[^/]+\/restaurants\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'organizationUnitRestaurants.edit', subtitleKey: 'organizationUnitRestaurants.editSubtitle' }
+  }
+  if (/\/food-reservation\/units\/[^/]+\/restaurants\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'organizationUnitRestaurants.details', subtitleKey: 'organizationUnitRestaurants.detailsSubtitle' }
+  }
+  if (/\/food-reservation\/units\/[^/]+\/restaurants$/.test(pathname)) {
+    return { titleKey: 'organizationUnitRestaurants.title', subtitleKey: 'organizationUnitRestaurants.subtitle' }
+  }
+  if (pathname === '/food-reservation/units/new') {
+    return { titleKey: 'organizationUnits.create', subtitleKey: 'organizationUnits.createSubtitle' }
+  }
+  if (/\/food-reservation\/units\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'organizationUnits.edit', subtitleKey: 'organizationUnits.editSubtitle' }
+  }
+  if (/\/food-reservation\/units\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'organizationUnits.details', subtitleKey: 'organizationUnits.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/units')) {
+    return { titleKey: 'menus.organizationUnits', subtitleKey: 'organizationUnits.subtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/my-orders/')) {
+    return { titleKey: 'foodReservations.details', subtitleKey: 'foodReservations.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/my-orders')) {
+    return { titleKey: 'menus.foodMyOrders', subtitleKey: 'foodReservations.myOrdersSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/my-report')) {
+    return { titleKey: 'menus.foodMyReport', subtitleKey: 'foodMyReport.subtitle' }
+  }
   if (pathname === '/food-reservation/reserve/new') {
     return { titleKey: 'foodReservations.create', subtitleKey: 'foodReservations.createSubtitle' }
   }

@@ -34,7 +34,7 @@ import type {
   Restaurant,
 } from '../../../../types/app'
 import { EntityThumb, ImageFact } from '../../../food-reservation/EntityThumb'
-import { organizationUnitRestaurantPath, organizationUnitRestaurantsPath } from '../../organization-paths'
+import { useOrganizationUnitRoutes } from '../../organization-paths'
 import {
   OrganizationUnitRestaurantCreateForm,
   OrganizationUnitRestaurantEditForm,
@@ -83,6 +83,7 @@ export function OrganizationUnitRestaurantListPage() {
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
+  const routes = useOrganizationUnitRoutes()
   const query = useQuery({
     queryKey: ['organization-unit-restaurants', unitId, q, page, sortBy, sortDir],
     enabled: Boolean(unitId),
@@ -98,7 +99,7 @@ export function OrganizationUnitRestaurantListPage() {
     return <LoadingState />
   }
   const rows = query.data?.items ?? []
-  const base = organizationUnitRestaurantsPath(unitId)
+  const base = routes.restaurants(unitId)
 
   return (
     <div className={listShellClassName}>
@@ -163,8 +164,8 @@ export function OrganizationUnitRestaurantListPage() {
                 <td className="px-4 py-3">{item.restaurant.address || '—'}</td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
-                    viewTo={organizationUnitRestaurantPath(unitId, item.id)}
-                    editTo={`${organizationUnitRestaurantPath(unitId, item.id)}/edit`}
+                    viewTo={routes.restaurant(unitId, item.id)}
+                    editTo={`${routes.restaurant(unitId, item.id)}/edit`}
                     onDelete={() =>
                       confirmDelete({
                         message: t('organizationUnitRestaurants.confirmDelete'),
@@ -197,6 +198,7 @@ export function OrganizationUnitRestaurantCreatePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { unitId, unit } = useUnit()
+  const routes = useOrganizationUnitRoutes()
   const restaurants = useRestaurants()
   const taken = useTakenRestaurantIds(unitId)
   if (!unit || !unitId || !restaurants.data || !taken.data) {
@@ -218,7 +220,7 @@ export function OrganizationUnitRestaurantCreatePage() {
           await queryClient.invalidateQueries({ queryKey: ['organization-units'] })
           await queryClient.invalidateQueries({ queryKey: ['organization-unit-restaurants'] })
           toast.success(t('organizationUnitRestaurants.created'))
-          navigate(organizationUnitRestaurantsPath(unitId))
+          navigate(routes.restaurants(unitId))
         }}
       />
     </div>
@@ -230,6 +232,7 @@ export function OrganizationUnitRestaurantEditPage() {
   const { linkId } = useParams()
   const navigate = useNavigate()
   const { unitId, unit } = useUnit()
+  const routes = useOrganizationUnitRoutes()
   const restaurants = useRestaurants()
   const taken = useTakenRestaurantIds(unitId, linkId)
   const query = useQuery({
@@ -259,7 +262,7 @@ export function OrganizationUnitRestaurantEditPage() {
         onSubmit={async (restaurantId) => {
           await api.patch(`/organization/units/${unitId}/restaurants/${linkId}`, { restaurantId })
           toast.success(t('organizationUnitRestaurants.updated'))
-          navigate(organizationUnitRestaurantsPath(unitId))
+          navigate(routes.restaurants(unitId))
         }}
       />
     </div>
@@ -282,11 +285,12 @@ export function OrganizationUnitRestaurantDetailPage() {
       return data
     },
   })
+  const routes = useOrganizationUnitRoutes()
   const item = query.data
   if (!item || !unit || !unitId || !linkId) {
     return <LoadingState />
   }
-  const base = organizationUnitRestaurantsPath(unitId)
+  const base = routes.restaurants(unitId)
   return (
     <div className={formShellClassName}>
       <PageHeader
@@ -317,7 +321,7 @@ export function OrganizationUnitRestaurantDetailPage() {
           </div>
           <p className="text-xs text-ink-500">{unit.name}</p>
           <DetailActions
-            editTo={`${organizationUnitRestaurantPath(unitId, linkId)}/edit`}
+            editTo={`${routes.restaurant(unitId, linkId)}/edit`}
             editLabel={t('common.edit')}
             deleteLabel={t('organizationUnitRestaurants.delete')}
             onDelete={() =>

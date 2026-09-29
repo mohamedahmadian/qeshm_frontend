@@ -1,7 +1,8 @@
-import { CalendarRange, Hash, Plus, Store, Ticket, Trash2, UserRound, UtensilsCrossed, Wallet } from 'lucide-react'
+import { CalendarRange, ClipboardList, Hash, Plus, Store, Ticket, Trash2, UserRound, UtensilsCrossed, Wallet } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../../../auth/AuthProvider'
 import { toast } from 'sonner'
 import { DateText } from '../../../components/ui/DateText'
 import {
@@ -27,14 +28,22 @@ import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api } from '../../../lib/api'
 import { formatNumber } from '../../../lib/datetime'
+import { hasPermission } from '../../../lib/roles'
 import type { FoodReservation, FoodReservationContext, Paginated } from '../../../types/app'
 import { FoodReservationStatusBadge } from '../FoodReservationStatusBadge'
-import { foodReserveItemPath, foodReservePath } from '../food-paths'
+import { foodMyOrderItemPath, foodMyOrdersPath, foodReserveItemPath, foodReservePath } from '../food-paths'
 import { FoodReserveForm } from './FoodReserveForm'
+
+function isMyOrdersPath(pathname: string) {
+  return pathname === foodMyOrdersPath() || pathname.startsWith(`${foodMyOrdersPath()}/`)
+}
 
 export function FoodReserveListPage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
+  const { pathname } = useLocation()
+  const { user } = useAuth()
+  const myOrders = isMyOrdersPath(pathname)
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
@@ -48,21 +57,23 @@ export function FoodReserveListPage() {
     },
   })
   const rows = query.data?.items ?? []
-  const base = foodReservePath()
+  const canReserve = hasPermission(user, 'food-reservation.reserve')
 
   return (
     <div className={listShellClassName}>
       <PageHeader
-        icon={Ticket}
-        title={t('menus.foodReserve')}
-        subtitle={t('foodReservations.subtitle')}
+        icon={myOrders ? ClipboardList : Ticket}
+        title={t(myOrders ? 'menus.foodMyOrders' : 'menus.foodReserve')}
+        subtitle={t(myOrders ? 'foodReservations.myOrdersSubtitle' : 'foodReservations.subtitle')}
         action={
-          <Link to={`${base}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('foodReservations.create')}
-            </Button>
-          </Link>
+          canReserve ? (
+            <Link to={`${foodReservePath()}/new`}>
+              <Button>
+                <Plus className="size-4" />
+                {t('foodReservations.create')}
+              </Button>
+            </Link>
+          ) : null
         }
       />
       <SearchBar
@@ -70,7 +81,7 @@ export function FoodReserveListPage() {
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
         label={t('foodReservations.search')}
-        placeholder={t('foodReservations.searchPlaceholder')}
+        placeholder={t(myOrders ? 'foodReservations.myOrdersSearchPlaceholder' : 'foodReservations.searchPlaceholder')}
       />
       <TableCard
         loading={query.isLoading}
@@ -98,7 +109,7 @@ export function FoodReserveListPage() {
                 <td className="px-4 py-3"><FoodReservationStatusBadge status={item.status} /></td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
-                    viewTo={foodReserveItemPath(item.id)}
+                    viewTo={(myOrders ? foodMyOrderItemPath : foodReserveItemPath)(item.id)}
                     canDelete={item.status === 'PENDING'}
                     onDelete={
                       item.status === 'PENDING'
@@ -147,9 +158,10 @@ export function FoodReserveCreatePage() {
     <div className={formShellClassName}>
       <PageHeader
         icon={Ticket}
+        backTo={foodMyOrdersPath()}
         title={t('foodReservations.create')}
         subtitle={
-          context.data.orgUnit ? (
+          !context.data.canManage && context.data.orgUnit ? (
             <EntityNameSubtitle name={context.data.orgUnit.name} icon={Ticket} />
           ) : (
             t('foodReservations.createSubtitle')
@@ -161,7 +173,7 @@ export function FoodReserveCreatePage() {
         onSubmit={async (payload) => {
           await api.post('/food-reservations', payload)
           toast.success(t('foodReservations.created'))
-          navigate(foodReservePath())
+          navigate(foodMyOrdersPath())
         }}
       />
     </div>
@@ -171,6 +183,8 @@ export function FoodReserveCreatePage() {
 export function FoodReserveDetailPage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
+  const { pathname } = useLocation()
+  const listPath = isMyOrdersPath(pathname) ? foodMyOrdersPath() : foodReservePath()
   const { id } = useParams()
   const navigate = useNavigate()
   const { confirmDelete } = useConfirmDelete()
@@ -227,7 +241,7 @@ export function FoodReserveDetailPage() {
                     successMessage: t('foodReservations.deleted'),
                     path: `/food-reservations/${item.id}?mine=true`,
                     queryKey: ['food-reservations'],
-                    onDeleted: () => navigate(foodReservePath()),
+                    onDeleted: () => navigate(listPath),
                   })
                 }
               >

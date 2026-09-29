@@ -9,6 +9,9 @@ import { api, getApiErrorMessage, getImageUrl } from '../../../lib/api'
 import { toLatinDigits } from '../../../lib/datetime'
 import { optimizeImageFile } from '../../../lib/optimize-image'
 import type { Restaurant } from '../../../types/app'
+import { RestaurantMenuListPage } from './menu/RestaurantMenuPages'
+import { RestaurantTabNav, type RestaurantManageTab } from './RestaurantTabs'
+import { RestaurantUnitListPage } from './units/RestaurantUnitPages'
 
 export type RestaurantPayload = {
   name: string
@@ -19,12 +22,16 @@ export type RestaurantPayload = {
 
 export function RestaurantForm({
   initial,
+  restaurantId,
   onSubmit,
 }: {
   initial?: Pick<Restaurant, 'name' | 'phone' | 'address' | 'logoId'>
+  restaurantId?: string
   onSubmit: (payload: RestaurantPayload) => Promise<void>
 }) {
   const { t } = useTranslation()
+  const [tab, setTab] = useState<RestaurantManageTab>('info')
+  const manage = Boolean(initial && restaurantId)
   const [name, setName] = useState(initial?.name ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
   const [address, setAddress] = useState(initial?.address ?? '')
@@ -70,7 +77,21 @@ export function RestaurantForm({
       title={initial ? initial.name || t('restaurants.edit') : t('restaurants.create')}
       subtitle={initial ? undefined : t('restaurants.createSubtitle')}
     >
-      <AppForm onSubmit={submit} className={formCardBodyClassName}>
+      {manage ? <RestaurantTabNav tab={tab} onChange={setTab} /> : null}
+      {manage && restaurantId && tab === 'units' ? (
+        <div className="p-5 sm:p-6">
+          <RestaurantUnitListPage embedded restaurantId={restaurantId} />
+        </div>
+      ) : null}
+      {manage && restaurantId && tab === 'menu' ? (
+        <div className="p-5 sm:p-6">
+          <RestaurantMenuListPage embedded restaurantId={restaurantId} />
+        </div>
+      ) : null}
+      <AppForm
+        onSubmit={submit}
+        className={`${formCardBodyClassName}${manage && tab !== 'info' ? ' hidden' : ''}`}
+      >
         <FormField icon={Type} label={t('restaurants.name')} htmlFor="restaurantName">
           <input
             id="restaurantName"

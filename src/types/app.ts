@@ -3906,6 +3906,15 @@ export type OrganizationUnit = {
   _count?: { employees: number; restaurants: number; children: number };
 };
 
+export type UnitRepresentative = {
+  id: string;
+  name: string;
+  pathLabel: string;
+  kind: { id: string; name: string };
+  nutritionRepId: string | null;
+  nutritionRep: { id: string; fullName: string; phone: string | null } | null;
+};
+
 export const foodReservationStatuses = {
   PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
@@ -3933,10 +3942,20 @@ export type FoodReservation = {
   updatedAt: string;
 };
 
+export type FoodReservationUnitOption = {
+  id: string;
+  name: string;
+  pathLabel: string;
+  maxMeals: number | null;
+  restaurants: Pick<Restaurant, 'id' | 'name' | 'logoId'>[];
+};
+
 export type FoodReservationContext = {
   orgUnit: { id: string; name: string; maxMeals: number | null } | null;
   isNutritionRep: boolean;
+  canManage: boolean;
   restaurants: Pick<Restaurant, 'id' | 'name' | 'logoId'>[];
+  units: FoodReservationUnitOption[];
 };
 
 export type FoodReservationReportGroup = {
@@ -3957,6 +3976,24 @@ export type FoodReservationReportSummary = {
   confirmedQuantity: number;
   pendingTotal: number;
   confirmedTotal: number;
+};
+
+export type FoodMyReportPeriod = 'week' | 'month' | 'year';
+
+export type FoodMyReportGrain = 'day' | 'week' | 'month';
+
+export type FoodMyReport = {
+  period: FoodMyReportPeriod;
+  grain: FoodMyReportGrain;
+  reservedFrom: string;
+  reservedTo: string;
+  summary: {
+    count: number;
+    quantity: number;
+    totalPrice: number;
+  };
+  byFood: FoodReservationReportGroup[];
+  byPeriod: FoodCostEstimatePeriod[];
 };
 
 export type FoodReservationReport = Paginated<FoodReservation> & {

@@ -64,9 +64,7 @@ import {
 import {
   organizationEmployeesPath,
   organizationUnitKindsPath,
-  organizationUnitPath,
-  organizationUnitRestaurantsPath,
-  organizationUnitsPath,
+  useOrganizationUnitRoutes,
 } from '../organization-paths'
 import { OrganizationUnitForm } from './OrganizationUnitForm'
 
@@ -93,9 +91,10 @@ function UnitRowActions({
   onDelete: (item: OrganizationUnit) => void
 }) {
   const { t } = useTranslation()
+  const routes = useOrganizationUnitRoutes()
   return (
     <EntityRowActions
-      viewTo={organizationUnitPath(item.id)}
+      viewTo={routes.unit(item.id)}
       showView={false}
       extra={
         <>
@@ -105,7 +104,7 @@ function UnitRowActions({
               {t('organizationUnits.employees')}
             </Button>
           </Link>
-          <Link to={organizationUnitRestaurantsPath(item.id)}>
+          <Link to={routes.restaurants(item.id)}>
             <Button type="button" variant="soft">
               <Store className="size-4" aria-hidden />
               {t('organizationUnits.restaurants')}
@@ -113,7 +112,7 @@ function UnitRowActions({
           </Link>
         </>
       }
-      editTo={`${organizationUnitPath(item.id)}/edit`}
+      editTo={`${routes.unit(item.id)}/edit`}
       onDelete={() => onDelete(item)}
     />
   )
@@ -181,7 +180,8 @@ export function OrganizationUnitListPage() {
   }, [kind, parentId, q])
 
   const rows = query.data?.items ?? []
-  const base = organizationUnitsPath()
+  const routes = useOrganizationUnitRoutes()
+  const base = routes.list()
   const emptyMessage = q || filtersActive ? t('organizationUnits.noResults') : t('organizationUnits.empty')
 
   function deleteUnit(item: OrganizationUnit) {
@@ -452,6 +452,7 @@ export function OrganizationUnitListPage() {
 export function OrganizationUnitCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const routes = useOrganizationUnitRoutes()
   return (
     <div className={userFormShellClassName}>
       <PageHeader icon={Building2} title={t('organizationUnits.create')} subtitle={t('organizationUnits.createSubtitle')} />
@@ -459,7 +460,7 @@ export function OrganizationUnitCreatePage() {
         onSubmit={async (payload) => {
           await api.post('/organization/units', payload)
           toast.success(t('organizationUnits.created'))
-          navigate(organizationUnitsPath())
+          navigate(routes.list())
         }}
       />
     </div>
@@ -470,6 +471,7 @@ export function OrganizationUnitEditPage() {
   const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
+  const routes = useOrganizationUnitRoutes()
   const query = useQuery({
     queryKey: ['organization-unit', id],
     enabled: Boolean(id),
@@ -493,7 +495,7 @@ export function OrganizationUnitEditPage() {
         onSubmit={async (payload) => {
           await api.patch(`/organization/units/${id}`, payload)
           toast.success(t('organizationUnits.updated'))
-          navigate(organizationUnitsPath())
+          navigate(routes.list())
         }}
       />
     </div>
@@ -506,6 +508,7 @@ export function OrganizationUnitDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { confirmDelete } = useConfirmDelete()
+  const routes = useOrganizationUnitRoutes()
   const query = useQuery({
     queryKey: ['organization-unit', id],
     enabled: Boolean(id),
@@ -649,7 +652,7 @@ export function OrganizationUnitDetailPage() {
             </section>
           )}
           <DetailActions
-            editTo={`${organizationUnitPath(id)}/edit`}
+            editTo={`${routes.unit(id)}/edit`}
             editLabel={t('common.edit')}
             deleteLabel={t('organizationUnits.delete')}
             onDelete={() =>
@@ -658,12 +661,12 @@ export function OrganizationUnitDetailPage() {
                 successMessage: t('organizationUnits.deleted'),
                 path: `/organization/units/${id}`,
                 queryKey: ['organization-units'],
-                onDeleted: () => navigate(organizationUnitsPath()),
+                onDeleted: () => navigate(routes.list()),
               })
             }
             extraItems={[
               {
-                to: organizationUnitRestaurantsPath(id),
+                to: routes.restaurants(id),
                 icon: Store,
                 label: t('organizationUnitRestaurants.manage'),
               },

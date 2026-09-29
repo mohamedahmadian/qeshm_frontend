@@ -1,6 +1,6 @@
-import { CalendarRange, Hash, Store, Ticket, UtensilsCrossed } from 'lucide-react'
+import { Building2, CalendarRange, Check, Hash, Store, Ticket, UtensilsCrossed } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { AppForm, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
@@ -18,9 +18,52 @@ import type { FoodReservationContext, RestaurantMenuItem } from '../../../types/
 
 export type FoodReservePayload = {
   reservedAt: string
+  orgUnitId?: string
   restaurantId: string
   foodId: string
   quantity: number
+}
+
+function ChoiceList({
+  value,
+  onChange,
+  options,
+  label,
+  disabled,
+}: {
+  value: string
+  onChange: (next: string) => void
+  options: { value: string; label: string }[]
+  label: string
+  disabled?: boolean
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap justify-center gap-2">
+      {options.map((option) => {
+        const selected = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            disabled={disabled}
+            onClick={() => onChange(option.value)}
+            className={`inline-flex h-11 w-[300px] max-w-full items-center justify-center gap-1.5 rounded-2xl border-2 bg-white px-3 text-sm font-medium text-ink-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+              disabled
+                ? 'cursor-not-allowed border-line text-ink-300'
+                : selected
+                  ? 'cursor-pointer border-teal-500'
+                  : 'cursor-pointer border-line hover:border-teal-300'
+            }`}
+          >
+            {selected ? <Check className="size-4 shrink-0 text-teal-600" aria-hidden /> : null}
+            <span className="truncate">{option.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 function currentWeekIsos() {
@@ -97,38 +140,77 @@ export function FoodReserveForm({
   onSubmit: (payload: FoodReservePayload) => Promise<void>
 }) {
   const { t } = useTranslation()
+  const canManage = context.canManage
   const [reservedAt, setReservedAt] = useState(todayIsoDate)
-  const [restaurantId, setRestaurantId] = useState(
-    context.restaurants.length === 1 ? context.restaurants[0].id : '',
+  const [orgUnitId, setOrgUnitId] = useState(
+    canManage && context.units.length === 1 ? context.units[0].id : '',
   )
+  const unitRestaurants = useMemo(() => {
+    if (!canManage) return context.restaurants
+    return context.units.find((unit) => unit.id === orgUnitId)?.restaurants ?? []
+  }, [canManage, context.restaurants, context.units, orgUnitId])
+  const onlyRestaurantId = unitRestaurants.length === 1 ? unitRestaurants[0].id : ''
+  const [restaurantId, setRestaurantId] = useState(onlyRestaurantId)
   const [foodId, setFoodId] = useState('')
   const [quantity, setQuantity] = useState('1')
   const [saving, setSaving] = useState(false)
+  const quantityScope = canManage ? orgUnitId : 'self'
+  const selectedRestaurantId = onlyRestaurantId || restaurantId
+  const canChooseQuantity = canManage || context.isNutritionRep
 
   const menu = useQuery({
-    queryKey: ['restaurant-menu', restaurantId, 'lookup', 'active', reservedAt],
-    enabled: Boolean(restaurantId && reservedAt),
+    queryKey: ['food-reservation-menu', selectedRestaurantId, reservedAt, canManage ? orgUnitId : ''],
+    enabled: Boolean(selectedRestaurantId && reservedAt && (!canManage || orgUnitId)),
     queryFn: async () => {
-      const { data } = await api.get<RestaurantMenuItem[]>(
-        `/restaurants/${restaurantId}/menu-items`,
-        { params: { isActive: true, offeredAt: reservedAt } },
+      const { data } = await api.get<RestaurantMenuItem[]>('/food-reservations/menu', {
+        params: {
+          restaurantId: selectedRestaurantId,
+          offeredAt: reservedAt,
+          ...(canManage ? { orgUnitId } : {}),
+        },
+      })
+      return data
+    },
+  })
+  const foods = Array.isArray(menu.data) ? menu.data : []
+  const resolvedFoodId =
+    foods.length === 1 ? foods[0].food.id : foodId
+  const menuPending = Boolean(selectedRestaurantId && reservedAt && menu.isLoading)
+  const lastQuantity = useQuery({
+    queryKey: [
+      'food-reservation-last-quantity',
+      quantityScope,
+      selectedRestaurantId,
+      resolvedFoodId,
+    ],
+    enabled: canChooseQuantity && (!canManage || Boolean(orgUnitId)),
+    queryFn: async () => {
+      const { data } = await api.get<{ quantity: number | null }>(
+        '/food-reservations/last-quantity',
+        {
+          params: {
+            ...(canManage ? { orgUnitId } : {}),
+            ...(selectedRestaurantId ? { restaurantId: selectedRestaurantId } : {}),
+            ...(resolvedFoodId ? { foodId: resolvedFoodId } : {}),
+          },
+        },
       )
       return data
     },
   })
-  const foods = menu.data ?? []
-  const resolvedFoodId =
-    foods.length === 1 ? foods[0].food.id : foodId
-  const menuPending = Boolean(restaurantId && reservedAt && menu.isLoading)
 
   useEffect(() => {
-    if (context.restaurants.length === 1) {
-      setRestaurantId(context.restaurants[0].id)
+    if (unitRestaurants.length === 1) {
+      setRestaurantId(unitRestaurants[0].id)
+      return
     }
-  }, [context.restaurants])
+    setRestaurantId((current) =>
+      unitRestaurants.some((item) => item.id === current) ? current : '',
+    )
+  }, [unitRestaurants])
 
   useEffect(() => {
-    if (!restaurantId) {
+    if (!selectedRestaurantId) {
       setFoodId('')
       return
     }
@@ -143,7 +225,24 @@ export function FoodReserveForm({
     setFoodId((current) =>
       menu.data.some((item) => item.food.id === current) ? current : '',
     )
-  }, [restaurantId, reservedAt, menu.data])
+  }, [selectedRestaurantId, reservedAt, menu.data])
+
+  const quantityLookupKey = `${quantityScope}|${selectedRestaurantId}|${resolvedFoodId}`
+  const appliedQuantityKey = useRef('')
+
+  useEffect(() => {
+    if (!canChooseQuantity || !lastQuantity.isFetched || lastQuantity.isFetching) return
+    if (appliedQuantityKey.current === quantityLookupKey) return
+    appliedQuantityKey.current = quantityLookupKey
+    const previous = lastQuantity.data?.quantity
+    setQuantity(previous && previous > 0 ? String(previous) : '1')
+  }, [
+    canChooseQuantity,
+    quantityLookupKey,
+    lastQuantity.isFetched,
+    lastQuantity.isFetching,
+    lastQuantity.data,
+  ])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -151,7 +250,11 @@ export function FoodReserveForm({
       toast.error(t('foodReservations.selectDay'))
       return
     }
-    if (!restaurantId) {
+    if (canManage && !orgUnitId) {
+      toast.error(t('foodReservations.selectUnit'))
+      return
+    }
+    if (!selectedRestaurantId) {
       toast.error(t('foodReservations.selectRestaurant'))
       return
     }
@@ -170,12 +273,13 @@ export function FoodReserveForm({
       toast.error(t('foodReservations.selectFood'))
       return
     }
-    const qty = context.isNutritionRep ? Number(quantity) || 1 : 1
+    const qty = canChooseQuantity ? Number(quantity) || 1 : 1
     setSaving(true)
     try {
       await onSubmit({
         reservedAt,
-        restaurantId,
+        ...(canManage ? { orgUnitId } : {}),
+        restaurantId: selectedRestaurantId,
         foodId: resolvedFoodId,
         quantity: qty,
       })
@@ -186,7 +290,17 @@ export function FoodReserveForm({
     }
   }
 
-  if (!context.orgUnit) {
+  if (canManage && !context.units.length) {
+    return (
+      <FormCard icon={Ticket} title={t('foodReservations.create')}>
+        <div className="p-5 sm:p-6">
+          <FormEmptyHint>{t('foodReservations.noUnits')}</FormEmptyHint>
+        </div>
+      </FormCard>
+    )
+  }
+
+  if (!canManage && !context.orgUnit) {
     return (
       <FormCard icon={Ticket} title={t('foodReservations.create')}>
         <div className="p-5 sm:p-6">
@@ -196,9 +310,9 @@ export function FoodReserveForm({
     )
   }
 
-  if (!context.restaurants.length) {
+  if (!canManage && !context.restaurants.length) {
     return (
-      <FormCard icon={Ticket} title={t('foodReservations.create')} subtitle={context.orgUnit.name}>
+      <FormCard icon={Ticket} title={t('foodReservations.create')} subtitle={context.orgUnit?.name}>
         <div className="p-5 sm:p-6">
           <FormEmptyHint>{t('foodReservations.noRestaurants')}</FormEmptyHint>
         </div>
@@ -220,53 +334,83 @@ export function FoodReserveForm({
             label={t('foodReservations.weekDays')}
           />
         </FormField>
-        <div className={context.isNutritionRep ? 'grid gap-4 sm:grid-cols-2' : undefined}>
-          <FormField icon={Store} label={t('foodReservations.restaurant')} htmlFor="reserveRestaurant">
-            <SearchSelect
-              id="reserveRestaurant"
-              value={restaurantId}
-              required
-              onChange={setRestaurantId}
-              placeholder={t('foodReservations.selectRestaurant')}
-              options={context.restaurants.map((item) => ({ value: item.id, label: item.name }))}
-            />
-          </FormField>
-          {context.isNutritionRep ? (
-            <FormField icon={Hash} label={t('foodReservations.quantity')} htmlFor="reserveQuantity">
-              <input
-                id="reserveQuantity"
-                type="number"
-                min={1}
-                max={500}
-                className={fieldClassName}
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
+        {canManage ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField icon={Building2} label={t('foodReservations.orgUnit')} htmlFor="reserveUnit">
+              <SearchSelect
+                id="reserveUnit"
+                value={orgUnitId}
                 required
+                onChange={setOrgUnitId}
+                placeholder={t('foodReservations.selectUnit')}
+                options={context.units.map((unit) => ({
+                  value: unit.id,
+                  label: unit.pathLabel || unit.name,
+                }))}
               />
             </FormField>
+          </div>
+        ) : null}
+        <div className="flex flex-col items-center gap-4 pt-8 [&_label]:justify-center">
+          <FormField icon={Store} label={t('foodReservations.restaurant')}>
+            {canManage && !orgUnitId ? (
+              <p className="w-[300px] max-w-full px-1 py-2.5 text-center text-sm text-ink-400">
+                {t('foodReservations.selectUnit')}
+              </p>
+            ) : (
+              <ChoiceList
+                value={selectedRestaurantId}
+                onChange={setRestaurantId}
+                label={t('foodReservations.restaurant')}
+                options={unitRestaurants.map((item) => ({ value: item.id, label: item.name }))}
+              />
+            )}
+          </FormField>
+          <FormField icon={UtensilsCrossed} label={t('foodReservations.food')}>
+            {foods.length > 0 ? (
+              <ChoiceList
+                value={resolvedFoodId}
+                onChange={setFoodId}
+                label={t('foodReservations.food')}
+                options={foods.map((item) => ({ value: item.food.id, label: item.food.name }))}
+              />
+            ) : (
+              <p className="w-[300px] max-w-full px-1 py-2.5 text-center text-sm text-ink-400">
+                {selectedRestaurantId ? '—' : t('foodReservations.selectRestaurant')}
+              </p>
+            )}
+          </FormField>
+          {canChooseQuantity ? (
+            <div className="w-[300px] max-w-full">
+              <FormField icon={Hash} label={t('foodReservations.quantity')} htmlFor="reserveQuantity">
+                <input
+                  id="reserveQuantity"
+                  type="number"
+                  min={1}
+                  max={500}
+                  className={`${fieldClassName} text-center`}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  required
+                />
+              </FormField>
+            </div>
           ) : null}
         </div>
-        {restaurantId && menu.isSuccess && foods.length === 0 ? (
+        {canManage && orgUnitId && unitRestaurants.length === 0 ? (
+          <FormEmptyHint>{t('foodReservations.noUnitRestaurants')}</FormEmptyHint>
+        ) : null}
+        {selectedRestaurantId && menu.isSuccess && foods.length === 0 ? (
           <FormEmptyHint>{t('foodReservations.noActiveFood')}</FormEmptyHint>
-        ) : null}
-        {foods.length > 0 ? (
-          <FormField icon={UtensilsCrossed} label={t('foodReservations.food')} htmlFor="reserveFood">
-            <SearchSelect
-              id="reserveFood"
-              value={resolvedFoodId}
-              required
-              onChange={setFoodId}
-              placeholder={t('foodReservations.selectFood')}
-              options={foods.map((item) => ({ value: item.food.id, label: item.food.name }))}
-            />
-          </FormField>
-        ) : null}
-        <FormActions
-          submitLabel={t('foodReservations.save')}
-          cancelLabel={t('foodReservations.cancel')}
-          submitting={saving || menuPending}
-          onCancel={() => history.back()}
-        />
+        ) : (
+          <FormActions
+            className="justify-center [&>div]:flex-row-reverse [&>div]:gap-8"
+            submitLabel={t('foodReservations.save')}
+            cancelLabel={t('foodReservations.cancel')}
+            submitting={saving || menuPending}
+            onCancel={() => history.back()}
+          />
+        )}
       </AppForm>
     </FormCard>
   )

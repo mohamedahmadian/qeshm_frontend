@@ -126,12 +126,19 @@ import {
   FoodReservationHistoryListPage,
 } from './pages/food-reservation/history/FoodReservationHistoryPages'
 import { FoodCostEstimateReportPage } from './pages/food-reservation/report/FoodCostEstimateReportPage'
+import { FoodMyReportPage } from './pages/food-reservation/report/FoodMyReportPage'
 import { FoodReservationReportPage } from './pages/food-reservation/report/FoodReservationReportPage'
 import {
   FoodReserveCreatePage,
   FoodReserveDetailPage,
   FoodReserveListPage,
 } from './pages/food-reservation/reserve/FoodReservePages'
+import {
+  UnitRepCreatePage,
+  UnitRepDetailPage,
+  UnitRepEditPage,
+  UnitRepListPage,
+} from './pages/food-reservation/unit-reps/UnitRepPages'
 import { FoodCreatePage } from './pages/food-reservation/foods/FoodCreatePage'
 import { FoodDetailPage } from './pages/food-reservation/foods/FoodDetailPage'
 import { FoodEditPage } from './pages/food-reservation/foods/FoodEditPage'
@@ -417,6 +424,9 @@ export default function App() {
                   <Route path="/food-reservation/restaurants/:id/units/:linkId/edit" element={<RestaurantUnitEditPage />} />
                   <Route path="/food-reservation/restaurants/:id" element={<RestaurantDetailPage />} />
                   <Route path="/food-reservation/restaurants/:id/edit" element={<RestaurantEditPage />} />
+                  <Route path="/food-reservation/my-orders" element={<FoodReserveListPage />} />
+                  <Route path="/food-reservation/my-orders/:id" element={<FoodReserveDetailPage />} />
+                  <Route path="/food-reservation/my-report" element={<FoodMyReportPage />} />
                   <Route path="/food-reservation/reserve" element={<FoodReserveListPage />} />
                   <Route path="/food-reservation/reserve/new" element={<FoodReserveCreatePage />} />
                   <Route path="/food-reservation/reserve/:id" element={<FoodReserveDetailPage />} />
@@ -424,6 +434,18 @@ export default function App() {
                   <Route path="/food-reservation/history/:id" element={<FoodReservationHistoryDetailPage />} />
                   <Route path="/food-reservation/report" element={<FoodReservationReportPage />} />
                   <Route path="/food-reservation/cost-estimate" element={<FoodCostEstimateReportPage />} />
+                  <Route path="/food-reservation/unit-reps" element={<UnitRepListPage />} />
+                  <Route path="/food-reservation/unit-reps/new" element={<UnitRepCreatePage />} />
+                  <Route path="/food-reservation/unit-reps/:id" element={<UnitRepDetailPage />} />
+                  <Route path="/food-reservation/unit-reps/:id/edit" element={<UnitRepEditPage />} />
+                  <Route path="/food-reservation/units" element={<OrganizationUnitListPage />} />
+                  <Route path="/food-reservation/units/new" element={<OrganizationUnitCreatePage />} />
+                  <Route path="/food-reservation/units/:id/restaurants" element={<OrganizationUnitRestaurantListPage />} />
+                  <Route path="/food-reservation/units/:id/restaurants/new" element={<OrganizationUnitRestaurantCreatePage />} />
+                  <Route path="/food-reservation/units/:id/restaurants/:linkId" element={<OrganizationUnitRestaurantDetailPage />} />
+                  <Route path="/food-reservation/units/:id/restaurants/:linkId/edit" element={<OrganizationUnitRestaurantEditPage />} />
+                  <Route path="/food-reservation/units/:id" element={<OrganizationUnitDetailPage />} />
+                  <Route path="/food-reservation/units/:id/edit" element={<OrganizationUnitEditPage />} />
                   <Route path="/organization" element={<OrganizationDetailPage />} />
                   <Route path="/organization/new" element={<OrganizationCreatePage />} />
                   <Route path="/organization/edit" element={<OrganizationEditPage />} />

@@ -87,7 +87,8 @@ export function RestaurantMenuForm({
       toast.error(t('restaurantMenuItems.weekendEmpty'))
       return
     }
-    const amount = Number(price)
+    const trimmedPrice = price.trim()
+    const amount = trimmedPrice === '' ? 0 : Number(trimmedPrice)
     if (!Number.isFinite(amount) || amount < 0) {
       toast.error(t('common.error'))
       return
@@ -111,65 +112,74 @@ export function RestaurantMenuForm({
   const titleName = initial?.food.name ?? ''
   const form = (
     <AppForm onSubmit={submit} className={formCardBodyClassName}>
-      <FormField
-        icon={CalendarRange}
-        label={isEdit ? t('restaurantMenuItems.date') : t('restaurantMenuItems.startDate')}
-        htmlFor="menuDate"
-      >
-        <PersianDateField
-          id="menuDate"
-          value={offeredAt}
-          maxDate={!isEdit && offeredUntil ? offeredUntil : undefined}
-          onChange={(value) => {
-            const next = value ?? ''
-            setOfferedAt(next)
-            if (offeredUntil && next && offeredUntil < next) {
-              setOfferedUntil('')
-            }
-          }}
-        />
-      </FormField>
-      {isEdit ? null : (
-        <FormField icon={CalendarRange} label={t('restaurantMenuItems.endDate')} htmlFor="menuUntil">
+      {isEdit ? (
+        <FormField icon={CalendarRange} label={t('restaurantMenuItems.date')} htmlFor="menuDate">
           <PersianDateField
-            id="menuUntil"
-            value={offeredUntil}
-            minDate={offeredAt || undefined}
-            onChange={(value) => setOfferedUntil(value ?? '')}
+            id="menuDate"
+            value={offeredAt}
+            onChange={(value) => setOfferedAt(value ?? '')}
           />
-          <p className="mt-1.5 text-xs text-ink-500">{t('restaurantMenuItems.rangeHint')}</p>
         </FormField>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField icon={CalendarRange} label={t('restaurantMenuItems.startDate')} htmlFor="menuDate">
+            <PersianDateField
+              id="menuDate"
+              value={offeredAt}
+              maxDate={offeredUntil || undefined}
+              onChange={(value) => {
+                const next = value ?? ''
+                setOfferedAt(next)
+                if (offeredUntil && next && offeredUntil < next) {
+                  setOfferedUntil('')
+                }
+              }}
+            />
+          </FormField>
+          <FormField icon={CalendarRange} label={t('restaurantMenuItems.endDate')} htmlFor="menuUntil">
+            <PersianDateField
+              id="menuUntil"
+              value={offeredUntil}
+              minDate={offeredAt || undefined}
+              onChange={(value) => setOfferedUntil(value ?? '')}
+            />
+            <p className="mt-1.5 text-xs text-ink-500">{t('restaurantMenuItems.rangeHint')}</p>
+          </FormField>
+        </div>
       )}
-      <FormField icon={UtensilsCrossed} label={t('restaurantMenuItems.food')} htmlFor="menuFood">
-        <SearchSelect
-          id="menuFood"
-          value={foodId}
-          required
-          onChange={setFoodId}
-          placeholder={t('restaurantMenuItems.selectFood')}
-          options={options}
-        />
-      </FormField>
-      <FormField icon={Wallet} label={t('restaurantMenuItems.price')} htmlFor="menuPrice">
-        <input
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField icon={UtensilsCrossed} label={t('restaurantMenuItems.food')} htmlFor="menuFood">
+          <SearchSelect
+            id="menuFood"
+            value={foodId}
+            required
+            onChange={setFoodId}
+            placeholder={t('restaurantMenuItems.selectFood')}
+            options={options}
+          />
+        </FormField>
+        <FormField icon={Wallet} label={t('restaurantMenuItems.price')} htmlFor="menuPrice">
+          <input
           id="menuPrice"
           type="number"
           min={0}
           className={fieldClassName}
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          required
-        />
-      </FormField>
-      <FormField icon={ToggleRight} label={t('restaurantMenuItems.isActive')} htmlFor="menuActive">
-        <ToggleField
-          id="menuActive"
-          checked={isActive}
-          onChange={setIsActive}
-          onLabel={t('geo.active')}
-          offLabel={t('geo.inactive')}
-        />
-      </FormField>
+          />
+        </FormField>
+      </div>
+      {isEdit ? (
+        <FormField icon={ToggleRight} label={t('restaurantMenuItems.isActive')} htmlFor="menuActive">
+          <ToggleField
+            id="menuActive"
+            checked={isActive}
+            onChange={setIsActive}
+            onLabel={t('geo.active')}
+            offLabel={t('geo.inactive')}
+          />
+        </FormField>
+      ) : null}
       <FormActions
         submitLabel={t('restaurantMenuItems.save')}
         cancelLabel={t('restaurantMenuItems.cancel')}
