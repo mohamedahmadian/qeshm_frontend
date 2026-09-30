@@ -37,6 +37,7 @@ export function FileDropField({
   allowCamera,
   previewUrl,
   uploading,
+  hideUploadingHint,
   maxBytes = defaultMaxBytes,
   hideLocalPreview,
   onFile,
@@ -48,6 +49,7 @@ export function FileDropField({
   allowCamera?: boolean
   previewUrl?: string
   uploading?: boolean
+  hideUploadingHint?: boolean
   maxBytes?: number
   hideLocalPreview?: boolean
   onFile: (file: File) => void
@@ -213,7 +215,7 @@ export function FileDropField({
         ) : null}
       </div>
 
-      {uploading ? (
+      {uploading && !hideUploadingHint ? (
         <div className="mt-3 flex flex-col items-center gap-2">
           <LoadingSpinner size="sm" />
           <p className="mt-1 text-xs text-teal-700">{t('common.uploading')}</p>

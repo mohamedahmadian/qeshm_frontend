@@ -899,6 +899,9 @@
     "kilobyte": "کیلوبایت",
     "megabyte": "مگابایت",
     "fileHint": "فقط PDF یا Word، حداکثر ۵۰۰ مگابایت",
+    "uploadProgress": "در حال آپلود فایل",
+    "uploadSaving": "فایل ارسال شد؛ در حال ذخیره",
+    "uploadAmounts": "{{loaded}} از {{total}}",
     "createdAt": "تاریخ ایجاد"
   },
   "projectProgress": {

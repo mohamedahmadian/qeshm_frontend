@@ -1,3 +1,4 @@
+import type { AxiosProgressEvent } from 'axios'
 import { Download, FileText, Paperclip, Plus, ScrollText, Type } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -28,7 +29,11 @@ import { useCrudListState } from '../../../hooks/useCrudListState'
 import { api, getProjectDocumentUrl } from '../../../lib/api'
 import { formatGroupedQuantity } from '../../../lib/datetime'
 import type { Paginated, Project, ProjectDocument } from '../../../types/app'
-import { ProjectDocumentForm, type ProjectDocumentPayload } from './ProjectDocumentForm'
+import {
+  ProjectDocumentForm,
+  type ProjectDocumentPayload,
+  type ProjectDocumentUploadProgress,
+} from './ProjectDocumentForm'
 
 function projectDocumentsPath(projectId: string) {
   return `/projects/${projectId}/documents`
@@ -53,6 +58,20 @@ function toFormData(payload: ProjectDocumentPayload) {
   form.append('description', payload.description ?? '')
   if (payload.file) form.append('file', payload.file)
   return form
+}
+
+function documentUploadConfig(
+  file: File | null,
+  onUploadProgress: (progress: ProjectDocumentUploadProgress) => void,
+) {
+  return {
+    onUploadProgress: (event: AxiosProgressEvent) => {
+      onUploadProgress({
+        loaded: event.loaded,
+        total: event.total ?? file?.size ?? 0,
+      })
+    },
+  }
 }
 
 const KB = 1024
@@ -251,8 +270,12 @@ export function ProjectDocumentCreatePage() {
         subtitle={t('projectDocuments.createSubtitle')}
       />
       <ProjectDocumentForm
-        onSubmit={async (payload) => {
-          await api.post(`/projects/${projectId}/documents`, toFormData(payload))
+        onSubmit={async (payload, onUploadProgress) => {
+          await api.post(
+            `/projects/${projectId}/documents`,
+            toFormData(payload),
+            documentUploadConfig(payload.file, onUploadProgress),
+          )
           await queryClient.invalidateQueries({ queryKey: ['project-documents'] })
           toast.success(t('projectDocuments.created'))
           navigate(projectDocumentsPath(projectId))
@@ -291,8 +314,12 @@ export function ProjectDocumentEditPage() {
       <ProjectDocumentForm
         initial={query.data}
         fileHref={getProjectDocumentUrl(projectId, documentId)}
-        onSubmit={async (payload) => {
-          await api.patch(`/projects/${projectId}/documents/${documentId}`, toFormData(payload))
+        onSubmit={async (payload, onUploadProgress) => {
+          await api.patch(
+            `/projects/${projectId}/documents/${documentId}`,
+            toFormData(payload),
+            documentUploadConfig(payload.file, onUploadProgress),
+          )
           await queryClient.invalidateQueries({ queryKey: ['project-documents'] })
           await queryClient.invalidateQueries({ queryKey: ['project-document', projectId, documentId] })
           toast.success(t('projectDocuments.updated'))
