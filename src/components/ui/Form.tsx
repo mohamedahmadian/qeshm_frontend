@@ -207,6 +207,15 @@ function resolvePageBackTo(pathname: string): string | undefined {
   const segments = pathname.replace(/\/+$/, '').split('/').filter(Boolean)
   if (segments.length === 0 || segments[0] === 'v') return undefined
 
+  if (
+    segments[0] === 'food-reservation' &&
+    segments[1] === 'unit-reps' &&
+    looksLikeId(segments[2] ?? '') &&
+    segments[3] === 'restaurants'
+  ) {
+    return `/food-reservation/unit-reps/${segments[2]}/edit`
+  }
+
   const last = segments[segments.length - 1]
   if (PAGE_BACK_LEAVES.has(last)) {
     return segments.length > 1 ? joinPath(segments.slice(0, -1)) : undefined

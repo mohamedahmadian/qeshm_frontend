@@ -1,4 +1,4 @@
-import { Building2, Phone, Plus, Tags, UserRoundCheck } from 'lucide-react'
+import { Building2, Phone, Plus, Store, Tags, UserRoundCheck } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -22,6 +22,7 @@ import {
   listShellClassName,
 } from '../../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
+import { OrganizationUnitRestaurantListPage } from '../../organization/units/restaurants/OrganizationUnitRestaurantPages'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
@@ -62,7 +63,7 @@ export function UnitRepListPage() {
   return (
     <div className={listShellClassName}>
       <PageHeader
-        icon={UserRoundCheck}
+        icon={Building2}
         title={t('menus.unitReps')}
         subtitle={t('unitReps.subtitle')}
         action={
@@ -203,23 +204,34 @@ export function UnitRepEditPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
-        icon={UserRoundCheck}
+        icon={Building2}
         title={t('unitReps.edit')}
         subtitle={<EntityNameSubtitle name={unit.pathLabel || unit.name} icon={Building2} />}
       />
-      <UnitRepForm
-        initial={unit}
-        onSubmit={async (payload) => {
-          await api.patch(`/food-reservation/unit-reps/${id}`, {
-            nutritionRepId: payload.nutritionRepId,
-          })
-          await queryClient.invalidateQueries({ queryKey: ['unit-reps'] })
-          await queryClient.invalidateQueries({ queryKey: ['unit-rep'] })
-          await queryClient.invalidateQueries({ queryKey: ['organization-units'] })
-          toast.success(t('unitReps.updated'))
-          navigate(unitRepsPath())
-        }}
-      />
+      <div className="space-y-6">
+        <UnitRepForm
+          initial={unit}
+          onSubmit={async (payload) => {
+            await api.patch(`/food-reservation/unit-reps/${id}`, {
+              nutritionRepId: payload.nutritionRepId,
+            })
+            await queryClient.invalidateQueries({ queryKey: ['unit-reps'] })
+            await queryClient.invalidateQueries({ queryKey: ['unit-rep'] })
+            await queryClient.invalidateQueries({ queryKey: ['organization-units'] })
+            toast.success(t('unitReps.updated'))
+            navigate(unitRepsPath())
+          }}
+        />
+        <FormCard
+          icon={Store}
+          title={t('organizationUnitRestaurants.title')}
+          subtitle={t('organizationUnitRestaurants.subtitle')}
+        >
+          <div className="p-5 sm:p-6">
+            <OrganizationUnitRestaurantListPage embedded unitId={id} />
+          </div>
+        </FormCard>
+      </div>
     </div>
   )
 }
@@ -241,7 +253,7 @@ export function UnitRepDetailPage() {
   return (
     <div className={formShellClassName}>
       <PageHeader
-        icon={UserRoundCheck}
+        icon={Building2}
         title={t('unitReps.details')}
         subtitle={<EntityNameSubtitle name={name} icon={Building2} />}
       />

@@ -4053,6 +4053,38 @@ export type FoodCostEstimateSummary = {
   uniqueEmployees: number;
 };
 
+export type FoodUnitReport = {
+  scope: 'unit' | 'all';
+  calendar: 'jalali' | 'gregorian';
+  unit: { id: string; name: string } | null;
+  reservedFrom: string | null;
+  reservedTo: string | null;
+  summary: {
+    reservationCount: number;
+    totalQuantity: number;
+    totalCost: number;
+    confirmedCount: number;
+    confirmedQuantity: number;
+    confirmedCost: number;
+    pendingCount: number;
+    pendingQuantity: number;
+    pendingCost: number;
+    avgCostPerServing: number;
+    avgCostPerReservation: number;
+    avgDailyCost: number;
+    uniqueDays: number;
+    uniqueEmployees: number;
+    uniqueUnits: number;
+    uniqueRestaurants: number;
+  };
+  byUnit: FoodCostEstimateGroup[];
+  byFood: FoodCostEstimateGroup[];
+  byRestaurant: FoodCostEstimateGroup[];
+  byWeek: FoodCostEstimatePeriod[];
+  byMonth: FoodCostEstimatePeriod[];
+  byYear: FoodCostEstimatePeriod[];
+};
+
 export type FoodCostEstimateReport = {
   summary: FoodCostEstimateSummary;
   extremes: {

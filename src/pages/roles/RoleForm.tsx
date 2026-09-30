@@ -7,7 +7,7 @@ import { FormCard, FormEmptyHint, formCardBodyClassName } from '../../components
 import { getApiErrorMessage } from '../../lib/api'
 import { ADMIN_ROLE_CODE, isRolePermissionsLocked, isSystemRoleLocked } from '../../lib/roles'
 import type { AppRole } from '../../types/app'
-import { PermissionTree } from './PermissionTree'
+import { PermissionTree, compactPermissionCodes } from './PermissionTree'
 
 export type RolePayload = {
   name: string
@@ -29,7 +29,9 @@ export function RoleForm({
   const [name, setName] = useState(initial?.name ?? '')
   const [code, setCode] = useState(initial?.code ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
-  const [permissionCodes, setPermissionCodes] = useState<string[]>(initial?.permissionCodes ?? [])
+  const [permissionCodes, setPermissionCodes] = useState<string[]>(() =>
+    compactPermissionCodes(initial?.permissionCodes ?? []),
+  )
   const [saving, setSaving] = useState(false)
 
   async function submit(event: FormEvent) {

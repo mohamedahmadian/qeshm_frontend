@@ -37,17 +37,20 @@ export function organizationUnitKindPath(id: string) {
   return `${organizationUnitKindsPath()}/${id}`
 }
 
-export const FOOD_RESERVATION_UNITS_PATH = '/food-reservation/units'
+export const FOOD_RESERVATION_UNIT_REPS_PATH = '/food-reservation/unit-reps'
 
 export function organizationUnitsPath() {
   return `${organizationPath()}/units`
 }
 
 export function organizationUnitsBase(pathname: string) {
-  return pathname === FOOD_RESERVATION_UNITS_PATH ||
-    pathname.startsWith(`${FOOD_RESERVATION_UNITS_PATH}/`)
-    ? FOOD_RESERVATION_UNITS_PATH
-    : organizationUnitsPath()
+  if (
+    pathname === FOOD_RESERVATION_UNIT_REPS_PATH ||
+    pathname.startsWith(`${FOOD_RESERVATION_UNIT_REPS_PATH}/`)
+  ) {
+    return FOOD_RESERVATION_UNIT_REPS_PATH
+  }
+  return organizationUnitsPath()
 }
 
 export function organizationUnitPath(id: string) {
@@ -78,10 +81,13 @@ export function useOrganizationUnitRoutes() {
   const { pathname } = useLocation()
   return useMemo(() => {
     const base = organizationUnitsBase(pathname)
+    const onUnitReps = base === FOOD_RESERVATION_UNIT_REPS_PATH
     return {
       list: () => base,
       unit: (id: string) => `${base}/${id}`,
-      restaurants: (unitId: string) => `${base}/${unitId}/restaurants`,
+      restaurants: (unitId: string) =>
+        onUnitReps ? `${base}/${unitId}/edit` : `${base}/${unitId}/restaurants`,
+      restaurantLinks: (unitId: string) => `${base}/${unitId}/restaurants`,
       restaurant: (unitId: string, linkId: string) => `${base}/${unitId}/restaurants/${linkId}`,
     }
   }, [pathname])

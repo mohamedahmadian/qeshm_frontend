@@ -23,8 +23,7 @@ import {
 } from '../../../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../../../hooks/useConfirmDelete'
-import { useListParams } from '../../../../hooks/useListParams'
-import { useListSort } from '../../../../hooks/useListSort'
+import { useCrudListState } from '../../../../hooks/useCrudListState'
 import { api } from '../../../../lib/api'
 import { localizeDigits } from '../../../../lib/datetime'
 import type {
@@ -76,12 +75,28 @@ function useTakenRestaurantIds(unitId?: string, currentId?: string) {
   })
 }
 
-export function OrganizationUnitRestaurantListPage() {
+export function OrganizationUnitRestaurantListPage({
+  embedded = false,
+  unitId: unitIdProp,
+}: {
+  embedded?: boolean
+  unitId?: string
+} = {}) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
-  const { unitId, unit } = useUnit()
-  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
-  const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const params = useParams()
+  const unitId = unitIdProp ?? params.id
+  const unitQuery = useQuery({
+    queryKey: ['organization-unit', unitId],
+    enabled: Boolean(unitId) && !embedded,
+    queryFn: async () => {
+      const { data } = await api.get<OrganizationUnit>(`/organization/units/${unitId}`)
+      return data
+    },
+  })
+  const unit = unitQuery.data
+  const { q, page, term, setTerm, applySearch, setPage, sortBy, sortDir, sortParams, onSort } =
+    useCrudListState(embedded)
   const { confirmDelete } = useConfirmDelete()
   const routes = useOrganizationUnitRoutes()
   const query = useQuery({
@@ -95,28 +110,23 @@ export function OrganizationUnitRestaurantListPage() {
       return data
     },
   })
-  if (!unit || !unitId) {
+  if (!unitId || (!embedded && !unit)) {
     return <LoadingState />
   }
   const rows = query.data?.items ?? []
-  const base = routes.restaurants(unitId)
-
-  return (
-    <div className={listShellClassName}>
-      <PageHeader
-        icon={Store}
-        title={t('organizationUnitRestaurants.title')}
-        subtitle={<EntityNameSubtitle name={unit.name} icon={Store} />}
-        action={
-          <Link to={`${base}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('organizationUnitRestaurants.create')}
-            </Button>
-          </Link>
-        }
-      />
+  const base = routes.restaurantLinks(unitId)
+  const createAction = (
+    <Link to={`${base}/new`}>
+      <Button>
+        <Plus className="size-4" />
+        {t('organizationUnitRestaurants.create')}
+      </Button>
+    </Link>
+  )
+  const list = (
+    <>
       <SearchBar
+        {...(embedded ? { autoFocus: false } : {})}
         term={term}
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
@@ -189,6 +199,25 @@ export function OrganizationUnitRestaurantListPage() {
           onPageChange={setPage}
         />
       ) : null}
+    </>
+  )
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">{createAction}</div>
+        {list}
+      </div>
+    )
+  }
+  return (
+    <div className={listShellClassName}>
+      <PageHeader
+        icon={Store}
+        title={t('organizationUnitRestaurants.title')}
+        subtitle={<EntityNameSubtitle name={unit?.name ?? ''} icon={Store} />}
+        action={createAction}
+      />
+      {list}
     </div>
   )
 }

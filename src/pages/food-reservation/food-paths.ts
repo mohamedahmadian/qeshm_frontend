@@ -62,6 +62,10 @@ export function foodCostEstimatePath() {
   return '/food-reservation/cost-estimate'
 }
 
+export function foodUnitReportPath() {
+  return '/food-reservation/unit-report'
+}
+
 export function unitRepsPath() {
   return '/food-reservation/unit-reps'
 }

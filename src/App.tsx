@@ -126,6 +126,7 @@ import {
   FoodReservationHistoryListPage,
 } from './pages/food-reservation/history/FoodReservationHistoryPages'
 import { FoodCostEstimateReportPage } from './pages/food-reservation/report/FoodCostEstimateReportPage'
+import { FoodUnitReportPage } from './pages/food-reservation/report/FoodUnitReportPage'
 import { FoodMyReportPage } from './pages/food-reservation/report/FoodMyReportPage'
 import { FoodReservationReportPage } from './pages/food-reservation/report/FoodReservationReportPage'
 import {
@@ -434,18 +435,14 @@ export default function App() {
                   <Route path="/food-reservation/history/:id" element={<FoodReservationHistoryDetailPage />} />
                   <Route path="/food-reservation/report" element={<FoodReservationReportPage />} />
                   <Route path="/food-reservation/cost-estimate" element={<FoodCostEstimateReportPage />} />
+                  <Route path="/food-reservation/unit-report" element={<FoodUnitReportPage />} />
                   <Route path="/food-reservation/unit-reps" element={<UnitRepListPage />} />
                   <Route path="/food-reservation/unit-reps/new" element={<UnitRepCreatePage />} />
+                  <Route path="/food-reservation/unit-reps/:id/restaurants/new" element={<OrganizationUnitRestaurantCreatePage />} />
+                  <Route path="/food-reservation/unit-reps/:id/restaurants/:linkId/edit" element={<OrganizationUnitRestaurantEditPage />} />
+                  <Route path="/food-reservation/unit-reps/:id/restaurants/:linkId" element={<OrganizationUnitRestaurantDetailPage />} />
                   <Route path="/food-reservation/unit-reps/:id" element={<UnitRepDetailPage />} />
                   <Route path="/food-reservation/unit-reps/:id/edit" element={<UnitRepEditPage />} />
-                  <Route path="/food-reservation/units" element={<OrganizationUnitListPage />} />
-                  <Route path="/food-reservation/units/new" element={<OrganizationUnitCreatePage />} />
-                  <Route path="/food-reservation/units/:id/restaurants" element={<OrganizationUnitRestaurantListPage />} />
-                  <Route path="/food-reservation/units/:id/restaurants/new" element={<OrganizationUnitRestaurantCreatePage />} />
-                  <Route path="/food-reservation/units/:id/restaurants/:linkId" element={<OrganizationUnitRestaurantDetailPage />} />
-                  <Route path="/food-reservation/units/:id/restaurants/:linkId/edit" element={<OrganizationUnitRestaurantEditPage />} />
-                  <Route path="/food-reservation/units/:id" element={<OrganizationUnitDetailPage />} />
-                  <Route path="/food-reservation/units/:id/edit" element={<OrganizationUnitEditPage />} />
                   <Route path="/organization" element={<OrganizationDetailPage />} />
                   <Route path="/organization/new" element={<OrganizationCreatePage />} />
                   <Route path="/organization/edit" element={<OrganizationEditPage />} />

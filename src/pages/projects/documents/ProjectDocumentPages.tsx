@@ -202,7 +202,7 @@ export function ProjectDocumentListPage({ embedded = false }: { embedded?: boole
                 </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
-                    viewTo={`${base}/${item.id}`}
+                    showView={false}
                     editTo={`${base}/${item.id}/edit`}
                     extra={
                       <ProjectDocumentFileActions
