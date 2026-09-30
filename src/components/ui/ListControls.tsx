@@ -310,21 +310,25 @@ export function ActionsTh({ className = '' }: { className?: string }) {
 
 export function EntityRowActions({
   viewTo,
+  onView,
   showView = true,
   viewLabel,
   viewIcon: ViewIcon = Eye,
   extra,
   editTo,
+  onEdit,
   rowOpensView = false,
   onDelete,
   canDelete = true,
 }: {
-  viewTo: string
+  viewTo?: string
+  onView?: () => void
   showView?: boolean
   viewLabel?: string
   viewIcon?: LucideIcon
   extra?: ReactNode
   editTo?: string
+  onEdit?: () => void
   /** If true, row click / Enter opens details instead of edit. */
   rowOpensView?: boolean
   onDelete?: () => void
@@ -332,23 +336,43 @@ export function EntityRowActions({
 }) {
   const { t } = useTranslation()
   const label = viewLabel ?? t('common.view')
-  const rowOpensEdit = Boolean(editTo) && !rowOpensView
+  const rowOpensEdit = Boolean(editTo || onEdit) && !rowOpensView
+  const viewRowAttr = rowOpensEdit ? {} : { 'data-row-view': '' }
   return (
     <div data-row-actions className="flex flex-nowrap items-center gap-2 whitespace-nowrap">
-      {showView ? (
-        <Link to={viewTo} {...(rowOpensEdit ? {} : { 'data-row-view': '' })}>
-          <Button type="button" variant="ghost">
+      {showView && (onView || viewTo) ? (
+        onView ? (
+          <Button type="button" variant="ghost" onClick={onView} {...viewRowAttr}>
             <ViewIcon className="size-4" aria-hidden />
             {label}
           </Button>
-        </Link>
-      ) : editTo && !rowOpensView ? null : (
+        ) : (
+          <Link to={viewTo!} {...viewRowAttr}>
+            <Button type="button" variant="ghost">
+              <ViewIcon className="size-4" aria-hidden />
+              {label}
+            </Button>
+          </Link>
+        )
+      ) : (editTo || onEdit) && !rowOpensView ? null : viewTo ? (
         <Link to={viewTo} data-row-view className="sr-only">
           {label}
         </Link>
-      )}
+      ) : null}
       {extra}
-      {editTo ? (
+      {onEdit ? (
+        <Button
+          type="button"
+          variant="ghost"
+          icon
+          {...(rowOpensEdit ? { 'data-row-view': '' } : {})}
+          aria-label={t('common.edit')}
+          title={t('common.edit')}
+          onClick={onEdit}
+        >
+          <Pencil className="size-4" aria-hidden />
+        </Button>
+      ) : editTo ? (
         <Link
           to={editTo}
           {...(rowOpensEdit ? { 'data-row-view': '' } : {})}

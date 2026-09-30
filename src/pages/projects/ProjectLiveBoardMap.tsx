@@ -1,7 +1,9 @@
 import {
+  ChevronDown,
   ClipboardList,
   Download,
   ExternalLink,
+  FileText,
   FolderKanban,
   Handshake,
   Paperclip,
@@ -10,23 +12,24 @@ import {
   Sparkles,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { DateText } from '../../components/ui/DateText'
 import { Button } from '../../components/ui/Form'
 import { FormSectionTitle } from '../../components/ui/FormLayout'
 import {
   OsmMapPicker,
+  type MapOverlayContextPoint,
   type MapOverlayMarker,
   type MapOverlayMarkerTone,
   type MapOverlayPolygon,
 } from '../../components/ui/OsmMapPicker'
 import { languageDir } from '../../i18n'
-import { api, getProjectDocumentUrl } from '../../lib/api'
+import { api, getApiErrorMessage, getProjectDocumentUrl } from '../../lib/api'
 import { calendarDaysUntil, formatNumber } from '../../lib/datetime'
 import {
   projectBoundaryCenter,
@@ -799,6 +802,105 @@ function LiveBoardGroupBadges({
   )
 }
 
+const attachmentTones = [
+  { bg: '#e7f6f3', ring: '#c5e8e1', ink: '#2a6d64' },
+  { bg: '#eef3fa', ring: '#d0dced', ink: '#455f86' },
+  { bg: '#f7f2ea', ring: '#e7d9c4', ink: '#7a6240' },
+  { bg: '#f4eef8', ring: '#ddd0ea', ink: '#65507c' },
+  { bg: '#f8eef2', ring: '#ead3dc', ink: '#7d4d5e' },
+  { bg: '#eef6ef', ring: '#cfe0d0', ink: '#45684b' },
+  { bg: '#f6f4ec', ring: '#e4dfc8', ink: '#6d6548' },
+  { bg: '#eaf4f7', ring: '#c9dfe7', ink: '#3e6574' },
+] as const
+
+function attachmentTone(id: string) {
+  let hash = 0
+  for (let index = 0; index < id.length; index += 1) {
+    hash = (hash * 31 + id.charCodeAt(index)) >>> 0
+  }
+  return attachmentTones[hash % attachmentTones.length]
+}
+
+function LiveBoardAttachmentsPanel({
+  projectId,
+  locale,
+}: {
+  projectId: string
+  locale: string
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(true)
+  const query = useQuery({
+    queryKey: ['project-documents', projectId],
+    queryFn: async () => {
+      const { data } = await api.get<ProjectDocument[]>(`/public/projects/${projectId}/documents`)
+      return data
+    },
+  })
+  const items = Array.isArray(query.data) ? query.data : []
+
+  if (query.isLoading || items.length === 0) return null
+
+  return (
+    <section
+      className="live-board-attachments"
+      dir={languageDir(locale)}
+      aria-label={t('projectLiveBoard.attachments')}
+    >
+      <button
+        type="button"
+        className="live-board-attachments-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="live-board-last-activity-icon" aria-hidden>
+          <Paperclip />
+        </span>
+        <span className="live-board-last-activity-title">{t('projectLiveBoard.attachments')}</span>
+        <span className="live-board-attachments-count">{formatNumber(items.length, locale)}</span>
+        <ChevronDown className="live-board-attachments-chevron" aria-hidden />
+      </button>
+      {open ? (
+        <ul className="live-board-attachment-list">
+          {items.map((item) => {
+            const tone = attachmentTone(item.id)
+            return (
+              <li
+                key={item.id}
+                className="live-board-attachment-file"
+                style={
+                  {
+                    '--attach-bg': tone.bg,
+                    '--attach-ring': tone.ring,
+                    '--attach-ink': tone.ink,
+                  } as CSSProperties
+                }
+              >
+                <FileText className="live-board-attachment-file-icon" aria-hidden />
+                <span className="live-board-attachment-file-copy">
+                  <span className="live-board-attachment-file-name" title={item.originalName}>
+                    {item.originalName}
+                  </span>
+                  {item.title && item.title !== item.originalName ? (
+                    <span className="live-board-attachment-file-title">{item.title}</span>
+                  ) : null}
+                </span>
+                <a
+                  className="live-board-attachment-download"
+                  href={getProjectDocumentUrl(projectId, item.id)}
+                >
+                  <Download aria-hidden />
+                  {t('projectDocuments.download')}
+                </a>
+              </li>
+            )
+          })}
+        </ul>
+      ) : null}
+    </section>
+  )
+}
+
 function LiveBoardLastActivityPanel({
   project,
   locale,
@@ -907,6 +1009,159 @@ function LiveBoardProgressPanel({
   )
 }
 
+async function loadProjectDocuments(projectId: string) {
+  const { data } = await api.get<ProjectDocument[]>(`/public/projects/${projectId}/documents`)
+  return Array.isArray(data) ? data : []
+}
+
+function triggerAttachmentDownloads(projectId: string, items: ProjectDocument[]) {
+  for (const item of items) {
+    const anchor = document.createElement('a')
+    anchor.href = getProjectDocumentUrl(projectId, item.id)
+    anchor.download = item.originalName || item.title || 'file'
+    anchor.rel = 'noopener'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+  }
+}
+
+function LiveBoardProjectContextMenu({
+  project,
+  x,
+  y,
+  locale,
+  onClose,
+}: {
+  project: ProjectLiveBoardItem
+  x: number
+  y: number
+  locale: string
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const menuRef = useRef<HTMLDivElement>(null)
+  const documents = useQuery({
+    queryKey: ['project-documents', project.id],
+    queryFn: () => loadProjectDocuments(project.id),
+  })
+
+  useLayoutEffect(() => {
+    const node = menuRef.current
+    if (!node) return
+    const rect = node.getBoundingClientRect()
+    const pad = 8
+    let left = languageDir(locale) === 'rtl' ? x - rect.width : x
+    let top = y
+    if (left + rect.width > window.innerWidth - pad) {
+      left = window.innerWidth - rect.width - pad
+    }
+    if (top + rect.height > window.innerHeight - pad) {
+      top = window.innerHeight - rect.height - pad
+    }
+    node.style.left = `${Math.max(pad, left)}px`
+    node.style.top = `${Math.max(pad, top)}px`
+  }, [locale, x, y])
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.repeat) return
+      event.preventDefault()
+      event.stopPropagation()
+      onClose()
+    }
+    const onPointer = (event: PointerEvent) => {
+      if (menuRef.current?.contains(event.target as Node)) return
+      onClose()
+    }
+    document.addEventListener('keydown', onKey, true)
+    document.addEventListener('pointerdown', onPointer, true)
+    return () => {
+      document.removeEventListener('keydown', onKey, true)
+      document.removeEventListener('pointerdown', onPointer, true)
+    }
+  }, [onClose])
+
+  useEffect(() => {
+    menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
+  }, [])
+
+  async function downloadAttachments() {
+    const ready = documents.data
+    if (!ready) {
+      try {
+        const items = await loadProjectDocuments(project.id)
+        onClose()
+        if (!items.length) {
+          toast.error(t('projectLiveBoard.noAttachments'))
+          return
+        }
+        triggerAttachmentDownloads(project.id, items)
+      } catch (error) {
+        onClose()
+        toast.error(getApiErrorMessage(error, t('common.error')))
+      }
+      return
+    }
+    onClose()
+    if (!ready.length) {
+      toast.error(t('projectLiveBoard.noAttachments'))
+      return
+    }
+    triggerAttachmentDownloads(project.id, ready)
+  }
+
+  const items = [
+    {
+      key: 'details',
+      icon: FolderKanban,
+      label: t('projectLiveBoard.contextDetails'),
+      onClick: () => navigate(`/projects/${project.id}`),
+    },
+    {
+      key: 'download',
+      icon: Download,
+      label: t('projectLiveBoard.contextDownload'),
+      onClick: () => void downloadAttachments(),
+    },
+    {
+      key: 'activities',
+      icon: ClipboardList,
+      label: t('projectLiveBoard.contextActivities'),
+      onClick: () => navigate(projectProgressPath(project.id)),
+    },
+  ]
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      role="menu"
+      aria-label={t('projectLiveBoard.contextMenu')}
+      dir={languageDir(locale)}
+      className="fixed z-[130] min-w-52 rounded-2xl border border-teal-100 bg-white p-1.5 shadow-[0_12px_32px_rgba(42,109,100,0.16)]"
+      style={{ left: x, top: y }}
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <p className="truncate px-3 py-1.5 text-xs font-semibold text-teal-700">{project.systemName}</p>
+      <div className="mx-2 mb-1 h-px bg-teal-100" />
+      {items.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          role="menuitem"
+          className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-start text-sm font-medium text-ink-800 transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+          onClick={item.onClick}
+        >
+          <item.icon className="size-4 shrink-0 text-teal-600" aria-hidden />
+          {item.label}
+        </button>
+      ))}
+    </div>,
+    document.body,
+  )
+}
+
 export function ProjectLiveBoardMap({
   items,
   locale,
@@ -929,6 +1184,12 @@ export function ProjectLiveBoardMap({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [groupFilter, setGroupFilter] = useState(ALL_GROUPS)
   const [detailsOpenState, setDetailsOpenState] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{
+    projectId: string
+    x: number
+    y: number
+  } | null>(null)
+  const closeContextMenu = useCallback(() => setContextMenu(null), [])
   const detailsOpen = detailsOpenProp ?? detailsOpenState
   const selected = items.find((item) => item.id === selectedId) ?? null
 
@@ -997,6 +1258,21 @@ export function ProjectLiveBoardMap({
   }, [visibleLocated, selectedId])
 
   useEffect(() => {
+    if (contextMenu && !visibleLocated.some((item) => item.id === contextMenu.projectId)) {
+      setContextMenu(null)
+    }
+  }, [visibleLocated, contextMenu])
+
+  const contextProject = contextMenu
+    ? visibleLocated.find((item) => item.id === contextMenu.projectId) ?? null
+    : null
+
+  function openContextMenu(id: string, point: MapOverlayContextPoint) {
+    if (!canManage) return
+    setContextMenu({ projectId: id, x: point.clientX, y: point.clientY })
+  }
+
+  useEffect(() => {
     if (!selected && detailsOpen) setDetailsOpen(false)
   }, [selected, detailsOpen])
 
@@ -1049,12 +1325,15 @@ export function ProjectLiveBoardMap({
                 onMapClick={() => {
                   setSelectedId(null)
                   setDetailsOpen(false)
+                  setContextMenu(null)
                 }}
                 onMarkerClick={(id) => {
+                  setContextMenu(null)
                   if (selectedId === id) return
                   setSelectedId(id)
                   setDetailsOpen(shouldOpenSheetOnSelect(openSheetOnSelect))
                 }}
+                onMarkerContextMenu={canManage ? openContextMenu : undefined}
               />
             </div>
           </div>
@@ -1066,6 +1345,9 @@ export function ProjectLiveBoardMap({
             canManage={canManage}
           />
         ) : null}
+        {selected ? (
+          <LiveBoardAttachmentsPanel key={selected.id} projectId={selected.id} locale={locale} />
+        ) : null}
       </div>
       {selected && detailsOpen ? (
         <ProjectMapCard
@@ -1074,6 +1356,16 @@ export function ProjectLiveBoardMap({
           locale={locale}
           canManage={canManage}
           onClose={() => setDetailsOpen(false)}
+        />
+      ) : null}
+      {contextMenu && contextProject ? (
+        <LiveBoardProjectContextMenu
+          key={`${contextProject.id}-${contextMenu.x}-${contextMenu.y}`}
+          project={contextProject}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          locale={locale}
+          onClose={closeContextMenu}
         />
       ) : null}
     </>

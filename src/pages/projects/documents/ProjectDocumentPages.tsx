@@ -26,7 +26,7 @@ import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useCrudListState } from '../../../hooks/useCrudListState'
 import { api, getProjectDocumentUrl } from '../../../lib/api'
-import { formatNumber } from '../../../lib/datetime'
+import { formatGroupedQuantity } from '../../../lib/datetime'
 import type { Paginated, Project, ProjectDocument } from '../../../types/app'
 import { ProjectDocumentForm, type ProjectDocumentPayload } from './ProjectDocumentForm'
 
@@ -55,13 +55,24 @@ function toFormData(payload: ProjectDocumentPayload) {
   return form
 }
 
-function formatBytes(value: number, locale: string) {
-  if (value < 1024) return localizeSize(value, locale, 'B')
-  return localizeSize(Math.round(value / 1024), locale, 'KB')
+const KB = 1024
+const MB = 1024 * 1024
+
+function formatBytes(value: number, locale: string, kilobyte: string, megabyte: string) {
+  const asMegabytes = value >= MB || roundSize(value / KB) >= KB
+  const amount = asMegabytes ? value / MB : value / KB
+  const unit = asMegabytes ? megabyte : kilobyte
+  return `${formatSizeAmount(amount, locale)} ${unit}`
 }
 
-function localizeSize(value: number, locale: string, unit: string) {
-  return `${formatNumber(value, locale)} ${unit}`
+function roundSize(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return 0
+  const rounded = Math.round(value * 10) / 10
+  return rounded === 0 ? 0.1 : rounded
+}
+
+function formatSizeAmount(value: number, locale: string) {
+  return formatGroupedQuantity(roundSize(value), locale, 1)
 }
 
 export function ProjectDocumentListPage({ embedded = false }: { embedded?: boolean }) {
@@ -155,7 +166,14 @@ export function ProjectDocumentListPage({ embedded = false }: { embedded?: boole
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{item.title}</td>
                 <td className="px-4 py-3">{item.originalName}</td>
-                <td className="px-4 py-3">{formatBytes(item.byteSize, locale)}</td>
+                <td className="px-4 py-3">
+                  {formatBytes(
+                    item.byteSize,
+                    locale,
+                    t('projectDocuments.kilobyte'),
+                    t('projectDocuments.megabyte'),
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <DateText value={item.createdAt} withTime />
                 </td>
@@ -163,6 +181,14 @@ export function ProjectDocumentListPage({ embedded = false }: { embedded?: boole
                   <EntityRowActions
                     viewTo={`${base}/${item.id}`}
                     editTo={`${base}/${item.id}/edit`}
+                    extra={
+                      <a href={getProjectDocumentUrl(projectId, item.id)}>
+                        <Button type="button" variant="soft">
+                          <Download className="size-4" aria-hidden />
+                          {t('projectDocuments.download')}
+                        </Button>
+                      </a>
+                    }
                     onDelete={() =>
                       confirmDelete({
                         message: t('projectDocuments.confirmDelete'),
@@ -264,6 +290,7 @@ export function ProjectDocumentEditPage() {
       />
       <ProjectDocumentForm
         initial={query.data}
+        fileHref={getProjectDocumentUrl(projectId, documentId)}
         onSubmit={async (payload) => {
           await api.patch(`/projects/${projectId}/documents/${documentId}`, toFormData(payload))
           await queryClient.invalidateQueries({ queryKey: ['project-documents'] })
@@ -331,7 +358,12 @@ export function ProjectDocumentDetailPage() {
             <FormFactTile
               icon={FileText}
               label={t('projectDocuments.size')}
-              value={formatBytes(item.byteSize, locale)}
+              value={formatBytes(
+                item.byteSize,
+                locale,
+                t('projectDocuments.kilobyte'),
+                t('projectDocuments.megabyte'),
+              )}
             />
           </div>
           <a href={getProjectDocumentUrl(projectId, item.id)}>

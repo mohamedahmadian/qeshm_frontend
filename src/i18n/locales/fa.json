@@ -6,7 +6,7 @@
   "landing": {
     "enterSystem": "ورود به سامانه",
     "goToPanel": "ورود به پنل",
-    "title": "تابلوی زنده تحول دیجیتال",
+    "title": "تابلوی زنده قشم دیجیتال",
     "subtitle": "مشاهده وضعیت پروژه‌های مدیریت فناوری اطلاعات و تحول دیجیتال سازمان منطقه آزاد قشم",
     "homePage": "صفحه اصلی",
     "singard": "سینگارد",
@@ -66,6 +66,8 @@
     "changePassword": "تغییر رمز عبور",
     "openMenu": "باز کردن منو",
     "closeMenu": "بستن منو",
+    "collapseSidebar": "جمع کردن منوی اصلی",
+    "expandSidebar": "باز کردن منوی اصلی",
     "panel": "پلتفرم هوشمند تجربه دیجیتال سازمانی",
     "searchMenu": "جستجوی منو...",
     "searchMenuHint": "دو بار کنترل جهت فعال‌سازی",
@@ -137,7 +139,7 @@
     "projectGroups": "مدیریت گروه‌ها",
     "projectReports": "گزارشات",
     "projectCalendar": "تقویم پروژه‌ها",
-    "digitalTransformationLiveBoard": "تابلوی زنده تحول دیجیتال",
+    "digitalTransformationLiveBoard": "تابلوی زنده قشم دیجیتال",
     "contractorManagement": "مدیریت پیمانکاران",
     "foodManagement": "مدیریت غذا",
     "restaurantManagement": "مدیریت رستوران",
@@ -326,7 +328,7 @@
     "seeProjects": "مدیریت پروژه‌ها",
     "shortcuts": {
       "users": "مدیریت کاربران",
-      "liveBoard": "تابلوی زنده تحول دیجیتال",
+      "liveBoard": "تابلوی زنده قشم دیجیتال",
       "projects": "مدیریت پروژه‌ها",
       "qeshmondi": "سامانه قشموندی"
     },
@@ -715,7 +717,7 @@
     "color": "رنگ پروژه",
     "colorHint": "این رنگ در کارت، نقشه و جزئیات پروژه نمایش داده می‌شود.",
     "pickColor": "انتخاب رنگ دلخواه",
-    "showOnLiveBoard": "نمایش در تابلوی تحول دیجیتال",
+    "showOnLiveBoard": "نمایش در تابلوی قشم دیجیتال",
     "showOnLiveBoardOn": "نمایش داده شود",
     "showOnLiveBoardOff": "نمایش داده نشود",
     "showOnHomePage": "نمایش در صفحه اصلی",
@@ -894,7 +896,9 @@
     "download": "دانلود",
     "originalName": "نام فایل",
     "size": "حجم",
-    "fileHint": "فقط PDF یا Word، حداکثر ۱۰ مگابایت",
+    "kilobyte": "کیلوبایت",
+    "megabyte": "مگابایت",
+    "fileHint": "فقط PDF یا Word، حداکثر ۵۰۰ مگابایت",
     "createdAt": "تاریخ ایجاد"
   },
   "projectProgress": {
@@ -1088,7 +1092,7 @@
     "hideMoreDetails": "بستن جزئیات"
   },
   "projectLiveBoard": {
-    "title": "تابلوی زنده تحول دیجیتال",
+    "title": "تابلوی زنده قشم دیجیتال",
     "subtitle": "مشاهده آخرین وضعیت پروژه های تعریف شده در مدیریت تحول دیجیتال سازمان",
     "tabs": {
       "map": "نقشه",
@@ -1107,10 +1111,16 @@
     "activityCount": "تعداد فعالیت‌ها",
     "activityCountShort": "فعالیت",
     "lastActivity": "آخرین فعالیت",
+    "attachments": "پیوست‌ها",
     "recentActivities": "آخرین فعالیت‌ها",
     "activityFull": "متن کامل فعالیت",
     "openActivity": "مشاهده جزئیات فعالیت",
     "openActivities": "مشاهده فعالیت‌ها",
+    "contextMenu": "منوی پروژه",
+    "contextDetails": "جزئیات پروژه",
+    "contextDownload": "دانلود پیوست‌ها",
+    "contextActivities": "پیشرفت پروژه",
+    "noAttachments": "پیوستی برای دانلود نیست",
     "noActivity": "فعلاً فعالیتی ثبت نشده",
     "audioProcessing": "در حال پردازش صدای ضبط شده",
     "noContractors": "بدون پیمانکار",

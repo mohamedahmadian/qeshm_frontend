@@ -151,6 +151,25 @@ export type MapOverlayClickPoint = {
   y: number;
 };
 
+export type MapOverlayContextPoint = {
+  clientX: number;
+  clientY: number;
+};
+
+function contextPointFromEvent(event: L.LeafletMouseEvent): MapOverlayContextPoint {
+  const original = event.originalEvent;
+  if (
+    original &&
+    "clientX" in original &&
+    "clientY" in original &&
+    typeof original.clientX === "number" &&
+    typeof original.clientY === "number"
+  ) {
+    return { clientX: original.clientX, clientY: original.clientY };
+  }
+  return { clientX: 0, clientY: 0 };
+}
+
 export type MapSelectedContainerPoint = {
   x: number;
   y: number;
@@ -336,6 +355,7 @@ function paintOverlayContents(
   overlays: MapOverlays,
   spiderfyOverlaps: boolean,
   onMarkerClick: (id: string, point: MapOverlayClickPoint) => void,
+  onMarkerContextMenu: (id: string, event: L.LeafletMouseEvent) => void,
 ) {
   if (overlays.path && overlays.path.length >= 2) {
     L.polyline(
@@ -384,10 +404,16 @@ function paintOverlayContents(
         L.DomEvent.stop(event);
         emitPolygonClick(event.latlng ?? shape.getBounds().getCenter());
       });
+      tooltip?.on("contextmenu", (event: L.LeafletMouseEvent) => {
+        onMarkerContextMenu(polygon.id, event);
+      });
     }
     shape.on("click", (event: L.LeafletMouseEvent) => {
       L.DomEvent.stop(event);
       emitPolygonClick(event.latlng);
+    });
+    shape.on("contextmenu", (event: L.LeafletMouseEvent) => {
+      onMarkerContextMenu(polygon.id, event);
     });
   }
 
@@ -445,6 +471,9 @@ function paintOverlayContents(
       const point = map.latLngToContainerPoint(event.latlng);
       onMarkerClick(marker.id, { x: point.x, y: point.y });
     });
+    pin.on("contextmenu", (event: L.LeafletMouseEvent) => {
+      onMarkerContextMenu(marker.id, event);
+    });
     if (marker.popupHtml) {
       pin.bindPopup(marker.popupHtml, {
         className: "eskan-route-popup",
@@ -484,6 +513,7 @@ export function OsmMapPicker({
   pinZoom = DEFAULT_PIN_ZOOM,
   keepInView = null,
   onMarkerClick,
+  onMarkerContextMenu,
   onSelectedContainerPoint,
   onMapClick,
   zoomOnSelected = false,
@@ -513,6 +543,7 @@ export function OsmMapPicker({
     padding: { top: number; right: number; bottom: number; left: number };
   } | null;
   onMarkerClick?: (id: string, point: MapOverlayClickPoint) => void;
+  onMarkerContextMenu?: (id: string, point: MapOverlayContextPoint) => void;
   onSelectedContainerPoint?: (point: MapSelectedContainerPoint | null) => void;
   onMapClick?: () => void;
   zoomOnSelected?: boolean;
@@ -538,6 +569,7 @@ export function OsmMapPicker({
   const onGeoErrorRef = useRef(onGeoError);
   const onGeoOutsideRef = useRef(onGeoOutside);
   const onMarkerClickRef = useRef(onMarkerClick);
+  const onMarkerContextMenuRef = useRef(onMarkerContextMenu);
   const onSelectedContainerPointRef = useRef(onSelectedContainerPoint);
   const onMapClickRef = useRef(onMapClick);
   const zoomOnSelectedRef = useRef(zoomOnSelected);
@@ -554,6 +586,7 @@ export function OsmMapPicker({
   onGeoErrorRef.current = onGeoError;
   onGeoOutsideRef.current = onGeoOutside;
   onMarkerClickRef.current = onMarkerClick;
+  onMarkerContextMenuRef.current = onMarkerContextMenu;
   onSelectedContainerPointRef.current = onSelectedContainerPoint;
   onMapClickRef.current = onMapClick;
   zoomOnSelectedRef.current = zoomOnSelected;
@@ -781,6 +814,13 @@ export function OsmMapPicker({
         spiderfyOverlaps,
         (id, point) => {
           onMarkerClickRef.current?.(id, point);
+        },
+        (id, event) => {
+          const handler = onMarkerContextMenuRef.current;
+          if (!handler) return;
+          event.originalEvent?.preventDefault();
+          L.DomEvent.stop(event);
+          handler(id, contextPointFromEvent(event));
         },
       );
     }

@@ -35,6 +35,7 @@ import { projectBoundaryPolygons } from '../../lib/geo'
 import { projectColor } from '../../lib/project-color'
 import { projectProgressModes, type Project } from '../../types/app'
 import { useChecklistManage } from './checklist/ChecklistManageModal'
+import { useProgressManage } from './progress/ProgressManageModal'
 import { ProjectDetailChecklist } from './checklist/ProjectChecklistBoard'
 import { ContractorsListPage } from './contractors/ContractorsListPage'
 import { ProjectDocumentListPage } from './documents/ProjectDocumentPages'
@@ -70,6 +71,7 @@ export function ProjectDetailPage() {
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { id } = useParams()
   const checklist = useChecklistManage(id)
+  const progress = useProgressManage(id)
   const navigate = useNavigate()
   const { confirmDelete } = useConfirmDelete()
   const query = useQuery({
@@ -387,11 +389,13 @@ export function ProjectDetailPage() {
         }
         extraItems={projectManageExtraItems(project.id, t, {
           onChecklist: checklist.openList,
+          onProgress: progress.openList,
           showChecklist: project.progressMode === projectProgressModes.PROJECT_CHECKLIST,
           omit: ['phases', 'documents', 'contractors'],
         })}
       />
       {checklist.modal}
+      {progress.modal}
     </div>
   )
 }

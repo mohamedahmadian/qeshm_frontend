@@ -607,6 +607,19 @@ export const selectableProjectProgressModes: ProjectProgressMode[] = [
   projectProgressModes.PHASE_CHECKLIST,
 ];
 
+/** Stored MANUAL (legacy default) is treated as the project checklist. */
+export function selectedProjectProgressMode(
+  mode?: ProjectProgressMode | null,
+): ProjectProgressMode {
+  if (
+    mode === projectProgressModes.PROJECT_CHECKLIST ||
+    mode === projectProgressModes.PHASE_CHECKLIST
+  ) {
+    return mode;
+  }
+  return projectProgressModes.PROJECT_CHECKLIST;
+}
+
 export const phaseProgressModes = {
   MANUAL: "MANUAL",
   CHECKLIST: "CHECKLIST",

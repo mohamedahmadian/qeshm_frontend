@@ -1,6 +1,5 @@
 import {
   CalendarRange,
-  Flag,
   FolderKanban,
   Gauge,
   Globe,
@@ -25,7 +24,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useAuth } from '../../auth/AuthProvider'
-import { AppForm, Button, FormField, FormActions, ToggleField, fieldClassName } from '../../components/ui/Form'
+import { AppForm, FormField, FormActions, ToggleField, fieldClassName } from '../../components/ui/Form'
 import { FormCard } from '../../components/ui/FormLayout'
 import { OrgUnitTreeSelect } from '../../components/ui/OrgUnitTreeSelect'
 import { OsmMapPicker } from '../../components/ui/OsmMapPicker'
@@ -36,7 +35,7 @@ import { formatNumber } from '../../lib/datetime'
 import { projectBoundaryPolygons, QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../lib/geo'
 import { DEFAULT_PROJECT_COLOR, PROJECT_COLOR_SWATCHES, projectColor } from '../../lib/project-color'
 import { useChecklistManage } from './checklist/ChecklistManageModal'
-import { ProjectDetailChecklist } from './checklist/ProjectChecklistBoard'
+import { useProgressManage } from './progress/ProgressManageModal'
 import { ContractorsListPage } from './contractors/ContractorsListPage'
 import { ProjectDocumentListPage } from './documents/ProjectDocumentPages'
 import { ProjectPhaseListPage } from './phases/ProjectPhasePages'
@@ -46,6 +45,7 @@ import {
   projectImportances,
   projectProgressModes,
   selectableProjectProgressModes,
+  selectedProjectProgressMode,
   projectStatusOrder,
   projectStatuses,
   type OrganizationUnit,
@@ -132,11 +132,21 @@ export function ProjectForm({
   const [isActive, setIsActive] = useState(initial?.isActive ?? true)
   const [status, setStatus] = useState<string>(initial?.status ?? projectStatusOrder[0])
   const [progressMode, setProgressMode] = useState<ProjectProgressMode>(
-    initial?.progressMode ?? projectProgressModes.PROJECT_CHECKLIST,
+    selectedProjectProgressMode(initial?.progressMode),
   )
   const [progressPercent, setProgressPercent] = useState<number | null>(
     initial?.progressPercent ?? null,
   )
+  const progress = useProgressManage(projectId, (percent) => {
+    setProgressPercent(percent)
+    if (percent >= 100) {
+      setStatus(projectStatuses.COMPLETED)
+      return
+    }
+    setStatus((current) =>
+      current === projectStatuses.COMPLETED ? projectStatuses.IN_PROGRESS : current,
+    )
+  })
   const checklistDriven = progressMode !== projectProgressModes.MANUAL
   const projectChecklist = useQuery({
     queryKey: ['project-checklist', projectId, 'project', 'summary'],
@@ -278,12 +288,8 @@ export function ProjectForm({
       toast.error(t('projects.rangeInvalid'))
       return
     }
-    if (progressMode === projectProgressModes.MANUAL) {
-      goTab('timeline')
-      toast.error(t('projects.progressModeRequired'))
-      return
-    }
     const nextStatus = (status || projectStatusOrder[0]) as ProjectStatus
+    const nextProgressMode = selectedProjectProgressMode(progressMode)
     setSaving(true)
     try {
       await onSubmit({
@@ -294,7 +300,7 @@ export function ProjectForm({
         code: code.trim(),
         isActive,
         status: nextStatus,
-        progressMode,
+        progressMode: nextProgressMode,
         progressPercent,
         startDate: emptyToNull(startDate),
         endDate: emptyToNull(endDate),
@@ -661,18 +667,6 @@ export function ProjectForm({
                     {checklistDriven ? (
                       <p className="text-xs leading-6 text-ink-500">{t('projects.progressFromChecklist')}</p>
                     ) : null}
-                    {projectId && progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
-                      <Button type="button" variant="ghost" onClick={checklist.openList}>
-                        <ListChecks className="size-4" aria-hidden />
-                        {t('projectChecklist.manage')}
-                      </Button>
-                    ) : null}
-                    {projectId && progressMode === projectProgressModes.PHASE_CHECKLIST ? (
-                      <Button type="button" variant="ghost" onClick={() => setTab('phases')}>
-                        <Flag className="size-4" aria-hidden />
-                        {t('projectPhases.manage')}
-                      </Button>
-                    ) : null}
                   </div>
                 </FormField>
               </div>
@@ -709,10 +703,6 @@ export function ProjectForm({
             </div>
           </div>
 
-          {projectId && progressMode === projectProgressModes.PROJECT_CHECKLIST ? (
-            <ProjectDetailChecklist projectId={projectId} onEditItem={checklist.openEdit} />
-          ) : null}
-
           <FormActions
             submitLabel={t('projects.save')}
             cancelLabel={t('projects.cancel')}
@@ -722,7 +712,11 @@ export function ProjectForm({
               projectId
                 ? projectManageExtraItems(projectId, t, {
                     onChecklist: checklist.openList,
-                    omit: ['phases', 'documents', 'contractors'],
+                    onPhases: () => setTab('phases'),
+                    onProgress: progress.openList,
+                    showChecklist: progressMode === projectProgressModes.PROJECT_CHECKLIST,
+                    showPhases: progressMode === projectProgressModes.PHASE_CHECKLIST,
+                    omit: ['documents', 'contractors'],
                   })
                 : undefined
             }
@@ -734,6 +728,7 @@ export function ProjectForm({
       </div>
     </FormCard>
     {checklist.modal}
+    {progress.modal}
     </>
   )
 }

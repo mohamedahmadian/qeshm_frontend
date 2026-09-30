@@ -39,8 +39,7 @@ import {
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
 import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
-import { useListParams } from '../../../hooks/useListParams'
-import { useListSort } from '../../../hooks/useListSort'
+import { useCrudListState } from '../../../hooks/useCrudListState'
 import { FileAudio } from '../../../components/ui/FileMedia'
 import { api, getApiErrorMessage, getImageUrl } from '../../../lib/api'
 import { localizeDigits } from '../../../lib/datetime'
@@ -71,14 +70,14 @@ function useProject() {
   return { projectId, project: query.data }
 }
 
-function entryTitle(entry: ProjectProgressEntry, fallback: string) {
+export function entryTitle(entry: ProjectProgressEntry, fallback: string) {
   const text = (entry.body || entry.transcript || entry.summary || '').trim()
   if (!text) return fallback
   const line = text.split(/\n/)[0]?.trim() ?? fallback
   return line.length > 48 ? `${line.slice(0, 48)}…` : line
 }
 
-function formatDuration(ms: number | null | undefined, locale: string) {
+export function formatDuration(ms: number | null | undefined, locale: string) {
   if (ms == null) return '—'
   const total = Math.max(0, Math.round(ms / 1000))
   const minutes = Math.floor(total / 60)
@@ -89,7 +88,7 @@ function formatDuration(ms: number | null | undefined, locale: string) {
   )
 }
 
-function TranscriptionBadge({ value }: { value: ProjectProgressTranscriptionStatus }) {
+export function TranscriptionBadge({ value }: { value: ProjectProgressTranscriptionStatus }) {
   const { t } = useTranslation()
   const tone: Record<ProjectProgressTranscriptionStatus, string> = {
     NONE: 'bg-cream-100 text-ink-600',
@@ -105,12 +104,22 @@ function TranscriptionBadge({ value }: { value: ProjectProgressTranscriptionStat
   )
 }
 
-export function ProjectProgressListPage() {
+export function ProjectProgressEntries({
+  projectId,
+  embedded = false,
+  onView,
+  onEdit,
+  onDeleted,
+}: {
+  projectId: string
+  embedded?: boolean
+  onView?: (entryId: string) => void
+  onEdit?: (entryId: string) => void
+  onDeleted?: () => void
+}) {
   const { t } = useTranslation()
-  const { projectId, project } = useProject()
-  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
-    useListParams()
-  const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams, sortBy, sortDir, sortParams, onSort } =
+    useCrudListState(embedded)
   const { confirmDelete } = useConfirmDelete()
   const transcriptionStatus = searchParams.get('transcriptionStatus') ?? ''
   const query = useQuery({
@@ -131,30 +140,11 @@ export function ProjectProgressListPage() {
       return data
     },
   })
-  if (!project || !projectId) {
-    return <LoadingState />
-  }
   const rows = query.data?.items ?? []
   const base = projectProgressPath(projectId)
   const filtersActive = Boolean(transcriptionStatus)
   return (
-    <div className={listShellClassName}>
-      <PageHeader
-        icon={ClipboardList}
-        title={t('projectProgress.title')}
-        subtitle={<EntityNameSubtitle name={project.systemName} icon={ClipboardList} to={`/projects/${projectId}`} />}
-        action={
-          <div className="flex items-center gap-2">
-            <ProgressQuickRecord projectId={projectId} />
-            <Link to={projectProgressCreatePath(projectId)}>
-              <Button>
-                <Plus className="size-4" />
-                {t('projectProgress.create')}
-              </Button>
-            </Link>
-          </div>
-        }
-      />
+    <div className="space-y-4">
       <SearchBar
         term={term}
         onTermChange={setTerm}
@@ -248,14 +238,17 @@ export function ProjectProgressListPage() {
                 </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
-                    viewTo={`${base}/${item.id}`}
-                    editTo={`${base}/${item.id}/edit`}
+                    viewTo={onView ? undefined : `${base}/${item.id}`}
+                    onView={onView ? () => onView(item.id) : undefined}
+                    editTo={onEdit ? undefined : `${base}/${item.id}/edit`}
+                    onEdit={onEdit ? () => onEdit(item.id) : undefined}
                     onDelete={() =>
                       confirmDelete({
                         message: t('projectProgress.confirmDelete'),
                         successMessage: t('projectProgress.deleted'),
                         path: `/projects/${projectId}/progress/${item.id}`,
                         queryKey: ['project-progress'],
+                        onDeleted,
                       })
                     }
                   />
@@ -273,6 +266,35 @@ export function ProjectProgressListPage() {
           onPageChange={setPage}
         />
       ) : null}
+    </div>
+  )
+}
+
+export function ProjectProgressListPage() {
+  const { t } = useTranslation()
+  const { projectId, project } = useProject()
+  if (!project || !projectId) {
+    return <LoadingState />
+  }
+  return (
+    <div className={listShellClassName}>
+      <PageHeader
+        icon={ClipboardList}
+        title={t('projectProgress.title')}
+        subtitle={<EntityNameSubtitle name={project.systemName} icon={ClipboardList} to={`/projects/${projectId}`} />}
+        action={
+          <div className="flex items-center gap-2">
+            <ProgressQuickRecord projectId={projectId} />
+            <Link to={projectProgressCreatePath(projectId)}>
+              <Button>
+                <Plus className="size-4" />
+                {t('projectProgress.create')}
+              </Button>
+            </Link>
+          </div>
+        }
+      />
+      <ProjectProgressEntries projectId={projectId} />
     </div>
   )
 }

@@ -71,12 +71,6 @@ export function hasMenuAccess(
   moduleCode: string,
 ) {
   if (menuCode === 'dashboard.home') return true
-  if (
-    !(isContractor(user) && !isAdmin(user)) &&
-    (menuCode === 'singard.submit' || menuCode === 'singard.mine')
-  ) {
-    return true
-  }
   if (moduleCode === 'board') {
     if (
       menuCode === 'board.minutes' ||
@@ -142,7 +136,6 @@ export function orgStakeholderRedirect(
 }
 
 const ALWAYS_ALLOWED_PREFIXES = ['/account', '/settings']
-const OPEN_SINGARD_PREFIXES = ['/singard/submit', '/singard/mine']
 
 export function canAccessPath(
   user: Pick<AuthUser, 'isAdmin' | 'permissionCodes' | 'roles' | 'position'> | null | undefined,
@@ -152,12 +145,6 @@ export function canAccessPath(
   if (isAdmin(user)) return orgStakeholderRedirect(user, pathname) == null
   if (pathname === '/' || pathname === '/dashboard') return true
   if (ALWAYS_ALLOWED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
-    return true
-  }
-  if (
-    !isContractor(user) &&
-    OPEN_SINGARD_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
-  ) {
     return true
   }
   if (pathname === '/board/minutes' || pathname.startsWith('/board/minutes/') || /\/board\/requests\/[^/]+\/minutes/.test(pathname)) {

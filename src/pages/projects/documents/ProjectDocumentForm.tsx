@@ -1,9 +1,9 @@
-import { FileText, Paperclip, ScrollText, Type } from 'lucide-react'
+import { Download, FileText, Paperclip, ScrollText, Type } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { FileDropField } from '../../../components/ui/FileDropField'
-import { AppForm, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
+import { AppForm, Button, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
 import { FormCard, formCardBodyClassName } from '../../../components/ui/FormLayout'
 import { getApiErrorMessage } from '../../../lib/api'
 import type { ProjectDocument } from '../../../types/app'
@@ -11,7 +11,7 @@ import type { ProjectDocument } from '../../../types/app'
 const DOCUMENT_ACCEPT =
   '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
-const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
+const MAX_DOCUMENT_BYTES = 500 * 1024 * 1024
 
 export type ProjectDocumentPayload = {
   title: string
@@ -21,9 +21,11 @@ export type ProjectDocumentPayload = {
 
 export function ProjectDocumentForm({
   initial,
+  fileHref,
   onSubmit,
 }: {
   initial?: Pick<ProjectDocument, 'title' | 'description' | 'originalName'>
+  fileHref?: string
   onSubmit: (payload: ProjectDocumentPayload) => Promise<void>
 }) {
   const { t } = useTranslation()
@@ -84,9 +86,19 @@ export function ProjectDocumentForm({
         <FormField icon={FileText} label={t('projectDocuments.file')}>
           <div className="space-y-2">
             {initial?.originalName ? (
-              <p className="text-sm text-ink-700">
-                {t('projectDocuments.currentFile')}: {initial.originalName}
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm text-ink-700">
+                  {t('projectDocuments.currentFile')}: {initial.originalName}
+                </p>
+                {fileHref ? (
+                  <a href={fileHref}>
+                    <Button type="button" variant="soft">
+                      <Download className="size-4" aria-hidden />
+                      {t('projectDocuments.download')}
+                    </Button>
+                  </a>
+                ) : null}
+              </div>
             ) : null}
             <p className="text-xs leading-6 text-ink-500">
               {isEdit ? t('projectDocuments.replaceFile') : t('projectDocuments.fileHint')}

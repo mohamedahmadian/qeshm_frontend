@@ -45,6 +45,7 @@ export function ProjectProgressForm({
   embedded = false,
   leading,
   onDismiss,
+  onCancel,
 }: {
   initial?: Pick<
     ProjectProgressEntry,
@@ -61,6 +62,7 @@ export function ProjectProgressForm({
   embedded?: boolean
   leading?: ReactNode
   onDismiss?: () => void
+  onCancel?: () => void
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
@@ -340,7 +342,10 @@ export function ProjectProgressForm({
         </div>
         <FormActions
           submitLabel={t('projectProgress.save')}
+          cancelLabel={onCancel ? t('common.cancel') : undefined}
+          onCancel={onCancel}
           submitting={saving || uploadingAudio || uploadingImage}
+          headerIcons={embedded ? false : undefined}
           className="justify-center"
         />
       </AppForm>

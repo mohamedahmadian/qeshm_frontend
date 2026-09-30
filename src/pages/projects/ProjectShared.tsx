@@ -71,12 +71,16 @@ export function projectManageExtraItems(
   t: TFunction,
   options?: {
     onChecklist?: () => void
+    onProgress?: () => void
+    onPhases?: () => void
     showChecklist?: boolean
+    showPhases?: boolean
     omit?: Array<'progress' | 'checklist' | 'phases' | 'documents' | 'contractors'>
   },
 ): DetailActionExtraItem[] {
   const omit = new Set(options?.omit ?? [])
   const showChecklist = options?.showChecklist !== false && !omit.has('checklist')
+  const showPhases = options?.showPhases !== false && !omit.has('phases')
   const checklistItem: DetailActionExtraItem | null = showChecklist
     ? options?.onChecklist
       ? {
@@ -93,21 +97,33 @@ export function projectManageExtraItems(
   return [
     ...(!omit.has('progress')
       ? [
-          {
-            to: `/projects/${projectId}/progress`,
-            icon: ClipboardList,
-            label: t('projectProgress.manage'),
-          },
+          options?.onProgress
+            ? {
+                icon: ClipboardList,
+                label: t('projectProgress.manage'),
+                onClick: options.onProgress,
+              }
+            : {
+                to: `/projects/${projectId}/progress`,
+                icon: ClipboardList,
+                label: t('projectProgress.manage'),
+              },
         ]
       : []),
     ...(checklistItem ? [checklistItem] : []),
-    ...(!omit.has('phases')
+    ...(showPhases
       ? [
-          {
-            to: `/projects/${projectId}/phases`,
-            icon: Flag,
-            label: t('projectPhases.manage'),
-          },
+          options?.onPhases
+            ? {
+                icon: Flag,
+                label: t('projectPhases.manage'),
+                onClick: options.onPhases,
+              }
+            : {
+                to: `/projects/${projectId}/phases`,
+                icon: Flag,
+                label: t('projectPhases.manage'),
+              },
         ]
       : []),
     ...(!omit.has('documents')
