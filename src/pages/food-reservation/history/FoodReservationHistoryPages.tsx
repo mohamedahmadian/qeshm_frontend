@@ -52,6 +52,7 @@ import type {
 } from '../../../types/app'
 import { FoodReservationStatusBadge } from '../FoodReservationStatusBadge'
 import { foodReservationHistoryItemPath, foodReservationHistoryPath } from '../food-paths'
+import { FoodReservationBulkActions } from './FoodReservationBulkActions'
 
 export function FoodReservationHistoryListPage() {
   const { t, i18n } = useTranslation()
@@ -126,6 +127,7 @@ export function FoodReservationHistoryListPage() {
         title={t('menus.foodReservationHistory')}
         subtitle={t('foodReservations.historySubtitle')}
       />
+      <FoodReservationBulkActions />
       <SearchBar
         term={term}
         onTermChange={setTerm}

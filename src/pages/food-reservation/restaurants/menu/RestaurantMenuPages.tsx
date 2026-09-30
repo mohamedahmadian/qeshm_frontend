@@ -1,4 +1,4 @@
-import { Ban, CalendarRange, CookingPot, Filter, ImagePlus, ScrollText, Store, ToggleRight, UtensilsCrossed, Wallet } from 'lucide-react'
+import { Ban, CalendarRange, CookingPot, ImagePlus, ScrollText, Store, ToggleRight, UtensilsCrossed, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -30,7 +30,7 @@ import { SearchSelect } from '../../../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../../../hooks/useConfirmDelete'
 import { useCrudListState } from '../../../../hooks/useCrudListState'
 import { api } from '../../../../lib/api'
-import { formatNumber } from '../../../../lib/datetime'
+import { formatNumber, formatWeekday } from '../../../../lib/datetime'
 import type { Food, Paginated, Restaurant, RestaurantMenuItem } from '../../../../types/app'
 import { GeoStatus } from '../../../geo/GeoShared'
 import { EntityThumb, ImageFact } from '../../EntityThumb'
@@ -100,13 +100,15 @@ export function RestaurantMenuListPage({
     },
   })
   const restaurant = restaurantQuery.data
+  const foods = useFoods()
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams, sortBy, sortDir, sortParams, onSort } =
     useCrudListState(embedded)
   const { confirmDelete } = useConfirmDelete()
-  const isActive = searchParams.get('isActive') ?? ''
+  const foodId = searchParams.get('foodId') ?? ''
   const offeredAt = searchParams.get('offeredAt') ?? ''
+  const offeredUntil = searchParams.get('offeredUntil') ?? ''
   const query = useQuery({
-    queryKey: ['restaurant-menu', restaurantId, q, page, sortBy, sortDir, isActive, offeredAt],
+    queryKey: ['restaurant-menu', restaurantId, q, page, sortBy, sortDir, foodId, offeredAt, offeredUntil],
     enabled: Boolean(restaurantId),
     queryFn: async () => {
       const { data } = await api.get<Paginated<RestaurantMenuItem>>(
@@ -115,8 +117,9 @@ export function RestaurantMenuListPage({
           params: {
             page,
             ...(q ? { q } : {}),
-            ...(isActive ? { isActive } : {}),
+            ...(foodId ? { foodId } : {}),
             ...(offeredAt ? { offeredAt } : {}),
+            ...(offeredUntil ? { offeredUntil } : {}),
             ...sortParams,
           },
         },
@@ -148,26 +151,43 @@ export function RestaurantMenuListPage({
         onSubmit={() => applySearch()}
         label={t('restaurantMenuItems.search')}
         placeholder={t('restaurantMenuItems.searchPlaceholder')}
-        filtersActive={Boolean(isActive || offeredAt)}
+        filtersActive={Boolean(foodId || offeredAt || offeredUntil)}
         extra={
           <>
-            <FormField icon={CalendarRange} label={t('restaurantMenuItems.date')} htmlFor="menu-date">
+            <FormField icon={CalendarRange} label={t('restaurantMenuItems.startDate')} htmlFor="menu-date">
               <PersianDateField
                 id="menu-date"
                 value={offeredAt}
-                onChange={(value) => setParams({ offeredAt: value || undefined }, { resetPage: true })}
+                maxDate={offeredUntil || undefined}
+                onChange={(value) => {
+                  const next = value || undefined
+                  setParams(
+                    {
+                      offeredAt: next,
+                      ...(offeredUntil && next && offeredUntil < next ? { offeredUntil: undefined } : {}),
+                    },
+                    { resetPage: true },
+                  )
+                }}
               />
             </FormField>
-            <FormField icon={Filter} label={t('restaurantMenuItems.isActive')} htmlFor="menu-status">
+            <FormField icon={CalendarRange} label={t('restaurantMenuItems.endDate')} htmlFor="menu-until">
+              <PersianDateField
+                id="menu-until"
+                value={offeredUntil}
+                minDate={offeredAt || undefined}
+                onChange={(value) => setParams({ offeredUntil: value || undefined }, { resetPage: true })}
+              />
+            </FormField>
+            <FormField icon={UtensilsCrossed} label={t('restaurantMenuItems.food')} htmlFor="menu-food">
               <SearchSelect
-                id="menu-status"
-                value={isActive}
-                placeholder={t('restaurantMenuItems.allStatuses')}
-                onChange={(next) => setParams({ isActive: next || undefined }, { resetPage: true })}
+                id="menu-food"
+                value={foodId}
+                placeholder={t('restaurantMenuItems.allFoods')}
+                onChange={(next) => setParams({ foodId: next || undefined }, { resetPage: true })}
                 options={[
-                  { value: '', label: t('restaurantMenuItems.allStatuses') },
-                  { value: 'true', label: t('geo.active') },
-                  { value: 'false', label: t('geo.inactive') },
+                  { value: '', label: t('restaurantMenuItems.allFoods') },
+                  ...(foods.data ?? []).map((food) => ({ value: food.id, label: food.name })),
                 ]}
               />
             </FormField>
@@ -176,7 +196,7 @@ export function RestaurantMenuListPage({
       />
       <TableCard
         loading={query.isLoading}
-        empty={q || isActive || offeredAt ? t('restaurantMenuItems.noResults') : t('restaurantMenuItems.empty')}
+        empty={q || foodId || offeredAt || offeredUntil ? t('restaurantMenuItems.noResults') : t('restaurantMenuItems.empty')}
         hasRows={rows.length > 0}
       >
         <table className="w-full text-sm">
@@ -203,50 +223,57 @@ export function RestaurantMenuListPage({
                 sortDir={sortDir}
                 onSort={onSort}
               />
-              <SortableTh
-                column="isActive"
-                label={t('restaurantMenuItems.isActive')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
               <ActionsTh />
             </tr>
           </thead>
           <tbody>
-            {rows.map((item) => (
-              <tr key={item.id} className="border-t border-line">
-                <td className="px-4 py-3">
-                  <DateText value={item.offeredAt} />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <EntityThumb imageId={item.food.photoId} icon={UtensilsCrossed} label={item.food.name} />
-                    <span>{item.food.name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  {`${formatNumber(item.price, locale)} ${t('restaurantMenuItems.toman')}`}
-                </td>
-                <td className="px-4 py-3">
-                  <GeoStatus active={item.isActive} />
-                </td>
-                <td className={actionsColClassName}>
-                  <EntityRowActions
-                    viewTo={`${base}/${item.id}`}
-                    editTo={`${base}/${item.id}/edit`}
-                    onDelete={() =>
-                      confirmDelete({
-                        message: t('restaurantMenuItems.confirmDelete'),
-                        successMessage: t('restaurantMenuItems.deleted'),
-                        path: `/restaurants/${restaurantId}/menu-items/${item.id}`,
-                        queryKey: ['restaurant-menu'],
-                      })
-                    }
-                  />
-                </td>
-              </tr>
-            ))}
+            {rows.map((item) => {
+              const weekday = formatWeekday(item.offeredAt, locale)
+              return (
+                <tr key={item.id} className="border-t border-line">
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col items-start gap-1">
+                      <DateText value={item.offeredAt} />
+                      {weekday ? (
+                        <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-medium leading-none text-teal-800 ring-1 ring-teal-100">
+                          {weekday}
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <EntityThumb imageId={item.food.photoId} icon={UtensilsCrossed} label={item.food.name} />
+                      <span>{item.food.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {item.price === 0 ? (
+                      <span className="inline-flex rounded-full bg-cream-100 px-2 py-0.5 text-[11px] font-medium leading-none text-ink-600 ring-1 ring-line">
+                        {t('restaurantMenuItems.withoutPrice')}
+                      </span>
+                    ) : (
+                      `${formatNumber(item.price, locale)} ${t('restaurantMenuItems.toman')}`
+                    )}
+                  </td>
+                  <td className={actionsColClassName}>
+                    <EntityRowActions
+                      viewTo={`${base}/${item.id}`}
+                      showView={false}
+                      editTo={`${base}/${item.id}/edit`}
+                      onDelete={() =>
+                        confirmDelete({
+                          message: t('restaurantMenuItems.confirmDelete'),
+                          successMessage: t('restaurantMenuItems.deleted'),
+                          path: `/restaurants/${restaurantId}/menu-items/${item.id}`,
+                          queryKey: ['restaurant-menu'],
+                        })
+                      }
+                    />
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </TableCard>
@@ -344,12 +371,10 @@ export function RestaurantMenuCreatePage() {
           />
         ) : (
           <RestaurantMenuCancelForm
-            foods={foods.data}
             onSubmit={async (payload) => {
               const { data } = await api.post<{ menuItemCount: number; reservationCount: number }>(
                 `/restaurants/${restaurantId}/menu-items/cancel`,
                 {
-                  foodId: payload.foodId,
                   offeredAt: payload.offeredAt,
                   ...(payload.offeredUntil ? { offeredUntil: payload.offeredUntil } : {}),
                 },

@@ -20,7 +20,6 @@ export type MenuItemPayload = {
 }
 
 export type MenuCancelPayload = {
-  foodId: string
   offeredAt: string
   offeredUntil?: string
 }
@@ -203,22 +202,14 @@ export function RestaurantMenuForm({
 }
 
 export function RestaurantMenuCancelForm({
-  foods,
   onSubmit,
 }: {
-  foods: Food[]
   onSubmit: (payload: MenuCancelPayload) => Promise<void>
 }) {
   const { t } = useTranslation()
   const [offeredAt, setOfferedAt] = useState(todayIsoDate())
   const [offeredUntil, setOfferedUntil] = useState('')
-  const [foodId, setFoodId] = useState('')
   const [saving, setSaving] = useState(false)
-
-  const options = useMemo(
-    () => foods.map((food) => ({ value: food.id, label: food.name })),
-    [foods],
-  )
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -230,10 +221,6 @@ export function RestaurantMenuCancelForm({
       toast.error(t('restaurantMenuItems.rangeInvalid'))
       return
     }
-    if (!foodId) {
-      toast.error(t('restaurantMenuItems.selectFood'))
-      return
-    }
     confirmToast({
       title: t('restaurantMenuItems.cancelPlanConfirm'),
       confirmLabel: t('restaurantMenuItems.cancelPlanYes'),
@@ -243,7 +230,6 @@ export function RestaurantMenuCancelForm({
         setSaving(true)
         try {
           await onSubmit({
-            foodId,
             offeredAt,
             offeredUntil: offeredUntil || undefined,
           })
@@ -258,39 +244,31 @@ export function RestaurantMenuCancelForm({
 
   return (
     <AppForm onSubmit={submit} className={formCardBodyClassName}>
-      <FormField icon={CalendarRange} label={t('restaurantMenuItems.startDate')} htmlFor="cancelMenuDate">
-        <PersianDateField
-          id="cancelMenuDate"
-          value={offeredAt}
-          maxDate={offeredUntil || undefined}
-          onChange={(value) => {
-            const next = value ?? ''
-            setOfferedAt(next)
-            if (offeredUntil && next && offeredUntil < next) {
-              setOfferedUntil('')
-            }
-          }}
-        />
-      </FormField>
-      <FormField icon={CalendarRange} label={t('restaurantMenuItems.endDate')} htmlFor="cancelMenuUntil">
-        <PersianDateField
-          id="cancelMenuUntil"
-          value={offeredUntil}
-          minDate={offeredAt || undefined}
-          onChange={(value) => setOfferedUntil(value ?? '')}
-        />
-        <p className="mt-1.5 text-xs text-ink-500">{t('restaurantMenuItems.cancelPlanHint')}</p>
-      </FormField>
-      <FormField icon={UtensilsCrossed} label={t('restaurantMenuItems.food')} htmlFor="cancelMenuFood">
-        <SearchSelect
-          id="cancelMenuFood"
-          value={foodId}
-          required
-          onChange={setFoodId}
-          placeholder={t('restaurantMenuItems.selectFood')}
-          options={options}
-        />
-      </FormField>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField icon={CalendarRange} label={t('restaurantMenuItems.startDate')} htmlFor="cancelMenuDate">
+          <PersianDateField
+            id="cancelMenuDate"
+            value={offeredAt}
+            maxDate={offeredUntil || undefined}
+            onChange={(value) => {
+              const next = value ?? ''
+              setOfferedAt(next)
+              if (offeredUntil && next && offeredUntil < next) {
+                setOfferedUntil('')
+              }
+            }}
+          />
+        </FormField>
+        <FormField icon={CalendarRange} label={t('restaurantMenuItems.endDate')} htmlFor="cancelMenuUntil">
+          <PersianDateField
+            id="cancelMenuUntil"
+            value={offeredUntil}
+            minDate={offeredAt || undefined}
+            onChange={(value) => setOfferedUntil(value ?? '')}
+          />
+          <p className="mt-1.5 text-xs text-ink-500">{t('restaurantMenuItems.cancelPlanHint')}</p>
+        </FormField>
+      </div>
       <FormActions
         submitLabel={t('restaurantMenuItems.cancelPlanSubmit')}
         cancelLabel={t('restaurantMenuItems.cancel')}
