@@ -1,16 +1,18 @@
-import { Download, FileText, Paperclip, ScrollText, Type } from 'lucide-react'
+import { FileText, Paperclip, ScrollText, Type } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { FileDropField } from '../../../components/ui/FileDropField'
-import { AppForm, Button, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
+import { FileName } from '../../../components/ui/FileName'
+import { AppForm, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
 import { FormCard, formCardBodyClassName } from '../../../components/ui/FormLayout'
 import { getApiErrorMessage } from '../../../lib/api'
 import { formatGroupedQuantity, formatNumber } from '../../../lib/datetime'
 import type { ProjectDocument } from '../../../types/app'
+import { ProjectDocumentFileActions } from './ProjectDocumentFileActions'
 
 const DOCUMENT_ACCEPT =
-  '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  '.pdf,.doc,.docx,.mp4,.webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/mp4,video/webm'
 
 const MAX_DOCUMENT_BYTES = 500 * 1024 * 1024
 
@@ -31,11 +33,12 @@ type UploadState = ProjectDocumentUploadProgress & {
 
 export function ProjectDocumentForm({
   initial,
-  fileHref,
   onSubmit,
 }: {
-  initial?: Pick<ProjectDocument, 'title' | 'description' | 'originalName'>
-  fileHref?: string
+  initial?: Pick<
+    ProjectDocument,
+    'id' | 'projectId' | 'title' | 'description' | 'originalName' | 'mimeType'
+  >
   onSubmit: (
     payload: ProjectDocumentPayload,
     onUploadProgress: (progress: ProjectDocumentUploadProgress) => void,
@@ -119,16 +122,13 @@ export function ProjectDocumentForm({
             {initial?.originalName ? (
               <div className="flex flex-wrap items-center gap-3">
                 <p className="text-sm text-ink-700">
-                  {t('projectDocuments.currentFile')}: {initial.originalName}
+                  {t('projectDocuments.currentFile')}: <FileName>{initial.originalName}</FileName>
                 </p>
-                {fileHref ? (
-                  <a href={fileHref}>
-                    <Button type="button" variant="soft">
-                      <Download className="size-4" aria-hidden />
-                      {t('projectDocuments.download')}
-                    </Button>
-                  </a>
-                ) : null}
+                <ProjectDocumentFileActions
+                  projectId={initial.projectId}
+                  documentId={initial.id}
+                  mimeType={initial.mimeType}
+                />
               </div>
             ) : null}
             <p className="text-xs leading-6 text-ink-500">

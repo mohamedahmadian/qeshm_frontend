@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { DateText } from '../../components/ui/DateText'
+import { FileName } from '../../components/ui/FileName'
 import { Button } from '../../components/ui/Form'
 import { FormSectionTitle } from '../../components/ui/FormLayout'
 import {
@@ -30,6 +31,7 @@ import {
 } from '../../components/ui/OsmMapPicker'
 import { languageDir } from '../../i18n'
 import { api, getApiErrorMessage, getProjectDocumentUrl } from '../../lib/api'
+import { ProjectDocumentFileActions } from './documents/ProjectDocumentFileActions'
 import { calendarDaysUntil, formatNumber } from '../../lib/datetime'
 import {
   projectBoundaryCenter,
@@ -440,14 +442,16 @@ function ProjectMapAttachments({
                   {item.description}
                 </p>
               ) : null}
-              <p className="mt-0.5 truncate text-[11px] text-ink-400">{item.originalName}</p>
+              <p className="mt-0.5 truncate text-[11px] text-ink-400">
+                <FileName>{item.originalName}</FileName>
+              </p>
             </div>
-            <a href={getProjectDocumentUrl(projectId, item.id)} className="shrink-0">
-              <Button type="button" variant="ghost" className="h-8 px-3 py-0 text-xs">
-                <Download className="size-3.5" aria-hidden />
-                {t('projectDocuments.download')}
-              </Button>
-            </a>
+            <ProjectDocumentFileActions
+              projectId={projectId}
+              documentId={item.id}
+              mimeType={item.mimeType}
+              compact
+            />
           </li>
         ))}
       </ul>
@@ -879,19 +883,18 @@ function LiveBoardAttachmentsPanel({
                 <FileText className="live-board-attachment-file-icon" aria-hidden />
                 <span className="live-board-attachment-file-copy">
                   <span className="live-board-attachment-file-name" title={item.originalName}>
-                    {item.originalName}
+                    <FileName>{item.originalName}</FileName>
                   </span>
                   {item.title && item.title !== item.originalName ? (
                     <span className="live-board-attachment-file-title">{item.title}</span>
                   ) : null}
                 </span>
-                <a
-                  className="live-board-attachment-download"
-                  href={getProjectDocumentUrl(projectId, item.id)}
-                >
-                  <Download aria-hidden />
-                  {t('projectDocuments.download')}
-                </a>
+                <ProjectDocumentFileActions
+                  projectId={projectId}
+                  documentId={item.id}
+                  mimeType={item.mimeType}
+                  chip
+                />
               </li>
             )
           })}

@@ -598,6 +598,31 @@ th {
   color: color-mix(in srgb, var(--attach-ink) 72%, #7a8482);
 }
 
+.live-board-attachment-view {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background: #fff;
+  color: #1a9e96;
+  box-shadow:
+    0 0 0 1px #5ed4ce,
+    0 4px 10px rgba(46, 189, 182, 0.18);
+  text-decoration: none;
+}
+
+.live-board-attachment-view:hover {
+  background: #f3fbf9;
+}
+
+.live-board-attachment-view svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
 .live-board-attachment-download {
   display: inline-flex;
   flex-shrink: 0;
@@ -622,6 +647,7 @@ th {
   height: 0.95rem;
 }
 
+.live-board-attachment-view:focus-visible,
 .live-board-attachment-download:focus-visible,
 .live-board-attachments-toggle:focus-visible {
   outline: 2px solid #2ebdb6;

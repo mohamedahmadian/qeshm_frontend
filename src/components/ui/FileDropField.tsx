@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { FileName } from './FileName'
 import { Button } from './Form'
 import { LoadingSpinner } from './LoadingState'
 
@@ -169,7 +170,9 @@ export function FileDropField({
       )}
 
       {selectedName && !preview ? (
-        <p className="mb-2 text-sm font-medium text-ink-800">{selectedName}</p>
+        <p className="mb-2 text-sm font-medium text-ink-800">
+          <FileName>{selectedName}</FileName>
+        </p>
       ) : null}
 
       <p className="text-sm text-ink-700">{t('common.dropFileHint')}</p>

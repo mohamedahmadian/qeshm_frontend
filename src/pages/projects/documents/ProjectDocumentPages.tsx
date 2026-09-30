@@ -1,10 +1,11 @@
 import type { AxiosProgressEvent } from 'axios'
-import { Download, FileText, Paperclip, Plus, ScrollText, Type } from 'lucide-react'
+import { FileText, Paperclip, Plus, ScrollText, Type } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { DateText } from '../../../components/ui/DateText'
+import { FileName } from '../../../components/ui/FileName'
 import {
   ActionsTh,
   EntityRowActions,
@@ -26,9 +27,10 @@ import {
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useCrudListState } from '../../../hooks/useCrudListState'
-import { api, getProjectDocumentUrl } from '../../../lib/api'
+import { api } from '../../../lib/api'
 import { formatGroupedQuantity } from '../../../lib/datetime'
 import type { Paginated, Project, ProjectDocument } from '../../../types/app'
+import { ProjectDocumentFileActions } from './ProjectDocumentFileActions'
 import {
   ProjectDocumentForm,
   type ProjectDocumentPayload,
@@ -184,7 +186,9 @@ export function ProjectDocumentListPage({ embedded = false }: { embedded?: boole
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{item.title}</td>
-                <td className="px-4 py-3">{item.originalName}</td>
+                <td className="px-4 py-3">
+                  <FileName>{item.originalName}</FileName>
+                </td>
                 <td className="px-4 py-3">
                   {formatBytes(
                     item.byteSize,
@@ -201,12 +205,11 @@ export function ProjectDocumentListPage({ embedded = false }: { embedded?: boole
                     viewTo={`${base}/${item.id}`}
                     editTo={`${base}/${item.id}/edit`}
                     extra={
-                      <a href={getProjectDocumentUrl(projectId, item.id)}>
-                        <Button type="button" variant="soft">
-                          <Download className="size-4" aria-hidden />
-                          {t('projectDocuments.download')}
-                        </Button>
-                      </a>
+                      <ProjectDocumentFileActions
+                        projectId={projectId}
+                        documentId={item.id}
+                        mimeType={item.mimeType}
+                      />
                     }
                     onDelete={() =>
                       confirmDelete({
@@ -313,7 +316,6 @@ export function ProjectDocumentEditPage() {
       />
       <ProjectDocumentForm
         initial={query.data}
-        fileHref={getProjectDocumentUrl(projectId, documentId)}
         onSubmit={async (payload, onUploadProgress) => {
           await api.patch(
             `/projects/${projectId}/documents/${documentId}`,
@@ -372,7 +374,7 @@ export function ProjectDocumentDetailPage() {
             <FormFactTile
               icon={FileText}
               label={t('projectDocuments.originalName')}
-              value={item.originalName}
+              value={<FileName>{item.originalName}</FileName>}
               tone="mint"
             />
             <FormFactTile
@@ -393,12 +395,11 @@ export function ProjectDocumentDetailPage() {
               )}
             />
           </div>
-          <a href={getProjectDocumentUrl(projectId, item.id)}>
-            <Button type="button" variant="soft">
-              <Download className="size-4" aria-hidden />
-              {t('projectDocuments.download')}
-            </Button>
-          </a>
+          <ProjectDocumentFileActions
+            projectId={projectId}
+            documentId={item.id}
+            mimeType={item.mimeType}
+          />
           <DetailActions
             editTo={`${base}/${documentId}/edit`}
             editLabel={t('common.edit')}

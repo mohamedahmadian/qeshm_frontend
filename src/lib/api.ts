@@ -24,8 +24,18 @@ export function getFileUrl(id: string): string {
   return `${apiBaseUrl}/files/${id}`
 }
 
-export function getProjectDocumentUrl(projectId: string, documentId: string): string {
-  return `${apiBaseUrl}/public/projects/${projectId}/documents/${documentId}/file`
+export function getProjectDocumentUrl(
+  projectId: string,
+  documentId: string,
+  options?: { view?: boolean },
+): string {
+  const url = `${apiBaseUrl}/public/projects/${projectId}/documents/${documentId}/file`
+  return options?.view ? `${url}?view=1` : url
+}
+
+export function canPreviewProjectDocument(mimeType: string) {
+  const mime = mimeType.split(';')[0]?.trim().toLowerCase() ?? ''
+  return mime === 'application/pdf' || mime.startsWith('video/')
 }
 
 export function isApiServerError(error: unknown): boolean {
