@@ -42,8 +42,16 @@ import {
   emptyPendingMinutesFiles,
   pendingFilesFromAttachments,
 } from './BoardMinutesAttachmentsField'
+import { BoardMinutesResolutionListPage } from './BoardMinutesResolutionPages'
 import { MinutesDictation } from './MinutesDictation'
-import { boardMinuteResolutionsPath } from './board-paths'
+
+const minutesEditTabs = ['info', 'resolutions'] as const
+type MinutesEditTab = (typeof minutesEditTabs)[number]
+
+const minutesTabIcons = {
+  info: ScrollText,
+  resolutions: FileText,
+} as const
 
 export type BoardMinutesPayload = {
   heldAt: string
@@ -88,6 +96,8 @@ export function BoardMinutesForm({
   const [attachmentsOpen, setAttachmentsOpen] = useState(false)
   const [membersModalOpen, setMembersModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [tab, setTab] = useState<MinutesEditTab>('info')
+  const manage = Boolean(initial)
 
   const requests = useQuery({
     queryKey: ['board-minutes-approved-requests'],
@@ -145,7 +155,43 @@ export function BoardMinutesForm({
       title={initial ? initial.subject : t('boardMinutes.create')}
       subtitle={initial ? undefined : t('boardMinutes.createSubtitle')}
     >
-      <AppForm onSubmit={submit} className={formCardBodyClassName}>
+      {manage ? (
+        <nav
+          className="flex flex-wrap gap-2 border-b border-line bg-cream-50/60 px-4 py-3 sm:px-5"
+          role="tablist"
+        >
+          {minutesEditTabs.map((item) => {
+            const Icon = minutesTabIcons[item]
+            const active = tab === item
+            return (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(item)}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 ${
+                  active
+                    ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
+                    : 'bg-white text-ink-700 ring-1 ring-line hover:bg-cream-50'
+                }`}
+              >
+                <Icon className={`size-3.5 ${active ? 'text-white' : 'text-teal-600'}`} aria-hidden />
+                {t(`boardMinutes.tabs.${item}`)}
+              </button>
+            )
+          })}
+        </nav>
+      ) : null}
+      {manage && tab === 'resolutions' ? (
+        <div className="p-5 sm:p-6">
+          <BoardMinutesResolutionListPage embedded />
+        </div>
+      ) : null}
+      <AppForm
+        onSubmit={submit}
+        className={`${formCardBodyClassName}${manage && tab !== 'info' ? ' hidden' : ''}`}
+      >
         <FormField icon={CalendarDays} label={t('boardMinutes.heldAt')}>
           <PersianDateField value={heldAt} onChange={(value) => setHeldAt(value ?? '')} />
         </FormField>
@@ -271,19 +317,9 @@ export function BoardMinutesForm({
           <FormActions
             submitLabel={initial ? t('boardMinutes.save') : t('boardMinutes.create')}
             cancelLabel={t('common.cancel')}
-            onCancel={onCancel}
+            onCancel={manage && tab !== 'info' ? undefined : onCancel}
             submitting={saving}
-            extraItems={
-              initial
-                ? [
-                    {
-                      to: boardMinuteResolutionsPath(initial.id, lockedRequestId),
-                      icon: FileText,
-                      label: t('boardResolutions.title'),
-                    },
-                  ]
-                : undefined
-            }
+            headerIcons={!manage || tab === 'info'}
           />
         </div>
       </AppForm>

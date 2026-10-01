@@ -167,7 +167,7 @@
     "boardRequests": "درخواست طرح موضوع",
     "boardPlans": "مدیریت طرح‌خواست‌ها",
     "boardMinutes": "صورت‌جلسه‌ها",
-    "boardSmartSearch": "جستجوی هوشمند",
+    "boardSmartSearch": "جستجوی هوشمند حافظه سازمانی",
     "boardResolutions": "مدیریت مصوب‌ها",
     "boardCalendar": "تقویم مصوبات",
     "boardReports": "گزارش صورت‌جلسه‌ها",
@@ -2449,6 +2449,10 @@
     "detailsSubtitle": "مشاهده صورت‌جلسه هیئت مدیره",
     "manage": "مدیریت صورت‌جلسه‌ها",
     "section": "اطلاعات جلسه",
+    "tabs": {
+      "info": "اطلاعات صورت‌جلسه",
+      "resolutions": "مصوبات"
+    },
     "empty": "هنوز صورت‌جلسه‌ای ثبت نشده است",
     "noResults": "صورت‌جلسه‌ای با این جستجو یافت نشد",
     "search": "جستجو در صورت‌جلسه‌ها",
@@ -2499,6 +2503,8 @@
     "delete": "حذف صورت‌جلسه",
     "dateRequired": "تاریخ جلسه را وارد کنید",
     "filterKind": "نوع جلسه",
+    "fromDate": "از تاریخ جلسه",
+    "toDate": "تا تاریخ جلسه",
     "save": "ذخیره"
   },
   "boardSmartSearch": {

@@ -1,4 +1,5 @@
 import {
+  CalendarRange,
   FileText,
   Inbox,
   Link2,
@@ -38,6 +39,7 @@ import {
   FormFactTile,
   FormSectionTitle,
 } from '../../components/ui/FormLayout'
+import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
@@ -91,7 +93,9 @@ export function BoardMinutesListPage() {
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const kind = searchParams.get('kind') ?? ''
-  const filtersActive = Boolean(kind)
+  const from = searchParams.get('from') ?? ''
+  const to = searchParams.get('to') ?? ''
+  const filtersActive = Boolean(kind || from || to)
   const { confirmDelete } = useConfirmDelete()
   const requestQuery = useQuery({
     queryKey: ['board-request', requestId],
@@ -110,7 +114,7 @@ export function BoardMinutesListPage() {
     },
   })
   const query = useQuery({
-    queryKey: ['board-minutes', requestId, q, page, sortBy, sortDir, kind],
+    queryKey: ['board-minutes', requestId, q, page, sortBy, sortDir, kind, from, to],
     queryFn: async () => {
       const { data } = await api.get<Paginated<BoardMinutes>>('/board/minutes', {
         params: {
@@ -118,6 +122,8 @@ export function BoardMinutesListPage() {
           ...(q ? { q } : {}),
           ...(requestId ? { requestId } : {}),
           ...(kind ? { kind } : {}),
+          ...(from ? { from } : {}),
+          ...(to ? { to } : {}),
           ...sortParams,
         },
       })
@@ -171,26 +177,54 @@ export function BoardMinutesListPage() {
         label={t('boardMinutes.search')}
         placeholder={t('boardMinutes.searchPlaceholder')}
         filtersActive={filtersActive}
+        extraClassName="sm:grid-cols-3"
         extra={
           requestId ? undefined : (
-            <FormField icon={Stamp} label={t('boardMinutes.filterKind')}>
-              <SearchSelect
-                value={kind}
-                onChange={(next) => setParams({ kind: next || undefined }, { resetPage: true })}
-                options={[
-                  { value: '', label: t('common.all') },
-                  { value: 'regular', label: t('boardMinutes.regular') },
-                  { value: 'linked', label: t('boardMinutes.linked') },
-                ]}
-                placeholder={t('boardMinutes.filterKind')}
-              />
-            </FormField>
+            <>
+              <FormField icon={CalendarRange} label={t('boardMinutes.fromDate')} htmlFor="minutes-from">
+                <PersianDateField
+                  id="minutes-from"
+                  value={from}
+                  maxDate={to || undefined}
+                  onChange={(value) => {
+                    const next = value || undefined
+                    setParams(
+                      {
+                        from: next,
+                        ...(to && next && to < next ? { to: undefined } : {}),
+                      },
+                      { resetPage: true },
+                    )
+                  }}
+                />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('boardMinutes.toDate')} htmlFor="minutes-to">
+                <PersianDateField
+                  id="minutes-to"
+                  value={to}
+                  minDate={from || undefined}
+                  onChange={(value) => setParams({ to: value || undefined }, { resetPage: true })}
+                />
+              </FormField>
+              <FormField icon={Stamp} label={t('boardMinutes.filterKind')}>
+                <SearchSelect
+                  value={kind}
+                  onChange={(next) => setParams({ kind: next || undefined }, { resetPage: true })}
+                  options={[
+                    { value: '', label: t('common.all') },
+                    { value: 'regular', label: t('boardMinutes.regular') },
+                    { value: 'linked', label: t('boardMinutes.linked') },
+                  ]}
+                  placeholder={t('boardMinutes.filterKind')}
+                />
+              </FormField>
+            </>
           )
         }
       />
       <TableCard
         loading={query.isLoading}
-        empty={q ? t('boardMinutes.noResults') : t('boardMinutes.empty')}
+        empty={q || kind || from || to ? t('boardMinutes.noResults') : t('boardMinutes.empty')}
         hasRows={rows.length > 0}
       >
         <table className="w-full text-sm">

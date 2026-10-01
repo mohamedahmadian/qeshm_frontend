@@ -47,6 +47,17 @@ export function UserSearchModal({
   }, [open])
 
   useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.repeat) return
+      event.preventDefault()
+      onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose, open])
+
+  useEffect(() => {
     setHighlighted(0)
   }, [term])
 
@@ -107,10 +118,6 @@ export function UserSearchModal({
               if (event.key === 'ArrowUp') {
                 event.preventDefault()
                 setHighlighted((current) => (current - 1 + items.length) % items.length)
-              }
-              if (event.key === 'Escape') {
-                event.preventDefault()
-                onClose()
               }
             }}
             className={fieldClassName}

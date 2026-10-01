@@ -208,7 +208,7 @@ function SidebarModuleSection({
             <ModuleIcon className="size-3.5" aria-hidden />
           </span>
           <p
-            className={`truncate text-[11px] font-semibold ${
+            className={`truncate text-sm font-semibold ${
               mintTone ? 'text-mint-800' : 'text-teal-800'
             } ${rail ? 'sr-only' : 'min-w-0 flex-1'}`}
           >

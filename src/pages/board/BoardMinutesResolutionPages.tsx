@@ -1,6 +1,7 @@
-import { Building2, CalendarRange, FileText, Plus, ScrollText, Stamp } from 'lucide-react'
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { Building2, CalendarRange, FileText, Plus, ScrollText, Stamp, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -25,18 +26,94 @@ import {
 } from '../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
-import { useListParams } from '../../hooks/useListParams'
-import { useListSort } from '../../hooks/useListSort'
+import { useCrudListState } from '../../hooks/useCrudListState'
 import { api } from '../../lib/api'
 import type { BoardMinutes, BoardMinutesResolution, Paginated } from '../../types/app'
 import { BoardMinutesDossierModal } from './BoardMinutesDossierModal'
-import { BoardMinutesResolutionForm } from './BoardMinutesResolutionForm'
+import { BoardMinutesResolutionForm, type BoardResolutionPayload } from './BoardMinutesResolutionForm'
 import {
+  boardMinuteEditPath,
   boardMinutePath,
   boardMinuteResolutionPath,
   boardMinuteResolutionsPath,
   boardRequestPath,
 } from './board-paths'
+
+function ResolutionCreateModal({
+  open,
+  minutesId,
+  minutesTitle,
+  onClose,
+  onCreated,
+}: {
+  open: boolean
+  minutesId: string
+  minutesTitle: string
+  onClose: () => void
+  onCreated: () => void
+}) {
+  const { t } = useTranslation()
+
+  useEffect(() => {
+    if (!open) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.repeat) return
+      if (document.querySelector('[data-confirm-toast], [role="listbox"], [role="menu"], .rmdp-wrapper')) return
+      event.preventDefault()
+      onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose, open])
+
+  if (!open) return null
+
+  async function submit(payload: BoardResolutionPayload) {
+    await api.post(`/board/minutes/${minutesId}/resolutions`, payload)
+    toast.success(t('boardResolutions.created'))
+    onCreated()
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-ink-900/30 p-4 py-8"
+      data-nested-dialog
+      role="presentation"
+    >
+      <button type="button" className="absolute inset-0 cursor-default" aria-label={t('common.close')} onClick={onClose} />
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('boardResolutions.create')}
+        className="relative z-10 w-full max-w-2xl"
+      >
+        <BoardMinutesResolutionForm
+          minutesTitle={minutesTitle}
+          headerIcons={false}
+          autoFocusFirst
+          headerAction={
+            <button
+              type="button"
+              className="cursor-pointer rounded-xl p-2 text-ink-500 hover:bg-white"
+              onClick={onClose}
+              aria-label={t('common.close')}
+            >
+              <X className="size-4" />
+            </button>
+          }
+          onCancel={onClose}
+          onSubmit={submit}
+        />
+      </section>
+    </div>,
+    document.body,
+  )
+}
 
 function useMinutesContext() {
   const { requestId, minutesId, resolutionId } = useParams()
@@ -51,14 +128,16 @@ function useMinutesContext() {
   return { requestId, minutesId, resolutionId, minutes: query.data }
 }
 
-export function BoardMinutesResolutionListPage() {
+export function BoardMinutesResolutionListPage({ embedded = false }: { embedded?: boolean }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { requestId, minutesId, minutes } = useMinutesContext()
-  const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
-  const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const { q, page, term, setTerm, applySearch, setPage, sortBy, sortDir, sortParams, onSort } =
+    useCrudListState(embedded)
+  const queryClient = useQueryClient()
   const { confirmDelete } = useConfirmDelete()
   const [dossierResolutionId, setDossierResolutionId] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
   const query = useQuery({
     queryKey: ['board-minutes-resolutions', minutesId, q, page, sortBy, sortDir],
     enabled: Boolean(minutesId),
@@ -70,31 +149,48 @@ export function BoardMinutesResolutionListPage() {
       return data
     },
   })
-  if (!minutes || !minutesId) return <LoadingState />
+  if (!minutesId || (!embedded && !minutes)) return <LoadingState />
   const base = boardMinuteResolutionsPath(minutesId, requestId)
   const rows = query.data?.items ?? []
-  return (
-    <div className={`${listShellClassName} space-y-5`}>
-      <PageHeader
-        icon={FileText}
-        title={t('boardResolutions.title')}
-        subtitle={<EntityNameSubtitle name={minutes.subject} icon={FileText} />}
-        backTo={boardMinutePath(minutesId, requestId)}
-        action={
-          <Link to={`${base}/new`}>
-            <Button>
-              <Plus className="size-4" aria-hidden />
-              {t('boardResolutions.create')}
-            </Button>
-          </Link>
-        }
-      />
+  const createAction = embedded ? (
+    <Button type="button" onClick={() => setCreateOpen(true)}>
+      <Plus className="size-4" aria-hidden />
+      {t('boardResolutions.create')}
+    </Button>
+  ) : (
+    <Link to={`${base}/new`}>
+      <Button>
+        <Plus className="size-4" aria-hidden />
+        {t('boardResolutions.create')}
+      </Button>
+    </Link>
+  )
+  const createModal = embedded ? (
+    <ResolutionCreateModal
+      open={createOpen}
+      minutesId={minutesId}
+      minutesTitle={minutes?.subject ?? ''}
+      onClose={() => setCreateOpen(false)}
+      onCreated={() => {
+        const pageSize = query.data?.pageSize ?? 10
+        const nextTotal = (query.data?.total ?? 0) + 1
+        if (!q && !sortBy) setPage(Math.max(1, Math.ceil(nextTotal / pageSize)))
+        void queryClient.invalidateQueries({ queryKey: ['board-minutes-resolutions', minutesId] })
+        void queryClient.invalidateQueries({ queryKey: ['board-minutes-item', minutesId] })
+        void queryClient.invalidateQueries({ queryKey: ['board-minutes'] })
+        setCreateOpen(false)
+      }}
+    />
+  ) : null
+  const list = (
+    <>
       <SearchBar
         term={term}
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
         label={t('boardResolutions.search')}
         placeholder={t('boardResolutions.searchPlaceholder')}
+        {...(embedded ? { autoFocus: false } : {})}
       />
       <TableCard
         loading={query.isLoading}
@@ -119,12 +215,14 @@ export function BoardMinutesResolutionListPage() {
                 <td className={actionsColClassName}>
                   <EntityRowActions
                     viewTo={`${base}/${item.id}`}
-                    showView={false}
+                    showView={embedded}
                     extra={
-                      <Button type="button" variant="soft" onClick={() => setDossierResolutionId(item.id)}>
-                        <ScrollText className="size-4" aria-hidden />
-                        {t('boardResolutions.viewMinutes')}
-                      </Button>
+                      embedded ? undefined : (
+                        <Button type="button" variant="soft" onClick={() => setDossierResolutionId(item.id)}>
+                          <ScrollText className="size-4" aria-hidden />
+                          {t('boardResolutions.viewMinutes')}
+                        </Button>
+                      )
                     }
                     editTo={`${base}/${item.id}/edit`}
                     onDelete={() =>
@@ -150,12 +248,45 @@ export function BoardMinutesResolutionListPage() {
           onPageChange={setPage}
         />
       ) : null}
-      <BoardMinutesDossierModal
-        minutesId={dossierResolutionId ? minutesId : null}
-        focusResolutionId={dossierResolutionId}
-        locale={locale}
-        onClose={() => setDossierResolutionId(null)}
+      {embedded ? null : (
+        <BoardMinutesDossierModal
+          minutesId={dossierResolutionId ? minutesId : null}
+          focusResolutionId={dossierResolutionId}
+          locale={locale}
+          onClose={() => setDossierResolutionId(null)}
+        />
+      )}
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">{createAction}</div>
+        {list}
+        {createModal}
+      </div>
+    )
+  }
+
+  if (!minutes) return <LoadingState />
+
+  return (
+    <div className={`${listShellClassName} space-y-5`}>
+      <PageHeader
+        icon={FileText}
+        title={t('boardResolutions.title')}
+        subtitle={
+          <EntityNameSubtitle
+            name={minutes.subject}
+            icon={ScrollText}
+            to={boardMinuteEditPath(minutesId, requestId)}
+          />
+        }
+        backTo={boardMinutePath(minutesId, requestId)}
+        action={createAction}
       />
+      {list}
     </div>
   )
 }

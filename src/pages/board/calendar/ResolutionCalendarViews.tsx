@@ -265,12 +265,12 @@ export function ResolutionTimelineProposal({
                     <ResolutionNameHover
                       key={item.id}
                       item={item}
-                      className="flex h-9 w-full min-w-0 max-w-full items-center overflow-hidden"
+                      className="flex h-11 w-full min-w-0 max-w-full items-center overflow-hidden"
                     >
                       <button
                         type="button"
                         onClick={() => onOpenDossier(item)}
-                        className="block w-full min-w-0 cursor-pointer truncate text-start text-xs font-semibold text-ink-800 hover:text-teal-700"
+                        className="line-clamp-2 w-full min-w-0 cursor-pointer text-start text-[11px] font-semibold leading-4 text-ink-800 hover:text-teal-700"
                         title={item.title}
                       >
                         {item.title}
@@ -300,7 +300,7 @@ export function ResolutionTimelineProposal({
                     />
                   ) : null}
                   {rows.map(({ item, bar, startDay, endDay }) => (
-                    <div key={item.id} className="relative h-9 overflow-hidden rounded-xl bg-cream-50">
+                    <div key={item.id} className="relative h-11 overflow-hidden rounded-xl bg-cream-50">
                       <div className="pointer-events-none absolute inset-0 grid grid-cols-12">
                         {Array.from({ length: 12 }, (_, index) => (
                           <div key={index} className="border-line/60 border-e last:border-e-0" />

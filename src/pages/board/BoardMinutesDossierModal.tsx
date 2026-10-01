@@ -18,6 +18,7 @@ import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { DateText } from '../../components/ui/DateText'
 import { Button, LoadingState } from '../../components/ui/Form'
 import { FileAudio } from '../../components/ui/FileMedia'
@@ -35,6 +36,7 @@ import {
 } from '../../types/app'
 import { BoardExistingAttachments } from './BoardAttachmentsField'
 import { BoardStatusBadge } from './BoardStatusBadge'
+import { boardMinutePath, boardMinuteResolutionPath } from './board-paths'
 
 function boolLabel(value: boolean | null, t: (key: string) => string) {
   if (value == null) return '—'
@@ -136,9 +138,17 @@ export function BoardMinutesDossierModal({
                 <h2 id="board-dossier-title" className="text-sm font-semibold text-ink-900">
                   {t('boardSmartSearch.dossierTitle')}
                 </h2>
-                <p className="mt-0.5 truncate text-xs text-ink-500">
-                  {minutes?.subject || t('boardSmartSearch.title')}
-                </p>
+                {minutes ? (
+                  <Link
+                    to={boardMinutePath(minutes.id, minutes.requestId ?? undefined)}
+                    onClick={onClose}
+                    className="mt-0.5 block cursor-pointer truncate text-xs font-medium text-teal-700 hover:text-teal-900 hover:underline"
+                  >
+                    {minutes.subject}
+                  </Link>
+                ) : (
+                  <p className="mt-0.5 truncate text-xs text-ink-500">{t('boardSmartSearch.title')}</p>
+                )}
               </div>
             </div>
             <button
@@ -258,7 +268,13 @@ export function BoardMinutesDossierModal({
                     value={<DateText value={minutes.heldAt} />}
                     tone="teal"
                   />
-                  <FormFactTile icon={FileText} label={t('boardMinutes.subject')} value={minutes.subject} tone="mint" />
+                  <Link
+                    to={boardMinutePath(minutes.id, minutes.requestId ?? undefined)}
+                    onClick={onClose}
+                    className="block cursor-pointer rounded-2xl"
+                  >
+                    <FormFactTile icon={FileText} label={t('boardMinutes.subject')} value={minutes.subject} tone="mint" />
+                  </Link>
                   <FormFactTile icon={Users} label={t('boardMinutes.createdBy')} value={minutes.createdBy.fullName} />
                   <FormFactTile
                     icon={FileText}
@@ -334,12 +350,16 @@ export function BoardMinutesDossierModal({
                           key={item.id}
                           ref={focused ? focusRef : undefined}
                           data-dossier-resolution={item.id}
-                          className={`space-y-3 rounded-2xl border p-3 sm:p-4 ${
-                            focused
-                              ? 'border-teal-300 bg-teal-50/70 shadow-[0_8px_16px_rgba(46,189,182,0.12)]'
-                              : 'border-teal-50 bg-white shadow-[0_4px_14px_rgba(20,40,40,0.04)]'
-                          }`}
                         >
+                          <Link
+                            to={boardMinuteResolutionPath(minutes.id, item.id, minutes.requestId ?? undefined)}
+                            onClick={onClose}
+                            className={`block cursor-pointer space-y-3 rounded-2xl border p-3 transition-colors sm:p-4 ${
+                              focused
+                                ? 'border-teal-300 bg-teal-50/70 shadow-[0_8px_16px_rgba(46,189,182,0.12)] hover:border-teal-500'
+                                : 'border-teal-100 bg-white shadow-[0_4px_14px_rgba(20,40,40,0.04)] hover:border-teal-400'
+                            }`}
+                          >
                           <p className="text-xs font-semibold text-teal-700">
                             {t('boardSmartSearch.resolutionN', { n: formatNumber(index + 1, locale) })}
                           </p>
@@ -378,6 +398,7 @@ export function BoardMinutesDossierModal({
                               className="sm:col-span-2"
                             />
                           </div>
+                          </Link>
                         </li>
                       )
                     })}

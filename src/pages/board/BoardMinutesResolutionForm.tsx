@@ -1,5 +1,5 @@
 import { Building2, CalendarRange, FileText, ScrollText } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, type ReactNode, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { api, getApiErrorMessage } from '../../lib/api'
 import type { BoardMinutesResolution, OrganizationUnit } from '../../types/app'
+import { MinutesDictation } from './MinutesDictation'
 
 export type BoardResolutionPayload = {
   title: string
@@ -28,11 +29,17 @@ export function BoardMinutesResolutionForm({
   minutesTitle,
   onSubmit,
   onCancel,
+  headerAction,
+  headerIcons,
+  autoFocusFirst,
 }: {
   initial?: BoardMinutesResolution
   minutesTitle: string
   onSubmit: (payload: BoardResolutionPayload) => Promise<void>
   onCancel: () => void
+  headerAction?: ReactNode
+  headerIcons?: boolean
+  autoFocusFirst?: boolean
 }) {
   const { t } = useTranslation()
   const [title, setTitle] = useState(initial?.title ?? '')
@@ -72,8 +79,9 @@ export function BoardMinutesResolutionForm({
       icon={FileText}
       title={initial ? initial.title : t('boardResolutions.create')}
       subtitle={initial ? minutesTitle : t('boardResolutions.createSubtitle')}
+      action={headerAction}
     >
-      <AppForm onSubmit={submit} className={formCardBodyClassName}>
+      <AppForm onSubmit={submit} className={formCardBodyClassName} autoFocusFirst={autoFocusFirst}>
         <FormField icon={FileText} label={t('boardResolutions.titleField')} htmlFor="resolutionTitle">
           <input
             id="resolutionTitle"
@@ -84,12 +92,17 @@ export function BoardMinutesResolutionForm({
           />
         </FormField>
         <FormField icon={ScrollText} label={t('boardResolutions.description')} htmlFor="resolutionDescription">
-          <textarea
-            id="resolutionDescription"
-            className={`${fieldClassName} min-h-24`}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-          />
+          <div className="space-y-2">
+            <div className="flex justify-end">
+              <MinutesDictation value={description} disabled={saving} onChange={setDescription} />
+            </div>
+            <textarea
+              id="resolutionDescription"
+              className={`${fieldClassName} min-h-24`}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
         </FormField>
         <FormField icon={Building2} label={t('boardResolutions.unit')}>
           <SearchSelect
@@ -118,6 +131,7 @@ export function BoardMinutesResolutionForm({
           cancelLabel={t('common.cancel')}
           onCancel={onCancel}
           submitting={saving}
+          headerIcons={headerIcons}
         />
       </AppForm>
     </FormCard>
