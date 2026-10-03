@@ -3870,7 +3870,7 @@ export type RestaurantMenuItem = {
   id: string;
   restaurantId: string;
   foodId: string;
-  offeredAt: string;
+  weekday: number;
   price: number;
   isActive: boolean;
   food: Pick<Food, 'id' | 'name' | 'description' | 'photoId'>;

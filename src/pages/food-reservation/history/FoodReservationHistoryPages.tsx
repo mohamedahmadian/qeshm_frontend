@@ -2,6 +2,7 @@ import {
   Building2,
   CalendarRange,
   Check,
+  FileSpreadsheet,
   Hash,
   Store,
   Ticket,
@@ -11,6 +12,7 @@ import {
   Wallet,
   History,
 } from 'lucide-react'
+import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -65,6 +67,7 @@ export function FoodReservationHistoryListPage() {
   const foodId = searchParams.get('foodId') ?? ''
   const status = searchParams.get('status') ?? ''
   const reservedAt = searchParams.get('reservedAt') ?? ''
+  const [exporting, setExporting] = useState(false)
 
   const units = useQuery({
     queryKey: ['organization-units', 'lookup'],
@@ -119,6 +122,34 @@ export function FoodReservationHistoryListPage() {
   })
   const rows = query.data?.items ?? []
   const filtersActive = Boolean(orgUnitId || restaurantId || foodId || status || reservedAt)
+
+  async function downloadExcel() {
+    setExporting(true)
+    try {
+      const response = await api.get<Blob>('/food-reservations/export', {
+        params: {
+          ...(q ? { q } : {}),
+          ...(orgUnitId ? { orgUnitId } : {}),
+          ...(restaurantId ? { restaurantId } : {}),
+          ...(foodId ? { foodId } : {}),
+          ...(status ? { status } : {}),
+          ...(reservedAt ? { reservedAt } : {}),
+          ...sortParams,
+        },
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'تاریخچه-رزرو-غذا.xlsx'
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('foodReservations.exportFailed')))
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className={listShellClassName}>
@@ -256,6 +287,19 @@ export function FoodReservationHistoryListPage() {
           pageSize={query.data.pageSize}
           total={query.data.total}
           onPageChange={setPage}
+          startExtra={
+            query.data.total > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={exporting}
+                onClick={() => void downloadExcel()}
+              >
+                <FileSpreadsheet className="size-4" aria-hidden />
+                {t('foodReservations.exportExcel')}
+              </Button>
+            ) : null
+          }
         />
       ) : null}
     </div>

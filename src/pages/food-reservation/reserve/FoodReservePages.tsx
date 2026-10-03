@@ -1,4 +1,5 @@
-import { CalendarRange, ClipboardList, Hash, Plus, Store, Ticket, Trash2, UserRound, UtensilsCrossed, Wallet } from 'lucide-react'
+import { CalendarRange, ClipboardList, FileSpreadsheet, Hash, Plus, Store, Ticket, Trash2, UserRound, UtensilsCrossed, Wallet } from 'lucide-react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -26,7 +27,7 @@ import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
-import { api } from '../../../lib/api'
+import { api, getApiErrorMessage } from '../../../lib/api'
 import { formatNumber } from '../../../lib/datetime'
 import { hasPermission } from '../../../lib/roles'
 import type { FoodReservation, FoodReservationContext, Paginated } from '../../../types/app'
@@ -47,6 +48,7 @@ export function FoodReserveListPage() {
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
+  const [exporting, setExporting] = useState(false)
   const query = useQuery({
     queryKey: ['food-reservations', 'mine', q, page, sortBy, sortDir],
     queryFn: async () => {
@@ -58,6 +60,26 @@ export function FoodReserveListPage() {
   })
   const rows = query.data?.items ?? []
   const canReserve = hasPermission(user, 'food-reservation.reserve')
+
+  async function downloadExcel() {
+    setExporting(true)
+    try {
+      const response = await api.get<Blob>('/food-reservations/export', {
+        params: { mine: true, ...(q ? { q } : {}), ...sortParams },
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'سفارش‌های-من.xlsx'
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('foodReservations.exportFailed')))
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className={listShellClassName}>
@@ -135,6 +157,19 @@ export function FoodReserveListPage() {
           pageSize={query.data.pageSize}
           total={query.data.total}
           onPageChange={setPage}
+          startExtra={
+            myOrders && query.data.total > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={exporting}
+                onClick={() => void downloadExcel()}
+              >
+                <FileSpreadsheet className="size-4" aria-hidden />
+                {t('foodReservations.exportExcel')}
+              </Button>
+            ) : null
+          }
         />
       ) : null}
     </div>

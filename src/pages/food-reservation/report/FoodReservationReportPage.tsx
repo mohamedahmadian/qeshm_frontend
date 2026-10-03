@@ -133,10 +133,11 @@ export function FoodReservationReportPage() {
   })
 
   const selectedRestaurant = (restaurants.data ?? []).find((item) => item.id === restaurantId)
-  const foodOptions = (menu.data ?? []).map((item) => ({
-    value: item.food.id,
-    label: item.food.name,
-  }))
+  const foodOptions = [
+    ...new Map(
+      (menu.data ?? []).map((item) => [item.food.id, { value: item.food.id, label: item.food.name }]),
+    ).values(),
+  ]
   const rows = report.data?.items ?? []
   const summary = report.data?.summary
   const filtersActive = Boolean(foodId || orgUnitId || userId || status || reservedFrom || reservedTo)

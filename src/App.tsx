@@ -152,12 +152,7 @@ import { RestaurantCreatePage } from './pages/food-reservation/restaurants/Resta
 import { RestaurantDetailPage } from './pages/food-reservation/restaurants/RestaurantDetailPage'
 import { RestaurantEditPage } from './pages/food-reservation/restaurants/RestaurantEditPage'
 import { RestaurantsListPage } from './pages/food-reservation/restaurants/RestaurantsListPage'
-import {
-  RestaurantMenuCreatePage,
-  RestaurantMenuDetailPage,
-  RestaurantMenuEditPage,
-  RestaurantMenuListPage,
-} from './pages/food-reservation/restaurants/menu/RestaurantMenuPages'
+import { RestaurantMenuListPage } from './pages/food-reservation/restaurants/menu/RestaurantMenuPages'
 import {
   RestaurantUnitCreatePage,
   RestaurantUnitEditPage,
@@ -411,9 +406,6 @@ export default function App() {
                   <Route path="/food-reservation/restaurants" element={<RestaurantsListPage />} />
                   <Route path="/food-reservation/restaurants/new" element={<RestaurantCreatePage />} />
                   <Route path="/food-reservation/restaurants/:id/menu" element={<RestaurantMenuListPage />} />
-                  <Route path="/food-reservation/restaurants/:id/menu/new" element={<RestaurantMenuCreatePage />} />
-                  <Route path="/food-reservation/restaurants/:id/menu/:itemId" element={<RestaurantMenuDetailPage />} />
-                  <Route path="/food-reservation/restaurants/:id/menu/:itemId/edit" element={<RestaurantMenuEditPage />} />
                   <Route path="/food-reservation/restaurants/:id/units" element={<RestaurantUnitListPage />} />
                   <Route path="/food-reservation/restaurants/:id/units/new" element={<RestaurantUnitCreatePage />} />
                   <Route path="/food-reservation/restaurants/:id/units/:linkId/edit" element={<RestaurantUnitEditPage />} />

@@ -353,15 +353,6 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/food-reservation/foods')) {
     return { titleKey: 'menus.foodManagement', subtitleKey: 'foods.subtitle' }
   }
-  if (/\/restaurants\/[^/]+\/menu\/new$/.test(pathname)) {
-    return { titleKey: 'restaurantMenuItems.manage', subtitleKey: 'restaurantMenuItems.manageSubtitle' }
-  }
-  if (/\/menu\/[^/]+\/edit$/.test(pathname)) {
-    return { titleKey: 'restaurantMenuItems.edit', subtitleKey: 'restaurantMenuItems.editSubtitle' }
-  }
-  if (/\/menu\/[^/]+$/.test(pathname)) {
-    return { titleKey: 'restaurantMenuItems.details', subtitleKey: 'restaurantMenuItems.detailsSubtitle' }
-  }
   if (/\/menu$/.test(pathname)) {
     return { titleKey: 'restaurantMenuItems.title', subtitleKey: 'restaurantMenuItems.subtitle' }
   }
