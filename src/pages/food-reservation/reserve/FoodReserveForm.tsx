@@ -75,10 +75,12 @@ function WeekDayPicker({
   value,
   onChange,
   label,
+  foodByDay,
 }: {
   value: string
   onChange: (iso: string) => void
   label: string
+  foodByDay?: Record<string, string>
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
@@ -96,6 +98,8 @@ function WeekDayPicker({
         const isToday = iso === today
         const past = iso < today
         const dayNo = formatDate(iso, locale).split('/').pop() ?? ''
+        const foodName = foodByDay?.[iso] ?? ''
+        const weekday = formatWeekday(iso, locale)
         return (
           <button
             key={iso}
@@ -103,12 +107,19 @@ function WeekDayPicker({
             role="radio"
             aria-checked={selected}
             aria-disabled={past}
+            aria-label={foodName ? `${weekday} ${dayNo} ${foodName}` : undefined}
             disabled={past}
-            title={past ? t('foodReservations.pastDay') : undefined}
+            title={
+              past
+                ? foodName
+                  ? `${t('foodReservations.pastDay')} — ${foodName}`
+                  : t('foodReservations.pastDay')
+                : foodName || undefined
+            }
             onClick={() => {
               if (!past) onChange(iso)
             }}
-            className={`flex min-w-[4.75rem] flex-1 flex-col items-center gap-1 rounded-2xl border px-2 py-2.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+            className={`flex min-w-[5.5rem] flex-1 flex-col items-center gap-1 rounded-2xl border px-1.5 py-2.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
               past
                 ? 'cursor-not-allowed border-line bg-cream-50 text-ink-300 opacity-55'
                 : selected
@@ -117,9 +128,18 @@ function WeekDayPicker({
             }`}
           >
             <span className={`text-[11px] font-medium ${selected ? 'text-white/90' : past ? 'text-ink-300' : 'text-ink-500'}`}>
-              {formatWeekday(iso, locale)}
+              {weekday}
             </span>
             <span className="text-base font-semibold leading-none">{dayNo}</span>
+            {foodByDay ? (
+              <span
+                className={`line-clamp-2 min-h-8 w-full text-[11px] font-semibold leading-4 ${
+                  selected ? 'text-white' : past ? 'text-ink-300' : 'text-teal-700'
+                }`}
+              >
+                {foodName || '\u00a0'}
+              </span>
+            ) : null}
             {isToday && !selected ? (
               <span className="size-1.5 rounded-full bg-teal-500" aria-hidden />
             ) : (
@@ -158,6 +178,35 @@ export function FoodReserveForm({
   const selectedRestaurantId = onlyRestaurantId || restaurantId
   const canChooseQuantity = canManage || context.isNutritionRep
 
+  const weekMenu = useQuery({
+    queryKey: ['food-reservation-week-menu', selectedRestaurantId, canManage ? orgUnitId : ''],
+    enabled: Boolean(selectedRestaurantId && (!canManage || orgUnitId)),
+    queryFn: async () => {
+      const { data } = await api.get<RestaurantMenuItem[]>('/food-reservations/week-menu', {
+        params: {
+          restaurantId: selectedRestaurantId,
+          ...(canManage ? { orgUnitId } : {}),
+        },
+      })
+      return data
+    },
+  })
+  const foodByDay = useMemo(() => {
+    if (!selectedRestaurantId || !weekMenu.data) return undefined
+    const days = currentWeekIsos()
+    const names = new Map<number, string[]>()
+    for (const item of weekMenu.data) {
+      const list = names.get(item.weekday) ?? []
+      list.push(item.food.name)
+      names.set(item.weekday, list)
+    }
+    const byDay: Record<string, string> = {}
+    days.forEach((iso, weekday) => {
+      const dayNames = names.get(weekday)
+      if (dayNames?.length) byDay[iso] = dayNames.join('، ')
+    })
+    return byDay
+  }, [selectedRestaurantId, weekMenu.data])
   const menu = useQuery({
     queryKey: ['food-reservation-menu', selectedRestaurantId, reservedAt, canManage ? orgUnitId : ''],
     enabled: Boolean(selectedRestaurantId && reservedAt && (!canManage || orgUnitId)),
@@ -332,6 +381,7 @@ export function FoodReserveForm({
             value={reservedAt}
             onChange={setReservedAt}
             label={t('foodReservations.weekDays')}
+            foodByDay={foodByDay}
           />
         </FormField>
         {canManage ? (

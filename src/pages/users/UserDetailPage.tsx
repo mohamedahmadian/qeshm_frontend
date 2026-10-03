@@ -19,9 +19,11 @@ import {
   Handshake,
   Share2,
   Shield,
+  Ticket,
   ToggleRight,
   UserRound,
   UserRoundCheck,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -49,7 +51,7 @@ import {
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { languages, type AppLanguage } from '../../i18n'
 import { api, getImageUrl } from '../../lib/api'
-import { localizeDigits } from '../../lib/datetime'
+import { formatNumber, localizeDigits } from '../../lib/datetime'
 import { publicProfilePath } from '../../lib/public-profile'
 import { useGeoName } from '../../lib/geo'
 import type { ManagedUser } from '../../types/app'
@@ -403,6 +405,19 @@ export function UserDetailPage() {
                   label={t('users.isResident')}
                   value={user.isResident ? t('users.resident') : t('users.nonResident')}
                   tone="mint"
+                />
+                <FormFactTile
+                  icon={Users}
+                  label={t('users.qeshmondiGroup')}
+                  value={user.qeshmondiGroup || empty}
+                  empty={!user.qeshmondiGroup}
+                  tone="ink"
+                />
+                <FormFactTile
+                  icon={Ticket}
+                  label={t('users.individualTicketQuota')}
+                  value={formatNumber(user.individualTicketQuota ?? 1, uiLocale)}
+                  tone="teal"
                 />
                 <FormFactTile
                   icon={Briefcase}

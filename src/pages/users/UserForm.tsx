@@ -17,7 +17,9 @@ import {
   Phone,
   Share2,
   Shield,
+  Ticket,
   ToggleRight,
+  Users,
   UserRound,
   UserRoundCheck,
   UserRoundPlus,
@@ -135,6 +137,8 @@ export type UserPayload = {
   occupation: string | null
   isResident: boolean
   passportNumber: string | null
+  qeshmondiGroup: string | null
+  individualTicketQuota: number
   fatherName: string | null
   birthDate: string | null
 }
@@ -205,6 +209,10 @@ export function UserForm({
   const [occupation, setOccupation] = useState(initial?.occupation ?? '')
   const [isResident, setIsResident] = useState(initial?.isResident ?? false)
   const [passportNumber, setPassportNumber] = useState(initial?.passportNumber ?? '')
+  const [qeshmondiGroup, setQeshmondiGroup] = useState(initial?.qeshmondiGroup ?? '')
+  const [individualTicketQuota, setIndividualTicketQuota] = useState(
+    String(initial?.individualTicketQuota ?? 1),
+  )
   const [fatherName, setFatherName] = useState(initial?.fatherName ?? '')
   const [birthDate, setBirthDate] = useState(initial?.birthDate ?? '')
   const tabs = selfProfile ? allTabs.filter((item) => item !== 'qeshmondi') : allTabs
@@ -642,6 +650,11 @@ export function UserForm({
         occupation: emptyToNull(occupation),
         isResident,
         passportNumber: emptyToNull(toLatinDigits(passportNumber)),
+        qeshmondiGroup: emptyToNull(qeshmondiGroup),
+        individualTicketQuota: (() => {
+          const parsed = Number.parseInt(toLatinDigits(individualTicketQuota), 10)
+          return Number.isFinite(parsed) && parsed >= 0 ? parsed : 1
+        })(),
         fatherName: emptyToNull(fatherName),
         birthDate: emptyToNull(birthDate),
         ...(password ? { password } : {}),
@@ -1162,6 +1175,28 @@ export function UserForm({
                   onChange={setIsResident}
                   onLabel={t('users.resident')}
                   offLabel={t('users.nonResident')}
+                />
+              </FormField>
+              <FormField icon={Users} label={t('users.qeshmondiGroup')} htmlFor="qeshmondiGroup">
+                <input
+                  id="qeshmondiGroup"
+                  className={fieldClassName}
+                  value={qeshmondiGroup}
+                  onChange={(e) => setQeshmondiGroup(e.target.value)}
+                />
+              </FormField>
+              <FormField icon={Ticket} label={t('users.individualTicketQuota')} htmlFor="individualTicketQuota">
+                <input
+                  id="individualTicketQuota"
+                  type="number"
+                  min={0}
+                  max={9999}
+                  className={`${fieldClassName} digit-field`}
+                  dir="ltr"
+                  value={individualTicketQuota}
+                  onChange={(e) =>
+                    setIndividualTicketQuota(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 4))
+                  }
                 />
               </FormField>
               <FormField icon={Briefcase} label={t('users.occupation')} htmlFor="occupation">

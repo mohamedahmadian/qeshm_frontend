@@ -1104,6 +1104,8 @@ export type ManagedUser = {
   occupation?: string | null;
   isResident?: boolean;
   passportNumber?: string | null;
+  qeshmondiGroup?: string | null;
+  individualTicketQuota?: number;
   fatherName?: string | null;
   photoId: string | null;
   nationalCardPhotoId: string | null;
@@ -4849,6 +4851,8 @@ export type PortSalesReport = {
   validQeshmondiCount?: number
   invalidQeshmondiCount?: number
   weeklyQuotaExcessCount?: number
+  tariffYear?: number | null
+  individualSubsidy?: number | null
   createdAt: string
   updatedAt: string
   file: PortSalesReportFile

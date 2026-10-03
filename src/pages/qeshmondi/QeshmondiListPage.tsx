@@ -20,7 +20,6 @@ import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
 import { localizeDigits } from '../../lib/datetime'
 import { userStatuses, type ManagedUser, type Paginated } from '../../types/app'
-import { GeoStatus, GeoYesNo } from '../geo/GeoShared'
 import { qeshmondiCitizenPath, qeshmondiPath } from './qeshmondi-paths'
 
 export function QeshmondiListPage() {
@@ -110,7 +109,7 @@ export function QeshmondiListPage() {
               <SortableTh column="nationalId" label={t('users.nationalId')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="phone" label={t('users.phone')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="occupation" label={t('users.occupation')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="isResident" label={t('users.isResident')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="qeshmondiGroup" label={t('users.qeshmondiGroup')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh
                 column="qeshmondiEndDate"
                 label={t('users.qeshmondiEndDate')}
@@ -118,7 +117,6 @@ export function QeshmondiListPage() {
                 sortDir={sortDir}
                 onSort={onSort}
               />
-              <SortableTh column="status" label={t('users.status')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <ActionsTh />
             </tr>
           </thead>
@@ -145,18 +143,12 @@ export function QeshmondiListPage() {
                   )}
                 </td>
                 <td className="px-4 py-3">{item.occupation || '—'}</td>
-                <td className="px-4 py-3">
-                  <GeoYesNo value={Boolean(item.isResident)} />
-                </td>
+                <td className="px-4 py-3">{item.qeshmondiGroup || '—'}</td>
                 <td className="px-4 py-3">
                   {item.qeshmondiEndDate ? <DateText value={item.qeshmondiEndDate} /> : '—'}
                 </td>
-                <td className="px-4 py-3">
-                  <GeoStatus active={item.status === userStatuses.ACTIVE} />
-                </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
-                    viewTo={qeshmondiCitizenPath(item.id)}
                     editTo={`${qeshmondiCitizenPath(item.id)}/edit`}
                     onDelete={() =>
                       confirmDelete({

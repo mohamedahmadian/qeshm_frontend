@@ -5,6 +5,7 @@ import {
   formatGregorianDate,
   formatHijriDate,
   formatJalaliDate,
+  formatJalaliMonthName,
   formatWeekday,
   todayIsoDate,
 } from '../../lib/datetime'
@@ -39,12 +40,14 @@ function useTodayIso() {
 function CalendarCol({
   label,
   value,
+  caption,
   dir,
   lang,
   className = '',
 }: {
   label: string
   value: string
+  caption?: string
   dir?: 'ltr' | 'rtl'
   lang?: string
   className?: string
@@ -63,6 +66,15 @@ function CalendarCol({
       >
         {value}
       </span>
+      {caption ? (
+        <span
+          className="truncate text-center text-[11px] font-medium leading-none text-teal-800"
+          dir={dir}
+          title={caption}
+        >
+          {caption}
+        </span>
+      ) : null}
     </span>
   )
 }
@@ -73,6 +85,7 @@ export function HeaderToday() {
   const iso = useTodayIso()
   const weekday = formatWeekday(iso, locale)
   const jalali = formatJalaliDate(iso, locale)
+  const jalaliMonth = formatJalaliMonthName(iso, locale)
   const hijri = formatHijriDate(iso, locale)
   const gregorian = formatGregorianDate(iso, locale)
   const [expanded, setExpanded] = useState(false)
@@ -124,7 +137,12 @@ export function HeaderToday() {
           </span>
         ) : null}
         <span className="hidden min-w-0 items-stretch sm:flex">
-          <CalendarCol label={t('common.calendarJalali')} value={jalali} dir="ltr" />
+          <CalendarCol
+            label={t('common.calendarJalali')}
+            value={jalali}
+            caption={jalaliMonth}
+            dir="ltr"
+          />
           <span
             className="grid min-w-0 transition-[grid-template-columns] duration-300 ease-out"
             style={{ gridTemplateColumns: expanded ? '1fr' : '0fr' }}
@@ -165,7 +183,12 @@ export function HeaderToday() {
               </span>
             </span>
           ) : null}
-          <CalendarCol label={t('common.calendarJalali')} value={jalali} dir="ltr" />
+          <CalendarCol
+            label={t('common.calendarJalali')}
+            value={jalali}
+            caption={jalaliMonth}
+            dir="ltr"
+          />
           <CalendarCol
             className="border-s border-line"
             label={t('common.calendarHijri')}

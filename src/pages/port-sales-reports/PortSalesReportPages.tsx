@@ -5,8 +5,8 @@ import {
   Banknote,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   Download,
-  Eye,
   FileSpreadsheet,
   Hash,
   IdCard,
@@ -17,7 +17,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -31,19 +31,21 @@ import {
   SortableTh,
   TableCard,
   actionsColClassName,
+  nextSortState,
+  type SortDir,
 } from '../../components/ui/ListControls'
 import {
   Button,
   DetailActions,
-  EntityNameSubtitle,
   FormField,
+  EntityNameSubtitle,
   LoadingState,
   PageHeader,
   formShellClassName,
-  inputClassName,
   listShellClassName,
 } from '../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
+import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
@@ -56,7 +58,7 @@ import {
   formatWeekday,
   localizeDigits,
   monthName,
-  parseDigitString,
+  toLatinDigits,
 } from '../../lib/datetime'
 import type {
   Paginated,
@@ -110,16 +112,9 @@ function TravelStamp({
   if (!date && !time) return '—'
   const weekday = date ? formatWeekday(date, locale) : ''
   return (
-    <span
-      className="inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5"
-      dir="ltr"
-    >
+    <span className="inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5" dir="ltr">
+      {weekday ? <span className="text-ink-600">{weekday}</span> : null}
       {date ? <DateText value={date} /> : null}
-      {weekday ? (
-        <span className="inline-flex rounded-full bg-teal-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-teal-800 ring-1 ring-teal-100">
-          {weekday}
-        </span>
-      ) : null}
       {time ? <span>{localizeDigits(time, locale)}</span> : null}
     </span>
   )
@@ -127,6 +122,19 @@ function TravelStamp({
 
 const ticketReportTabs = ['all', 'invalid', 'weekly', 'personal'] as const
 type TicketReportTab = (typeof ticketReportTabs)[number]
+type QuotaTab = 'weekly' | 'personal'
+
+type QuotaListState = {
+  page: number
+  q: string
+  term: string
+  sortBy: string
+  sortDir: SortDir | ''
+}
+
+function emptyQuotaList(): QuotaListState {
+  return { page: 1, q: '', term: '', sortBy: 'unauthorized', sortDir: 'desc' }
+}
 
 const ticketSortFields = new Set([
   'ticketNumber',
@@ -482,12 +490,18 @@ export function PortSalesReportDetailPage() {
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, onSort } = useListSort(searchParams, setParams)
   const qeshmondiStatus = (searchParams.get('qeshmondiStatus') ?? '') as PortTicketQeshmondiStatus | ''
+  const travelFrom = searchParams.get('from') ?? ''
+  const travelTo = searchParams.get('to') ?? ''
   const ticketTab = parseTicketTab(searchParams.get('tab'))
   const quotaTab = ticketTab === 'weekly' || ticketTab === 'personal'
   const [verifying, setVerifying] = useState(false)
-  const [subsidy, setSubsidy] = useState('')
   const [exportingGroup, setExportingGroup] = useState<TicketReportTab | null>(null)
-  const [quotaShown, setQuotaShown] = useState(false)
+  const [quotaLists, setQuotaLists] = useState<Record<QuotaTab, QuotaListState>>({
+    weekly: emptyQuotaList(),
+    personal: emptyQuotaList(),
+  })
+  const quotaScope: QuotaTab = ticketTab === 'personal' ? 'personal' : 'weekly'
+  const activeQuotaList = quotaLists[quotaScope]
   const query = useQuery({
     queryKey: ['port-sales-report', id],
     enabled: Boolean(id),
@@ -496,16 +510,35 @@ export function PortSalesReportDetailPage() {
       return data
     },
   })
+  const explicitTicketSort = Boolean(
+    !quotaTab && sortBy && ticketSortFields.has(sortBy) && (sortDir === 'asc' || sortDir === 'desc'),
+  )
+  const ticketSortBy = explicitTicketSort ? sortBy : ticketTab === 'all' ? 'travelDate' : ''
+  const ticketSortDir = explicitTicketSort ? sortDir : ticketTab === 'all' ? 'asc' : ''
   const ticketSort =
-    !quotaTab && sortBy && ticketSortFields.has(sortBy) && (sortDir === 'asc' || sortDir === 'desc')
-      ? { sortBy, sortDir }
+    ticketSortBy && (ticketSortDir === 'asc' || ticketSortDir === 'desc')
+      ? { sortBy: ticketSortBy, sortDir: ticketSortDir }
       : {}
   const quotaSort =
-    quotaTab && sortBy && quotaSortFields.has(sortBy) && (sortDir === 'asc' || sortDir === 'desc')
-      ? { sortBy, sortDir }
+    quotaTab &&
+    activeQuotaList.sortBy &&
+    quotaSortFields.has(activeQuotaList.sortBy) &&
+    (activeQuotaList.sortDir === 'asc' || activeQuotaList.sortDir === 'desc')
+      ? { sortBy: activeQuotaList.sortBy, sortDir: activeQuotaList.sortDir }
       : {}
   const ticketsQuery = useQuery({
-    queryKey: ['port-sales-report-tickets', id, q, page, sortBy, sortDir, qeshmondiStatus, ticketTab],
+    queryKey: [
+      'port-sales-report-tickets',
+      id,
+      q,
+      page,
+      sortBy,
+      sortDir,
+      qeshmondiStatus,
+      ticketTab,
+      travelFrom,
+      travelTo,
+    ],
     enabled: Boolean(id) && !quotaTab,
     queryFn: async () => {
       const { data } = await api.get<Paginated<PortTicketSale>>(`/port-sales-reports/${id}/tickets`, {
@@ -518,22 +551,36 @@ export function PortSalesReportDetailPage() {
             : qeshmondiStatus
               ? { qeshmondiStatus }
               : {}),
+          ...(ticketTab === 'all' && travelFrom ? { from: travelFrom } : {}),
+          ...(ticketTab === 'all' && travelTo ? { to: travelTo } : {}),
         },
       })
       return data
     },
   })
   const quotaQuery = useQuery({
-    queryKey: ['port-sales-report-quota', id, ticketTab, q, page, sortBy, sortDir],
-    enabled: Boolean(id) && quotaTab && quotaShown,
+    queryKey: [
+      'port-sales-report-quota',
+      id,
+      quotaScope,
+      activeQuotaList.q,
+      activeQuotaList.page,
+      activeQuotaList.sortBy,
+      activeQuotaList.sortDir,
+    ],
+    enabled: Boolean(id) && quotaTab,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data } = await api.get<Paginated<PortTicketQuotaRow> & { unauthorizedTotal: number }>(
         `/port-sales-reports/${id}/tickets/quota`,
         {
           params: {
-            scope: ticketTab,
-            page,
-            ...(q ? { q } : {}),
+            scope: quotaScope,
+            page: activeQuotaList.page,
+            ...(activeQuotaList.q ? { q: activeQuotaList.q } : {}),
             ...quotaSort,
           },
         },
@@ -541,6 +588,9 @@ export function PortSalesReportDetailPage() {
       return data
     },
   })
+  useEffect(() => {
+    setQuotaLists({ weekly: emptyQuotaList(), personal: emptyQuotaList() })
+  }, [id])
   const item = query.data
   if (!item || !id) {
     return <LoadingState />
@@ -549,8 +599,23 @@ export function PortSalesReportDetailPage() {
   const quotaRows = quotaQuery.data?.items ?? []
   const name = portSalesReportDisplayName(item)
 
+  function sortQuota(column: string) {
+    setQuotaLists((current) => {
+      const list = current[quotaScope]
+      const next = nextSortState(column, list.sortBy, list.sortDir)
+      return {
+        ...current,
+        [quotaScope]: {
+          ...list,
+          page: 1,
+          sortBy: next.sortBy ?? '',
+          sortDir: next.sortDir ?? '',
+        },
+      }
+    })
+  }
+
   function selectTab(next: TicketReportTab) {
-    setQuotaShown(false)
     setParams(
       {
         tab: next === 'all' ? undefined : next,
@@ -563,8 +628,16 @@ export function PortSalesReportDetailPage() {
     )
   }
 
-  const subsidyAmount = Number(subsidy)
-  const hasSubsidy = Number.isFinite(subsidyAmount) && subsidyAmount > 0
+  const subsidyAmount = item.individualSubsidy ?? 0
+  const hasSubsidy = subsidyAmount > 0
+  function subsidyMoney(amount: number) {
+    if (item.individualSubsidy == null) {
+      return t('portSalesReports.tariffMissing', {
+        year: localizeDigits(String(item.tariffYear ?? ''), locale),
+      })
+    }
+    return `${formatGroupedNumber(Math.round(amount), locale)} ${t('portSalesReports.toman')}`
+  }
   function estimateBadge(count: number) {
     if (!hasSubsidy) return undefined
     return (
@@ -582,8 +655,14 @@ export function PortSalesReportDetailPage() {
       const response = await api.get<Blob>(`/port-sales-reports/${id}/tickets/export`, {
         params: {
           group,
-          ...(q ? { q } : {}),
+          ...((group === 'weekly' || group === 'personal') && quotaLists[group].q
+            ? { q: quotaLists[group].q }
+            : group !== 'weekly' && group !== 'personal' && q
+              ? { q }
+              : {}),
           ...(group === 'all' && qeshmondiStatus ? { qeshmondiStatus } : {}),
+          ...(group === 'all' && travelFrom ? { from: travelFrom } : {}),
+          ...(group === 'all' && travelTo ? { to: travelTo } : {}),
           ...((group === 'weekly' || group === 'personal') && hasSubsidy
             ? { subsidy: subsidyAmount }
             : {}),
@@ -591,7 +670,7 @@ export function PortSalesReportDetailPage() {
         responseType: 'blob',
       })
       const fileNames: Record<TicketReportTab, string> = {
-        all: 'کل بلیط‌های فروخته‌شده.xlsx',
+        all: 'بلیط‌های فروخته‌شده.xlsx',
         invalid: 'قشموندی نامعتبر.xlsx',
         weekly: 'سهمیه هفتگی مازاد.xlsx',
         personal: 'سهمیه شخصی مازاد.xlsx',
@@ -772,26 +851,42 @@ export function PortSalesReportDetailPage() {
               tone="ink"
             />
           </div>
-          <div className="max-w-64">
-            <FormField
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+            <FormFactTile
               icon={Banknote}
-              label={`${t('portSalesReports.ticketSubsidy')} ${t('portSalesReports.toman')}`}
-              htmlFor="ticket-subsidy"
-            >
-              <div className="flex items-center gap-2">
-                <input
-                  id="ticket-subsidy"
-                  type="text"
-                  inputMode="numeric"
-                  className={`${inputClassName()} digit-field`}
-                  value={subsidy ? formatGroupedNumber(Number(subsidy), locale) : ''}
-                  onChange={(event) => setSubsidy(parseDigitString(event.target.value))}
-                />
-                <span className="shrink-0 text-sm font-medium text-ink-600">
-                  {t('portSalesReports.toman')}
-                </span>
-              </div>
-            </FormField>
+              label={t('portSalesReports.individualSubsidy')}
+              value={
+                item.individualSubsidy != null
+                  ? `${formatGroupedNumber(item.individualSubsidy, locale)} ${t('portSalesReports.toman')}`
+                  : t('portSalesReports.tariffMissing', {
+                      year: localizeDigits(String(item.tariffYear ?? ''), locale),
+                    })
+              }
+              tone="teal"
+            />
+            <FormFactTile
+              icon={BadgeCheck}
+              label={t('portSalesReports.realSubsidy')}
+              value={subsidyMoney((item.validQeshmondiCount ?? 0) * subsidyAmount)}
+              tone="mint"
+            />
+            <FormFactTile
+              icon={BadgeX}
+              label={t('portSalesReports.invalidSubsidy')}
+              value={
+                item.individualSubsidy == null ? (
+                  subsidyMoney(0)
+                ) : (
+                  <span className="font-bold text-red-700">
+                    {subsidyMoney(
+                      ((item.invalidQeshmondiCount ?? 0) + (item.weeklyQuotaExcessCount ?? 0)) *
+                        subsidyAmount,
+                    )}
+                  </span>
+                )
+              }
+              tone="ink"
+            />
           </div>
         </div>
       </FormCard>
@@ -820,59 +915,107 @@ export function PortSalesReportDetailPage() {
             )
           })}
         </nav>
-        {quotaTab && !quotaShown ? (
-          <div className="flex justify-center py-8">
-            <Button type="button" onClick={() => setQuotaShown(true)}>
-              <Eye className="size-4" aria-hidden />
-              {t('portSalesReports.viewReport')}
-            </Button>
-          </div>
-        ) : (
-        <>
         <SearchBar
           autoFocus={false}
-          term={term}
-          onTermChange={setTerm}
-          onSubmit={() => applySearch()}
+          term={quotaTab ? activeQuotaList.term : term}
+          onTermChange={
+            quotaTab
+              ? (value) =>
+                  setQuotaLists((current) => ({
+                    ...current,
+                    [quotaScope]: { ...current[quotaScope], term: value },
+                  }))
+              : setTerm
+          }
+          onSubmit={
+            quotaTab
+              ? () =>
+                  setQuotaLists((current) => {
+                    const term = current[quotaScope].term.trim()
+                    const byDate = Boolean(toLatinDigits(term).replace(/\D/g, ''))
+                    return {
+                      ...current,
+                      [quotaScope]: {
+                        ...current[quotaScope],
+                        q: term,
+                        page: 1,
+                        sortBy: byDate ? 'week' : 'unauthorized',
+                        sortDir: byDate ? 'asc' : 'desc',
+                      },
+                    }
+                  })
+              : () => applySearch()
+          }
           label={t('portSalesReports.ticketsSearch')}
           placeholder={
             quotaTab
               ? t('portSalesReports.quotaSearchPlaceholder')
               : t('portSalesReports.ticketsSearchPlaceholder')
           }
-          filtersActive={ticketTab === 'all' && Boolean(qeshmondiStatus)}
-          extraClassName="w-max max-w-full"
+          filtersActive={ticketTab === 'all' && Boolean(qeshmondiStatus || travelFrom || travelTo)}
+          extraClassName="sm:grid-cols-3"
           extra={
             ticketTab === 'all' ? (
-              <div className="w-44 sm:w-52">
-                <SearchSelect
-                  value={qeshmondiStatus}
-                  onChange={(next) => setParams({ qeshmondiStatus: next || undefined }, { resetPage: true })}
-                  placeholder={t('portSalesReports.qeshmondiStatusFilter')}
-                  options={[
-                    { value: '', label: t('portSalesReports.allQeshmondiStatuses') },
-                    {
-                      value: portTicketQeshmondiStatuses.UNKNOWN,
-                      label: t('portSalesReports.qeshmondi.UNKNOWN'),
-                    },
-                    {
-                      value: portTicketQeshmondiStatuses.VALID,
-                      label: t('portSalesReports.qeshmondi.VALID'),
-                    },
-                    {
-                      value: portTicketQeshmondiStatuses.INVALID,
-                      label: t('portSalesReports.qeshmondi.INVALID'),
-                    },
-                  ]}
-                />
-              </div>
+              <>
+                <FormField icon={CalendarRange} label={t('portSalesReports.fromDate')} htmlFor="ticket-from">
+                  <PersianDateField
+                    id="ticket-from"
+                    value={travelFrom}
+                    maxDate={travelTo || undefined}
+                    onChange={(value) => {
+                      const next = value || undefined
+                      setParams(
+                        {
+                          from: next,
+                          ...(travelTo && next && travelTo < next ? { to: undefined } : {}),
+                        },
+                        { resetPage: true },
+                      )
+                    }}
+                  />
+                </FormField>
+                <FormField icon={CalendarRange} label={t('portSalesReports.toDate')} htmlFor="ticket-to">
+                  <PersianDateField
+                    id="ticket-to"
+                    value={travelTo}
+                    minDate={travelFrom || undefined}
+                    onChange={(value) => setParams({ to: value || undefined }, { resetPage: true })}
+                  />
+                </FormField>
+                <FormField icon={BadgeCheck} label={t('portSalesReports.qeshmondiStatusFilter')}>
+                  <SearchSelect
+                    value={qeshmondiStatus}
+                    onChange={(next) => setParams({ qeshmondiStatus: next || undefined }, { resetPage: true })}
+                    placeholder={t('portSalesReports.qeshmondiStatusFilter')}
+                    options={[
+                      { value: '', label: t('portSalesReports.allQeshmondiStatuses') },
+                      {
+                        value: portTicketQeshmondiStatuses.UNKNOWN,
+                        label: t('portSalesReports.qeshmondi.UNKNOWN'),
+                      },
+                      {
+                        value: portTicketQeshmondiStatuses.VALID,
+                        label: t('portSalesReports.qeshmondi.VALID'),
+                      },
+                      {
+                        value: portTicketQeshmondiStatuses.INVALID,
+                        label: t('portSalesReports.qeshmondi.INVALID'),
+                      },
+                    ]}
+                  />
+                </FormField>
+              </>
             ) : undefined
           }
         />
         {quotaTab ? (
           <TableCard
             loading={quotaQuery.isLoading}
-            empty={q ? t('portSalesReports.quotaNoResults') : t('portSalesReports.quotaEmpty')}
+            empty={
+              activeQuotaList.q
+                ? t('portSalesReports.quotaNoResults')
+                : t('portSalesReports.quotaEmpty')
+            }
             hasRows={quotaRows.length > 0}
             rowClick={false}
           >
@@ -883,52 +1026,52 @@ export function PortSalesReportDetailPage() {
                     <SortableTh
                       column="week"
                       label={t('portSalesReports.quotaWeek')}
-                      sortBy={quotaSort.sortBy ?? ''}
-                      sortDir={quotaSort.sortDir ?? ''}
-                      onSort={onSort}
+                      sortBy={activeQuotaList.sortBy}
+                      sortDir={activeQuotaList.sortDir}
+                      onSort={sortQuota}
                     />
                   ) : null}
                   <SortableTh
                     column="nationalId"
                     label={t('portSalesReports.nationalId')}
-                    sortBy={quotaSort.sortBy ?? ''}
-                    sortDir={quotaSort.sortDir ?? ''}
-                    onSort={onSort}
+                    sortBy={activeQuotaList.sortBy}
+                    sortDir={activeQuotaList.sortDir}
+                    onSort={sortQuota}
                   />
                   <SortableTh
                     column="total"
                     label={t('portSalesReports.quotaTotal')}
-                    sortBy={quotaSort.sortBy ?? ''}
-                    sortDir={quotaSort.sortDir ?? ''}
-                    onSort={onSort}
+                    sortBy={activeQuotaList.sortBy}
+                    sortDir={activeQuotaList.sortDir}
+                    onSort={sortQuota}
                   />
                   <SortableTh
                     column="allowed"
                     label={t('portSalesReports.quotaAllowedCount')}
-                    sortBy={quotaSort.sortBy ?? ''}
-                    sortDir={quotaSort.sortDir ?? ''}
-                    onSort={onSort}
+                    sortBy={activeQuotaList.sortBy}
+                    sortDir={activeQuotaList.sortDir}
+                    onSort={sortQuota}
                   />
                   <SortableTh
                     column="unauthorized"
                     label={t('portSalesReports.quotaUnauthorized')}
-                    sortBy={quotaSort.sortBy ?? ''}
-                    sortDir={quotaSort.sortDir ?? ''}
-                    onSort={onSort}
+                    sortBy={activeQuotaList.sortBy}
+                    sortDir={activeQuotaList.sortDir}
+                    onSort={sortQuota}
                   />
                   <SortableTh
                     column="amount"
                     label={t('portSalesReports.quotaUnauthorizedAmount')}
-                    sortBy={quotaSort.sortBy ?? ''}
-                    sortDir={quotaSort.sortDir ?? ''}
-                    onSort={onSort}
+                    sortBy={activeQuotaList.sortBy}
+                    sortDir={activeQuotaList.sortDir}
+                    onSort={sortQuota}
                   />
                   <SortableTh
                     column="status"
                     label={t('portSalesReports.quotaStatus')}
-                    sortBy={quotaSort.sortBy ?? ''}
-                    sortDir={quotaSort.sortDir ?? ''}
-                    onSort={onSort}
+                    sortBy={activeQuotaList.sortBy}
+                    sortDir={activeQuotaList.sortDir}
+                    onSort={sortQuota}
                   />
                 </tr>
               </thead>
@@ -973,7 +1116,7 @@ export function PortSalesReportDetailPage() {
           <TableCard
             loading={ticketsQuery.isLoading}
             empty={
-              q || qeshmondiStatus || ticketTab === 'invalid'
+              q || qeshmondiStatus || travelFrom || travelTo || ticketTab === 'invalid'
                 ? t('portSalesReports.ticketsNoResults')
                 : t('portSalesReports.ticketsEmpty')
             }
@@ -984,10 +1127,17 @@ export function PortSalesReportDetailPage() {
               <thead className="bg-cream-50 text-ink-700">
                 <tr>
                   <SortableTh
+                    column="travelDate"
+                    label={t('portSalesReports.travelDate')}
+                    sortBy={ticketSortBy}
+                    sortDir={ticketSortDir}
+                    onSort={onSort}
+                  />
+                  <SortableTh
                     column="ticketNumber"
                     label={t('portSalesReports.ticketNumber')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
+                    sortBy={ticketSortBy}
+                    sortDir={ticketSortDir}
                     onSort={onSort}
                   />
                   <th className="px-4 py-3 text-start font-medium">
@@ -996,25 +1146,18 @@ export function PortSalesReportDetailPage() {
                   <SortableTh
                     column="fullName"
                     label={t('portSalesReports.fullName')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
+                    sortBy={ticketSortBy}
+                    sortDir={ticketSortDir}
                     onSort={onSort}
                   />
                   <th className="px-4 py-3 text-start font-medium">
                     {t('portSalesReports.qeshmondiEndDate')}
                   </th>
                   <SortableTh
-                    column="travelDate"
-                    label={t('portSalesReports.travelDate')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
-                    onSort={onSort}
-                  />
-                  <SortableTh
                     column="amount"
                     label={t('portSalesReports.amount')}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
+                    sortBy={ticketSortBy}
+                    sortDir={ticketSortDir}
                     onSort={onSort}
                   />
                 </tr>
@@ -1022,6 +1165,9 @@ export function PortSalesReportDetailPage() {
               <tbody>
                 {tickets.map((ticket) => (
                   <tr key={ticket.id} className="border-t border-line">
+                    <td className="px-4 py-3">
+                      <TravelStamp date={ticket.travelDate} time={ticket.travelTime} locale={locale} />
+                    </td>
                     <td className="px-4 py-3">
                       {ticket.ticketNumber ? localizeDigits(ticket.ticketNumber, locale) : '—'}
                     </td>
@@ -1038,7 +1184,9 @@ export function PortSalesReportDetailPage() {
                     <td className="px-4 py-3">{ticket.fullName || '—'}</td>
                     <td className="px-4 py-3">
                       {ticket.qeshmondiEndDate ? (
-                        <DateText value={ticket.qeshmondiEndDate} />
+                        <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-800 ring-1 ring-teal-100">
+                          <DateText value={ticket.qeshmondiEndDate} />
+                        </span>
                       ) : ticket.nationalId?.startsWith(item.nationalIdPrefix ?? '345') ? (
                         <span className="inline-flex rounded-full bg-mint-50 px-2 py-0.5 text-xs font-medium text-teal-800">
                           {t('portSalesReports.qeshmondiCitizenPrefix', {
@@ -1050,10 +1198,13 @@ export function PortSalesReportDetailPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <TravelStamp date={ticket.travelDate} time={ticket.travelTime} locale={locale} />
-                    </td>
-                    <td className="px-4 py-3">
-                      {ticket.amount != null ? formatGroupedNumber(ticket.amount, locale) : '—'}
+                      {ticket.amount != null ? (
+                        <span className="inline-flex rounded-full bg-mint-50 px-2 py-0.5 text-xs font-medium text-teal-800 ring-1 ring-mint-100">
+                          {formatGroupedNumber(ticket.amount, locale)}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -1066,7 +1217,15 @@ export function PortSalesReportDetailPage() {
             page={(quotaTab ? quotaQuery.data : ticketsQuery.data)!.page}
             pageSize={(quotaTab ? quotaQuery.data : ticketsQuery.data)!.pageSize}
             total={(quotaTab ? quotaQuery.data : ticketsQuery.data)!.total}
-            onPageChange={setPage}
+            onPageChange={
+              quotaTab
+                ? (nextPage) =>
+                    setQuotaLists((current) => ({
+                      ...current,
+                      [quotaScope]: { ...current[quotaScope], page: nextPage },
+                    }))
+                : setPage
+            }
             startExtra={
               (quotaTab ? quotaQuery.data : ticketsQuery.data)!.total > 0 ? (
                 <Button
@@ -1082,7 +1241,7 @@ export function PortSalesReportDetailPage() {
             }
           />
         ) : null}
-        {ticketTab === 'personal' && quotaQuery.data ? (
+        {quotaTab && quotaQuery.data ? (
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile
               icon={BadgeX}
@@ -1101,8 +1260,6 @@ export function PortSalesReportDetailPage() {
             />
           </div>
         ) : null}
-        </>
-        )}
         </div>
       </FormCard>
     </div>

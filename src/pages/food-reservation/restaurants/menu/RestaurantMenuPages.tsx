@@ -1,5 +1,5 @@
 import { Check, Store, UtensilsCrossed, Wallet, X } from 'lucide-react'
-import { type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
@@ -32,6 +32,10 @@ type DraftFood = {
   price: string
 }
 
+function priceFieldId(weekday: number, foodId: string) {
+  return `menu-price-${weekday}-${foodId}`
+}
+
 function emptyWeek(): DraftFood[][] {
   return WEEKDAYS.map(() => [])
 }
@@ -62,7 +66,19 @@ function WeeklyMenuEditor({
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const queryClient = useQueryClient()
   const [days, setDays] = useState(() => fromItems(items))
+  const daysRef = useRef(days)
+  const saveChain = useRef(Promise.resolve())
+  const priceFocusId = useRef<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  useLayoutEffect(() => {
+    const id = priceFocusId.current
+    if (!id) return
+    const input = document.getElementById(id)
+    if (!(input instanceof HTMLInputElement)) return
+    input.focus()
+    priceFocusId.current = null
+  })
   const foodById = useMemo(() => {
     const map = new Map<string, Pick<Food, 'id' | 'name' | 'photoId'>>()
     for (const food of foods) map.set(food.id, food)
@@ -70,40 +86,62 @@ function WeeklyMenuEditor({
     return map
   }, [foods, items])
 
-  function updateDay(weekday: number, next: DraftFood[]) {
-    setDays((current) => current.map((list, index) => (index === weekday ? next : list)))
+  function replaceDays(next: DraftFood[][]) {
+    daysRef.current = next
+    setDays(next)
   }
 
-  async function submit(event: FormEvent) {
-    event.preventDefault()
+  function updateDay(weekday: number, next: DraftFood[]) {
+    replaceDays(daysRef.current.map((list, index) => (index === weekday ? next : list)))
+  }
+
+  function payloadFor(nextDays: DraftFood[][]) {
     const payloadDays: { weekday: number; items: { foodId: string; price: number }[] }[] = []
     for (const weekday of WEEKDAYS) {
       const itemsForDay: { foodId: string; price: number }[] = []
-      for (const item of days[weekday]) {
+      for (const item of nextDays[weekday]) {
         const trimmed = item.price.trim()
         const amount = trimmed === '' ? 0 : Number(trimmed)
-        if (!Number.isFinite(amount) || amount < 0) {
-          toast.error(t('common.error'))
-          return
-        }
+        if (!Number.isFinite(amount) || amount < 0) return null
         itemsForDay.push({ foodId: item.foodId, price: amount })
       }
       payloadDays.push({ weekday, items: itemsForDay })
     }
-    setSaving(true)
-    try {
-      const { data } = await api.put<RestaurantMenuItem[]>(
-        `/restaurants/${restaurantId}/menu-items`,
-        { days: payloadDays },
-      )
-      setDays(fromItems(data))
-      queryClient.setQueryData(['restaurant-menu', restaurantId, 'weekly'], data)
-      toast.success(t('restaurantMenuItems.saved'))
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, t('common.error')))
-    } finally {
-      setSaving(false)
+    return payloadDays
+  }
+
+  function persist(nextDays: DraftFood[][]) {
+    const payloadDays = payloadFor(nextDays)
+    if (!payloadDays) {
+      toast.error(t('common.error'))
+      return
     }
+    const previous = daysRef.current
+    replaceDays(nextDays)
+    saveChain.current = saveChain.current
+      .catch(() => undefined)
+      .then(async () => {
+        setSaving(true)
+        try {
+          const { data } = await api.put<RestaurantMenuItem[]>(
+            `/restaurants/${restaurantId}/menu-items`,
+            { days: payloadDays },
+          )
+          queryClient.setQueryData(['restaurant-menu', restaurantId, 'weekly'], data)
+          if (daysRef.current === nextDays) replaceDays(fromItems(data))
+          toast.success(t('restaurantMenuItems.saved'))
+        } catch (error) {
+          if (daysRef.current === nextDays) replaceDays(previous)
+          toast.error(getApiErrorMessage(error, t('common.error')))
+        } finally {
+          setSaving(false)
+        }
+      })
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    persist(daysRef.current)
   }
 
   return (
@@ -159,7 +197,7 @@ function WeeklyMenuEditor({
                       const name = food?.name ?? ''
                       return (
                         <li
-                          key={item.key}
+                          key={item.foodId}
                           className="flex items-center gap-2.5 rounded-2xl border border-teal-100 bg-gradient-to-b from-teal-50/70 to-white px-3 py-2.5"
                         >
                           <EntityThumb imageId={food?.photoId} icon={UtensilsCrossed} label={name} />
@@ -169,11 +207,11 @@ function WeeklyMenuEditor({
                               <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
                                 <Wallet className="size-3.5" aria-hidden />
                               </span>
-                              <label className="sr-only" htmlFor={`menu-price-${item.key}`}>
+                              <label className="sr-only" htmlFor={priceFieldId(weekday, item.foodId)}>
                                 {t('restaurantMenuItems.price')}
                               </label>
                               <input
-                                id={`menu-price-${item.key}`}
+                                id={priceFieldId(weekday, item.foodId)}
                                 type="number"
                                 min={0}
                                 inputMode="numeric"
@@ -222,11 +260,16 @@ function WeeklyMenuEditor({
                         : t('restaurantMenuItems.addFood')
                     }
                     onChange={(foodId) => {
-                      if (!foodId || taken.has(foodId)) return
-                      updateDay(weekday, [
-                        ...list,
-                        { key: crypto.randomUUID(), foodId, price: '' },
-                      ])
+                      if (!foodId) return
+                      const current = daysRef.current[weekday] ?? []
+                      if (current.some((row) => row.foodId === foodId)) return
+                      priceFocusId.current = priceFieldId(weekday, foodId)
+                      const next = daysRef.current.map((rows, index) =>
+                        index === weekday
+                          ? [...rows, { key: crypto.randomUUID(), foodId, price: '' }]
+                          : rows,
+                      )
+                      persist(next)
                     }}
                     options={options}
                   />
