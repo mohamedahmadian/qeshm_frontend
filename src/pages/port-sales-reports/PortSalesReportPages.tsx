@@ -628,12 +628,14 @@ export function PortSalesReportDetailPage() {
     )
   }
 
-  const subsidyAmount = item.individualSubsidy ?? 0
+  const individualSubsidy = item.individualSubsidy
+  const tariffYear = item.tariffYear
+  const subsidyAmount = individualSubsidy ?? 0
   const hasSubsidy = subsidyAmount > 0
   function subsidyMoney(amount: number) {
-    if (item.individualSubsidy == null) {
+    if (individualSubsidy == null) {
       return t('portSalesReports.tariffMissing', {
-        year: localizeDigits(String(item.tariffYear ?? ''), locale),
+        year: localizeDigits(String(tariffYear ?? ''), locale),
       })
     }
     return `${formatGroupedNumber(Math.round(amount), locale)} ${t('portSalesReports.toman')}`
