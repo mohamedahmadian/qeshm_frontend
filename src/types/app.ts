@@ -4854,6 +4854,18 @@ export type PortSalesReport = {
   file: PortSalesReportFile
 }
 
+export type PortTicketQuotaStatus = 'allowed' | 'violation'
+
+export type PortTicketQuotaRow = {
+  weekStart: string | null
+  weekEnd: string | null
+  nationalId: string
+  total: number
+  allowed: number
+  unauthorized: number
+  status: PortTicketQuotaStatus
+}
+
 export type PortTicketSale = {
   id: string
   reportId: string

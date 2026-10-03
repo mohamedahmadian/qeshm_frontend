@@ -55,10 +55,22 @@ export function PortSalesReportForm({
   const [progress, setProgress] = useState<PortSalesImportProgress | null>(null)
   const isEdit = Boolean(initial)
 
-  const portOptions = useMemo(() => {
-    const values = [...PORT_OPTIONS, ...customPorts, origin, destination].filter(Boolean)
-    return [...new Set(values)].map((value) => ({ value, label: value }))
-  }, [customPorts, destination, origin])
+  const originOptions = useMemo(
+    () => portChoices(customPorts, origin, destination),
+    [customPorts, destination, origin],
+  )
+  const destinationOptions = useMemo(
+    () => portChoices(customPorts, destination, origin),
+    [customPorts, destination, origin],
+  )
+
+  function choosePort(next: string, other: string, apply: (value: string) => void) {
+    if (samePort(next, other)) {
+      toast.error(t('portSalesReports.samePort'))
+      return
+    }
+    apply(next)
+  }
 
   function addPort(name: string) {
     const trimmed = name.trim()
@@ -77,14 +89,20 @@ export function PortSalesReportForm({
       toast.error(t('portSalesReports.fileRequired'))
       return
     }
+    const nextOrigin = origin.trim() || DEFAULT_PORT_ORIGIN
+    const nextDestination = destination.trim() || DEFAULT_PORT_DESTINATION
+    if (samePort(nextOrigin, nextDestination)) {
+      toast.error(t('portSalesReports.samePort'))
+      return
+    }
     setSaving(true)
     if (!isEdit) setProgress({ phase: 'uploading', percent: 0 })
     try {
       await onSubmit(
         {
           reportDate,
-          origin: origin.trim() || DEFAULT_PORT_ORIGIN,
-          destination: destination.trim() || DEFAULT_PORT_DESTINATION,
+          origin: nextOrigin,
+          destination: nextDestination,
           file,
         },
         setProgress,
@@ -117,22 +135,22 @@ export function PortSalesReportForm({
         <FormField icon={Anchor} label={t('portSalesReports.origin')}>
           <SearchSelect
             value={origin}
-            onChange={setOrigin}
-            options={portOptions}
+            onChange={(next) => choosePort(next, destination, setOrigin)}
+            options={originOptions}
             placeholder={t('portSalesReports.selectPort')}
             required
-            onCreate={(query) => setOrigin(addPort(query) ?? query)}
+            onCreate={(query) => choosePort(addPort(query) ?? query, destination, setOrigin)}
             createLabel={(query) => t('portSalesReports.useCustomPort', { name: query })}
           />
         </FormField>
         <FormField icon={MapPin} label={t('portSalesReports.destination')}>
           <SearchSelect
             value={destination}
-            onChange={setDestination}
-            options={portOptions}
+            onChange={(next) => choosePort(next, origin, setDestination)}
+            options={destinationOptions}
             placeholder={t('portSalesReports.selectPort')}
             required
-            onCreate={(query) => setDestination(addPort(query) ?? query)}
+            onCreate={(query) => choosePort(addPort(query) ?? query, origin, setDestination)}
             createLabel={(query) => t('portSalesReports.useCustomPort', { name: query })}
           />
         </FormField>
@@ -153,7 +171,8 @@ export function PortSalesReportForm({
           <ImportProgressBar progress={progress} locale={i18n.language} />
         ) : null}
         <FormActions
-          submitLabel={t('portSalesReports.save')}
+          className="justify-center"
+          submitLabel={t(isEdit ? 'portSalesReports.save' : 'portSalesReports.saveAndUpload')}
           cancelLabel={saving ? undefined : t('portSalesReports.cancel')}
           submitting={saving}
           onCancel={saving ? undefined : () => history.back()}
@@ -203,6 +222,23 @@ function ImportProgressBar({
       </div>
     </div>
   )
+}
+
+function normalizePort(value: string) {
+  return value.trim().replace(/\s+/g, ' ')
+}
+
+function samePort(left: string, right: string) {
+  return normalizePort(left) === normalizePort(right)
+}
+
+function portChoices(customPorts: string[], current: string, other: string) {
+  const blocked = normalizePort(other)
+  const currentKey = normalizePort(current)
+  const values = [...PORT_OPTIONS, ...customPorts, current].filter(Boolean)
+  return [...new Set(values)]
+    .filter((value) => normalizePort(value) !== blocked || normalizePort(value) === currentKey)
+    .map((value) => ({ value, label: value }))
 }
 
 function portTitle(initial: Pick<PortSalesReport, 'origin' | 'destination' | 'originalFileName'>) {

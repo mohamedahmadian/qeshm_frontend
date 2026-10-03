@@ -1,11 +1,11 @@
-import { FileSpreadsheet, RefreshCw, UserPlus, UserRoundCheck, UserRoundPen } from 'lucide-react'
+import { Download, FileSpreadsheet, RefreshCw, UserPlus, UserRoundCheck, UserRoundPen, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { FileDropField } from '../../components/ui/FileDropField'
-import { AppForm, FormActions, FormField, PageHeader, formShellClassName } from '../../components/ui/Form'
-import { FormCard, FormFactTile, formCardBodyClassName } from '../../components/ui/FormLayout'
+import { AppForm, Button, FormActions, FormField, PageHeader, formShellClassName } from '../../components/ui/Form'
+import { FormCard, FormFactTile, formCardBodyClassName, type FormTone } from '../../components/ui/FormLayout'
 import { formatNumber } from '../../lib/datetime'
 import { api, getApiErrorMessage } from '../../lib/api'
 import { qeshmondiPath } from './qeshmondi-paths'
@@ -19,8 +19,9 @@ type ImportResult = {
   created: number
   updated: number
   skipped: number
-  skippedRows: { rowNumber: number; reason: string }[]
 }
+
+type ExportKind = 'created' | 'skipped'
 
 type ImportStep = 'lookup' | 'writing' | 'roles'
 
@@ -54,6 +55,8 @@ export function QeshmondiUpdatePage() {
   const [saving, setSaving] = useState(false)
   const [progress, setProgress] = useState<ImportProgress | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [exporting, setExporting] = useState<ExportKind | null>(null)
 
   async function submit() {
     if (!file) {
@@ -77,6 +80,7 @@ export function QeshmondiUpdatePage() {
           })
         },
       })
+      setJobId(data.jobId)
       setProgress({ phase: 'parsing', percent: 35 })
       let outcome: ImportResult | null = null
       for (;;) {
@@ -121,6 +125,32 @@ export function QeshmondiUpdatePage() {
     }
   }
 
+  function clearOutcome() {
+    setResult(null)
+    setJobId(null)
+  }
+
+  async function download(kind: ExportKind) {
+    if (!jobId) return
+    setExporting(kind)
+    try {
+      const response = await api.get<Blob>(`/users/qeshmondi-imports/${jobId}/export`, {
+        params: { kind },
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = kind === 'created' ? 'افراد-جدید.xlsx' : 'ردیف-های-نادیده.xlsx'
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('qeshmondiUpdate.exportFailed')))
+    } finally {
+      setExporting(null)
+    }
+  }
+
   return (
     <div className={formShellClassName}>
       <PageHeader
@@ -142,23 +172,25 @@ export function QeshmondiUpdatePage() {
               hideLocalPreview
               onFile={(next) => {
                 setFile(next)
-                setResult(null)
+                clearOutcome()
               }}
               onClear={() => {
                 setFile(null)
-                setResult(null)
+                clearOutcome()
               }}
             />
             <p className="text-xs leading-6 text-ink-500">{t('qeshmondiUpdate.fileHint')}</p>
           </FormField>
           {progress ? <ImportProgressBar progress={progress} locale={locale} /> : null}
-          <FormActions
-            headerIcons={false}
-            submitLabel={t('qeshmondiUpdate.submit')}
-            cancelLabel={saving ? undefined : t('users.cancel')}
-            submitting={saving}
-            onCancel={saving ? undefined : () => navigate(qeshmondiPath())}
-          />
+          {result ? null : (
+            <FormActions
+              headerIcons={false}
+              submitLabel={t('qeshmondiUpdate.submit')}
+              cancelLabel={saving ? undefined : t('users.cancel')}
+              submitting={saving}
+              onCancel={saving ? undefined : () => navigate(qeshmondiPath())}
+            />
+          )}
         </AppForm>
       </FormCard>
       {result ? (
@@ -168,11 +200,15 @@ export function QeshmondiUpdatePage() {
           subtitle={t('qeshmondiUpdate.resultSubtitle')}
         >
           <div className="grid gap-2 p-5 sm:grid-cols-3 sm:gap-3 sm:p-6">
-            <FormFactTile
+            <ResultTile
               icon={UserPlus}
               label={t('qeshmondiUpdate.created')}
               value={formatNumber(result.created, locale)}
               tone="teal"
+              downloadLabel={t('qeshmondiUpdate.downloadCreated')}
+              downloading={exporting === 'created'}
+              disabled={result.created === 0}
+              onDownload={() => void download('created')}
             />
             <FormFactTile
               icon={UserRoundPen}
@@ -180,34 +216,58 @@ export function QeshmondiUpdatePage() {
               value={formatNumber(result.updated, locale)}
               tone="mint"
             />
-            <FormFactTile
+            <ResultTile
               icon={FileSpreadsheet}
               label={t('qeshmondiUpdate.skipped')}
               value={formatNumber(result.skipped, locale)}
               tone="ink"
+              downloadLabel={t('qeshmondiUpdate.downloadSkipped')}
+              downloading={exporting === 'skipped'}
+              disabled={result.skipped === 0}
+              onDownload={() => void download('skipped')}
             />
           </div>
-          {result.skippedRows.length ? (
-            <ul className="space-y-1 border-t border-line px-5 py-4 text-sm text-ink-600 sm:px-6">
-              {result.skippedRows.slice(0, 20).map((item) => (
-                <li key={`${item.rowNumber}-${item.reason}`}>
-                  {t('qeshmondiUpdate.skippedRow', {
-                    row: formatNumber(item.rowNumber, locale),
-                    reason: item.reason,
-                  })}
-                </li>
-              ))}
-              {result.skippedRows.length > 20 ? (
-                <li className="text-ink-400">
-                  {t('qeshmondiUpdate.skippedMore', {
-                    count: formatNumber(result.skippedRows.length - 20, locale),
-                  })}
-                </li>
-              ) : null}
-            </ul>
-          ) : null}
         </FormCard>
       ) : null}
+    </div>
+  )
+}
+
+function ResultTile({
+  icon,
+  label,
+  value,
+  tone,
+  downloadLabel,
+  downloading,
+  disabled,
+  onDownload,
+}: {
+  icon: LucideIcon
+  label: string
+  value: string
+  tone: FormTone
+  downloadLabel: string
+  downloading: boolean
+  disabled: boolean
+  onDownload: () => void
+}) {
+  return (
+    <div className="relative">
+      <FormFactTile icon={icon} label={label} value={value} tone={tone} />
+      <div className="absolute end-2 top-2 z-20">
+        <Button
+          type="button"
+          variant="ghost"
+          icon
+          disabled={disabled || downloading}
+          aria-label={downloadLabel}
+          title={downloadLabel}
+          onClick={onDownload}
+        >
+          <Download className="size-4" aria-hidden />
+        </Button>
+      </div>
     </div>
   )
 }
