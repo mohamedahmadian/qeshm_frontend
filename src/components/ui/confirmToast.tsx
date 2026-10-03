@@ -97,21 +97,17 @@ function ConfirmToastCard({
   return (
     <div
       data-confirm-toast=""
-      className="w-[min(100vw-2rem,22rem)] rounded-[22px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(20,40,40,0.14)]"
+      className="w-max min-w-[min(100vw-2rem,22rem)] max-w-[calc(100vw-2rem)] rounded-[22px] border border-white bg-white p-4 shadow-[0_16px_40px_rgba(20,40,40,0.14)]"
     >
       <div className="flex items-start gap-3">
-        <div
-          className={`flex size-10 shrink-0 items-center justify-center rounded-2xl ${
-            isDanger ? 'bg-red-50 text-red-600' : 'bg-teal-50 text-teal-600'
-          }`}
-        >
+        <div className={`app-toast-glyph ${isDanger ? 'app-toast-glyph--error' : 'app-toast-glyph--success'}`}>
           {isDanger ? (
-            <AlertTriangle className="size-5" aria-hidden />
+            <AlertTriangle strokeWidth={2.25} aria-hidden />
           ) : (
-            <Check className="size-5" aria-hidden />
+            <Check strokeWidth={2.25} aria-hidden />
           )}
         </div>
-        <p className="pt-1.5 text-sm font-medium text-ink-900">{title}</p>
+        <p className="pt-2 text-base font-semibold leading-relaxed text-ink-900">{title}</p>
       </div>
       {prompt ? (
         <div className="mt-3">

@@ -807,6 +807,19 @@ export type ProjectProgressEntry = {
   images: { id: string; imageId: string; sortOrder: number }[];
 };
 
+export type TicketTariff = {
+  id: string;
+  year: number;
+  individualPrice: number;
+  individualQeshmondiPrice: number;
+  individualSubsidy: number;
+  vehiclePrice: number;
+  vehicleQeshmondiPrice: number;
+  vehicleSubsidy: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ContractorType = {
   id: string;
   name: string;
@@ -4806,15 +4819,6 @@ export type BoardMinutesDossier = {
   resolutions: BoardMinutesResolution[]
 }
 
-export const portTicketStatuses = {
-  IN_TRIP: 'IN_TRIP',
-  OPERATOR_CANCELLED: 'OPERATOR_CANCELLED',
-  EXPIRED: 'EXPIRED',
-  OTHER: 'OTHER',
-} as const
-
-export type PortTicketStatus = (typeof portTicketStatuses)[keyof typeof portTicketStatuses]
-
 export const portTicketQeshmondiStatuses = {
   UNKNOWN: 'UNKNOWN',
   VALID: 'VALID',
@@ -4831,8 +4835,6 @@ export type PortSalesReportFile = {
   byteSize: number
 }
 
-export type PortTicketStatusCounts = Record<PortTicketStatus, number>
-
 export type PortSalesReport = {
   id: string
   reportDate: string
@@ -4846,11 +4848,10 @@ export type PortSalesReport = {
   nationalIdPrefixCount?: number
   validQeshmondiCount?: number
   invalidQeshmondiCount?: number
-  invalidQeshmondiTotal?: number
+  weeklyQuotaExcessCount?: number
   createdAt: string
   updatedAt: string
   file: PortSalesReportFile
-  statusCounts?: PortTicketStatusCounts
 }
 
 export type PortTicketSale = {
@@ -4860,6 +4861,7 @@ export type PortTicketSale = {
   ticketNumber: string | null
   reservationCode: string | null
   nationalId: string | null
+  passportNumber: string | null
   firstName: string | null
   lastName: string | null
   fullName: string | null
@@ -4870,9 +4872,8 @@ export type PortTicketSale = {
   travelTime: string | null
   origin: string | null
   destination: string | null
-  ticketStatus: PortTicketStatus
-  ticketStatusRaw: string | null
   qeshmondiStatus: PortTicketQeshmondiStatus
+  citizenship: string | null
   amount: number | null
   seatNumber: string | null
   ticketType: string | null

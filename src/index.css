@@ -2488,6 +2488,126 @@ th {
   --y: translateY(100%);
 }
 
+[data-sonner-toaster].app-toaster {
+  --width: calc(100vw - 2rem) !important;
+  --border-radius: 20px;
+  font-family: var(--font-sans);
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast] {
+  left: 50%;
+  right: auto;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  translate: -50% 0;
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-styled='true'] {
+  align-items: center;
+  gap: 12px;
+  min-width: min(34rem, calc(100vw - 2rem));
+  padding: 14px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.65;
+  color: var(--color-ink-900);
+  background: #fff;
+  border: 1px solid #fff;
+  border-inline-start: 4px solid var(--color-teal-400);
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(20, 40, 40, 0.14);
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-styled='true'] [data-content] {
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: calc(100vw - 8rem);
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-type='success'] {
+  border-inline-start-color: var(--color-teal-500);
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-type='error'] {
+  border-inline-start-color: #ef4444;
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-type='warning'] {
+  border-inline-start-color: var(--color-gold-500);
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-type='info'] {
+  border-inline-start-color: var(--color-teal-600);
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-styled='true'] [data-title] {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.65;
+  color: var(--color-ink-900);
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-styled='true'] [data-description] {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--color-ink-700);
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-styled='true'] [data-icon] {
+  width: 42px;
+  height: 42px;
+  margin: 0;
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-styled='true'] [data-icon] svg {
+  margin: 0;
+}
+
+.app-toast-glyph {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+.app-toast-glyph svg {
+  width: 22px;
+  height: 22px;
+}
+
+.app-toast-glyph--success {
+  color: #fff;
+  background-color: var(--color-teal-500);
+  background-image: linear-gradient(to inline-end, var(--color-teal-500), var(--color-mint-500));
+  box-shadow: 0 8px 16px rgba(46, 189, 182, 0.32);
+}
+
+.app-toast-glyph--error {
+  color: #fff;
+  background-image: linear-gradient(135deg, #fb7185, #ef4444);
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.28);
+}
+
+.app-toast-glyph--warning {
+  color: var(--color-gold-600);
+  background: var(--color-gold-100);
+  box-shadow: inset 0 0 0 1px var(--color-gold-400);
+}
+
+.app-toast-glyph--info {
+  color: var(--color-teal-800);
+  background: var(--color-teal-50);
+  box-shadow: inset 0 0 0 1px var(--color-teal-200);
+}
+
+[data-sonner-toaster].app-toaster .sonner-loading-wrapper {
+  --size: 22px;
+}
+
 /* —— زائر کارت —— */
 .pilgrim-id-card {
   box-sizing: border-box;

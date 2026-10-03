@@ -1,11 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { Toaster } from 'sonner'
 import { AuthProvider } from './auth/AuthProvider'
 import { DashboardLayout } from './components/layout/DashboardLayout'
+import { AppToaster } from './components/ui/AppToaster'
 import { useSelectNumberOnFocus } from './hooks/useSelectNumberOnFocus'
-import { languages, type AppLanguage } from './i18n'
 import { NavigationHistoryProvider } from './lib/navigation-history'
 import { AccountPage } from './pages/AccountPage'
 import { ChangePasswordPage } from './pages/ChangePasswordPage'
@@ -52,6 +50,12 @@ import {
   StakeholderProgressListPage,
 } from './pages/stakeholders/ProgressPages'
 import { StakeholderProjectDetailPage, StakeholderProjectsPage } from './pages/stakeholders/ProjectsPages'
+import {
+  TicketTariffCreatePage,
+  TicketTariffDetailPage,
+  TicketTariffEditPage,
+  TicketTariffListPage,
+} from './pages/ticket-tariffs/TicketTariffPages'
 import {
   ProjectGroupCreatePage,
   ProjectGroupDetailPage,
@@ -270,20 +274,6 @@ import { ProtectedRoute } from './routes/ProtectedRoute'
 
 const queryClient = new QueryClient()
 
-function AppToaster() {
-  const { i18n } = useTranslation()
-  const lang = (i18n.language.split('-')[0] as AppLanguage) || 'fa'
-  return (
-    <Toaster
-      richColors
-      position="bottom-center"
-      className="app-toaster"
-      swipeDirections={['bottom', 'left', 'right']}
-      dir={languages[lang]?.dir ?? 'rtl'}
-    />
-  )
-}
-
 export default function App() {
   useSelectNumberOnFocus()
 
@@ -410,6 +400,10 @@ export default function App() {
                   <Route path="/stakeholders/inbox/:id" element={<StakeholderCorrespondenceDetailPage mode="org" />} />
                   <Route path="/stakeholders/reports" element={<StakeholderProgressListPage mode="org" />} />
                   <Route path="/stakeholders/reports/:id" element={<StakeholderProgressDetailPage mode="org" />} />
+                  <Route path="/ticket-tariffs" element={<TicketTariffListPage />} />
+                  <Route path="/ticket-tariffs/new" element={<TicketTariffCreatePage />} />
+                  <Route path="/ticket-tariffs/:id/edit" element={<TicketTariffEditPage />} />
+                  <Route path="/ticket-tariffs/:id" element={<TicketTariffDetailPage />} />
                   <Route path="/food-reservation/foods" element={<FoodsListPage />} />
                   <Route path="/food-reservation/foods/new" element={<FoodCreatePage />} />
                   <Route path="/food-reservation/foods/:id" element={<FoodDetailPage />} />

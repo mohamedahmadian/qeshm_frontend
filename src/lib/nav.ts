@@ -170,6 +170,13 @@ export const APP_NAV: NavModule[] = withManagementLast([
         icon: 'ticket',
         sortOrder: 6,
       },
+      {
+        code: 'stakeholders.ticket-tariffs',
+        nameKey: 'menus.ticketTariffs',
+        path: '/ticket-tariffs',
+        icon: 'hand-coins',
+        sortOrder: 7,
+      },
     ],
   },
   {

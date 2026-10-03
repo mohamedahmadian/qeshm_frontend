@@ -3,6 +3,7 @@ import {
   BadgeCheck,
   BadgeX,
   Banknote,
+  CalendarClock,
   CalendarDays,
   Download,
   FileSpreadsheet,
@@ -11,7 +12,6 @@ import {
   MapPin,
   Plus,
   Ship,
-  Sigma,
   Ticket,
   Users,
 } from 'lucide-react'
@@ -48,15 +48,20 @@ import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api, getApiErrorMessage, getFileUrl } from '../../lib/api'
-import { formatGroupedNumber, formatNumber, localizeDigits, parseDigitString } from '../../lib/datetime'
+import {
+  formatGroupedNumber,
+  formatNumber,
+  formatWeekday,
+  localizeDigits,
+  parseDigitString,
+} from '../../lib/datetime'
 import type {
   Paginated,
   PortSalesReport,
   PortTicketQeshmondiStatus,
   PortTicketSale,
-  PortTicketStatus,
 } from '../../types/app'
-import { portTicketQeshmondiStatuses, portTicketStatuses } from '../../types/app'
+import { portTicketQeshmondiStatuses } from '../../types/app'
 import {
   PortSalesReportForm,
   type PortSalesImportProgress,
@@ -89,42 +94,6 @@ function toFormData(payload: PortSalesReportPayload) {
   return form
 }
 
-const ticketStatusClass: Record<PortTicketStatus, string> = {
-  IN_TRIP: 'bg-teal-50 text-teal-800',
-  OPERATOR_CANCELLED: 'bg-rose-50 text-rose-700',
-  EXPIRED: 'bg-amber-50 text-amber-800',
-  OTHER: 'bg-cream-100 text-ink-600',
-}
-
-const qeshmondiStatusClass: Record<PortTicketQeshmondiStatus, string> = {
-  UNKNOWN: 'bg-cream-100 text-ink-600',
-  VALID: 'bg-mint-50 text-teal-800',
-  INVALID: 'bg-rose-50 text-rose-700',
-}
-
-function TicketStatusBadge({ status }: { status: PortTicketStatus }) {
-  const { t } = useTranslation()
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${ticketStatusClass[status]}`}
-    >
-      {t(`portSalesReports.status.${status}`)}
-    </span>
-  )
-}
-
-function QeshmondiStatusBadge({ status }: { status?: PortTicketQeshmondiStatus }) {
-  const { t } = useTranslation()
-  const value = status ?? portTicketQeshmondiStatuses.UNKNOWN
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${qeshmondiStatusClass[value]}`}
-    >
-      {t(`portSalesReports.qeshmondi.${value}`)}
-    </span>
-  )
-}
-
 function TravelStamp({
   date,
   time,
@@ -135,12 +104,18 @@ function TravelStamp({
   locale: string
 }) {
   if (!date && !time) return '—'
+  const weekday = date ? formatWeekday(date, locale) : ''
   return (
     <span
-      className="inline-flex max-w-full flex-wrap items-baseline gap-x-2 gap-y-0.5"
+      className="inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5"
       dir="ltr"
     >
       {date ? <DateText value={date} /> : null}
+      {weekday ? (
+        <span className="inline-flex rounded-full bg-teal-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-teal-800 ring-1 ring-teal-100">
+          {weekday}
+        </span>
+      ) : null}
       {time ? <span>{localizeDigits(time, locale)}</span> : null}
     </span>
   )
@@ -421,8 +396,8 @@ export function PortSalesReportDetailPage() {
   const { confirmDelete } = useConfirmDelete()
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
-  const ticketStatus = (searchParams.get('ticketStatus') ?? '') as PortTicketStatus | ''
   const qeshmondiStatus = (searchParams.get('qeshmondiStatus') ?? '') as PortTicketQeshmondiStatus | ''
+  const weeklyQuota = searchParams.get('weeklyQuota') ?? ''
   const [verifying, setVerifying] = useState(false)
   const [subsidy, setSubsidy] = useState('')
   const [exportingGroup, setExportingGroup] = useState<string | null>(null)
@@ -435,7 +410,7 @@ export function PortSalesReportDetailPage() {
     },
   })
   const ticketsQuery = useQuery({
-    queryKey: ['port-sales-report-tickets', id, q, page, sortBy, sortDir, ticketStatus, qeshmondiStatus],
+    queryKey: ['port-sales-report-tickets', id, q, page, sortBy, sortDir, qeshmondiStatus, weeklyQuota],
     enabled: Boolean(id),
     queryFn: async () => {
       const { data } = await api.get<Paginated<PortTicketSale>>(`/port-sales-reports/${id}/tickets`, {
@@ -443,8 +418,8 @@ export function PortSalesReportDetailPage() {
           page,
           ...(q ? { q } : {}),
           ...sortParams,
-          ...(ticketStatus ? { ticketStatus } : {}),
           ...(qeshmondiStatus ? { qeshmondiStatus } : {}),
+          ...(weeklyQuota === 'excess' ? { weeklyQuota } : {}),
         },
       })
       return data
@@ -454,16 +429,11 @@ export function PortSalesReportDetailPage() {
   if (!item || !id) {
     return <LoadingState />
   }
-  const counts = item.statusCounts
-  const otherCount = counts?.OTHER ?? 0
   const tickets = ticketsQuery.data?.items ?? []
   const name = portSalesReportDisplayName(item)
 
   function isInvalidActive() {
-    return (
-      qeshmondiStatus === portTicketQeshmondiStatuses.INVALID &&
-      ticketStatus === portTicketStatuses.IN_TRIP
-    )
+    return qeshmondiStatus === portTicketQeshmondiStatuses.INVALID
   }
 
   function toggleInvalidFilter() {
@@ -471,23 +441,18 @@ export function PortSalesReportDetailPage() {
     setParams(
       {
         qeshmondiStatus: active ? undefined : portTicketQeshmondiStatuses.INVALID,
-        ticketStatus: active ? undefined : portTicketStatuses.IN_TRIP,
       },
       { resetPage: true },
     )
   }
 
-  function isStatusActive(status: PortTicketStatus) {
-    return ticketStatus === status && !qeshmondiStatus
+  function isWeeklyActive() {
+    return weeklyQuota === 'excess'
   }
 
-  function toggleStatusFilter(status: PortTicketStatus) {
-    const active = isStatusActive(status)
+  function toggleWeeklyFilter() {
     setParams(
-      {
-        ticketStatus: active ? undefined : status,
-        qeshmondiStatus: undefined,
-      },
+      { weeklyQuota: isWeeklyActive() ? undefined : 'excess' },
       { resetPage: true },
     )
   }
@@ -505,7 +470,7 @@ export function PortSalesReportDetailPage() {
     )
   }
 
-  async function downloadTicketGroup(group: 'invalid' | 'cancelled' | 'expired' | 'total') {
+  async function downloadTicketGroup(group: 'invalid' | 'weekly') {
     setExportingGroup(group)
     try {
       const response = await api.get<Blob>(`/port-sales-reports/${id}/tickets/export`, {
@@ -525,7 +490,7 @@ export function PortSalesReportDetailPage() {
     }
   }
 
-  function exportButton(group: 'invalid' | 'cancelled' | 'expired' | 'total') {
+  function exportButton(group: 'invalid' | 'weekly') {
     return (
       <Button
         type="button"
@@ -554,87 +519,13 @@ export function PortSalesReportDetailPage() {
       <FormCard icon={Ship} title={name}>
         <div className="space-y-6 p-5 sm:p-6">
           <FormSectionTitle icon={FileSpreadsheet}>{t('portSalesReports.section')}</FormSectionTitle>
-          <div
-            className={`grid gap-2 sm:grid-cols-2 sm:gap-3 ${otherCount > 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
-          >
-            <StatFilterTile
-              active={!ticketStatus}
-              onClick={() => setParams({ ticketStatus: undefined }, { resetPage: true })}
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+            <FormFactTile
               icon={Hash}
               label={t('portSalesReports.recordCount')}
               value={formatGroupedNumber(item.recordCount, locale)}
               tone="teal"
             />
-            <StatFilterTile
-              active={ticketStatus === portTicketStatuses.IN_TRIP}
-              onClick={() =>
-                setParams(
-                  {
-                    ticketStatus:
-                      ticketStatus === portTicketStatuses.IN_TRIP ? undefined : portTicketStatuses.IN_TRIP,
-                  },
-                  { resetPage: true },
-                )
-              }
-              icon={Ticket}
-              label={t('portSalesReports.statusInTrip')}
-              value={formatGroupedNumber(counts?.IN_TRIP ?? 0, locale)}
-              tone="teal"
-            />
-            <StatFilterTile
-              active={ticketStatus === portTicketStatuses.OPERATOR_CANCELLED}
-              onClick={() =>
-                setParams(
-                  {
-                    ticketStatus:
-                      ticketStatus === portTicketStatuses.OPERATOR_CANCELLED
-                        ? undefined
-                        : portTicketStatuses.OPERATOR_CANCELLED,
-                  },
-                  { resetPage: true },
-                )
-              }
-              icon={Ticket}
-              label={t('portSalesReports.statusOperatorCancelled')}
-              value={formatGroupedNumber(counts?.OPERATOR_CANCELLED ?? 0, locale)}
-              tone="ink"
-            />
-            <StatFilterTile
-              active={ticketStatus === portTicketStatuses.EXPIRED}
-              onClick={() =>
-                setParams(
-                  {
-                    ticketStatus:
-                      ticketStatus === portTicketStatuses.EXPIRED ? undefined : portTicketStatuses.EXPIRED,
-                  },
-                  { resetPage: true },
-                )
-              }
-              icon={Ticket}
-              label={t('portSalesReports.statusExpired')}
-              value={formatGroupedNumber(counts?.EXPIRED ?? 0, locale)}
-              tone="ink"
-            />
-            {otherCount > 0 ? (
-              <StatFilterTile
-                active={ticketStatus === portTicketStatuses.OTHER}
-                onClick={() =>
-                  setParams(
-                    {
-                      ticketStatus:
-                        ticketStatus === portTicketStatuses.OTHER ? undefined : portTicketStatuses.OTHER,
-                    },
-                    { resetPage: true },
-                  )
-                }
-                icon={Ticket}
-                label={t('portSalesReports.statusOther')}
-                value={formatGroupedNumber(otherCount, locale)}
-                tone="mint"
-              />
-            ) : null}
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile
               icon={Users}
               label={t('portSalesReports.uniqueNationalIds')}
@@ -713,8 +604,14 @@ export function PortSalesReportDetailPage() {
             onClick={async () => {
               setVerifying(true)
               try {
-                await api.post(`/port-sales-reports/${id}/verify-qeshmondi`)
-                toast.success(t('portSalesReports.qeshmondiVerified'))
+                const { data } = await api.post<PortSalesReport>(
+                  `/port-sales-reports/${id}/verify-qeshmondi`,
+                )
+                toast.success(
+                  t('portSalesReports.qeshmondiVerified', {
+                    count: formatGroupedNumber(data.weeklyQuotaExcessCount ?? 0, locale),
+                  }),
+                )
                 await Promise.all([
                   queryClient.invalidateQueries({ queryKey: ['port-sales-report', id] }),
                   queryClient.invalidateQueries({ queryKey: ['port-sales-report-tickets', id] }),
@@ -732,7 +629,7 @@ export function PortSalesReportDetailPage() {
         }
       >
         <div className="space-y-6 p-5 sm:p-6">
-          <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile
               icon={Hash}
               label={t('portSalesReports.recordCount')}
@@ -747,11 +644,32 @@ export function PortSalesReportDetailPage() {
               value={formatGroupedNumber(item.nationalIdPrefixCount ?? 0, locale)}
               tone="mint"
             />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
             <FormFactTile
               icon={BadgeCheck}
               label={t('portSalesReports.validQeshmondiCount')}
               value={formatGroupedNumber(item.validQeshmondiCount ?? 0, locale)}
               tone="teal"
+            />
+            <StatFilterTile
+              active={isInvalidActive()}
+              onClick={toggleInvalidFilter}
+              icon={BadgeX}
+              label={t('portSalesReports.invalidQeshmondiCount')}
+              value={formatGroupedNumber(item.invalidQeshmondiCount ?? 0, locale)}
+              extra={estimateBadge(item.invalidQeshmondiCount ?? 0)}
+              action={exportButton('invalid')}
+              tone="ink"
+            />
+            <StatFilterTile
+              active={isWeeklyActive()}
+              onClick={toggleWeeklyFilter}
+              icon={CalendarClock}
+              label={t('portSalesReports.weeklyQuotaExcess')}
+              value={formatGroupedNumber(item.weeklyQuotaExcessCount ?? 0, locale)}
+              action={exportButton('weekly')}
+              tone="ink"
             />
           </div>
           <div className="max-w-64">
@@ -775,56 +693,6 @@ export function PortSalesReportDetailPage() {
               </div>
             </FormField>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-5">
-            <StatFilterTile
-              active={isInvalidActive()}
-              onClick={toggleInvalidFilter}
-              icon={BadgeX}
-              label={t('portSalesReports.invalidQeshmondiCount')}
-              value={formatGroupedNumber(item.invalidQeshmondiCount ?? 0, locale)}
-              extra={estimateBadge(item.invalidQeshmondiCount ?? 0)}
-              action={exportButton('invalid')}
-              tone="ink"
-            />
-            <StatFilterTile
-              active={isStatusActive(portTicketStatuses.OPERATOR_CANCELLED)}
-              onClick={() => toggleStatusFilter(portTicketStatuses.OPERATOR_CANCELLED)}
-              icon={Ticket}
-              label={t('portSalesReports.statusOperatorCancelled')}
-              value={formatGroupedNumber(counts?.OPERATOR_CANCELLED ?? 0, locale)}
-              extra={estimateBadge(counts?.OPERATOR_CANCELLED ?? 0)}
-              action={exportButton('cancelled')}
-              tone="ink"
-            />
-            <StatFilterTile
-              active={isStatusActive(portTicketStatuses.EXPIRED)}
-              onClick={() => toggleStatusFilter(portTicketStatuses.EXPIRED)}
-              icon={Ticket}
-              label={t('portSalesReports.statusExpired')}
-              value={formatGroupedNumber(counts?.EXPIRED ?? 0, locale)}
-              extra={estimateBadge(counts?.EXPIRED ?? 0)}
-              action={exportButton('expired')}
-              tone="ink"
-            />
-            <StatFilterTile
-              active={isStatusActive(portTicketStatuses.OTHER)}
-              onClick={() => toggleStatusFilter(portTicketStatuses.OTHER)}
-              icon={Ticket}
-              label={t('portSalesReports.statusOther')}
-              value={formatGroupedNumber(otherCount, locale)}
-              tone="mint"
-            />
-            <div className="relative">
-              <FormFactTile
-                icon={Sigma}
-                label={t('portSalesReports.invalidQeshmondiTotal')}
-                value={formatGroupedNumber(item.invalidQeshmondiTotal ?? 0, locale)}
-                extra={estimateBadge(item.invalidQeshmondiTotal ?? 0)}
-                tone="teal"
-              />
-              <div className="absolute end-2 top-2 z-20">{exportButton('total')}</div>
-            </div>
-          </div>
         </div>
       </FormCard>
       <FormCard icon={Ticket} title={t('portSalesReports.ticketsSection')}>
@@ -836,28 +704,10 @@ export function PortSalesReportDetailPage() {
           onSubmit={() => applySearch()}
           label={t('portSalesReports.ticketsSearch')}
           placeholder={t('portSalesReports.ticketsSearchPlaceholder')}
-          filtersActive={Boolean(ticketStatus || qeshmondiStatus)}
-          extraClassName="w-max max-w-full grid-cols-2 gap-3"
+          filtersActive={Boolean(qeshmondiStatus || weeklyQuota === 'excess')}
+          extraClassName="w-max max-w-full"
           extra={
-            <>
-              <div className="w-44 sm:w-52">
-              <SearchSelect
-                value={ticketStatus}
-                onChange={(next) => setParams({ ticketStatus: next || undefined }, { resetPage: true })}
-                placeholder={t('portSalesReports.statusFilter')}
-                options={[
-                  { value: '', label: t('portSalesReports.allStatuses') },
-                  { value: portTicketStatuses.IN_TRIP, label: t('portSalesReports.status.IN_TRIP') },
-                  {
-                    value: portTicketStatuses.OPERATOR_CANCELLED,
-                    label: t('portSalesReports.status.OPERATOR_CANCELLED'),
-                  },
-                  { value: portTicketStatuses.EXPIRED, label: t('portSalesReports.status.EXPIRED') },
-                  { value: portTicketStatuses.OTHER, label: t('portSalesReports.status.OTHER') },
-                ]}
-              />
-              </div>
-              <div className="w-44 sm:w-52">
+            <div className="w-44 sm:w-52">
               <SearchSelect
                 value={qeshmondiStatus}
                 onChange={(next) => setParams({ qeshmondiStatus: next || undefined }, { resetPage: true })}
@@ -878,14 +728,13 @@ export function PortSalesReportDetailPage() {
                   },
                 ]}
               />
-              </div>
-            </>
+            </div>
           }
         />
         <TableCard
           loading={ticketsQuery.isLoading}
           empty={
-            q || ticketStatus || qeshmondiStatus
+            q || qeshmondiStatus || weeklyQuota === 'excess'
               ? t('portSalesReports.ticketsNoResults')
               : t('portSalesReports.ticketsEmpty')
           }
@@ -902,30 +751,12 @@ export function PortSalesReportDetailPage() {
                   sortDir={sortDir}
                   onSort={onSort}
                 />
-                <SortableTh
-                  column="nationalId"
-                  label={t('portSalesReports.nationalId')}
-                  sortBy={sortBy}
-                  sortDir={sortDir}
-                  onSort={onSort}
-                />
+                <th className="px-4 py-3 text-start font-medium">
+                  {t('portSalesReports.identityNumber')}
+                </th>
                 <SortableTh
                   column="fullName"
                   label={t('portSalesReports.fullName')}
-                  sortBy={sortBy}
-                  sortDir={sortDir}
-                  onSort={onSort}
-                />
-                <SortableTh
-                  column="ticketStatus"
-                  label={t('portSalesReports.ticketStatus')}
-                  sortBy={sortBy}
-                  sortDir={sortDir}
-                  onSort={onSort}
-                />
-                <SortableTh
-                  column="qeshmondiStatus"
-                  label={t('portSalesReports.qeshmondiStatus')}
                   sortBy={sortBy}
                   sortDir={sortDir}
                   onSort={onSort}
@@ -956,15 +787,16 @@ export function PortSalesReportDetailPage() {
                     {ticket.ticketNumber ? localizeDigits(ticket.ticketNumber, locale) : '—'}
                   </td>
                   <td className="px-4 py-3">
-                    {ticket.nationalId ? <CopyableDigits value={ticket.nationalId} /> : '—'}
+                    {ticket.nationalId || ticket.passportNumber ? (
+                      <span className="inline-flex flex-col items-start gap-1">
+                        {ticket.nationalId ? <CopyableDigits value={ticket.nationalId} /> : null}
+                        {ticket.passportNumber ? <CopyableDigits value={ticket.passportNumber} /> : null}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
                   </td>
                   <td className="px-4 py-3">{ticket.fullName || '—'}</td>
-                  <td className="px-4 py-3">
-                    <TicketStatusBadge status={ticket.ticketStatus} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <QeshmondiStatusBadge status={ticket.qeshmondiStatus} />
-                  </td>
                   <td className="px-4 py-3">
                     {ticket.qeshmondiEndDate ? (
                       <DateText value={ticket.qeshmondiEndDate} />

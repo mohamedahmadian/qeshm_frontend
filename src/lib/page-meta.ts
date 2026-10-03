@@ -77,6 +77,18 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/qeshmondi')) {
     return { titleKey: 'qeshmondi.title', subtitleKey: 'qeshmondi.subtitle' }
   }
+  if (pathname === '/ticket-tariffs/new') {
+    return { titleKey: 'ticketTariffs.create', subtitleKey: 'ticketTariffs.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/ticket-tariffs/')) {
+    return { titleKey: 'ticketTariffs.edit', subtitleKey: 'ticketTariffs.editSubtitle' }
+  }
+  if (pathname.startsWith('/ticket-tariffs/')) {
+    return { titleKey: 'ticketTariffs.details', subtitleKey: 'ticketTariffs.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/ticket-tariffs')) {
+    return { titleKey: 'menus.ticketTariffs', subtitleKey: 'ticketTariffs.subtitle' }
+  }
   if (pathname === '/port-sales-reports/new') {
     return { titleKey: 'portSalesReports.create', subtitleKey: 'portSalesReports.createSubtitle' }
   }
