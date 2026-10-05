@@ -9,6 +9,7 @@ export function peekDetailEditTo() {
 /** صفحهٔ جزئیات مسیر ویرایش را ثبت می‌کند تا دابل‌کلیک کارت همان‌جا برود */
 export function useRegisterDetailEditTo(editTo: string) {
   useEffect(() => {
+    if (!editTo) return
     currentEditTo = editTo
     return () => {
       if (currentEditTo === editTo) currentEditTo = null

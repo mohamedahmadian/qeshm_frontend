@@ -12,15 +12,20 @@ import {
   IdCard,
   MapPin,
   Plus,
+  ShieldCheck,
+  ShieldOff,
   Ship,
   Ticket,
+  UserRound,
   Users,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { confirmToast } from '../../components/ui/confirmToast'
+import { useAuth } from '../../auth/AuthProvider'
 import { CopyableDigits } from '../../components/ui/CopyableDigits'
 import { DateText } from '../../components/ui/DateText'
 import {
@@ -50,7 +55,8 @@ import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
-import { api, getApiErrorMessage, getFileUrl } from '../../lib/api'
+import { api, getApiErrorMessage } from '../../lib/api'
+import { canSeeAllPortSalesReports } from '../../lib/roles'
 import {
   displayDateParts,
   formatGroupedNumber,
@@ -98,6 +104,50 @@ function toFormData(payload: PortSalesReportPayload) {
   form.append('destination', payload.destination)
   if (payload.file) form.append('file', payload.file)
   return form
+}
+
+function ReportFileLink({
+  reportId,
+  fileName,
+  withIcon,
+}: {
+  reportId: string
+  fileName: string
+  withIcon?: boolean
+}) {
+  const { t } = useTranslation()
+  const [busy, setBusy] = useState(false)
+
+  async function download() {
+    setBusy(true)
+    try {
+      const response = await api.get<Blob>(`/port-sales-reports/${reportId}/file`, {
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName || 'port-sales.xlsx'
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('portSalesReports.fileDownloadFailed')))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={download}
+      className="inline-flex cursor-pointer items-center gap-1.5 text-start text-teal-700 hover:underline disabled:cursor-wait disabled:opacity-60"
+    >
+      {withIcon ? <Download className="size-4 shrink-0" aria-hidden /> : null}
+      {fileName}
+    </button>
+  )
 }
 
 function TravelStamp({
@@ -251,6 +301,8 @@ export function PortSalesReportListPage() {
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
+  const { user } = useAuth()
+  const showCreator = canSeeAllPortSalesReports(user)
   const query = useQuery({
     queryKey: ['port-sales-reports', q, page, sortBy, sortDir],
     queryFn: async () => {
@@ -308,6 +360,13 @@ export function PortSalesReportListPage() {
                 onSort={onSort}
               />
               <SortableTh
+                column="approvalStatus"
+                label={t('portSalesReports.approvalStatus')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
                 column="originalFileName"
                 label={t('portSalesReports.fileLink')}
                 sortBy={sortBy}
@@ -335,6 +394,15 @@ export function PortSalesReportListPage() {
                 sortDir={sortDir}
                 onSort={onSort}
               />
+              {showCreator ? (
+                <SortableTh
+                  column="createdBy"
+                  label={t('portSalesReports.createdBy')}
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onSort={onSort}
+                />
+              ) : null}
               <ActionsTh />
             </tr>
           </thead>
@@ -348,31 +416,44 @@ export function PortSalesReportListPage() {
                   <DateText value={item.reportDate} />
                 </td>
                 <td className="px-4 py-3">
-                  <a
-                    href={getFileUrl(item.fileId)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-teal-700 hover:underline"
+                  <span
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${
+                      item.approvalStatus === 'APPROVED'
+                        ? 'bg-teal-50 text-teal-800 ring-teal-100'
+                        : 'bg-cream-50 text-ink-700 ring-line'
+                    }`}
                   >
-                    <Download className="size-4" aria-hidden />
-                    {item.originalFileName}
-                  </a>
+                    {t(item.approvalStatus === 'APPROVED' ? 'portSalesReports.approved' : 'portSalesReports.draft')}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <ReportFileLink reportId={item.id} fileName={item.originalFileName} withIcon />
                 </td>
                 <td className="px-4 py-3">{item.origin}</td>
                 <td className="px-4 py-3">{item.destination}</td>
                 <td className="px-4 py-3">{formatNumber(item.recordCount, locale)}</td>
+                {showCreator ? (
+                  <td className="px-4 py-3">{item.createdBy?.fullName ?? '—'}</td>
+                ) : null}
                 <td className={actionsColClassName}>
                   <EntityRowActions
                     viewTo={portSalesReportPath(item.id)}
-                    editTo={`${portSalesReportPath(item.id)}/edit`}
+                    editTo={
+                      item.approvalStatus === 'APPROVED'
+                        ? undefined
+                        : `${portSalesReportPath(item.id)}/edit`
+                    }
                     rowOpensView
-                    onDelete={() =>
-                      confirmDelete({
-                        message: t('portSalesReports.confirmDelete'),
-                        successMessage: t('portSalesReports.deleted'),
-                        path: `/port-sales-reports/${item.id}`,
-                        queryKey: ['port-sales-reports'],
-                      })
+                    onDelete={
+                      item.approvalStatus === 'APPROVED'
+                        ? undefined
+                        : () =>
+                            confirmDelete({
+                              message: t('portSalesReports.confirmDelete'),
+                              successMessage: t('portSalesReports.deleted'),
+                              path: `/port-sales-reports/${item.id}`,
+                              queryKey: ['port-sales-reports'],
+                            })
                     }
                   />
                 </td>
@@ -454,7 +535,13 @@ export function PortSalesReportEditPage() {
       return data
     },
   })
-  if (!query.data || !id) {
+  const locked = query.data?.approvalStatus === 'APPROVED'
+  useEffect(() => {
+    if (!locked || !id) return
+    toast.error(t('portSalesReports.locked'))
+    navigate(portSalesReportPath(id), { replace: true })
+  }, [locked, id, navigate, t])
+  if (!query.data || !id || locked) {
     return <LoadingState />
   }
   return (
@@ -487,6 +574,8 @@ export function PortSalesReportDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { confirmDelete } = useConfirmDelete()
+  const { user } = useAuth()
+  const showCreator = canSeeAllPortSalesReports(user)
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, onSort } = useListSort(searchParams, setParams)
   const qeshmondiStatus = (searchParams.get('qeshmondiStatus') ?? '') as PortTicketQeshmondiStatus | ''
@@ -505,6 +594,7 @@ export function PortSalesReportDetailPage() {
   const query = useQuery({
     queryKey: ['port-sales-report', id],
     enabled: Boolean(id),
+    refetchInterval: (current) => (current.state.data?.quotaSnapshotReady === false ? 2000 : false),
     queryFn: async () => {
       const { data } = await api.get<PortSalesReport>(`/port-sales-reports/${id}`)
       return data
@@ -568,7 +658,7 @@ export function PortSalesReportDetailPage() {
       activeQuotaList.sortBy,
       activeQuotaList.sortDir,
     ],
-    enabled: Boolean(id) && quotaTab,
+    enabled: Boolean(id) && quotaTab && query.data?.quotaSnapshotReady === true,
     staleTime: Infinity,
     gcTime: Infinity,
     refetchOnMount: false,
@@ -588,6 +678,16 @@ export function PortSalesReportDetailPage() {
       return data
     },
   })
+  const quotaReady = query.data?.quotaSnapshotReady === true
+  const quotaWatch = useRef<{ id?: string; ready: boolean | null }>({ ready: null })
+  useEffect(() => {
+    if (!id || !query.data) return
+    const sameReport = quotaWatch.current.id === id
+    if (sameReport && quotaWatch.current.ready === false && quotaReady) {
+      void queryClient.invalidateQueries({ queryKey: ['port-sales-report-quota', id] })
+    }
+    quotaWatch.current = { id, ready: quotaReady }
+  }, [id, query.data, quotaReady, queryClient])
   useEffect(() => {
     setQuotaLists({ weekly: emptyQuotaList(), personal: emptyQuotaList() })
   }, [id])
@@ -598,6 +698,29 @@ export function PortSalesReportDetailPage() {
   const tickets = ticketsQuery.data?.items ?? []
   const quotaRows = quotaQuery.data?.items ?? []
   const name = portSalesReportDisplayName(item)
+  const approved = item.approvalStatus === 'APPROVED'
+
+  function decideApproval(action: 'approve' | 'revoke') {
+    confirmToast({
+      title: t(action === 'approve' ? 'portSalesReports.confirmApprove' : 'portSalesReports.confirmRevoke'),
+      confirmLabel: t('common.yes'),
+      cancelLabel: t('common.cancel'),
+      onConfirm: async () => {
+        try {
+          await api.post(
+            `/port-sales-reports/${id}/${action === 'approve' ? 'approve' : 'revoke-approval'}`,
+          )
+          toast.success(t(action === 'approve' ? 'portSalesReports.approvedDone' : 'portSalesReports.revoked'))
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['port-sales-report', id] }),
+            queryClient.invalidateQueries({ queryKey: ['port-sales-reports'] }),
+          ])
+        } catch (error) {
+          toast.error(getApiErrorMessage(error, t('common.error')))
+        }
+      },
+    })
+  }
 
   function sortQuota(column: string) {
     setQuotaLists((current) => {
@@ -736,6 +859,28 @@ export function PortSalesReportDetailPage() {
               value={<DateText value={item.reportDate} />}
               tone="mint"
             />
+            <FormFactTile
+              icon={approved ? ShieldCheck : ShieldOff}
+              label={t('portSalesReports.approvalStatus')}
+              value={t(approved ? 'portSalesReports.approved' : 'portSalesReports.draft')}
+              tone={approved ? 'teal' : 'ink'}
+            />
+            {approved ? (
+              <FormFactTile
+                icon={UserRound}
+                label={t('portSalesReports.approvedBy')}
+                value={item.approvedBy?.fullName ?? '—'}
+                tone="mint"
+              />
+            ) : null}
+            {approved && item.approvedAt ? (
+              <FormFactTile
+                icon={CalendarDays}
+                label={t('portSalesReports.approvedAt')}
+                value={<DateText value={item.approvedAt} withTime />}
+                tone="teal"
+              />
+            ) : null}
             <FormFactTile icon={Anchor} label={t('portSalesReports.origin')} value={item.origin} tone="teal" />
             <FormFactTile
               icon={MapPin}
@@ -746,30 +891,56 @@ export function PortSalesReportDetailPage() {
             <FormFactTile
               icon={Download}
               label={t('portSalesReports.fileLink')}
-              value={
-                <a
-                  href={getFileUrl(item.fileId)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-teal-700 hover:underline"
-                >
-                  {item.originalFileName}
-                </a>
-              }
+              value={<ReportFileLink reportId={item.id} fileName={item.originalFileName} />}
             />
+            {showCreator ? (
+              <FormFactTile
+                icon={UserRound}
+                label={t('portSalesReports.createdBy')}
+                value={item.createdBy?.fullName ?? '—'}
+                tone="mint"
+              />
+            ) : null}
           </div>
           <DetailActions
             editTo={`${portSalesReportPath(id)}/edit`}
+            showEdit={!approved}
             editLabel={t('common.edit')}
-            deleteLabel={t('portSalesReports.delete')}
-            onDelete={() =>
-              confirmDelete({
-                message: t('portSalesReports.confirmDelete'),
-                successMessage: t('portSalesReports.deleted'),
-                path: `/port-sales-reports/${id}`,
-                queryKey: ['port-sales-reports'],
-                onDeleted: () => navigate(portSalesReportsPath()),
-              })
+            deleteLabel={approved ? undefined : t('portSalesReports.delete')}
+            onDelete={
+              approved
+                ? undefined
+                : () =>
+                    confirmDelete({
+                      message: t('portSalesReports.confirmDelete'),
+                      successMessage: t('portSalesReports.deleted'),
+                      path: `/port-sales-reports/${id}`,
+                      queryKey: ['port-sales-reports'],
+                      onDeleted: () => navigate(portSalesReportsPath()),
+                    })
+            }
+            extraItems={
+              !showCreator
+                ? undefined
+                : approved
+                  ? [
+                      {
+                        label: t('portSalesReports.revokeApproval'),
+                        icon: ShieldOff,
+                        variant: 'ghost',
+                        onClick: () => decideApproval('revoke'),
+                      },
+                    ]
+                  : item.verifiedAt
+                    ? [
+                        {
+                          label: t('portSalesReports.approve'),
+                          icon: ShieldCheck,
+                          variant: 'soft',
+                          onClick: () => decideApproval('approve'),
+                        },
+                      ]
+                    : undefined
             }
           />
         </div>
@@ -778,6 +949,7 @@ export function PortSalesReportDetailPage() {
         icon={BadgeCheck}
         title={t('portSalesReports.qeshmondiSection')}
         action={
+          showCreator && !approved ? (
           <Button
             type="button"
             variant="soft"
@@ -808,9 +980,21 @@ export function PortSalesReportDetailPage() {
             <BadgeCheck className="size-4" aria-hidden />
             {verifying ? t('portSalesReports.verifyingQeshmondi') : t('portSalesReports.verifyQeshmondi')}
           </Button>
+          ) : null
         }
       >
         <div className="space-y-6 p-5 sm:p-6">
+          {showCreator && !approved && !item.verifiedAt ? (
+            <p className="text-sm text-ink-600">{t('portSalesReports.verifyFirst')}</p>
+          ) : null}
+          {item.verifiedAt ? (
+            <FormFactTile
+              icon={BadgeCheck}
+              label={t('portSalesReports.verifiedAt')}
+              value={<DateText value={item.verifiedAt} withTime />}
+              tone="teal"
+            />
+          ) : null}
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile
               icon={Hash}
@@ -848,8 +1032,16 @@ export function PortSalesReportDetailPage() {
               onClick={() => selectTab(ticketTab === 'weekly' ? 'all' : 'weekly')}
               icon={CalendarClock}
               label={t('portSalesReports.weeklyQuotaExcess')}
-              value={formatGroupedNumber(item.weeklyQuotaExcessCount ?? 0, locale)}
-              extra={estimateBadge(item.weeklyQuotaExcessCount ?? 0)}
+              value={
+                item.quotaSnapshotReady === false
+                  ? t('portSalesReports.quotaCalculating')
+                  : formatGroupedNumber(item.weeklyQuotaExcessCount ?? 0, locale)
+              }
+              extra={
+                item.quotaSnapshotReady === false
+                  ? undefined
+                  : estimateBadge(item.weeklyQuotaExcessCount ?? 0)
+              }
               tone="ink"
             />
           </div>
@@ -876,7 +1068,9 @@ export function PortSalesReportDetailPage() {
               icon={BadgeX}
               label={t('portSalesReports.invalidSubsidy')}
               value={
-                item.individualSubsidy == null ? (
+                item.quotaSnapshotReady === false ? (
+                  t('portSalesReports.quotaCalculating')
+                ) : item.individualSubsidy == null ? (
                   subsidyMoney(0)
                 ) : (
                   <span className="font-bold text-red-700">
@@ -1012,13 +1206,15 @@ export function PortSalesReportDetailPage() {
         />
         {quotaTab ? (
           <TableCard
-            loading={quotaQuery.isLoading}
+            loading={quotaQuery.isLoading || item.quotaSnapshotReady === false}
             empty={
-              activeQuotaList.q
-                ? t('portSalesReports.quotaNoResults')
-                : t('portSalesReports.quotaEmpty')
+              item.quotaSnapshotReady === false
+                ? t('portSalesReports.quotaCalculating')
+                : activeQuotaList.q
+                  ? t('portSalesReports.quotaNoResults')
+                  : t('portSalesReports.quotaEmpty')
             }
-            hasRows={quotaRows.length > 0}
+            hasRows={item.quotaSnapshotReady !== false && quotaRows.length > 0}
             rowClick={false}
           >
             <table className="w-full text-sm">

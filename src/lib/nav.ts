@@ -320,6 +320,13 @@ export const APP_NAV: NavModule[] = withManagementLast([
         icon: 'refresh-cw',
         sortOrder: 2,
       },
+      {
+        code: 'qeshmondi.sync-logs',
+        nameKey: 'menus.qeshmondiSyncLogs',
+        path: '/qeshmondi/sync-logs',
+        icon: 'history',
+        sortOrder: 3,
+      },
     ],
   },
   {

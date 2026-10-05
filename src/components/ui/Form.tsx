@@ -492,22 +492,27 @@ export function HeaderDetailActions({
   editLabel,
   deleteLabel,
   onDelete,
+  showEdit = true,
 }: {
   editTo: string
   editLabel?: string
   deleteLabel?: string
   onDelete?: () => void
+  showEdit?: boolean
 }) {
   const { t } = useTranslation()
   const edit = editLabel ?? t('common.edit')
   const remove = deleteLabel ?? t('common.delete')
+  if (!showEdit && !onDelete) return null
   return (
     <div className="flex flex-nowrap items-center gap-2 print:hidden">
-      <Link to={editTo} aria-label={edit} title={edit}>
-        <Button type="button" variant="ghost" icon>
-          <Pencil className="size-4" aria-hidden />
-        </Button>
-      </Link>
+      {showEdit ? (
+        <Link to={editTo} aria-label={edit} title={edit}>
+          <Button type="button" variant="ghost" icon>
+            <Pencil className="size-4" aria-hidden />
+          </Button>
+        </Link>
+      ) : null}
       {onDelete ? (
         <Button
           type="button"
@@ -674,6 +679,7 @@ function DetailActionsSheet({
   editTo,
   editLabel,
   deleteLabel,
+  showEdit = true,
   extraItems,
   onClose,
   onDelete,
@@ -684,6 +690,7 @@ function DetailActionsSheet({
   editTo: string
   editLabel: string
   deleteLabel?: string
+  showEdit?: boolean
   extraItems: DetailActionExtraItem[]
   onClose: () => void
   onDelete?: () => void
@@ -752,7 +759,9 @@ function DetailActionsSheet({
           ) : null}
           {extraItems.length ? <div className="mx-2 my-2 border-t border-line" /> : null}
           <div className="flex flex-col gap-1">
-            <DetailActionSheetRow icon={Pencil} label={editLabel} to={editTo} onClick={onClose} />
+            {showEdit ? (
+              <DetailActionSheetRow icon={Pencil} label={editLabel} to={editTo} onClick={onClose} />
+            ) : null}
             {onDelete && deleteLabel ? (
               <DetailActionSheetRow
                 icon={Trash2}
@@ -800,6 +809,7 @@ export function DetailActions({
   editLabel,
   deleteLabel,
   onDelete,
+  showEdit = true,
   extraItems,
   className = 'mt-6',
   headerIcons = true,
@@ -808,28 +818,33 @@ export function DetailActions({
   editLabel: string
   deleteLabel?: string
   onDelete?: () => void
+  showEdit?: boolean
   extraItems?: DetailActionExtraItem[]
   className?: string
   /** آیکون ویرایش/حذف در هدر صفحه برای دسترسی سریع */
   headerIcons?: boolean
 }) {
   const { t } = useTranslation()
-  useRegisterDetailEditTo(editTo)
+  useRegisterDetailEditTo(showEdit ? editTo : '')
   const titleId = useId()
   const [open, setOpen] = useState(false)
   const closeSheet = useCallback(() => setOpen(false), [])
   const extras = extraItems ?? []
   const hasExtra = extras.length > 0
+  const hasDelete = Boolean(onDelete && deleteLabel)
+  if (!showEdit && !hasDelete && !hasExtra) return null
 
   const coreButtons = (
     <>
-      <Link to={editTo}>
-        <Button type="button" className="w-full md:w-auto">
-          <Pencil className="size-4" aria-hidden />
-          {editLabel}
-        </Button>
-      </Link>
-      {onDelete && deleteLabel ? (
+      {showEdit ? (
+        <Link to={editTo}>
+          <Button type="button" className="w-full md:w-auto">
+            <Pencil className="size-4" aria-hidden />
+            {editLabel}
+          </Button>
+        </Link>
+      ) : null}
+      {hasDelete ? (
         <Button type="button" variant="danger" className="w-full md:w-auto" onClick={onDelete}>
           <Trash2 className="size-4" aria-hidden />
           {deleteLabel}
@@ -873,6 +888,7 @@ export function DetailActions({
           editTo={editTo}
           editLabel={editLabel}
           deleteLabel={deleteLabel}
+          showEdit={showEdit}
           extraItems={extras}
           onClose={closeSheet}
           onDelete={onDelete}
@@ -884,6 +900,7 @@ export function DetailActions({
             editTo={editTo}
             editLabel={editLabel}
             deleteLabel={deleteLabel}
+            showEdit={showEdit}
             onDelete={onDelete}
           />
         </PageHeaderActionsPortal>

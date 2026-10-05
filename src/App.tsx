@@ -194,6 +194,8 @@ import {
 } from './pages/organization/units/restaurants/OrganizationUnitRestaurantPages'
 import { PublicProfilePage } from './pages/public-profile/PublicProfilePage'
 import { QeshmondiListPage } from './pages/qeshmondi/QeshmondiListPage'
+import { QeshmondiSyncLogDetailPage } from './pages/qeshmondi/QeshmondiSyncLogDetailPage'
+import { QeshmondiSyncLogListPage } from './pages/qeshmondi/QeshmondiSyncLogListPage'
 import { QeshmondiUpdatePage } from './pages/qeshmondi/QeshmondiUpdatePage'
 import {
   PortSalesReportCreatePage,
@@ -301,6 +303,8 @@ export default function App() {
                   <Route path="/qeshmondi" element={<QeshmondiListPage />} />
                   <Route path="/qeshmondi/new" element={<UserCreatePage />} />
                   <Route path="/qeshmondi/update" element={<QeshmondiUpdatePage />} />
+                  <Route path="/qeshmondi/sync-logs" element={<QeshmondiSyncLogListPage />} />
+                  <Route path="/qeshmondi/sync-logs/:id" element={<QeshmondiSyncLogDetailPage />} />
                   <Route path="/qeshmondi/:id" element={<UserDetailPage />} />
                   <Route path="/qeshmondi/:id/edit" element={<UserEditPage />} />
                   <Route path="/port-sales-reports" element={<PortSalesReportListPage />} />

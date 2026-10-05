@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, RefreshCw, UserPlus, UserRoundCheck, UserRoundPen, type LucideIcon } from 'lucide-react'
+import { Database, Download, FileSpreadsheet, RefreshCw, UserPlus, UserRoundCheck, UserRoundPen, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -9,6 +9,15 @@ import { FormCard, FormFactTile, formCardBodyClassName, type FormTone } from '..
 import { formatNumber } from '../../lib/datetime'
 import { api, getApiErrorMessage } from '../../lib/api'
 import { qeshmondiPath } from './qeshmondi-paths'
+import { QeshmondiSqlTab } from './QeshmondiSqlTab'
+
+const updateTabs = ['file', 'database'] as const
+type UpdateTab = (typeof updateTabs)[number]
+
+const updateTabIcons = {
+  file: FileSpreadsheet,
+  database: Database,
+} as const
 
 const EXCEL_ACCEPT =
   '.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel'
@@ -23,7 +32,7 @@ type ImportResult = {
 
 type ExportKind = 'created' | 'skipped'
 
-type ImportStep = 'lookup' | 'writing' | 'roles'
+type ImportStep = 'lookup' | 'writing' | 'roles' | 'syncing'
 
 type ImportProgress = {
   phase: 'uploading' | 'parsing' | 'saving'
@@ -57,6 +66,7 @@ export function QeshmondiUpdatePage() {
   const [result, setResult] = useState<ImportResult | null>(null)
   const [jobId, setJobId] = useState<string | null>(null)
   const [exporting, setExporting] = useState<ExportKind | null>(null)
+  const [tab, setTab] = useState<UpdateTab>('file')
 
   async function submit() {
     if (!file) {
@@ -159,39 +169,69 @@ export function QeshmondiUpdatePage() {
         subtitle={t('qeshmondiUpdate.subtitle')}
       />
       <FormCard
-        icon={FileSpreadsheet}
-        title={t('qeshmondiUpdate.formTitle')}
-        subtitle={t('qeshmondiUpdate.formSubtitle')}
+        icon={updateTabIcons[tab]}
+        title={t(tab === 'file' ? 'qeshmondiUpdate.formTitle' : 'qeshmondiUpdate.dbTitle')}
+        subtitle={t(tab === 'file' ? 'qeshmondiUpdate.formSubtitle' : 'qeshmondiUpdate.dbSubtitle')}
       >
-        <AppForm onSubmit={submit} className={formCardBodyClassName}>
-          <FormField icon={FileSpreadsheet} label={t('qeshmondiUpdate.file')}>
-            <FileDropField
-              accept={EXCEL_ACCEPT}
-              allowCamera={false}
-              maxBytes={MAX_EXCEL_BYTES}
-              hideLocalPreview
-              onFile={(next) => {
-                setFile(next)
-                clearOutcome()
-              }}
-              onClear={() => {
-                setFile(null)
-                clearOutcome()
-              }}
-            />
-            <p className="text-xs leading-6 text-ink-500">{t('qeshmondiUpdate.fileHint')}</p>
-          </FormField>
-          {progress ? <ImportProgressBar progress={progress} locale={locale} /> : null}
-          {result ? null : (
-            <FormActions
-              headerIcons={false}
-              submitLabel={t('qeshmondiUpdate.submit')}
-              cancelLabel={saving ? undefined : t('users.cancel')}
-              submitting={saving}
-              onCancel={saving ? undefined : () => navigate(qeshmondiPath())}
-            />
-          )}
-        </AppForm>
+        <nav
+          className="flex flex-wrap gap-2 border-b border-line bg-cream-50/60 px-4 py-3 sm:px-5"
+          role="tablist"
+        >
+          {updateTabs.map((item) => {
+            const Icon = updateTabIcons[item]
+            const active = tab === item
+            return (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(item)}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 ${
+                  active
+                    ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
+                    : 'bg-white text-ink-700 ring-1 ring-line hover:bg-cream-50'
+                }`}
+              >
+                <Icon className={`size-3.5 ${active ? 'text-white' : 'text-teal-600'}`} aria-hidden />
+                {t(`qeshmondiUpdate.tabs.${item}`)}
+              </button>
+            )
+          })}
+        </nav>
+        {tab === 'database' ? (
+          <QeshmondiSqlTab />
+        ) : (
+          <AppForm onSubmit={submit} className={formCardBodyClassName}>
+            <FormField icon={FileSpreadsheet} label={t('qeshmondiUpdate.file')}>
+              <FileDropField
+                accept={EXCEL_ACCEPT}
+                allowCamera={false}
+                maxBytes={MAX_EXCEL_BYTES}
+                hideLocalPreview
+                onFile={(next) => {
+                  setFile(next)
+                  clearOutcome()
+                }}
+                onClear={() => {
+                  setFile(null)
+                  clearOutcome()
+                }}
+              />
+              <p className="text-xs leading-6 text-ink-500">{t('qeshmondiUpdate.fileHint')}</p>
+            </FormField>
+            {progress ? <ImportProgressBar progress={progress} locale={locale} /> : null}
+            {result ? null : (
+              <FormActions
+                headerIcons={false}
+                submitLabel={t('qeshmondiUpdate.submit')}
+                cancelLabel={saving ? undefined : t('users.cancel')}
+                submitting={saving}
+                onCancel={saving ? undefined : () => navigate(qeshmondiPath())}
+              />
+            )}
+          </AppForm>
+        )}
       </FormCard>
       {result ? (
         <FormCard

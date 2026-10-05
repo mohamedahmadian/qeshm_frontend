@@ -4851,8 +4851,17 @@ export type PortSalesReport = {
   validQeshmondiCount?: number
   invalidQeshmondiCount?: number
   weeklyQuotaExcessCount?: number
+  quotaSnapshotReady?: boolean
+  reportYear?: number
+  reportMonth?: number
+  approvalStatus?: 'DRAFT' | 'APPROVED'
+  verifiedAt?: string | null
+  approvedAt?: string | null
+  approvedBy?: { id: string; fullName: string } | null
   tariffYear?: number | null
   individualSubsidy?: number | null
+  createdById?: string | null
+  createdBy?: { id: string; fullName: string } | null
   createdAt: string
   updatedAt: string
   file: PortSalesReportFile

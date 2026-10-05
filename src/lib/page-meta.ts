@@ -62,6 +62,15 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/settings')) {
     return { titleKey: 'settings.title', subtitleKey: 'settings.subtitle' }
   }
+  if (/^\/qeshmondi\/sync-logs\/[^/]+$/.test(pathname)) {
+    return {
+      titleKey: 'qeshmondiSyncLogs.details',
+      subtitleKey: 'qeshmondiSyncLogs.detailsSubtitle',
+    }
+  }
+  if (pathname.startsWith('/qeshmondi/sync-logs')) {
+    return { titleKey: 'qeshmondiSyncLogs.title', subtitleKey: 'qeshmondiSyncLogs.subtitle' }
+  }
   if (pathname.startsWith('/qeshmondi/update')) {
     return { titleKey: 'qeshmondiUpdate.title', subtitleKey: 'qeshmondiUpdate.subtitle' }
   }

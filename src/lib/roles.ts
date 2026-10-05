@@ -8,6 +8,7 @@ export const EMPLOYEE_ROLE_CODE = 'EMPLOYEE'
 export const CITIZEN_ROLE_CODE = 'CITIZEN'
 export const BOARD_ADMIN_ROLE_CODE = 'BOARD_ADMIN'
 export const CONTRACTOR_ROLE_CODE = 'CONTRACTOR'
+export const STAKEHOLDERS_ADMIN_ROLE_CODE = 'STAKEHOLDERS_ADMIN'
 
 export function isSystemRoleLocked(role?: { isSystem?: boolean; code?: string } | null) {
   return Boolean(role?.isSystem || role?.code === ADMIN_ROLE_CODE)
@@ -32,6 +33,16 @@ export function isAdmin(user?: { isAdmin?: boolean; roles?: { code: string }[] }
   if (!user) return false
   if (user.isAdmin) return true
   return Boolean(user.roles?.some((role) => role.code === ADMIN_ROLE_CODE))
+}
+
+export function isStakeholdersAdmin(user?: { roles?: { code: string }[] } | null) {
+  return Boolean(user?.roles?.some((role) => role.code === STAKEHOLDERS_ADMIN_ROLE_CODE))
+}
+
+export function canSeeAllPortSalesReports(
+  user?: { isAdmin?: boolean; roles?: { code: string }[] } | null,
+) {
+  return isAdmin(user) || isStakeholdersAdmin(user)
 }
 
 export function isPilgrim() {
