@@ -48,15 +48,16 @@ export function DateText({
   if (!withTime) {
     return formatDate(value, locale)
   }
+  if (stacked) {
+    return (
+      <span className="flex flex-col items-start gap-0.5">
+        <span dir="ltr">{formatDateTimeDate(value, locale)}</span>
+        <span dir="ltr">{formatTime(value, locale)}</span>
+      </span>
+    )
+  }
   return (
-    <span
-      className={
-        stacked
-          ? 'flex flex-col items-start gap-0.5'
-          : 'inline-flex max-w-full flex-wrap items-baseline gap-x-2 gap-y-0.5'
-      }
-      dir="ltr"
-    >
+    <span className="inline-flex max-w-full flex-wrap items-baseline gap-x-2 gap-y-0.5" dir="ltr">
       <span>{formatDateTimeDate(value, locale)}</span>
       <span>{formatTime(value, locale)}</span>
     </span>

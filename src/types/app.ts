@@ -807,6 +807,26 @@ export type ProjectProgressEntry = {
   images: { id: string; imageId: string; sortOrder: number }[];
 };
 
+export const portKinds = ["INDIVIDUAL", "VEHICLE"] as const;
+
+export type PortKind = (typeof portKinds)[number];
+
+export type Port = {
+  id: string;
+  name: string;
+  cityId: string;
+  city: { id: string; nameFa: string; nameEn: string };
+  cooperativeName: string;
+  address: string | null;
+  kind: PortKind;
+  managerName: string;
+  phone: string;
+  latitude: number | null;
+  longitude: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type TicketTariff = {
   id: string;
   year: number;
@@ -4851,6 +4871,10 @@ export type PortSalesReport = {
   validQeshmondiCount?: number
   invalidQeshmondiCount?: number
   weeklyQuotaExcessCount?: number
+  invalidQeshmondiSubsidy?: number | null
+  weeklyQuotaExcessSubsidy?: number | null
+  allocatedSubsidy?: number | null
+  allocatedSubsidyNote?: string | null
   quotaSnapshotReady?: boolean
   reportYear?: number
   reportMonth?: number

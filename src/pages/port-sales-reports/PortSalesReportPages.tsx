@@ -3,13 +3,16 @@ import {
   BadgeCheck,
   BadgeX,
   Banknote,
+  Check,
   CalendarClock,
   CalendarDays,
   CalendarRange,
   Download,
   FileSpreadsheet,
+  HandCoins,
   Hash,
   IdCard,
+  MessageSquareText,
   MapPin,
   Plus,
   ShieldCheck,
@@ -20,7 +23,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -40,9 +43,11 @@ import {
   type SortDir,
 } from '../../components/ui/ListControls'
 import {
+  AppForm,
   Button,
   DetailActions,
   FormField,
+  fieldClassName,
   EntityNameSubtitle,
   LoadingState,
   PageHeader,
@@ -56,10 +61,12 @@ import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api, getApiErrorMessage } from '../../lib/api'
+import { faAmountWords } from '../../lib/fa-amount-words'
 import { canSeeAllPortSalesReports } from '../../lib/roles'
 import {
   displayDateParts,
   formatGroupedNumber,
+  parseDigitString,
   formatNumber,
   formatWeekday,
   localizeDigits,
@@ -76,11 +83,13 @@ import type {
 import { portTicketQeshmondiStatuses } from '../../types/app'
 import {
   PortSalesReportForm,
+  portNameWithCity,
+  portRouteLabel,
+  usePortsLookup,
   type PortSalesImportProgress,
   type PortSalesReportPayload,
 } from './PortSalesReportForm'
 import {
-  portSalesReportDisplayName,
   portSalesReportPath,
   portSalesReportsPath,
 } from './port-sales-report-paths'
@@ -106,14 +115,38 @@ function toFormData(payload: PortSalesReportPayload) {
   return form
 }
 
+function ReportMonthText({
+  year,
+  month,
+  locale,
+}: {
+  year?: number | null
+  month?: number | null
+  locale: string
+}) {
+  const { t } = useTranslation()
+  if (!year || !month) return '—'
+  const numeric = localizeDigits(`${year}/${String(month).padStart(2, '0')}`, locale)
+  return (
+    <span className="inline-flex flex-col items-start leading-snug">
+      <span dir="ltr">{numeric}</span>
+      <span className="text-xs text-ink-600">
+        {t('portSalesReports.reportMonthName', { month: monthName(month, locale) })}
+      </span>
+    </span>
+  )
+}
+
 function ReportFileLink({
   reportId,
   fileName,
   withIcon,
+  label,
 }: {
   reportId: string
   fileName: string
   withIcon?: boolean
+  label?: string
 }) {
   const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
@@ -145,7 +178,7 @@ function ReportFileLink({
       className="inline-flex cursor-pointer items-center gap-1.5 text-start text-teal-700 hover:underline disabled:cursor-wait disabled:opacity-60"
     >
       {withIcon ? <Download className="size-4 shrink-0" aria-hidden /> : null}
-      {fileName}
+      {label ?? fileName}
     </button>
   )
 }
@@ -312,8 +345,23 @@ export function PortSalesReportListPage() {
       return data
     },
   })
+  const portsQuery = usePortsLookup()
   const rows = query.data?.items ?? []
   const base = portSalesReportsPath()
+
+  function allocatedSubsidyText(item: PortSalesReport) {
+    if (item.allocatedSubsidy != null) {
+      return `${formatGroupedNumber(item.allocatedSubsidy, locale)} ${t('portSalesReports.toman')}`
+    }
+    if (!item.verifiedAt) return '—'
+    if (item.individualSubsidy == null) {
+      return t('portSalesReports.tariffMissing', {
+        year: localizeDigits(String(item.tariffYear ?? item.reportYear ?? ''), locale),
+      })
+    }
+    const amount = Math.round((item.validQeshmondiCount ?? 0) * item.individualSubsidy)
+    return `${formatGroupedNumber(amount, locale)} ${t('portSalesReports.toman')}`
+  }
 
   return (
     <div className={listShellClassName}>
@@ -393,7 +441,9 @@ export function PortSalesReportListPage() {
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
+                align="center"
               />
+              <th className="px-4 py-3 text-start font-medium">{t('portSalesReports.allocatedSubsidy')}</th>
               {showCreator ? (
                 <SortableTh
                   column="createdBy"
@@ -410,10 +460,10 @@ export function PortSalesReportListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3">
-                  <DateText value={item.createdAt} withTime />
+                  <DateText value={item.createdAt} withTime stacked />
                 </td>
                 <td className="px-4 py-3">
-                  <DateText value={item.reportDate} />
+                  <ReportMonthText year={item.reportYear} month={item.reportMonth} locale={locale} />
                 </td>
                 <td className="px-4 py-3">
                   <span
@@ -427,25 +477,44 @@ export function PortSalesReportListPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <ReportFileLink reportId={item.id} fileName={item.originalFileName} withIcon />
+                  <ReportFileLink
+                    reportId={item.id}
+                    fileName={item.originalFileName}
+                    withIcon
+                    label={t('portSalesReports.downloadFile')}
+                  />
                 </td>
-                <td className="px-4 py-3">{item.origin}</td>
-                <td className="px-4 py-3">{item.destination}</td>
-                <td className="px-4 py-3">{formatNumber(item.recordCount, locale)}</td>
+                <td className="px-4 py-3">{portNameWithCity(item.origin, portsQuery.data, locale)}</td>
+                <td className="px-4 py-3">{portNameWithCity(item.destination, portsQuery.data, locale)}</td>
+                <td className="px-4 py-3 text-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <span>{formatNumber(item.recordCount, locale)}</span>
+                    {item.verifiedAt ? (
+                      <span
+                        className="inline-flex rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-teal-800 ring-1 ring-teal-200"
+                        title={t('portSalesReports.validQeshmondiCount')}
+                      >
+                        {formatNumber(item.validQeshmondiCount ?? 0, locale)}
+                      </span>
+                    ) : null}
+                  </div>
+                </td>
+                <td className="px-4 py-3">{allocatedSubsidyText(item)}</td>
                 {showCreator ? (
                   <td className="px-4 py-3">{item.createdBy?.fullName ?? '—'}</td>
                 ) : null}
                 <td className={actionsColClassName}>
                   <EntityRowActions
                     viewTo={portSalesReportPath(item.id)}
+                    showView={false}
                     editTo={
-                      item.approvalStatus === 'APPROVED'
+                      item.approvalStatus === 'APPROVED' && !showCreator
                         ? undefined
                         : `${portSalesReportPath(item.id)}/edit`
                     }
                     rowOpensView
                     onDelete={
-                      item.approvalStatus === 'APPROVED'
+                      item.approvalStatus === 'APPROVED' && !showCreator
                         ? undefined
                         : () =>
                             confirmDelete({
@@ -524,9 +593,13 @@ export function PortSalesReportCreatePage() {
 }
 
 export function PortSalesReportEditPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const portsQuery = usePortsLookup()
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const manager = canSeeAllPortSalesReports(user)
   const query = useQuery({
     queryKey: ['port-sales-report', id],
     enabled: Boolean(id),
@@ -535,7 +608,7 @@ export function PortSalesReportEditPage() {
       return data
     },
   })
-  const locked = query.data?.approvalStatus === 'APPROVED'
+  const locked = query.data?.approvalStatus === 'APPROVED' && !manager
   useEffect(() => {
     if (!locked || !id) return
     toast.error(t('portSalesReports.locked'))
@@ -549,7 +622,9 @@ export function PortSalesReportEditPage() {
       <PageHeader
         icon={Ship}
         title={t('portSalesReports.edit')}
-        subtitle={<EntityNameSubtitle name={portSalesReportDisplayName(query.data)} icon={Ship} />}
+        subtitle={
+          <EntityNameSubtitle name={portRouteLabel(query.data, portsQuery.data, locale)} icon={Ship} />
+        }
       />
       <PortSalesReportForm
         initial={query.data}
@@ -581,25 +656,36 @@ export function PortSalesReportDetailPage() {
   const qeshmondiStatus = (searchParams.get('qeshmondiStatus') ?? '') as PortTicketQeshmondiStatus | ''
   const travelFrom = searchParams.get('from') ?? ''
   const travelTo = searchParams.get('to') ?? ''
-  const ticketTab = parseTicketTab(searchParams.get('tab'))
-  const quotaTab = ticketTab === 'weekly' || ticketTab === 'personal'
+  const requestedTab = parseTicketTab(searchParams.get('tab'))
   const [verifying, setVerifying] = useState(false)
+  const [allocating, setAllocating] = useState(false)
+  const [allocatedDraft, setAllocatedDraft] = useState('')
+  const [allocatedNote, setAllocatedNote] = useState('')
   const [exportingGroup, setExportingGroup] = useState<TicketReportTab | null>(null)
   const [quotaLists, setQuotaLists] = useState<Record<QuotaTab, QuotaListState>>({
     weekly: emptyQuotaList(),
     personal: emptyQuotaList(),
   })
-  const quotaScope: QuotaTab = ticketTab === 'personal' ? 'personal' : 'weekly'
-  const activeQuotaList = quotaLists[quotaScope]
   const query = useQuery({
     queryKey: ['port-sales-report', id],
     enabled: Boolean(id),
-    refetchInterval: (current) => (current.state.data?.quotaSnapshotReady === false ? 2000 : false),
     queryFn: async () => {
       const { data } = await api.get<PortSalesReport>(`/port-sales-reports/${id}`)
       return data
     },
   })
+  const portsQuery = usePortsLookup()
+  const quotaSaved = Boolean(query.data?.verifiedAt)
+  const quotaTabPending =
+    !query.isSuccess && (requestedTab === 'weekly' || requestedTab === 'personal')
+  const ticketTab: TicketReportTab = quotaTabPending
+    ? requestedTab
+    : quotaSaved || (requestedTab !== 'weekly' && requestedTab !== 'personal')
+      ? requestedTab
+      : 'all'
+  const quotaTab = quotaSaved && (ticketTab === 'weekly' || ticketTab === 'personal')
+  const quotaScope: QuotaTab = ticketTab === 'personal' ? 'personal' : 'weekly'
+  const activeQuotaList = quotaLists[quotaScope]
   const explicitTicketSort = Boolean(
     !quotaTab && sortBy && ticketSortFields.has(sortBy) && (sortDir === 'asc' || sortDir === 'desc'),
   )
@@ -629,7 +715,7 @@ export function PortSalesReportDetailPage() {
       travelFrom,
       travelTo,
     ],
-    enabled: Boolean(id) && !quotaTab,
+    enabled: Boolean(id) && !quotaTab && !quotaTabPending,
     queryFn: async () => {
       const { data } = await api.get<Paginated<PortTicketSale>>(`/port-sales-reports/${id}/tickets`, {
         params: {
@@ -658,7 +744,7 @@ export function PortSalesReportDetailPage() {
       activeQuotaList.sortBy,
       activeQuotaList.sortDir,
     ],
-    enabled: Boolean(id) && quotaTab && query.data?.quotaSnapshotReady === true,
+    enabled: Boolean(id) && quotaTab,
     staleTime: Infinity,
     gcTime: Infinity,
     refetchOnMount: false,
@@ -678,27 +764,29 @@ export function PortSalesReportDetailPage() {
       return data
     },
   })
-  const quotaReady = query.data?.quotaSnapshotReady === true
-  const quotaWatch = useRef<{ id?: string; ready: boolean | null }>({ ready: null })
-  useEffect(() => {
-    if (!id || !query.data) return
-    const sameReport = quotaWatch.current.id === id
-    if (sameReport && quotaWatch.current.ready === false && quotaReady) {
-      void queryClient.invalidateQueries({ queryKey: ['port-sales-report-quota', id] })
-    }
-    quotaWatch.current = { id, ready: quotaReady }
-  }, [id, query.data, quotaReady, queryClient])
   useEffect(() => {
     setQuotaLists({ weekly: emptyQuotaList(), personal: emptyQuotaList() })
   }, [id])
+  const allocatedSeed =
+    query.data?.allocatedSubsidy != null
+      ? String(query.data.allocatedSubsidy)
+      : query.data?.verifiedAt && query.data.individualSubsidy != null
+        ? String((query.data.validQeshmondiCount ?? 0) * query.data.individualSubsidy)
+        : ''
+  const allocatedNoteSeed = query.data?.allocatedSubsidyNote ?? ''
+  useEffect(() => {
+    setAllocatedDraft(allocatedSeed)
+    setAllocatedNote(allocatedNoteSeed)
+  }, [allocatedSeed, allocatedNoteSeed])
   const item = query.data
   if (!item || !id) {
     return <LoadingState />
   }
   const tickets = ticketsQuery.data?.items ?? []
   const quotaRows = quotaQuery.data?.items ?? []
-  const name = portSalesReportDisplayName(item)
+  const name = portRouteLabel(item, portsQuery.data, locale)
   const approved = item.approvalStatus === 'APPROVED'
+  const canMutate = !approved || showCreator
 
   function decideApproval(action: 'approve' | 'revoke') {
     confirmToast({
@@ -753,6 +841,7 @@ export function PortSalesReportDetailPage() {
 
   const individualSubsidy = item.individualSubsidy
   const tariffYear = item.tariffYear
+  const verifiedAt = item.verifiedAt
   const subsidyAmount = individualSubsidy ?? 0
   const hasSubsidy = subsidyAmount > 0
   function subsidyMoney(amount: number) {
@@ -762,6 +851,36 @@ export function PortSalesReportDetailPage() {
       })
     }
     return `${formatGroupedNumber(Math.round(amount), locale)} ${t('portSalesReports.toman')}`
+  }
+  function resolvedSubsidy(stored: number | null | undefined, count: number) {
+    if (stored != null) return stored
+    if (!verifiedAt || !hasSubsidy) return null
+    return count * subsidyAmount
+  }
+  const invalidQeshmondiAmount = resolvedSubsidy(
+    item.invalidQeshmondiSubsidy,
+    item.invalidQeshmondiCount ?? 0,
+  )
+  const weeklyExcessAmount = resolvedSubsidy(
+    item.weeklyQuotaExcessSubsidy,
+    item.weeklyQuotaExcessCount ?? 0,
+  )
+  const invalidSubsidyTotal =
+    invalidQeshmondiAmount == null && weeklyExcessAmount == null
+      ? null
+      : (invalidQeshmondiAmount ?? 0) + (weeklyExcessAmount ?? 0)
+  const allocatedShown =
+    item.allocatedSubsidy != null
+      ? item.allocatedSubsidy
+      : verifiedAt && hasSubsidy
+        ? (item.validQeshmondiCount ?? 0) * subsidyAmount
+        : null
+  function storedSubsidy(amount: number | null | undefined) {
+    if (amount == null) {
+      if (!verifiedAt) return '—'
+      return subsidyMoney(0)
+    }
+    return <span className="font-bold text-red-700">{subsidyMoney(amount)}</span>
   }
   function estimateBadge(count: number) {
     if (!hasSubsidy) return undefined
@@ -856,7 +975,7 @@ export function PortSalesReportDetailPage() {
             <FormFactTile
               icon={CalendarDays}
               label={t('portSalesReports.reportDate')}
-              value={<DateText value={item.reportDate} />}
+              value={<ReportMonthText year={item.reportYear} month={item.reportMonth} locale={locale} />}
               tone="mint"
             />
             <FormFactTile
@@ -881,11 +1000,16 @@ export function PortSalesReportDetailPage() {
                 tone="teal"
               />
             ) : null}
-            <FormFactTile icon={Anchor} label={t('portSalesReports.origin')} value={item.origin} tone="teal" />
+            <FormFactTile
+              icon={Anchor}
+              label={t('portSalesReports.origin')}
+              value={portNameWithCity(item.origin, portsQuery.data, locale)}
+              tone="teal"
+            />
             <FormFactTile
               icon={MapPin}
               label={t('portSalesReports.destination')}
-              value={item.destination}
+              value={portNameWithCity(item.destination, portsQuery.data, locale)}
               tone="mint"
             />
             <FormFactTile
@@ -904,13 +1028,12 @@ export function PortSalesReportDetailPage() {
           </div>
           <DetailActions
             editTo={`${portSalesReportPath(id)}/edit`}
-            showEdit={!approved}
+            showEdit={canMutate}
             editLabel={t('common.edit')}
-            deleteLabel={approved ? undefined : t('portSalesReports.delete')}
+            deleteLabel={canMutate ? t('portSalesReports.delete') : undefined}
             onDelete={
-              approved
-                ? undefined
-                : () =>
+              canMutate
+                ? () =>
                     confirmDelete({
                       message: t('portSalesReports.confirmDelete'),
                       successMessage: t('portSalesReports.deleted'),
@@ -918,6 +1041,7 @@ export function PortSalesReportDetailPage() {
                       queryKey: ['port-sales-reports'],
                       onDeleted: () => navigate(portSalesReportsPath()),
                     })
+                : undefined
             }
             extraItems={
               !showCreator
@@ -949,7 +1073,7 @@ export function PortSalesReportDetailPage() {
         icon={BadgeCheck}
         title={t('portSalesReports.qeshmondiSection')}
         action={
-          showCreator && !approved ? (
+          showCreator ? (
           <Button
             type="button"
             variant="soft"
@@ -957,14 +1081,8 @@ export function PortSalesReportDetailPage() {
             onClick={async () => {
               setVerifying(true)
               try {
-                const { data } = await api.post<PortSalesReport>(
-                  `/port-sales-reports/${id}/verify-qeshmondi`,
-                )
-                toast.success(
-                  t('portSalesReports.qeshmondiVerified', {
-                    count: formatGroupedNumber(data.weeklyQuotaExcessCount ?? 0, locale),
-                  }),
-                )
+                await api.post(`/port-sales-reports/${id}/verify-qeshmondi`)
+                toast.success(t('portSalesReports.qeshmondiVerified'))
                 await Promise.all([
                   queryClient.invalidateQueries({ queryKey: ['port-sales-report', id] }),
                   queryClient.invalidateQueries({ queryKey: ['port-sales-report-tickets', id] }),
@@ -984,7 +1102,7 @@ export function PortSalesReportDetailPage() {
         }
       >
         <div className="space-y-6 p-5 sm:p-6">
-          {showCreator && !approved && !item.verifiedAt ? (
+          {showCreator && !item.verifiedAt ? (
             <p className="text-sm text-ink-600">{t('portSalesReports.verifyFirst')}</p>
           ) : null}
           {item.verifiedAt ? (
@@ -1027,23 +1145,25 @@ export function PortSalesReportDetailPage() {
               extra={estimateBadge(item.invalidQeshmondiCount ?? 0)}
               tone="ink"
             />
-            <StatFilterTile
-              active={ticketTab === 'weekly'}
-              onClick={() => selectTab(ticketTab === 'weekly' ? 'all' : 'weekly')}
-              icon={CalendarClock}
-              label={t('portSalesReports.weeklyQuotaExcess')}
-              value={
-                item.quotaSnapshotReady === false
-                  ? t('portSalesReports.quotaCalculating')
-                  : formatGroupedNumber(item.weeklyQuotaExcessCount ?? 0, locale)
-              }
-              extra={
-                item.quotaSnapshotReady === false
-                  ? undefined
-                  : estimateBadge(item.weeklyQuotaExcessCount ?? 0)
-              }
-              tone="ink"
-            />
+            {item.verifiedAt ? (
+              <StatFilterTile
+                active={ticketTab === 'weekly'}
+                onClick={() => selectTab(ticketTab === 'weekly' ? 'all' : 'weekly')}
+                icon={CalendarClock}
+                label={t('portSalesReports.weeklyQuotaExcess')}
+                value={formatGroupedNumber(item.weeklyQuotaExcessCount ?? 0, locale)}
+                extra={estimateBadge(item.weeklyQuotaExcessCount ?? 0)}
+                tone="ink"
+              />
+            ) : (
+              <FormFactTile
+                icon={CalendarClock}
+                label={t('portSalesReports.weeklyQuotaExcess')}
+                value={formatGroupedNumber(item.weeklyQuotaExcessCount ?? 0, locale)}
+                extra={estimateBadge(item.weeklyQuotaExcessCount ?? 0)}
+                tone="ink"
+              />
+            )}
           </div>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
             <FormFactTile
@@ -1064,32 +1184,130 @@ export function PortSalesReportDetailPage() {
               value={subsidyMoney((item.validQeshmondiCount ?? 0) * subsidyAmount)}
               tone="mint"
             />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
             <FormFactTile
               icon={BadgeX}
-              label={t('portSalesReports.invalidSubsidy')}
-              value={
-                item.quotaSnapshotReady === false ? (
-                  t('portSalesReports.quotaCalculating')
-                ) : item.individualSubsidy == null ? (
-                  subsidyMoney(0)
-                ) : (
-                  <span className="font-bold text-red-700">
-                    {subsidyMoney(
-                      ((item.invalidQeshmondiCount ?? 0) + (item.weeklyQuotaExcessCount ?? 0)) *
-                        subsidyAmount,
-                    )}
-                  </span>
-                )
-              }
+              label={t('portSalesReports.invalidQeshmondiSubsidy')}
+              value={storedSubsidy(invalidQeshmondiAmount)}
+              tone="ink"
+            />
+            <FormFactTile
+              icon={CalendarClock}
+              label={t('portSalesReports.weeklyQuotaExcessSubsidy')}
+              value={storedSubsidy(weeklyExcessAmount)}
+              tone="ink"
+            />
+            <FormFactTile
+              icon={Banknote}
+              label={t('portSalesReports.invalidSubsidyTotal')}
+              value={storedSubsidy(invalidSubsidyTotal)}
               tone="ink"
             />
           </div>
+          <FormFactTile
+            icon={HandCoins}
+            label={t('portSalesReports.allocatedSubsidy')}
+            value={
+              allocatedShown == null
+                ? item.verifiedAt
+                  ? subsidyMoney(0)
+                  : '—'
+                : `${formatGroupedNumber(allocatedShown, locale)} ${t('portSalesReports.toman')}`
+            }
+            extra={
+              allocatedShown == null && !item.allocatedSubsidyNote ? undefined : (
+                <div className="mt-1 space-y-1">
+                  {allocatedShown == null ? null : (
+                    <span className="inline-flex rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-medium text-teal-800 ring-1 ring-teal-100">
+                      {t('portSalesReports.allocatedEquivalent', { words: faAmountWords(allocatedShown) })}
+                    </span>
+                  )}
+                  {item.allocatedSubsidyNote ? (
+                    <p className="text-xs font-normal leading-5 whitespace-pre-wrap text-ink-700">
+                      {item.allocatedSubsidyNote}
+                    </p>
+                  ) : null}
+                </div>
+              )
+            }
+            empty={allocatedShown == null && !item.verifiedAt}
+            tone="mint"
+          />
+          {showCreator && item.verifiedAt ? (
+            <AppForm
+              autoFocusFirst={false}
+              className="grid gap-3 sm:grid-cols-2"
+              onSubmit={async (event) => {
+                event.preventDefault()
+                const amount = Number(allocatedDraft)
+                if (!Number.isInteger(amount) || amount < 0) return
+                setAllocating(true)
+                try {
+                  await api.patch(`/port-sales-reports/${id}/allocated-subsidy`, {
+                    amount,
+                    note: allocatedNote.trim() || null,
+                  })
+                  toast.success(t('portSalesReports.allocatedSubsidySaved'))
+                  await queryClient.invalidateQueries({ queryKey: ['port-sales-report', id] })
+                } catch (error) {
+                  toast.error(getApiErrorMessage(error, t('common.error')))
+                } finally {
+                  setAllocating(false)
+                }
+              }}
+            >
+              <FormField
+                icon={HandCoins}
+                label={t('portSalesReports.allocatedSubsidy')}
+                htmlFor="allocated-subsidy"
+              >
+                <input
+                  id="allocated-subsidy"
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  className={`${fieldClassName} digit-field`}
+                  value={
+                    allocatedDraft === '' || !Number.isFinite(Number(allocatedDraft))
+                      ? ''
+                      : formatGroupedNumber(Number(allocatedDraft), locale)
+                  }
+                  onChange={(event) => setAllocatedDraft(parseDigitString(event.target.value))}
+                />
+              </FormField>
+              <FormField
+                icon={MessageSquareText}
+                label={t('portSalesReports.allocatedSubsidyNote')}
+                htmlFor="allocated-subsidy-note"
+              >
+                <textarea
+                  id="allocated-subsidy-note"
+                  rows={2}
+                  maxLength={2000}
+                  className={fieldClassName}
+                  placeholder={t('portSalesReports.allocatedSubsidyNotePlaceholder')}
+                  value={allocatedNote}
+                  onChange={(event) => setAllocatedNote(event.target.value)}
+                />
+              </FormField>
+              <div className="sm:col-span-2">
+                <Button type="submit" disabled={allocating}>
+                  <Check className="size-4" aria-hidden />
+                  {t('portSalesReports.allocateSubsidy')}
+                </Button>
+              </div>
+            </AppForm>
+          ) : null}
         </div>
       </FormCard>
       <FormCard icon={Ticket} title={t('portSalesReports.ticketsSection')}>
         <div className="space-y-4 p-5 sm:p-6">
         <nav className="flex flex-wrap gap-2" role="tablist">
-          {ticketReportTabs.map((tab) => {
+          {(item.verifiedAt
+            ? ticketReportTabs
+            : ticketReportTabs.filter((tab) => tab === 'all' || tab === 'invalid')
+          ).map((tab) => {
             const active = ticketTab === tab
             return (
               <button
@@ -1206,15 +1424,13 @@ export function PortSalesReportDetailPage() {
         />
         {quotaTab ? (
           <TableCard
-            loading={quotaQuery.isLoading || item.quotaSnapshotReady === false}
+            loading={quotaQuery.isLoading}
             empty={
-              item.quotaSnapshotReady === false
-                ? t('portSalesReports.quotaCalculating')
-                : activeQuotaList.q
-                  ? t('portSalesReports.quotaNoResults')
-                  : t('portSalesReports.quotaEmpty')
+              activeQuotaList.q
+                ? t('portSalesReports.quotaNoResults')
+                : t('portSalesReports.quotaEmpty')
             }
-            hasRows={item.quotaSnapshotReady !== false && quotaRows.length > 0}
+            hasRows={quotaRows.length > 0}
             rowClick={false}
           >
             <table className="w-full text-sm">

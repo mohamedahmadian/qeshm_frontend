@@ -130,16 +130,18 @@ export function ChartPanel({
   children,
   empty,
   emptyLabel,
+  className = '',
 }: {
   icon: LucideIcon
   title: string
   children: ReactNode
   empty?: boolean
   emptyLabel?: string
+  className?: string
 }) {
   const { t } = useTranslation()
   return (
-    <div className="rounded-2xl border border-teal-100 bg-gradient-to-b from-white to-cream-50/40 p-4">
+    <div className={`rounded-2xl border border-teal-100 bg-gradient-to-b from-white to-cream-50/40 p-4 ${className}`}>
       <FormSectionTitle icon={Icon}>{title}</FormSectionTitle>
       {empty ? <FormEmptyHint>{emptyLabel ?? t('projectReports.empty')}</FormEmptyHint> : children}
     </div>
@@ -258,6 +260,105 @@ export function ReportBar({
           />
           <ChartTooltip locale={locale} />
           <Bar dataKey="value" fill={reportColors.teal} radius={[8, 8, 0, 0]} maxBarSize={40}>
+            <LabelList
+              dataKey="value"
+              position="top"
+              fill="#0f766e"
+              fontSize={11}
+              formatter={(value) => formatBarValue(value, locale)}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </BarPlotFrame>
+  )
+}
+
+function PointStem({
+  x = 0,
+  y = 0,
+  width = 0,
+  height = 0,
+  fill = reportColors.teal,
+}: {
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  fill?: string
+}) {
+  if (height <= 0 || width <= 0) return <g />
+  const cx = x + width / 2
+  const radius = Math.min(6, Math.max(height / 2, 3))
+  const cy = y + radius
+  return (
+    <g>
+      <line
+        x1={cx}
+        x2={cx}
+        y1={y + height}
+        y2={cy}
+        stroke={fill}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+      />
+      <circle cx={cx} cy={cy} r={radius} fill={fill} />
+    </g>
+  )
+}
+
+export function ReportPointBar({
+  data,
+  locale,
+}: {
+  data: NamedValue[]
+  locale: string
+}) {
+  const rows = data.map((item) => ({
+    ...item,
+    label: item.name,
+  }))
+  const { barCategoryGap } = barPlotLayout(rows.length)
+  return (
+    <BarPlotFrame count={rows.length}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={rows}
+          barCategoryGap={barCategoryGap}
+          margin={{ top: 28, right: 24, left: 8, bottom: 8 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2eeec" vertical={false} />
+          <XAxis
+            dataKey="label"
+            interval={0}
+            height={88}
+            tick={<BarCategoryTick />}
+            axisLine={{ stroke: '#d7e8e5' }}
+            tickLine={false}
+          />
+          <YAxis
+            orientation="left"
+            tickFormatter={(value) => formatBarValue(value, locale)}
+            tick={{ fill: '#5b6b6a', fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            width={48}
+          />
+          <ChartTooltip locale={locale} />
+          <Bar
+            dataKey="value"
+            fill={reportColors.teal}
+            maxBarSize={28}
+            shape={(props) => (
+              <PointStem
+                x={props.x}
+                y={props.y}
+                width={props.width}
+                height={props.height}
+                fill={reportColors.teal}
+              />
+            )}
+          >
             <LabelList
               dataKey="value"
               position="top"

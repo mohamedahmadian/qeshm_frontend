@@ -24,6 +24,13 @@ type SqlConnection = {
 
 const connectionKey = ['qeshmondi-sql-connection'] as const
 
+const sqlDefaults = {
+  host: '172.16.0.39',
+  port: '1433',
+  databaseName: 'CitizenCard',
+  username: 'CitizenCardApp',
+}
+
 type SyncCounts = {
   created: number
   updated: number
@@ -67,10 +74,10 @@ export function QeshmondiSqlTab() {
     },
   })
   const saved = query.data
-  const [host, setHost] = useState('')
-  const [port, setPort] = useState('1433')
-  const [databaseName, setDatabaseName] = useState('')
-  const [username, setUsername] = useState('')
+  const [host, setHost] = useState(sqlDefaults.host)
+  const [port, setPort] = useState(sqlDefaults.port)
+  const [databaseName, setDatabaseName] = useState(sqlDefaults.databaseName)
+  const [username, setUsername] = useState(sqlDefaults.username)
   const [password, setPassword] = useState('')
   const [encrypt, setEncrypt] = useState(true)
   const [trustServerCertificate, setTrustServerCertificate] = useState(true)
@@ -83,12 +90,14 @@ export function QeshmondiSqlTab() {
 
   useEffect(() => {
     if (!saved || hydrated) return
-    setHost(saved.host)
-    setPort(String(saved.port || 1433))
-    setDatabaseName(saved.databaseName)
-    setUsername(saved.username)
-    setEncrypt(saved.encrypt)
-    setTrustServerCertificate(saved.trustServerCertificate)
+    if (saved.configured) {
+      setHost(saved.host)
+      setPort(String(saved.port || 1433))
+      setDatabaseName(saved.databaseName)
+      setUsername(saved.username)
+      setEncrypt(saved.encrypt)
+      setTrustServerCertificate(saved.trustServerCertificate)
+    }
     setHydrated(true)
   }, [saved, hydrated])
 

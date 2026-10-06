@@ -1,7 +1,7 @@
 import { BadgeCheck, Banknote, CalendarDays, Car, HandCoins, Plus, Ticket, UserRound } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ActionsTh,
@@ -22,10 +22,12 @@ import {
   listShellClassName,
 } from '../../components/ui/Form'
 import { FormCard, FormFactTile, FormSectionTitle } from '../../components/ui/FormLayout'
+import { useAuth } from '../../auth/AuthProvider'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
+import { canManageTicketTariffs } from '../../lib/roles'
 import { formatGroupedNumber, localizeDigits } from '../../lib/datetime'
 import type { Paginated, TicketTariff } from '../../types/app'
 import { TicketTariffForm } from './TicketTariffForm'
@@ -34,6 +36,8 @@ import { ticketTariffPath, ticketTariffsPath } from './ticket-tariff-paths'
 export function TicketTariffListPage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
+  const { user } = useAuth()
+  const canEdit = canManageTicketTariffs(user)
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
@@ -55,12 +59,14 @@ export function TicketTariffListPage() {
         title={t('ticketTariffs.title')}
         subtitle={t('ticketTariffs.subtitle')}
         action={
-          <Link to={`${ticketTariffsPath()}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('ticketTariffs.create')}
-            </Button>
-          </Link>
+          canEdit ? (
+            <Link to={`${ticketTariffsPath()}/new`}>
+              <Button>
+                <Plus className="size-4" />
+                {t('ticketTariffs.create')}
+              </Button>
+            </Link>
+          ) : undefined
         }
       />
       <SearchBar
@@ -74,6 +80,7 @@ export function TicketTariffListPage() {
         loading={query.isLoading}
         empty={q ? t('ticketTariffs.noResults') : t('ticketTariffs.empty')}
         hasRows={rows.length > 0}
+        rowClick={canEdit}
       >
         <table className="w-full text-sm">
           <thead className="bg-cream-50 text-ink-700">
@@ -121,33 +128,46 @@ export function TicketTariffListPage() {
                 sortDir={sortDir}
                 onSort={onSort}
               />
-              <ActionsTh />
+              {canEdit ? <ActionsTh /> : null}
             </tr>
           </thead>
           <tbody>
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">{localizeDigits(String(item.year), locale)}</td>
-                <td className="px-4 py-3">{formatGroupedNumber(item.individualPrice, locale)}</td>
-                <td className="px-4 py-3">{formatGroupedNumber(item.individualQeshmondiPrice, locale)}</td>
-                <td className="px-4 py-3">{formatGroupedNumber(item.individualSubsidy, locale)}</td>
-                <td className="px-4 py-3">{formatGroupedNumber(item.vehiclePrice, locale)}</td>
-                <td className="px-4 py-3">{formatGroupedNumber(item.vehicleQeshmondiPrice, locale)}</td>
-                <td className="px-4 py-3">{formatGroupedNumber(item.vehicleSubsidy, locale)}</td>
-                <td className={actionsColClassName}>
-                  <EntityRowActions
-                    viewTo={ticketTariffPath(item.id)}
-                    editTo={`${ticketTariffPath(item.id)}/edit`}
-                    onDelete={() =>
-                      confirmDelete({
-                        message: t('ticketTariffs.confirmDelete'),
-                        successMessage: t('ticketTariffs.deleted'),
-                        path: `/ticket-tariffs/${item.id}`,
-                        queryKey: ['ticket-tariffs'],
-                      })
-                    }
-                  />
+                <td className={priceCellClassName}>
+                  <PriceValue value={item.individualPrice} locale={locale} />
                 </td>
+                <td className={priceCellClassName}>
+                  <PriceValue value={item.individualQeshmondiPrice} locale={locale} />
+                </td>
+                <td className={priceCellClassName}>
+                  <PriceValue value={item.individualSubsidy} locale={locale} />
+                </td>
+                <td className={priceCellClassName}>
+                  <PriceValue value={item.vehiclePrice} locale={locale} />
+                </td>
+                <td className={priceCellClassName}>
+                  <PriceValue value={item.vehicleQeshmondiPrice} locale={locale} />
+                </td>
+                <td className={priceCellClassName}>
+                  <PriceValue value={item.vehicleSubsidy} locale={locale} />
+                </td>
+                {canEdit ? (
+                  <td className={actionsColClassName}>
+                    <EntityRowActions
+                      editTo={`${ticketTariffPath(item.id)}/edit`}
+                      onDelete={() =>
+                        confirmDelete({
+                          message: t('ticketTariffs.confirmDelete'),
+                          successMessage: t('ticketTariffs.deleted'),
+                          path: `/ticket-tariffs/${item.id}`,
+                          queryKey: ['ticket-tariffs'],
+                        })
+                      }
+                    />
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>
@@ -168,6 +188,10 @@ export function TicketTariffListPage() {
 export function TicketTariffCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  if (!canManageTicketTariffs(user)) {
+    return <Navigate to={ticketTariffsPath()} replace />
+  }
   return (
     <div className={formShellClassName}>
       <PageHeader icon={Ticket} title={t('ticketTariffs.create')} subtitle={t('ticketTariffs.createSubtitle')} />
@@ -187,14 +211,19 @@ export function TicketTariffEditPage() {
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const canEdit = canManageTicketTariffs(user)
   const query = useQuery({
     queryKey: ['ticket-tariff', id],
-    enabled: Boolean(id),
+    enabled: Boolean(id) && canEdit,
     queryFn: async () => {
       const { data } = await api.get<TicketTariff>(`/ticket-tariffs/${id}`)
       return data
     },
   })
+  if (!canEdit) {
+    return <Navigate to={ticketTariffsPath()} replace />
+  }
   if (!query.data || !id) {
     return <LoadingState />
   }
@@ -223,6 +252,8 @@ export function TicketTariffDetailPage() {
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const canEdit = canManageTicketTariffs(user)
   const { confirmDelete } = useConfirmDelete()
   const query = useQuery({
     queryKey: ['ticket-tariff', id],
@@ -301,21 +332,43 @@ export function TicketTariffDetailPage() {
           </div>
         </div>
       </FormCard>
-      <DetailActions
-        editTo={`${ticketTariffPath(id)}/edit`}
-        editLabel={t('common.edit')}
-        deleteLabel={t('ticketTariffs.delete')}
-        onDelete={() =>
-          confirmDelete({
-            message: t('ticketTariffs.confirmDelete'),
-            successMessage: t('ticketTariffs.deleted'),
-            path: `/ticket-tariffs/${id}`,
-            queryKey: ['ticket-tariffs'],
-            onDeleted: () => navigate(ticketTariffsPath()),
-          })
-        }
-      />
+      {canEdit ? (
+        <DetailActions
+          editTo={`${ticketTariffPath(id)}/edit`}
+          editLabel={t('common.edit')}
+          deleteLabel={t('ticketTariffs.delete')}
+          onDelete={() =>
+            confirmDelete({
+              message: t('ticketTariffs.confirmDelete'),
+              successMessage: t('ticketTariffs.deleted'),
+              path: `/ticket-tariffs/${id}`,
+              queryKey: ['ticket-tariffs'],
+              onDeleted: () => navigate(ticketTariffsPath()),
+            })
+          }
+        />
+      ) : null}
     </div>
+  )
+}
+
+const priceCellClassName = 'px-4 py-3 text-base font-medium'
+
+function TomanBadge() {
+  const { t } = useTranslation()
+  return (
+    <span className="inline-flex shrink-0 rounded-full bg-teal-50 px-1.5 py-px text-[10px] font-medium leading-none text-teal-700 ring-1 ring-teal-100">
+      {t('ticketTariffs.toman')}
+    </span>
+  )
+}
+
+function PriceValue({ value, locale }: { value: number; locale: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>{formatGroupedNumber(value, locale)}</span>
+      <TomanBadge />
+    </span>
   )
 }
 

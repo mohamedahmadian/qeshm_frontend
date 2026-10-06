@@ -2,6 +2,14 @@ export function qeshmondiPath() {
   return '/qeshmondi'
 }
 
+export function qeshmondiInquiryPath() {
+  return '/qeshmondi/inquiry'
+}
+
+export function qeshmondiAnalyticsPath() {
+  return '/qeshmondi/analytics'
+}
+
 export function qeshmondiSyncLogsPath() {
   return '/qeshmondi/sync-logs'
 }

@@ -71,8 +71,14 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/qeshmondi/sync-logs')) {
     return { titleKey: 'qeshmondiSyncLogs.title', subtitleKey: 'qeshmondiSyncLogs.subtitle' }
   }
+  if (pathname.startsWith('/qeshmondi/inquiry')) {
+    return { titleKey: 'qeshmondiInquiry.title', subtitleKey: 'qeshmondiInquiry.subtitle' }
+  }
   if (pathname.startsWith('/qeshmondi/update')) {
     return { titleKey: 'qeshmondiUpdate.title', subtitleKey: 'qeshmondiUpdate.subtitle' }
+  }
+  if (pathname.startsWith('/qeshmondi/analytics')) {
+    return { titleKey: 'qeshmondiAnalytics.title', subtitleKey: 'qeshmondiAnalytics.subtitle' }
   }
   if (pathname === '/qeshmondi/new') {
     return { titleKey: 'qeshmondi.create', subtitleKey: 'qeshmondi.createSubtitle' }
@@ -86,6 +92,18 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/qeshmondi')) {
     return { titleKey: 'qeshmondi.title', subtitleKey: 'qeshmondi.subtitle' }
   }
+  if (pathname === '/ports/new') {
+    return { titleKey: 'ports.create', subtitleKey: 'ports.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/ports/')) {
+    return { titleKey: 'ports.edit', subtitleKey: 'ports.editSubtitle' }
+  }
+  if (pathname.startsWith('/ports/')) {
+    return { titleKey: 'ports.details', subtitleKey: 'ports.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/ports')) {
+    return { titleKey: 'menus.ports', subtitleKey: 'ports.subtitle' }
+  }
   if (pathname === '/ticket-tariffs/new') {
     return { titleKey: 'ticketTariffs.create', subtitleKey: 'ticketTariffs.createSubtitle' }
   }
@@ -97,6 +115,9 @@ export function getPageMeta(pathname: string): {
   }
   if (pathname.startsWith('/ticket-tariffs')) {
     return { titleKey: 'menus.ticketTariffs', subtitleKey: 'ticketTariffs.subtitle' }
+  }
+  if (pathname.startsWith('/my-subsidies')) {
+    return { titleKey: 'menus.mySubsidies', subtitleKey: 'mySubsidies.subtitle' }
   }
   if (pathname === '/port-sales-reports/new') {
     return { titleKey: 'portSalesReports.create', subtitleKey: 'portSalesReports.createSubtitle' }

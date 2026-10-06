@@ -1,4 +1,5 @@
 import {
+  Anchor,
   Building2,
   Boxes,
   Car,
@@ -26,6 +27,7 @@ import {
   HeartHandshake,
   History,
   Home,
+  IdCard,
   Hospital,
   Languages,
   Landmark,
@@ -74,6 +76,7 @@ import {
 } from 'lucide-react'
 
 const icons: Record<string, LucideIcon> = {
+  anchor: Anchor,
   'layout-dashboard': LayoutDashboard,
   home: Home,
   users: Users,
@@ -122,6 +125,7 @@ const icons: Record<string, LucideIcon> = {
   'heart-handshake': HeartHandshake,
   handshake: Handshake,
   history: History,
+  'id-card': IdCard,
   'hand-heart': HandHeart,
   landmark: Landmark,
   layers: Layers,

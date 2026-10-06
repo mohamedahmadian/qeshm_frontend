@@ -50,6 +50,7 @@ import {
   StakeholderProgressListPage,
 } from './pages/stakeholders/ProgressPages'
 import { StakeholderProjectDetailPage, StakeholderProjectsPage } from './pages/stakeholders/ProjectsPages'
+import { PortCreatePage, PortDetailPage, PortEditPage, PortListPage } from './pages/ports/PortPages'
 import {
   TicketTariffCreatePage,
   TicketTariffDetailPage,
@@ -193,10 +194,13 @@ import {
   OrganizationUnitRestaurantListPage,
 } from './pages/organization/units/restaurants/OrganizationUnitRestaurantPages'
 import { PublicProfilePage } from './pages/public-profile/PublicProfilePage'
+import { QeshmondiAnalyticsPage } from './pages/qeshmondi/QeshmondiAnalyticsPage'
+import { QeshmondiInquiryPage } from './pages/qeshmondi/QeshmondiInquiryPage'
 import { QeshmondiListPage } from './pages/qeshmondi/QeshmondiListPage'
 import { QeshmondiSyncLogDetailPage } from './pages/qeshmondi/QeshmondiSyncLogDetailPage'
 import { QeshmondiSyncLogListPage } from './pages/qeshmondi/QeshmondiSyncLogListPage'
 import { QeshmondiUpdatePage } from './pages/qeshmondi/QeshmondiUpdatePage'
+import { MySubsidiesPage } from './pages/my-subsidies/MySubsidiesPage'
 import {
   PortSalesReportCreatePage,
   PortSalesReportDetailPage,
@@ -302,11 +306,14 @@ export default function App() {
                   <Route path="/users/:id/location/history" element={<UserLocationHistoryPage />} />
                   <Route path="/qeshmondi" element={<QeshmondiListPage />} />
                   <Route path="/qeshmondi/new" element={<UserCreatePage />} />
+                  <Route path="/qeshmondi/inquiry" element={<QeshmondiInquiryPage />} />
+                  <Route path="/qeshmondi/analytics" element={<QeshmondiAnalyticsPage />} />
                   <Route path="/qeshmondi/update" element={<QeshmondiUpdatePage />} />
                   <Route path="/qeshmondi/sync-logs" element={<QeshmondiSyncLogListPage />} />
                   <Route path="/qeshmondi/sync-logs/:id" element={<QeshmondiSyncLogDetailPage />} />
                   <Route path="/qeshmondi/:id" element={<UserDetailPage />} />
                   <Route path="/qeshmondi/:id/edit" element={<UserEditPage />} />
+                  <Route path="/my-subsidies" element={<MySubsidiesPage />} />
                   <Route path="/port-sales-reports" element={<PortSalesReportListPage />} />
                   <Route path="/port-sales-reports/new" element={<PortSalesReportCreatePage />} />
                   <Route path="/port-sales-reports/:id" element={<PortSalesReportDetailPage />} />
@@ -399,6 +406,10 @@ export default function App() {
                   <Route path="/stakeholders/inbox/:id" element={<StakeholderCorrespondenceDetailPage mode="org" />} />
                   <Route path="/stakeholders/reports" element={<StakeholderProgressListPage mode="org" />} />
                   <Route path="/stakeholders/reports/:id" element={<StakeholderProgressDetailPage mode="org" />} />
+                  <Route path="/ports" element={<PortListPage />} />
+                  <Route path="/ports/new" element={<PortCreatePage />} />
+                  <Route path="/ports/:id/edit" element={<PortEditPage />} />
+                  <Route path="/ports/:id" element={<PortDetailPage />} />
                   <Route path="/ticket-tariffs" element={<TicketTariffListPage />} />
                   <Route path="/ticket-tariffs/new" element={<TicketTariffCreatePage />} />
                   <Route path="/ticket-tariffs/:id/edit" element={<TicketTariffEditPage />} />

@@ -30,9 +30,10 @@ export function QeshmondiListPage() {
   const { confirmDelete } = useConfirmDelete()
   const status = searchParams.get('status') ?? ''
   const resident = searchParams.get('isResident') ?? ''
+  const validity = searchParams.get('qeshmondiValidity') ?? ''
 
   const query = useQuery({
-    queryKey: ['qeshmondi', q, page, status, resident, sortBy, sortDir],
+    queryKey: ['qeshmondi', q, page, status, resident, validity, sortBy, sortDir],
     queryFn: async () => {
       const { data } = await api.get<Paginated<ManagedUser>>('/users', {
         params: {
@@ -41,6 +42,7 @@ export function QeshmondiListPage() {
           ...(q ? { q } : {}),
           ...(status ? { status } : {}),
           ...(resident ? { isResident: resident === 'true' } : {}),
+          ...(validity ? { qeshmondiValidity: validity } : {}),
           ...sortParams,
         },
       })
@@ -71,9 +73,21 @@ export function QeshmondiListPage() {
         onSubmit={() => applySearch()}
         label={t('qeshmondi.search')}
         placeholder={t('qeshmondi.searchPlaceholder')}
-        filtersActive={Boolean(status || resident)}
+        filtersActive={Boolean(status || resident || validity)}
         extra={
           <>
+            <SearchSelect
+              value={validity}
+              onChange={(next) =>
+                setParams({ qeshmondiValidity: next || undefined }, { resetPage: true })
+              }
+              placeholder={t('qeshmondi.citizenshipStatus')}
+              options={[
+                { value: 'valid', label: t('qeshmondi.citizenshipValid') },
+                { value: 'expired', label: t('qeshmondi.citizenshipExpired') },
+                { value: '', label: t('common.all') },
+              ]}
+            />
             <SearchSelect
               value={status}
               onChange={(next) => setParams({ status: next || undefined }, { resetPage: true })}

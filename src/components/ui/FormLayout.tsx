@@ -152,7 +152,7 @@ export function FormCardHeader({
           </div>
         </div>
         {action ? (
-          <div className="form-card-header-action relative z-10 flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto [&:not(:has(a,button))]:!hidden">
+          <div className="form-card-header-action relative z-10 flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto [&:not(:has(a,button,[data-header-stat]))]:!hidden">
             {action}
           </div>
         ) : null}
