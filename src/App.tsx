@@ -196,6 +196,7 @@ import {
 import { PublicProfilePage } from './pages/public-profile/PublicProfilePage'
 import { QeshmondiAnalyticsPage } from './pages/qeshmondi/QeshmondiAnalyticsPage'
 import { QeshmondiInquiryPage } from './pages/qeshmondi/QeshmondiInquiryPage'
+
 import { QeshmondiListPage } from './pages/qeshmondi/QeshmondiListPage'
 import { QeshmondiSyncLogDetailPage } from './pages/qeshmondi/QeshmondiSyncLogDetailPage'
 import { QeshmondiSyncLogListPage } from './pages/qeshmondi/QeshmondiSyncLogListPage'
