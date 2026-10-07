@@ -27,6 +27,7 @@ export const reportColors = {
   tealDark: '#148f88',
   tealDeep: '#0f766e',
   tealSoft: '#7dd8cc',
+  pink: '#f472b6',
   ink: '#94a3b8',
 }
 
@@ -176,43 +177,51 @@ export function ReportDonut({
   const rows = data.filter((item) => item.value > 0)
   const total = rows.reduce((sum, item) => sum + item.value, 0)
   return (
-    <div className={compact ? 'relative h-52' : 'relative h-64'}>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={rows}
-            dataKey="value"
-            nameKey="name"
-            innerRadius={compact ? 42 : 58}
-            outerRadius={compact ? 64 : 86}
-            paddingAngle={3}
-            stroke="#fff"
-            strokeWidth={2}
-          >
-            {rows.map((item, index) => (
-              <Cell
-                key={item.name}
-                fill={item.color ?? PIE_COLORS[index % PIE_COLORS.length]}
-              />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value) => formatGroupedNumber(Number(value ?? 0), locale)}
-            contentStyle={tooltipStyle()}
-          />
-          <Legend
-            verticalAlign="bottom"
-            formatter={(value) => {
-              const row = rows.find((item) => item.name === value)
-              const count = formatGroupedNumber(row?.value ?? 0, locale)
-              return `${value} (${count})`
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="pointer-events-none absolute inset-x-0 top-[34%] text-center text-lg font-semibold text-ink-900">
-        {formatGroupedNumber(total, locale)}
+    <div>
+      <div className={`relative ${compact ? 'h-44' : 'h-56'}`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={rows}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={compact ? 42 : 58}
+              outerRadius={compact ? 64 : 86}
+              paddingAngle={3}
+              stroke="#fff"
+              strokeWidth={2}
+            >
+              {rows.map((item, index) => (
+                <Cell
+                  key={item.name}
+                  fill={item.color ?? PIE_COLORS[index % PIE_COLORS.length]}
+                />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value) => formatGroupedNumber(Number(value ?? 0), locale)}
+              contentStyle={tooltipStyle()}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-lg font-semibold text-ink-900">
+          {formatGroupedNumber(total, locale)}
+        </div>
       </div>
+      <ul className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-ink-700">
+        {rows.map((item, index) => (
+          <li key={item.name} className="inline-flex items-center gap-2">
+            <span
+              className="size-2.5 shrink-0 rounded-sm"
+              style={{ backgroundColor: item.color ?? PIE_COLORS[index % PIE_COLORS.length] }}
+              aria-hidden
+            />
+            <span>
+              {item.name} ({formatGroupedNumber(item.value, locale)})
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
@@ -224,9 +233,13 @@ function formatBarValue(value: unknown, locale: string) {
 export function ReportBar({
   data,
   locale,
+  animate = true,
+  showLabels = true,
 }: {
   data: NamedValue[]
   locale: string
+  animate?: boolean
+  showLabels?: boolean
 }) {
   const rows = data.map((item) => ({
     ...item,
@@ -259,14 +272,22 @@ export function ReportBar({
             width={48}
           />
           <ChartTooltip locale={locale} />
-          <Bar dataKey="value" fill={reportColors.teal} radius={[8, 8, 0, 0]} maxBarSize={40}>
-            <LabelList
-              dataKey="value"
-              position="top"
-              fill="#0f766e"
-              fontSize={11}
-              formatter={(value) => formatBarValue(value, locale)}
-            />
+          <Bar
+            dataKey="value"
+            fill={reportColors.teal}
+            radius={[8, 8, 0, 0]}
+            maxBarSize={40}
+            isAnimationActive={animate}
+          >
+            {showLabels ? (
+              <LabelList
+                dataKey="value"
+                position="top"
+                fill="#0f766e"
+                fontSize={11}
+                formatter={(value) => formatBarValue(value, locale)}
+              />
+            ) : null}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -310,9 +331,13 @@ function PointStem({
 export function ReportPointBar({
   data,
   locale,
+  animate = true,
+  showLabels = true,
 }: {
   data: NamedValue[]
   locale: string
+  animate?: boolean
+  showLabels?: boolean
 }) {
   const rows = data.map((item) => ({
     ...item,
@@ -349,6 +374,7 @@ export function ReportPointBar({
             dataKey="value"
             fill={reportColors.teal}
             maxBarSize={28}
+            isAnimationActive={animate}
             shape={(props) => (
               <PointStem
                 x={props.x}
@@ -359,13 +385,15 @@ export function ReportPointBar({
               />
             )}
           >
-            <LabelList
-              dataKey="value"
-              position="top"
-              fill="#0f766e"
-              fontSize={11}
-              formatter={(value) => formatBarValue(value, locale)}
-            />
+            {showLabels ? (
+              <LabelList
+                dataKey="value"
+                position="top"
+                fill="#0f766e"
+                fontSize={11}
+                formatter={(value) => formatBarValue(value, locale)}
+              />
+            ) : null}
           </Bar>
         </BarChart>
       </ResponsiveContainer>

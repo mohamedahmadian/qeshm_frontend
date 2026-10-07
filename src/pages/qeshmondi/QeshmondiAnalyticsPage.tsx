@@ -9,13 +9,14 @@ import {
   PieChart,
   Users,
 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { LoadingState, PageHeader, listShellClassName } from '../../components/ui/Form'
 import { FormCard, FormFactTile, formCardBodyClassName } from '../../components/ui/FormLayout'
-import { TableCard } from '../../components/ui/ListControls'
+import { PaginationBar, SearchBar, TableCard } from '../../components/ui/ListControls'
 import { api } from '../../lib/api'
-import { formatGroupedNumber, formatNumber } from '../../lib/datetime'
+import { formatGroupedNumber, formatNumber, toLatinDigits } from '../../lib/datetime'
 import {
   ChartPanel,
   ReportBar,
@@ -58,13 +59,111 @@ function genderSlices(
 ) {
   return [
     { name: labels.male, value: counts.male, color: reportColors.teal },
-    { name: labels.female, value: counts.female, color: reportColors.mint },
+    { name: labels.female, value: counts.female, color: reportColors.pink },
     { name: labels.unknown, value: counts.unknown, color: reportColors.ink },
   ]
 }
 
 function displayName(name: string, emptyLabel: string) {
   return name.trim() ? name : emptyLabel
+}
+
+const LOCAL_PAGE_SIZE = 10
+const OCCUPATION_CHART_MAX = 40
+const QUIET_CHART_AT = 48
+
+function normalizeSearch(value: string) {
+  return toLatinDigits(value)
+    .trim()
+    .toLowerCase()
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/\s+/g, ' ')
+}
+
+type CountRow = {
+  key: string
+  label: string
+  count: string
+  searchText: string
+}
+
+function PagedCountTable({
+  rows,
+  empty,
+  noResults,
+  searchLabel,
+  searchPlaceholder,
+  inputId,
+  nameLabel,
+  countLabel,
+}: {
+  rows: CountRow[]
+  empty: string
+  noResults: string
+  searchLabel: string
+  searchPlaceholder: string
+  inputId: string
+  nameLabel: string
+  countLabel: string
+}) {
+  const [term, setTerm] = useState('')
+  const [page, setPage] = useState(1)
+  const filtered = useMemo(() => {
+    const query = normalizeSearch(term)
+    if (!query) return rows
+    return rows.filter((row) => normalizeSearch(row.searchText).includes(query))
+  }, [rows, term])
+  const pageCount = Math.max(1, Math.ceil(filtered.length / LOCAL_PAGE_SIZE))
+  const current = Math.min(page, pageCount)
+  const pageRows = filtered.slice((current - 1) * LOCAL_PAGE_SIZE, current * LOCAL_PAGE_SIZE)
+  const searching = normalizeSearch(term).length > 0
+
+  return (
+    <div>
+      <SearchBar
+        autoFocus={false}
+        inputId={inputId}
+        term={term}
+        onTermChange={(value) => {
+          setTerm(value)
+          setPage(1)
+        }}
+        onSubmit={() => setPage(1)}
+        label={searchLabel}
+        placeholder={searchPlaceholder}
+      />
+      <TableCard
+        loading={false}
+        empty={searching ? noResults : empty}
+        hasRows={pageRows.length > 0}
+        rowClick={false}
+      >
+        <table className="w-full text-sm">
+          <thead className="bg-cream-50 text-ink-700">
+            <tr>
+              <th className="px-4 py-3 text-start">{nameLabel}</th>
+              <th className="px-4 py-3 text-start">{countLabel}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.map((item) => (
+              <tr key={item.key} className="border-t border-line">
+                <td className="px-4 py-3">{item.label}</td>
+                <td className="px-4 py-3">{item.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableCard>
+      <PaginationBar
+        page={current}
+        pageSize={LOCAL_PAGE_SIZE}
+        total={filtered.length}
+        onPageChange={setPage}
+      />
+    </div>
+  )
 }
 
 export function QeshmondiAnalyticsPage() {
@@ -225,6 +324,15 @@ export function QeshmondiAnalyticsPage() {
             countLabel={t('qeshmondiAnalytics.count')}
             rows={report.byOccupation}
             locale={locale}
+            paged
+            chartMax={OCCUPATION_CHART_MAX}
+            chartNote={t('qeshmondiAnalytics.occupationChartNote', {
+              count: formatNumber(OCCUPATION_CHART_MAX, locale),
+            })}
+            searchLabel={t('qeshmondiAnalytics.searchOccupation')}
+            searchPlaceholder={t('qeshmondiAnalytics.searchOccupationPlaceholder')}
+            searchInputId="qeshmondi-occupation-search"
+            noResults={t('qeshmondiAnalytics.noResults')}
           />
           <NamedSection
             icon={Layers}
@@ -248,6 +356,11 @@ export function QeshmondiAnalyticsPage() {
             empty={t('qeshmondiAnalytics.empty')}
             rows={report.byBirthYear}
             locale={locale}
+            paged
+            searchLabel={t('qeshmondiAnalytics.searchYear')}
+            searchPlaceholder={t('qeshmondiAnalytics.searchYearPlaceholder')}
+            searchInputId="qeshmondi-birth-year-search"
+            noResults={t('qeshmondiAnalytics.noResults')}
           />
           <YearSection
             icon={CalendarRange}
@@ -278,6 +391,11 @@ function YearSection({
   empty,
   rows,
   locale,
+  paged = false,
+  searchLabel = '',
+  searchPlaceholder = '',
+  searchInputId = '',
+  noResults = '',
 }: {
   icon: typeof CalendarRange
   title: string
@@ -289,7 +407,22 @@ function YearSection({
   empty: string
   rows: { year: number; count: number }[]
   locale: string
+  paged?: boolean
+  searchLabel?: string
+  searchPlaceholder?: string
+  searchInputId?: string
+  noResults?: string
 }) {
+  const quiet = rows.length > QUIET_CHART_AT
+  const tableRows = rows.map((item) => {
+    const year = formatNumber(item.year, locale)
+    return {
+      key: String(item.year),
+      label: year,
+      count: formatGroupedNumber(item.count, locale),
+      searchText: `${item.year} ${year}`,
+    }
+  })
   return (
     <FormCard icon={icon} title={title} onDoubleClick={() => undefined}>
       <div className={formCardBodyClassName}>
@@ -303,30 +436,45 @@ function YearSection({
         <ChartPanel icon={icon} title={title} empty={rows.length === 0} emptyLabel={empty}>
           <ReportBar
             locale={locale}
+            animate={!quiet}
+            showLabels={!quiet}
             data={rows.map((item) => ({
               name: formatNumber(item.year, locale),
               value: item.count,
             }))}
           />
         </ChartPanel>
-        <TableCard loading={false} empty={empty} hasRows={rows.length > 0} rowClick={false}>
-          <table className="w-full text-sm">
-            <thead className="bg-cream-50 text-ink-700">
-              <tr>
-                <th className="px-4 py-3 text-start">{yearLabel}</th>
-                <th className="px-4 py-3 text-start">{countLabel}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((item) => (
-                <tr key={item.year} className="border-t border-line">
-                  <td className="px-4 py-3">{formatNumber(item.year, locale)}</td>
-                  <td className="px-4 py-3">{formatGroupedNumber(item.count, locale)}</td>
+        {paged ? (
+          <PagedCountTable
+            rows={tableRows}
+            empty={empty}
+            noResults={noResults}
+            searchLabel={searchLabel}
+            searchPlaceholder={searchPlaceholder}
+            inputId={searchInputId}
+            nameLabel={yearLabel}
+            countLabel={countLabel}
+          />
+        ) : (
+          <TableCard loading={false} empty={empty} hasRows={rows.length > 0} rowClick={false}>
+            <table className="w-full text-sm">
+              <thead className="bg-cream-50 text-ink-700">
+                <tr>
+                  <th className="px-4 py-3 text-start">{yearLabel}</th>
+                  <th className="px-4 py-3 text-start">{countLabel}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableCard>
+              </thead>
+              <tbody>
+                {tableRows.map((item) => (
+                  <tr key={item.key} className="border-t border-line">
+                    <td className="px-4 py-3">{item.label}</td>
+                    <td className="px-4 py-3">{item.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableCard>
+        )}
       </div>
     </FormCard>
   )
@@ -341,6 +489,13 @@ function NamedSection({
   countLabel,
   rows,
   locale,
+  paged = false,
+  chartMax,
+  chartNote,
+  searchLabel = '',
+  searchPlaceholder = '',
+  searchInputId = '',
+  noResults = '',
 }: {
   icon: typeof Briefcase
   title: string
@@ -350,37 +505,70 @@ function NamedSection({
   countLabel: string
   rows: NamedCount[]
   locale: string
+  paged?: boolean
+  chartMax?: number
+  chartNote?: string
+  searchLabel?: string
+  searchPlaceholder?: string
+  searchInputId?: string
+  noResults?: string
 }) {
+  const chartRows = chartMax != null && rows.length > chartMax ? rows.slice(0, chartMax) : rows
+  const quiet = chartRows.length > QUIET_CHART_AT
+  const tableRows = rows.map((item, index) => ({
+    key: `${item.name}-${index}`,
+    label: displayName(item.name, emptyName),
+    count: formatGroupedNumber(item.count, locale),
+    searchText: displayName(item.name, emptyName),
+  }))
   return (
     <FormCard icon={icon} title={title} onDoubleClick={() => undefined}>
       <div className={formCardBodyClassName}>
         <ChartPanel icon={icon} title={title} empty={rows.length === 0} emptyLabel={empty}>
           <ReportPointBar
             locale={locale}
-            data={rows.map((item) => ({
+            animate={!quiet}
+            showLabels={!quiet}
+            data={chartRows.map((item) => ({
               name: displayName(item.name, emptyName),
               value: item.count,
             }))}
           />
         </ChartPanel>
-        <TableCard loading={false} empty={empty} hasRows={rows.length > 0} rowClick={false}>
-          <table className="w-full text-sm">
-            <thead className="bg-cream-50 text-ink-700">
-              <tr>
-                <th className="px-4 py-3 text-start">{nameLabel}</th>
-                <th className="px-4 py-3 text-start">{countLabel}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((item, index) => (
-                <tr key={`${item.name}-${index}`} className="border-t border-line">
-                  <td className="px-4 py-3">{displayName(item.name, emptyName)}</td>
-                  <td className="px-4 py-3">{formatGroupedNumber(item.count, locale)}</td>
+        {chartNote && chartRows.length < rows.length ? (
+          <p className="text-center text-xs text-ink-500">{chartNote}</p>
+        ) : null}
+        {paged ? (
+          <PagedCountTable
+            rows={tableRows}
+            empty={empty}
+            noResults={noResults}
+            searchLabel={searchLabel}
+            searchPlaceholder={searchPlaceholder}
+            inputId={searchInputId}
+            nameLabel={nameLabel}
+            countLabel={countLabel}
+          />
+        ) : (
+          <TableCard loading={false} empty={empty} hasRows={rows.length > 0} rowClick={false}>
+            <table className="w-full text-sm">
+              <thead className="bg-cream-50 text-ink-700">
+                <tr>
+                  <th className="px-4 py-3 text-start">{nameLabel}</th>
+                  <th className="px-4 py-3 text-start">{countLabel}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableCard>
+              </thead>
+              <tbody>
+                {tableRows.map((item) => (
+                  <tr key={item.key} className="border-t border-line">
+                    <td className="px-4 py-3">{item.label}</td>
+                    <td className="px-4 py-3">{item.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableCard>
+        )}
       </div>
     </FormCard>
   )

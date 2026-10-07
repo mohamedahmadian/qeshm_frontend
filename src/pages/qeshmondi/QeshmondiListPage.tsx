@@ -1,5 +1,6 @@
-import { Plus, UserRoundCheck } from 'lucide-react'
+import { BadgeCheck, Cake, CalendarRange, House, Plus, ToggleRight, UserRoundCheck, type LucideIcon } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import {
@@ -11,16 +12,70 @@ import {
   TableCard,
   actionsColClassName,
 } from '../../components/ui/ListControls'
-import { Button, PageHeader, listShellClassName } from '../../components/ui/Form'
+import { Button, FormField, PageHeader, fieldClassName, listShellClassName } from '../../components/ui/Form'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { DateText } from '../../components/ui/DateText'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
-import { localizeDigits } from '../../lib/datetime'
+import { localizeDigits, parseDigitString } from '../../lib/datetime'
 import { userStatuses, type ManagedUser, type Paginated } from '../../types/app'
 import { qeshmondiCitizenPath, qeshmondiPath } from './qeshmondi-paths'
+
+function YearFilterField({
+  id,
+  label,
+  icon,
+  param,
+  onCommit,
+}: {
+  id: string
+  label: string
+  icon: LucideIcon
+  param: string
+  onCommit: (year: string | undefined) => void
+}) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const [draft, setDraft] = useState(param)
+  const focused = useRef(false)
+
+  useEffect(() => {
+    if (!focused.current) setDraft(param)
+  }, [param])
+
+  return (
+    <FormField icon={icon} label={label} htmlFor={id}>
+      <input
+        id={id}
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={4}
+        className={`${fieldClassName} digit-field`}
+        dir="ltr"
+        placeholder={t('qeshmondi.yearPlaceholder')}
+        aria-label={label}
+        value={draft ? localizeDigits(draft, locale) : ''}
+        onFocus={() => {
+          focused.current = true
+        }}
+        onBlur={() => {
+          focused.current = false
+          if (draft.length === 4) return
+          setDraft('')
+          if (param) onCommit(undefined)
+        }}
+        onChange={(event) => {
+          const digits = parseDigitString(event.target.value).slice(0, 4)
+          setDraft(digits)
+          if (digits.length === 4) onCommit(digits)
+          else if (param) onCommit(undefined)
+        }}
+      />
+    </FormField>
+  )
+}
 
 export function QeshmondiListPage() {
   const { t, i18n } = useTranslation()
@@ -31,9 +86,11 @@ export function QeshmondiListPage() {
   const status = searchParams.get('status') ?? ''
   const resident = searchParams.get('isResident') ?? ''
   const validity = searchParams.get('qeshmondiValidity') ?? ''
+  const birthYear = searchParams.get('birthYear') ?? ''
+  const endYear = searchParams.get('qeshmondiEndYear') ?? ''
 
   const query = useQuery({
-    queryKey: ['qeshmondi', q, page, status, resident, validity, sortBy, sortDir],
+    queryKey: ['qeshmondi', q, page, status, resident, validity, birthYear, endYear, sortBy, sortDir],
     queryFn: async () => {
       const { data } = await api.get<Paginated<ManagedUser>>('/users', {
         params: {
@@ -43,6 +100,8 @@ export function QeshmondiListPage() {
           ...(status ? { status } : {}),
           ...(resident ? { isResident: resident === 'true' } : {}),
           ...(validity ? { qeshmondiValidity: validity } : {}),
+          ...(birthYear ? { birthYear } : {}),
+          ...(endYear ? { qeshmondiEndYear: endYear } : {}),
           ...sortParams,
         },
       })
@@ -73,41 +132,64 @@ export function QeshmondiListPage() {
         onSubmit={() => applySearch()}
         label={t('qeshmondi.search')}
         placeholder={t('qeshmondi.searchPlaceholder')}
-        filtersActive={Boolean(status || resident || validity)}
+        filtersActive={Boolean(status || resident || validity || birthYear || endYear)}
         extra={
           <>
-            <SearchSelect
-              value={validity}
-              onChange={(next) =>
-                setParams({ qeshmondiValidity: next || undefined }, { resetPage: true })
-              }
-              placeholder={t('qeshmondi.citizenshipStatus')}
-              options={[
-                { value: 'valid', label: t('qeshmondi.citizenshipValid') },
-                { value: 'expired', label: t('qeshmondi.citizenshipExpired') },
-                { value: '', label: t('common.all') },
-              ]}
+            <YearFilterField
+              id="qeshmondi-birth-year"
+              icon={Cake}
+              label={t('qeshmondi.birthYear')}
+              param={birthYear}
+              onCommit={(year) => setParams({ birthYear: year }, { resetPage: true })}
             />
-            <SearchSelect
-              value={status}
-              onChange={(next) => setParams({ status: next || undefined }, { resetPage: true })}
-              placeholder={t('users.status')}
-              options={[
-                { value: '', label: t('common.all') },
-                { value: userStatuses.ACTIVE, label: t('geo.active') },
-                { value: userStatuses.INACTIVE, label: t('geo.inactive') },
-              ]}
+            <YearFilterField
+              id="qeshmondi-end-year"
+              icon={CalendarRange}
+              label={t('qeshmondi.cardExpiryYear')}
+              param={endYear}
+              onCommit={(year) => setParams({ qeshmondiEndYear: year }, { resetPage: true })}
             />
-            <SearchSelect
-              value={resident}
-              onChange={(next) => setParams({ isResident: next || undefined }, { resetPage: true })}
-              placeholder={t('users.isResident')}
-              options={[
-                { value: '', label: t('qeshmondi.allResidents') },
-                { value: 'true', label: t('users.resident') },
-                { value: 'false', label: t('users.nonResident') },
-              ]}
-            />
+            <FormField icon={BadgeCheck} label={t('qeshmondi.citizenshipStatus')} htmlFor="qeshmondi-validity">
+              <SearchSelect
+                id="qeshmondi-validity"
+                value={validity}
+                onChange={(next) =>
+                  setParams({ qeshmondiValidity: next || undefined }, { resetPage: true })
+                }
+                placeholder={t('common.all')}
+                options={[
+                  { value: 'valid', label: t('qeshmondi.citizenshipValid') },
+                  { value: 'expired', label: t('qeshmondi.citizenshipExpired') },
+                  { value: '', label: t('common.all') },
+                ]}
+              />
+            </FormField>
+            <FormField icon={ToggleRight} label={t('users.status')} htmlFor="qeshmondi-status">
+              <SearchSelect
+                id="qeshmondi-status"
+                value={status}
+                onChange={(next) => setParams({ status: next || undefined }, { resetPage: true })}
+                placeholder={t('common.all')}
+                options={[
+                  { value: '', label: t('common.all') },
+                  { value: userStatuses.ACTIVE, label: t('geo.active') },
+                  { value: userStatuses.INACTIVE, label: t('geo.inactive') },
+                ]}
+              />
+            </FormField>
+            <FormField icon={House} label={t('users.isResident')} htmlFor="qeshmondi-resident">
+              <SearchSelect
+                id="qeshmondi-resident"
+                value={resident}
+                onChange={(next) => setParams({ isResident: next || undefined }, { resetPage: true })}
+                placeholder={t('common.all')}
+                options={[
+                  { value: '', label: t('qeshmondi.allResidents') },
+                  { value: 'true', label: t('users.resident') },
+                  { value: 'false', label: t('users.nonResident') },
+                ]}
+              />
+            </FormField>
           </>
         }
       />

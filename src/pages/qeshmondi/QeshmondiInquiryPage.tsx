@@ -16,6 +16,7 @@ import {
   UserRound,
   Users,
   X,
+  RefreshCw,
 } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -42,13 +43,15 @@ import { formatGroupedNumber, formatNumber, localizeDigits } from '../../lib/dat
 import { useGeoName } from '../../lib/geo'
 import type { GeoName, UserGender } from '../../types/app'
 import { CitizenTrafficCard } from './CitizenTrafficCard'
+import { QeshmondiSyncServicesTab } from './QeshmondiSyncServicesTab'
 
-const inquiryTabs = ['search', 'bank'] as const
+const inquiryTabs = ['search', 'bank', 'services'] as const
 type InquiryTab = (typeof inquiryTabs)[number]
 
 const inquiryTabIcons = {
   search: ScanSearch,
   bank: Database,
+  services: RefreshCw,
 } as const
 
 type BankFormat = 'xlsx' | 'json'
@@ -359,6 +362,8 @@ export function QeshmondiInquiryPage() {
           </div>
         </FormCard>
       ) : null}
+
+      {tab === 'services' ? <QeshmondiSyncServicesTab /> : null}
 
       <MatchPicker
         items={matches}
