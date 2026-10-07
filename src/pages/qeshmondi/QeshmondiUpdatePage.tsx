@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { confirmToast } from '../../components/ui/confirmToast'
 import { FileDropField } from '../../components/ui/FileDropField'
 import { AppForm, Button, FormActions, FormField, PageHeader, formShellClassName } from '../../components/ui/Form'
 import { FormCard, FormFactTile, formCardBodyClassName, type FormTone } from '../../components/ui/FormLayout'
@@ -68,21 +69,33 @@ export function QeshmondiUpdatePage() {
   const [exporting, setExporting] = useState<ExportKind | null>(null)
   const [tab, setTab] = useState<UpdateTab>('file')
 
-  async function submit() {
+  function submit() {
     if (!file) {
       toast.error(t('qeshmondiUpdate.fileRequired'))
       return
     }
+    const selected = file
+    confirmToast({
+      title: t('qeshmondiUpdate.confirmRun'),
+      confirmLabel: t('common.yes'),
+      cancelLabel: t('common.cancel'),
+      onConfirm: () => {
+        void runImport(selected)
+      },
+    })
+  }
+
+  async function runImport(selected: File) {
     setSaving(true)
     setResult(null)
     setProgress({ phase: 'uploading', percent: 0 })
     try {
       const started = Date.now()
       const body = new FormData()
-      body.append('file', file)
+      body.append('file', selected)
       const { data } = await api.post<{ jobId: string }>('/users/qeshmondi-import', body, {
         onUploadProgress: (event) => {
-          const total = event.total || file.size || 0
+          const total = event.total || selected.size || 0
           const ratio = total > 0 ? event.loaded / total : 0
           setProgress({
             phase: 'uploading',

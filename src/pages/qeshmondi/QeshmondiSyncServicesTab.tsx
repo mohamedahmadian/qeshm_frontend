@@ -1,4 +1,4 @@
-import { Hash, KeyRound, ListOrdered, RefreshCw } from 'lucide-react'
+import { Hash, KeyRound, ListOrdered, RefreshCw, ScanSearch } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { FormCard, FormSectionTitle } from '../../components/ui/FormLayout'
 import { apiBaseUrl } from '../../lib/api'
@@ -45,11 +45,24 @@ export function QeshmondiSyncServicesTab() {
       onDoubleClick={() => undefined}
     >
       <div className="space-y-6 p-5 sm:p-6">
-        <p className="text-sm leading-7 text-ink-700">{t('qeshmondiInquiry.services.intro')}</p>
+        <p className="text-sm leading-8 text-ink-700">{t('qeshmondiInquiry.services.intro')}</p>
+
+        <section className="space-y-3">
+          <FormSectionTitle icon={ListOrdered}>{t('qeshmondiInquiry.services.envelopeTitle')}</FormSectionTitle>
+          <p className="text-sm leading-8 text-ink-600">{t('qeshmondiInquiry.services.envelopeBody')}</p>
+          <Sample
+            label={t('qeshmondiInquiry.services.error')}
+            value={`{
+  "success": false,
+  "data": null,
+  "message": "توکن ورود منقضی یا نامعتبر است"
+}`}
+          />
+        </section>
 
         <section className="space-y-3">
           <FormSectionTitle icon={KeyRound}>{t('qeshmondiInquiry.services.authTitle')}</FormSectionTitle>
-          <p className="text-sm leading-7 text-ink-600">{t('qeshmondiInquiry.services.authBody')}</p>
+          <p className="text-sm leading-8 text-ink-600">{t('qeshmondiInquiry.services.authBody')}</p>
           <MethodLine method="POST" path={`${base}/cooperative/auth/token`} />
           <Sample
             label={t('qeshmondiInquiry.services.request')}
@@ -61,20 +74,24 @@ export function QeshmondiSyncServicesTab() {
           <Sample
             label={t('qeshmondiInquiry.services.response')}
             value={`{
-  "tokenType": "Bearer",
-  "token": "<jwt>",
-  "expiresIn": 86400,
-  "port": {
-    "id": "<port-id>",
-    "name": "بندر",
-    "cooperativeName": "تعاونی"
+  "success": true,
+  "message": "",
+  "data": {
+    "tokenType": "Bearer",
+    "token": "<jwt>",
+    "expiresIn": 86400,
+    "port": {
+      "id": "<port-id>",
+      "name": "بندر",
+      "cooperativeName": "تعاونی"
+    }
   }
 }`}
           />
           <FormSectionTitle icon={KeyRound} className="mb-2 mt-4">
             {t('qeshmondiInquiry.services.securityTitle')}
           </FormSectionTitle>
-          <p className="text-sm leading-7 text-ink-600">{t('qeshmondiInquiry.services.securityBody')}</p>
+          <p className="text-sm leading-8 text-ink-600">{t('qeshmondiInquiry.services.securityBody')}</p>
           <Sample
             label={t('qeshmondiInquiry.services.request')}
             value={`Authorization: Bearer <jwt>
@@ -83,69 +100,132 @@ X-Port-Security-Token: <port-security-token>`}
         </section>
 
         <section className="space-y-3">
+          <FormSectionTitle icon={ScanSearch}>{t('qeshmondiInquiry.services.inquiryTitle')}</FormSectionTitle>
+          <p className="text-sm leading-8 text-ink-600">{t('qeshmondiInquiry.services.inquiryBody')}</p>
+          <MethodLine method="GET" path={`${base}/cooperative/qeshmondi/inquiry?nationalId=0012345678`} />
+          <Sample
+            label={t('qeshmondiInquiry.services.inquiryFound')}
+            value={`{
+  "success": true,
+  "message": "",
+  "data": {
+    "id": "<user-id>",
+    "nationalId": "0012345678",
+    "firstName": "علی",
+    "lastName": "محمدی",
+    "qeshmondiEndDate": "2027-03-20",
+    "individualTicketQuota": 1,
+    "isQeshmvand": true
+  }
+}`}
+          />
+          <Sample
+            label={t('qeshmondiInquiry.services.inquiryExpired')}
+            value={`{
+  "success": true,
+  "message": "",
+  "data": {
+    "id": "<user-id>",
+    "nationalId": "0012345678",
+    "firstName": "علی",
+    "lastName": "محمدی",
+    "qeshmondiEndDate": "2020-01-01",
+    "individualTicketQuota": 1,
+    "isQeshmvand": false
+  }
+}`}
+          />
+          <Sample
+            label={t('qeshmondiInquiry.services.inquiryMiss')}
+            value={`{
+  "success": true,
+  "message": "",
+  "data": {
+    "nationalId": "0012345678",
+    "isQeshmvand": false
+  }
+}`}
+          />
+        </section>
+
+        <section className="space-y-3">
           <FormSectionTitle icon={Hash}>{t('qeshmondiInquiry.services.statusTitle')}</FormSectionTitle>
-          <p className="text-sm leading-7 text-ink-600">{t('qeshmondiInquiry.services.statusBody')}</p>
+          <p className="text-sm leading-8 text-ink-600">{t('qeshmondiInquiry.services.statusBody')}</p>
           <MethodLine method="GET" path={`${base}/cooperative/qeshmondi/sync/status`} />
           <Sample
             label={t('qeshmondiInquiry.services.response')}
-            value={`{ "latest": 15230 }`}
+            value={`{
+  "success": true,
+  "message": "",
+  "data": { "latest": 15230 }
+}`}
           />
         </section>
 
         <section className="space-y-3">
           <FormSectionTitle icon={RefreshCw}>{t('qeshmondiInquiry.services.fullTitle')}</FormSectionTitle>
-          <p className="text-sm leading-7 text-ink-600">{t('qeshmondiInquiry.services.fullBody')}</p>
+          <p className="text-sm leading-8 text-ink-600">{t('qeshmondiInquiry.services.fullBody')}</p>
           <MethodLine method="GET" path={`${base}/cooperative/qeshmondi/sync/full?limit=500&afterId=`} />
           <Sample
             label={t('qeshmondiInquiry.services.response')}
             value={`{
-  "items": [
-    {
-      "id": "<user-id>",
-      "nationalId": "0012345678",
-      "firstName": "علی",
-      "lastName": "محمدی",
-      "qeshmondiEndDate": "2027-03-20"
-    }
-  ],
-  "nextAfterId": "<user-id>",
-  "hasMore": true
+  "success": true,
+  "message": "",
+  "data": {
+    "items": [
+      {
+        "id": "<user-id>",
+        "nationalId": "0012345678",
+        "firstName": "علی",
+        "lastName": "محمدی",
+        "qeshmondiEndDate": "2027-03-20",
+        "isQeshmvand": true
+      }
+    ],
+    "nextAfterId": "<user-id>",
+    "hasMore": true
+  }
 }`}
           />
         </section>
 
         <section className="space-y-3">
           <FormSectionTitle icon={RefreshCw}>{t('qeshmondiInquiry.services.changesTitle')}</FormSectionTitle>
-          <p className="text-sm leading-7 text-ink-600">{t('qeshmondiInquiry.services.changesBody')}</p>
+          <p className="text-sm leading-8 text-ink-600">{t('qeshmondiInquiry.services.changesBody')}</p>
           <MethodLine method="GET" path={`${base}/cooperative/qeshmondi/sync/changes?from=1&to=20`} />
           <Sample
             label={t('qeshmondiInquiry.services.response')}
             value={`{
-  "from": 1,
-  "to": 20,
-  "latest": 15230,
-  "items": [
-    {
-      "seq": 1,
-      "id": "<user-id>",
-      "nationalId": "0012345678",
-      "firstName": "علی",
-      "lastName": "محمدی",
-      "qeshmondiEndDate": "2027-03-20"
-    }
-  ]
+  "success": true,
+  "message": "",
+  "data": {
+    "from": 1,
+    "to": 20,
+    "latest": 15230,
+    "items": [
+      {
+        "seq": 1,
+        "id": "<user-id>",
+        "nationalId": "0012345678",
+        "firstName": "علی",
+        "lastName": "محمدی",
+        "qeshmondiEndDate": "2027-03-20",
+        "isQeshmvand": true
+      }
+    ]
+  }
 }`}
           />
         </section>
 
         <section className="space-y-3">
           <FormSectionTitle icon={ListOrdered}>{t('qeshmondiInquiry.services.fieldsTitle')}</FormSectionTitle>
-          <p className="text-sm leading-7 text-ink-600">{t('qeshmondiInquiry.services.fields')}</p>
+          <p className="text-sm leading-8 text-ink-600">{t('qeshmondiInquiry.services.fields')}</p>
         </section>
 
         <section className="space-y-3">
           <FormSectionTitle icon={ListOrdered}>{t('qeshmondiInquiry.services.orderTitle')}</FormSectionTitle>
-          <ol className="list-decimal space-y-2 ps-5 text-sm leading-7 text-ink-700">
+          <ol className="list-decimal space-y-2 ps-5 text-sm leading-8 text-ink-700">
             {steps.map((key) => (
               <li key={key}>{t(`qeshmondiInquiry.services.${key}`)}</li>
             ))}

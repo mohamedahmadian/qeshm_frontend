@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { confirmToast } from '../../components/ui/confirmToast'
 import { AppForm, Button, FormField, LoadingState, ToggleField, inputClassName } from '../../components/ui/Form'
 import { FormFactTile, formCardBodyClassName } from '../../components/ui/FormLayout'
 import { api, getApiErrorMessage } from '../../lib/api'
@@ -137,6 +138,17 @@ export function QeshmondiSqlTab() {
     } finally {
       setTesting(false)
     }
+  }
+
+  function askSync() {
+    confirmToast({
+      title: t('qeshmondiUpdate.confirmRun'),
+      confirmLabel: t('common.yes'),
+      cancelLabel: t('common.cancel'),
+      onConfirm: () => {
+        void runSync()
+      },
+    })
   }
 
   async function runSync() {
@@ -290,7 +302,6 @@ export function QeshmondiSqlTab() {
           />
         </FormField>
       </div>
-      <p className="text-xs leading-6 text-ink-500">{t('qeshmondiUpdate.savedConnectionHint')}</p>
       {progress ? <SqlSyncProgress progress={progress} locale={locale} /> : null}
       {result ? (
         <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
@@ -325,7 +336,7 @@ export function QeshmondiSqlTab() {
             {t('qeshmondiUpdate.testConnection')}
           </Button>
         </div>
-        <Button type="button" variant="soft" disabled={busy || !configured} onClick={() => void runSync()}>
+        <Button type="button" variant="soft" disabled={busy || !configured} onClick={askSync}>
           <RefreshCw className="size-4" aria-hidden />
           {t('qeshmondiUpdate.runSync')}
         </Button>
