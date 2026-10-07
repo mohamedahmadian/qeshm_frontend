@@ -1,6 +1,7 @@
 import {
   BadgeCheck,
   Briefcase,
+  Cake,
   CalendarRange,
   CalendarX2,
   ChartColumn,
@@ -47,6 +48,8 @@ type QeshmondiAnalytics = {
   byGroup: NamedCount[]
   byExpiryYear: { year: number; count: number }[]
   missingExpiry: number
+  byBirthYear: { year: number; count: number }[]
+  missingBirth: number
 }
 
 function genderSlices(
@@ -105,18 +108,21 @@ export function QeshmondiAnalyticsPage() {
             <div className={formCardBodyClassName}>
               <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
                 <FormFactTile
+                  large
                   icon={Users}
                   label={t('qeshmondiAnalytics.total')}
                   value={countText(report.total)}
                   tone="teal"
                 />
                 <FormFactTile
+                  large
                   icon={BadgeCheck}
                   label={t('qeshmondiAnalytics.valid')}
                   value={countText(report.valid)}
                   tone="mint"
                 />
                 <FormFactTile
+                  large
                   icon={CalendarX2}
                   label={t('qeshmondiAnalytics.expired')}
                   value={countText(report.expired)}
@@ -231,60 +237,98 @@ export function QeshmondiAnalyticsPage() {
             locale={locale}
           />
 
-          <FormCard
+          <YearSection
+            icon={Cake}
+            title={t('qeshmondiAnalytics.birthTitle')}
+            missingIcon={CalendarX2}
+            missingLabel={t('qeshmondiAnalytics.missingBirth')}
+            missingCount={report.missingBirth}
+            yearLabel={t('qeshmondiAnalytics.year')}
+            countLabel={t('qeshmondiAnalytics.count')}
+            empty={t('qeshmondiAnalytics.empty')}
+            rows={report.byBirthYear}
+            locale={locale}
+          />
+          <YearSection
             icon={CalendarRange}
             title={t('qeshmondiAnalytics.expiryTitle')}
-            onDoubleClick={() => undefined}
-          >
-            <div className={formCardBodyClassName}>
-              <FormFactTile
-                icon={CalendarX2}
-                label={t('qeshmondiAnalytics.missingExpiry')}
-                value={countText(report.missingExpiry)}
-                tone="ink"
-              />
-              <ChartPanel
-                icon={CalendarRange}
-                title={t('qeshmondiAnalytics.expiryTitle')}
-                empty={report.byExpiryYear.length === 0}
-                emptyLabel={t('qeshmondiAnalytics.empty')}
-              >
-                <ReportBar
-                  locale={locale}
-                  data={report.byExpiryYear.map((item) => ({
-                    name: formatNumber(item.year, locale),
-                    value: item.count,
-                  }))}
-                />
-              </ChartPanel>
-              <TableCard
-                loading={false}
-                empty={t('qeshmondiAnalytics.empty')}
-                hasRows={report.byExpiryYear.length > 0}
-                rowClick={false}
-              >
-                <table className="w-full text-sm">
-                  <thead className="bg-cream-50 text-ink-700">
-                    <tr>
-                      <th className="px-4 py-3 text-start">{t('qeshmondiAnalytics.year')}</th>
-                      <th className="px-4 py-3 text-start">{t('qeshmondiAnalytics.count')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.byExpiryYear.map((item) => (
-                      <tr key={item.year} className="border-t border-line">
-                        <td className="px-4 py-3">{formatNumber(item.year, locale)}</td>
-                        <td className="px-4 py-3">{countText(item.count)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </TableCard>
-            </div>
-          </FormCard>
+            missingIcon={CalendarX2}
+            missingLabel={t('qeshmondiAnalytics.missingExpiry')}
+            missingCount={report.missingExpiry}
+            yearLabel={t('qeshmondiAnalytics.year')}
+            countLabel={t('qeshmondiAnalytics.count')}
+            empty={t('qeshmondiAnalytics.empty')}
+            rows={report.byExpiryYear}
+            locale={locale}
+          />
         </div>
       )}
     </div>
+  )
+}
+
+function YearSection({
+  icon,
+  title,
+  missingIcon,
+  missingLabel,
+  missingCount,
+  yearLabel,
+  countLabel,
+  empty,
+  rows,
+  locale,
+}: {
+  icon: typeof CalendarRange
+  title: string
+  missingIcon: typeof CalendarX2
+  missingLabel: string
+  missingCount: number
+  yearLabel: string
+  countLabel: string
+  empty: string
+  rows: { year: number; count: number }[]
+  locale: string
+}) {
+  return (
+    <FormCard icon={icon} title={title} onDoubleClick={() => undefined}>
+      <div className={formCardBodyClassName}>
+        <FormFactTile
+          large
+          icon={missingIcon}
+          label={missingLabel}
+          value={formatGroupedNumber(missingCount, locale)}
+          tone="ink"
+        />
+        <ChartPanel icon={icon} title={title} empty={rows.length === 0} emptyLabel={empty}>
+          <ReportBar
+            locale={locale}
+            data={rows.map((item) => ({
+              name: formatNumber(item.year, locale),
+              value: item.count,
+            }))}
+          />
+        </ChartPanel>
+        <TableCard loading={false} empty={empty} hasRows={rows.length > 0} rowClick={false}>
+          <table className="w-full text-sm">
+            <thead className="bg-cream-50 text-ink-700">
+              <tr>
+                <th className="px-4 py-3 text-start">{yearLabel}</th>
+                <th className="px-4 py-3 text-start">{countLabel}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((item) => (
+                <tr key={item.year} className="border-t border-line">
+                  <td className="px-4 py-3">{formatNumber(item.year, locale)}</td>
+                  <td className="px-4 py-3">{formatGroupedNumber(item.count, locale)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableCard>
+      </div>
+    </FormCard>
   )
 }
 

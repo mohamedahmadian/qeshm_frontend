@@ -1,14 +1,12 @@
-import { BadgeCheck, Check, Database, Hash, KeyRound, PlugZap, RefreshCw, Server, ShieldCheck, UserPlus, UserRound, UserRoundPen, X } from 'lucide-react'
+import { BadgeCheck, Check, Database, Hash, KeyRound, PlugZap, RefreshCw, Server, ShieldCheck, UserPlus, UserRound, UserRoundPen } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AppForm, Button, FormField, LoadingState, ToggleField, inputClassName } from '../../components/ui/Form'
 import { FormFactTile, formCardBodyClassName } from '../../components/ui/FormLayout'
 import { api, getApiErrorMessage } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
-import { qeshmondiPath } from './qeshmondi-paths'
 
 type SqlConnection = {
   configured: boolean
@@ -64,7 +62,6 @@ function wait(ms: number) {
 export function QeshmondiSqlTab() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const query = useQuery({
     queryKey: connectionKey,
@@ -207,7 +204,7 @@ export function QeshmondiSqlTab() {
 
   return (
     <AppForm onSubmit={save} className={formCardBodyClassName}>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <FormField icon={Server} label={t('qeshmondiUpdate.host')} htmlFor="qeshmondi-sql-host">
           <input
             id="qeshmondi-sql-host"
@@ -243,6 +240,8 @@ export function QeshmondiSqlTab() {
             onChange={(event) => setDatabaseName(event.target.value)}
           />
         </FormField>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
         <FormField icon={UserRound} label={t('qeshmondiUpdate.username')} htmlFor="qeshmondi-sql-user">
           <input
             id="qeshmondi-sql-user"
@@ -254,23 +253,23 @@ export function QeshmondiSqlTab() {
             onChange={(event) => setUsername(event.target.value)}
           />
         </FormField>
+        <FormField icon={KeyRound} label={t('qeshmondiUpdate.password')} htmlFor="qeshmondi-sql-password">
+          <input
+            id="qeshmondi-sql-password"
+            className={inputClassName()}
+            dir="ltr"
+            type="password"
+            value={password}
+            required={!saved.passwordSet}
+            autoComplete="new-password"
+            placeholder={saved.passwordSet ? t('qeshmondiUpdate.passwordKept') : undefined}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          {saved.passwordSet ? (
+            <p className="text-xs leading-6 text-ink-500">{t('qeshmondiUpdate.passwordKept')}</p>
+          ) : null}
+        </FormField>
       </div>
-      <FormField icon={KeyRound} label={t('qeshmondiUpdate.password')} htmlFor="qeshmondi-sql-password">
-        <input
-          id="qeshmondi-sql-password"
-          className={inputClassName()}
-          dir="ltr"
-          type="password"
-          value={password}
-          required={!saved.passwordSet}
-          autoComplete="new-password"
-          placeholder={saved.passwordSet ? t('qeshmondiUpdate.passwordKept') : undefined}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-        {saved.passwordSet ? (
-          <p className="text-xs leading-6 text-ink-500">{t('qeshmondiUpdate.passwordKept')}</p>
-        ) : null}
-      </FormField>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField icon={ShieldCheck} label={t('qeshmondiUpdate.encrypt')} htmlFor="qeshmondi-sql-encrypt">
           <ToggleField
@@ -321,26 +320,15 @@ export function QeshmondiSqlTab() {
             <Check className="size-4" aria-hidden />
             {t('qeshmondiUpdate.saveConnection')}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={busy}
-            onClick={() => navigate(qeshmondiPath())}
-          >
-            <X className="size-4" aria-hidden />
-            {t('users.cancel')}
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-3">
           <Button type="button" variant="soft" disabled={busy || !configured} onClick={() => void testConnection()}>
             <PlugZap className="size-4" aria-hidden />
             {t('qeshmondiUpdate.testConnection')}
           </Button>
-          <Button type="button" variant="soft" disabled={busy || !configured} onClick={() => void runSync()}>
-            <RefreshCw className="size-4" aria-hidden />
-            {t('qeshmondiUpdate.runSync')}
-          </Button>
         </div>
+        <Button type="button" variant="soft" disabled={busy || !configured} onClick={() => void runSync()}>
+          <RefreshCw className="size-4" aria-hidden />
+          {t('qeshmondiUpdate.runSync')}
+        </Button>
       </div>
     </AppForm>
   )

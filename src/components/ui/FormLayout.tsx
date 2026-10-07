@@ -214,6 +214,7 @@ export function FormFactTile({
   empty,
   tone = 'teal',
   compact = false,
+  large = false,
   className = '',
   extra,
 }: {
@@ -224,6 +225,7 @@ export function FormFactTile({
   empty?: boolean
   tone?: FormTone
   compact?: boolean
+  large?: boolean
   className?: string
   extra?: ReactNode
 }) {
@@ -236,23 +238,27 @@ export function FormFactTile({
   return (
     <article
       className={`relative z-10 flex min-w-0 items-start overflow-hidden rounded-2xl border ${colors.wrap} ${
-        compact ? 'gap-2 px-2.5 py-1.5' : 'gap-3 px-3 py-3'
+        large ? 'gap-3.5 px-4 py-4' : compact ? 'gap-2 px-2.5 py-1.5' : 'gap-3 px-3 py-3'
       } ${canCopy ? 'cursor-pointer' : ''} ${className}`}
       onClick={canCopy ? () => copyDigits(copyValue) : undefined}
     >
       <span
         className={`flex shrink-0 items-center justify-center ${colors.factIcon} ${
-          compact ? 'mt-px size-7 rounded-lg' : 'mt-0.5 size-8 rounded-xl'
+          large
+            ? 'mt-0.5 size-11 rounded-xl'
+            : compact
+              ? 'mt-px size-7 rounded-lg'
+              : 'mt-0.5 size-8 rounded-xl'
         }`}
       >
-        <Icon className={compact ? 'size-3.5' : 'size-4'} aria-hidden />
+        <Icon className={large ? 'size-5' : compact ? 'size-3.5' : 'size-4'} aria-hidden />
       </span>
       <div className="min-w-0">
-        <p className="text-[11px] font-medium text-ink-500">{label}</p>
+        <p className={`font-medium text-ink-500 ${large ? 'text-sm' : 'text-[11px]'}`}>{label}</p>
         <div
-          className={`font-semibold break-words ${compact ? 'mt-px text-[13px]' : 'mt-0.5 text-sm'} ${
-            isEmpty ? 'text-ink-400' : 'text-ink-900'
-          }`}
+          className={`font-semibold break-words ${
+            large ? 'mt-1 text-2xl leading-tight' : compact ? 'mt-px text-[13px]' : 'mt-0.5 text-sm'
+          } ${isEmpty ? 'text-ink-400' : 'text-ink-900'}`}
         >
           {display}
         </div>

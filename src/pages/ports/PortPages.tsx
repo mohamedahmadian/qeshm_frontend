@@ -1,4 +1,4 @@
-import { Anchor, Building2, Handshake, MapPin, Phone, Plus, Ticket, UserRound } from 'lucide-react'
+import { Anchor, Building2, Handshake, KeyRound, MapPin, Phone, Plus, Shield, Ticket, UserRound } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -245,6 +245,28 @@ export function PortDetailPage() {
               icon={MapPin}
               label={t('ports.address')}
               value={item.address}
+              className="sm:col-span-2"
+            />
+          </div>
+          <FormSectionTitle icon={KeyRound}>{t('ports.operatorSection')}</FormSectionTitle>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <FormFactTile
+              icon={UserRound}
+              label={t('ports.operator')}
+              value={item.operatorUser?.fullName || '—'}
+              tone="teal"
+            />
+            <FormFactTile
+              icon={Phone}
+              label={t('ports.mobile')}
+              copyValue={item.operatorUser?.phone ?? null}
+              tone="teal"
+            />
+            <FormFactTile
+              icon={Shield}
+              label={t('ports.securityToken')}
+              copyValue={item.securityToken ?? null}
+              tone="mint"
               className="sm:col-span-2"
             />
           </div>

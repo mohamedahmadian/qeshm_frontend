@@ -3,18 +3,24 @@ import {
   Building2,
   CalendarRange,
   Car,
+  CreditCard,
   FileText,
+  Fingerprint,
   Flag,
+  GraduationCap,
   Handshake,
+  Hash,
   IdCard,
   ImagePlus,
   KeyRound,
+  Landmark,
   Languages,
   Mail,
   MapPin,
   MapPinned,
   MessageCircle,
   Phone,
+  Printer,
   Share2,
   Shield,
   Ticket,
@@ -23,6 +29,7 @@ import {
   UserRound,
   UserRoundCheck,
   UserRoundPlus,
+  Zap,
 } from 'lucide-react'
 import axios from 'axios'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
@@ -43,7 +50,7 @@ import {
   fieldClassName,
   inputClassName,
 } from '../../components/ui/Form'
-import { FormCard } from '../../components/ui/FormLayout'
+import { FormCard, FormSectionTitle } from '../../components/ui/FormLayout'
 import { UniqueFieldWrap, type UniqueCheckStatus } from '../../components/ui/UniqueFieldStatus'
 import { selectableLanguages, selectableLocale } from '../../i18n'
 import { api, getApiErrorMessage, getImageUrl } from '../../lib/api'
@@ -141,6 +148,40 @@ export type UserPayload = {
   individualTicketQuota: number
   fatherName: string | null
   birthDate: string | null
+  latinFirstName?: string | null
+  latinLastName?: string | null
+  latinFatherName?: string | null
+  identityNumber?: string | null
+  identitySerial?: string | null
+  landlinePhone?: string | null
+  fax?: string | null
+  postalCode?: string | null
+  jobAddress?: string | null
+  jobPhone?: string | null
+  jobFax?: string | null
+  jobPostalCode?: string | null
+  isSingle?: boolean
+  nationality?: string | null
+  education?: string | null
+  protectorOffice?: string | null
+  nationalIdExpiresAt?: string | null
+  passportExpiresAt?: string | null
+  bankFullName?: string | null
+  bankFullLatinName?: string | null
+  accountNumber?: string | null
+  cardNumber?: string | null
+  cardSeries?: string | null
+  isBank?: boolean
+  accountOpeningDate?: string | null
+  cardIssuanceDate?: string | null
+  cardDeliverDate?: string | null
+  companyName?: string | null
+  companySubject?: string | null
+  companyLicenseNumber?: string | null
+  companyLicenseDate?: string | null
+  companyPaperNumber?: string | null
+  companyPaperDate?: string | null
+  electricitySubscription?: string | null
 }
 
 export function UserForm({
@@ -215,6 +256,42 @@ export function UserForm({
   )
   const [fatherName, setFatherName] = useState(initial?.fatherName ?? '')
   const [birthDate, setBirthDate] = useState(initial?.birthDate ?? '')
+  const [latinFirstName, setLatinFirstName] = useState(initial?.latinFirstName ?? '')
+  const [latinLastName, setLatinLastName] = useState(initial?.latinLastName ?? '')
+  const [latinFatherName, setLatinFatherName] = useState(initial?.latinFatherName ?? '')
+  const [identityNumber, setIdentityNumber] = useState(initial?.identityNumber ?? '')
+  const [identitySerial, setIdentitySerial] = useState(initial?.identitySerial ?? '')
+  const [landlinePhone, setLandlinePhone] = useState(initial?.landlinePhone ?? '')
+  const [fax, setFax] = useState(initial?.fax ?? '')
+  const [postalCode, setPostalCode] = useState(initial?.postalCode ?? '')
+  const [jobAddress, setJobAddress] = useState(initial?.jobAddress ?? '')
+  const [jobPhone, setJobPhone] = useState(initial?.jobPhone ?? '')
+  const [jobFax, setJobFax] = useState(initial?.jobFax ?? '')
+  const [jobPostalCode, setJobPostalCode] = useState(initial?.jobPostalCode ?? '')
+  const [isSingle, setIsSingle] = useState(initial?.isSingle ?? false)
+  const [nationality, setNationality] = useState(initial?.nationality ?? '')
+  const [education, setEducation] = useState(initial?.education ?? '')
+  const [protectorOffice, setProtectorOffice] = useState(initial?.protectorOffice ?? '')
+  const [nationalIdExpiresAt, setNationalIdExpiresAt] = useState(initial?.nationalIdExpiresAt ?? '')
+  const [passportExpiresAt, setPassportExpiresAt] = useState(initial?.passportExpiresAt ?? '')
+  const [bankFullName, setBankFullName] = useState(initial?.bankFullName ?? '')
+  const [bankFullLatinName, setBankFullLatinName] = useState(initial?.bankFullLatinName ?? '')
+  const [accountNumber, setAccountNumber] = useState(initial?.accountNumber ?? '')
+  const [cardNumber, setCardNumber] = useState(initial?.cardNumber ?? '')
+  const [cardSeries, setCardSeries] = useState(initial?.cardSeries ?? '')
+  const [isBank, setIsBank] = useState(initial?.isBank ?? false)
+  const [accountOpeningDate, setAccountOpeningDate] = useState(initial?.accountOpeningDate ?? '')
+  const [cardIssuanceDate, setCardIssuanceDate] = useState(initial?.cardIssuanceDate ?? '')
+  const [cardDeliverDate, setCardDeliverDate] = useState(initial?.cardDeliverDate ?? '')
+  const [companyName, setCompanyName] = useState(initial?.companyName ?? '')
+  const [companySubject, setCompanySubject] = useState(initial?.companySubject ?? '')
+  const [companyLicenseNumber, setCompanyLicenseNumber] = useState(initial?.companyLicenseNumber ?? '')
+  const [companyLicenseDate, setCompanyLicenseDate] = useState(initial?.companyLicenseDate ?? '')
+  const [companyPaperNumber, setCompanyPaperNumber] = useState(initial?.companyPaperNumber ?? '')
+  const [companyPaperDate, setCompanyPaperDate] = useState(initial?.companyPaperDate ?? '')
+  const [electricitySubscription, setElectricitySubscription] = useState(
+    initial?.electricitySubscription ?? '',
+  )
   const tabs = selfProfile ? allTabs.filter((item) => item !== 'qeshmondi') : allTabs
   const [uploading, setUploading] = useState<PhotoField>()
   const [saving, setSaving] = useState(false)
@@ -624,7 +701,10 @@ export function UserForm({
         address: emptyToNull(address),
         notes: emptyToNull(notes),
         religion: religion ? (religion as Religion) : null,
-        religionOther: religion === religions.OTHER ? emptyToNull(religionOther) : null,
+        religionOther:
+          religion === religions.OTHER || religion === religions.ISLAM
+            ? emptyToNull(religionOther)
+            : null,
         telegram: emptyToNull(telegram),
         bale: emptyToNull(bale),
         eitaa: emptyToNull(eitaa),
@@ -657,6 +737,44 @@ export function UserForm({
         })(),
         fatherName: emptyToNull(fatherName),
         birthDate: emptyToNull(birthDate),
+        ...(selfProfile
+          ? {}
+          : {
+              latinFirstName: emptyToNull(latinFirstName),
+              latinLastName: emptyToNull(latinLastName),
+              latinFatherName: emptyToNull(latinFatherName),
+              identityNumber: emptyToNull(toLatinDigits(identityNumber)),
+              identitySerial: emptyToNull(identitySerial),
+              landlinePhone: emptyToNull(toLatinDigits(landlinePhone)),
+              fax: emptyToNull(toLatinDigits(fax)),
+              postalCode: emptyToNull(toLatinDigits(postalCode)),
+              jobAddress: emptyToNull(jobAddress),
+              jobPhone: emptyToNull(toLatinDigits(jobPhone)),
+              jobFax: emptyToNull(toLatinDigits(jobFax)),
+              jobPostalCode: emptyToNull(toLatinDigits(jobPostalCode)),
+              isSingle,
+              nationality: emptyToNull(nationality),
+              education: emptyToNull(education),
+              protectorOffice: emptyToNull(protectorOffice),
+              nationalIdExpiresAt: emptyToNull(nationalIdExpiresAt),
+              passportExpiresAt: emptyToNull(passportExpiresAt),
+              bankFullName: emptyToNull(bankFullName),
+              bankFullLatinName: emptyToNull(bankFullLatinName),
+              accountNumber: emptyToNull(toLatinDigits(accountNumber)),
+              cardNumber: emptyToNull(toLatinDigits(cardNumber)),
+              cardSeries: emptyToNull(cardSeries),
+              isBank,
+              accountOpeningDate: emptyToNull(accountOpeningDate),
+              cardIssuanceDate: emptyToNull(cardIssuanceDate),
+              cardDeliverDate: emptyToNull(cardDeliverDate),
+              companyName: emptyToNull(companyName),
+              companySubject: emptyToNull(companySubject),
+              companyLicenseNumber: emptyToNull(companyLicenseNumber),
+              companyLicenseDate: emptyToNull(companyLicenseDate),
+              companyPaperNumber: emptyToNull(companyPaperNumber),
+              companyPaperDate: emptyToNull(companyPaperDate),
+              electricitySubscription: emptyToNull(electricitySubscription),
+            }),
         ...(password ? { password } : {}),
       })
     } catch (error) {
@@ -1231,6 +1349,152 @@ export function UserForm({
                   minDate={qeshmondiStartDate || undefined}
                   onChange={(value) => setQeshmondiEndDate(value ?? '')}
                 />
+              </FormField>
+            </div>
+
+            <FormSectionTitle icon={Languages} className="mb-2.5 mt-2">
+              {t('users.qeshmondiSections.identity')}
+            </FormSectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={Languages} label={t('users.latinFirstName')} htmlFor="latinFirstName">
+                <input id="latinFirstName" className={`${fieldClassName} latin-field`} dir="ltr" value={latinFirstName} onChange={(e) => setLatinFirstName(e.target.value)} />
+              </FormField>
+              <FormField icon={Languages} label={t('users.latinLastName')} htmlFor="latinLastName">
+                <input id="latinLastName" className={`${fieldClassName} latin-field`} dir="ltr" value={latinLastName} onChange={(e) => setLatinLastName(e.target.value)} />
+              </FormField>
+              <FormField icon={Languages} label={t('users.latinFatherName')} htmlFor="latinFatherName">
+                <input id="latinFatherName" className={`${fieldClassName} latin-field`} dir="ltr" value={latinFatherName} onChange={(e) => setLatinFatherName(e.target.value)} />
+              </FormField>
+              <FormField icon={Hash} label={t('users.identityNumber')} htmlFor="identityNumber">
+                <input id="identityNumber" className={`${fieldClassName} digit-field`} dir="ltr" value={identityNumber} onChange={(e) => setIdentityNumber(toLatinDigits(e.target.value))} />
+              </FormField>
+              <FormField icon={Hash} label={t('users.identitySerial')} htmlFor="identitySerial">
+                <input id="identitySerial" className={`${fieldClassName} digit-field`} dir="ltr" value={identitySerial} onChange={(e) => setIdentitySerial(toLatinDigits(e.target.value))} />
+              </FormField>
+              <FormField icon={FileText} label={t('users.religionBranch')} htmlFor="religionBranch">
+                <input id="religionBranch" className={fieldClassName} value={religionOther} onChange={(e) => setReligionOther(e.target.value)} />
+              </FormField>
+            </div>
+
+            <FormSectionTitle icon={Phone} className="mb-2.5 mt-2">
+              {t('users.qeshmondiSections.contact')}
+            </FormSectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={Phone} label={t('users.landlinePhone')} htmlFor="landlinePhone">
+                <input id="landlinePhone" className={`${fieldClassName} digit-field`} dir="ltr" value={landlinePhone} onChange={(e) => setLandlinePhone(toLatinDigits(e.target.value))} />
+              </FormField>
+              <FormField icon={Printer} label={t('users.fax')} htmlFor="fax">
+                <input id="fax" className={`${fieldClassName} digit-field`} dir="ltr" value={fax} onChange={(e) => setFax(toLatinDigits(e.target.value))} />
+              </FormField>
+              <FormField icon={Hash} label={t('users.postalCode')} htmlFor="postalCode">
+                <input id="postalCode" className={`${fieldClassName} digit-field`} dir="ltr" value={postalCode} onChange={(e) => setPostalCode(toLatinDigits(e.target.value))} />
+              </FormField>
+              <FormField icon={Zap} label={t('users.electricitySubscription')} htmlFor="electricitySubscription">
+                <input id="electricitySubscription" className={fieldClassName} value={electricitySubscription} onChange={(e) => setElectricitySubscription(e.target.value)} />
+              </FormField>
+              <FormField icon={Building2} label={t('users.jobAddress')} htmlFor="jobAddress">
+                <input id="jobAddress" className={fieldClassName} value={jobAddress} onChange={(e) => setJobAddress(e.target.value)} />
+              </FormField>
+              <FormField icon={Phone} label={t('users.jobPhone')} htmlFor="jobPhone">
+                <input id="jobPhone" className={`${fieldClassName} digit-field`} dir="ltr" value={jobPhone} onChange={(e) => setJobPhone(toLatinDigits(e.target.value))} />
+              </FormField>
+              <FormField icon={Printer} label={t('users.jobFax')} htmlFor="jobFax">
+                <input id="jobFax" className={`${fieldClassName} digit-field`} dir="ltr" value={jobFax} onChange={(e) => setJobFax(toLatinDigits(e.target.value))} />
+              </FormField>
+              <FormField icon={Hash} label={t('users.jobPostalCode')} htmlFor="jobPostalCode">
+                <input id="jobPostalCode" className={`${fieldClassName} digit-field`} dir="ltr" value={jobPostalCode} onChange={(e) => setJobPostalCode(toLatinDigits(e.target.value))} />
+              </FormField>
+            </div>
+
+            <FormSectionTitle icon={GraduationCap} className="mb-2.5 mt-2">
+              {t('users.qeshmondiSections.status')}
+            </FormSectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={Users} label={t('users.isSingle')} htmlFor="isSingle">
+                <ToggleField id="isSingle" checked={isSingle} onChange={setIsSingle} onLabel={t('users.single')} offLabel={t('users.married')} />
+              </FormField>
+              <FormField icon={GraduationCap} label={t('users.education')} htmlFor="education">
+                <input id="education" className={fieldClassName} value={education} onChange={(e) => setEducation(e.target.value)} />
+              </FormField>
+              <FormField icon={Flag} label={t('users.nationality')} htmlFor="nationality">
+                <input id="nationality" className={fieldClassName} value={nationality} onChange={(e) => setNationality(e.target.value)} />
+              </FormField>
+              <FormField icon={Landmark} label={t('users.protectorOffice')} htmlFor="protectorOffice">
+                <input id="protectorOffice" className={fieldClassName} value={protectorOffice} onChange={(e) => setProtectorOffice(e.target.value)} />
+              </FormField>
+              <FormField icon={Fingerprint} label={t('users.fingerprint')}>
+                <p className="text-sm text-ink-700">
+                  {initial?.hasFingerprint ? t('users.fingerprintSaved') : t('users.fingerprintEmpty')}
+                </p>
+              </FormField>
+            </div>
+
+            <FormSectionTitle icon={CalendarRange} className="mb-2.5 mt-2">
+              {t('users.qeshmondiSections.expiry')}
+            </FormSectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={CalendarRange} label={t('users.nationalIdExpiresAt')} htmlFor="nationalIdExpiresAt">
+                <PersianDateField id="nationalIdExpiresAt" value={nationalIdExpiresAt} onChange={(value) => setNationalIdExpiresAt(value ?? '')} />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('users.passportExpiresAt')} htmlFor="passportExpiresAt">
+                <PersianDateField id="passportExpiresAt" value={passportExpiresAt} onChange={(value) => setPassportExpiresAt(value ?? '')} />
+              </FormField>
+            </div>
+
+            <FormSectionTitle icon={Landmark} className="mb-2.5 mt-2">
+              {t('users.qeshmondiSections.bank')}
+            </FormSectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={ToggleRight} label={t('users.isBank')} htmlFor="isBank">
+                <ToggleField id="isBank" checked={isBank} onChange={setIsBank} onLabel={t('users.hasBank')} offLabel={t('users.noBank')} />
+              </FormField>
+              <FormField icon={Landmark} label={t('users.bankFullName')} htmlFor="bankFullName">
+                <input id="bankFullName" className={fieldClassName} value={bankFullName} onChange={(e) => setBankFullName(e.target.value)} />
+              </FormField>
+              <FormField icon={Languages} label={t('users.bankFullLatinName')} htmlFor="bankFullLatinName">
+                <input id="bankFullLatinName" className={`${fieldClassName} latin-field`} dir="ltr" value={bankFullLatinName} onChange={(e) => setBankFullLatinName(e.target.value)} />
+              </FormField>
+              <FormField icon={CreditCard} label={t('users.accountNumber')} htmlFor="accountNumber">
+                <input id="accountNumber" className={`${fieldClassName} digit-field`} dir="ltr" value={accountNumber} onChange={(e) => setAccountNumber(toLatinDigits(e.target.value))} />
+              </FormField>
+              <FormField icon={CreditCard} label={t('users.cardNumber')} htmlFor="cardNumber">
+                <input id="cardNumber" className={`${fieldClassName} digit-field`} dir="ltr" value={cardNumber} onChange={(e) => setCardNumber(toLatinDigits(e.target.value))} />
+              </FormField>
+              <FormField icon={Hash} label={t('users.cardSeries')} htmlFor="cardSeries">
+                <input id="cardSeries" className={fieldClassName} value={cardSeries} onChange={(e) => setCardSeries(e.target.value)} />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('users.accountOpeningDate')} htmlFor="accountOpeningDate">
+                <PersianDateField id="accountOpeningDate" value={accountOpeningDate} onChange={(value) => setAccountOpeningDate(value ?? '')} />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('users.cardIssuanceDate')} htmlFor="cardIssuanceDate">
+                <PersianDateField id="cardIssuanceDate" value={cardIssuanceDate} onChange={(value) => setCardIssuanceDate(value ?? '')} />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('users.cardDeliverDate')} htmlFor="cardDeliverDate">
+                <PersianDateField id="cardDeliverDate" value={cardDeliverDate} onChange={(value) => setCardDeliverDate(value ?? '')} />
+              </FormField>
+            </div>
+
+            <FormSectionTitle icon={Building2} className="mb-2.5 mt-2">
+              {t('users.qeshmondiSections.company')}
+            </FormSectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={Building2} label={t('users.companyName')} htmlFor="companyName">
+                <input id="companyName" className={fieldClassName} value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+              </FormField>
+              <FormField icon={FileText} label={t('users.companySubject')} htmlFor="companySubject">
+                <input id="companySubject" className={fieldClassName} value={companySubject} onChange={(e) => setCompanySubject(e.target.value)} />
+              </FormField>
+              <FormField icon={Hash} label={t('users.companyLicenseNumber')} htmlFor="companyLicenseNumber">
+                <input id="companyLicenseNumber" className={fieldClassName} value={companyLicenseNumber} onChange={(e) => setCompanyLicenseNumber(e.target.value)} />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('users.companyLicenseDate')} htmlFor="companyLicenseDate">
+                <PersianDateField id="companyLicenseDate" value={companyLicenseDate} onChange={(value) => setCompanyLicenseDate(value ?? '')} />
+              </FormField>
+              <FormField icon={Hash} label={t('users.companyPaperNumber')} htmlFor="companyPaperNumber">
+                <input id="companyPaperNumber" className={fieldClassName} value={companyPaperNumber} onChange={(e) => setCompanyPaperNumber(e.target.value)} />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('users.companyPaperDate')} htmlFor="companyPaperDate">
+                <PersianDateField id="companyPaperDate" value={companyPaperDate} onChange={(value) => setCompanyPaperDate(value ?? '')} />
               </FormField>
             </div>
           </div>

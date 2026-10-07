@@ -811,6 +811,18 @@ export const portKinds = ["INDIVIDUAL", "VEHICLE"] as const;
 
 export type PortKind = (typeof portKinds)[number];
 
+export type PortOperator = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  phone: string | null;
+};
+
+export type PortOperatorOption = PortOperator & {
+  port: { id: string; name: string } | null;
+};
+
 export type Port = {
   id: string;
   name: string;
@@ -823,6 +835,9 @@ export type Port = {
   phone: string;
   latitude: number | null;
   longitude: number | null;
+  securityToken?: string;
+  operatorUserId?: string | null;
+  operatorUser?: PortOperator | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -1127,6 +1142,41 @@ export type ManagedUser = {
   qeshmondiGroup?: string | null;
   individualTicketQuota?: number;
   fatherName?: string | null;
+  latinFirstName?: string | null;
+  latinLastName?: string | null;
+  latinFatherName?: string | null;
+  identityNumber?: string | null;
+  identitySerial?: string | null;
+  landlinePhone?: string | null;
+  fax?: string | null;
+  postalCode?: string | null;
+  jobAddress?: string | null;
+  jobPhone?: string | null;
+  jobFax?: string | null;
+  jobPostalCode?: string | null;
+  isSingle?: boolean | null;
+  nationality?: string | null;
+  education?: string | null;
+  protectorOffice?: string | null;
+  nationalIdExpiresAt?: string | null;
+  passportExpiresAt?: string | null;
+  bankFullName?: string | null;
+  bankFullLatinName?: string | null;
+  accountNumber?: string | null;
+  cardNumber?: string | null;
+  cardSeries?: string | null;
+  isBank?: boolean | null;
+  accountOpeningDate?: string | null;
+  cardIssuanceDate?: string | null;
+  cardDeliverDate?: string | null;
+  companyName?: string | null;
+  companySubject?: string | null;
+  companyLicenseNumber?: string | null;
+  companyLicenseDate?: string | null;
+  companyPaperNumber?: string | null;
+  companyPaperDate?: string | null;
+  electricitySubscription?: string | null;
+  hasFingerprint?: boolean;
   photoId: string | null;
   nationalCardPhotoId: string | null;
   passportPhotoId: string | null;

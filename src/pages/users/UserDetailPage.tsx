@@ -3,12 +3,17 @@ import {
   Building2,
   Calendar,
   Car,
+  CreditCard,
   FileImage,
   FileText,
+  Fingerprint,
   Flag,
+  GraduationCap,
+  Hash,
   IdCard,
   ImagePlus,
   KeyRound,
+  Landmark,
   Languages,
   LocateFixed,
   Mail,
@@ -16,6 +21,7 @@ import {
   MapPinned,
   MessageCircle,
   Phone,
+  Printer,
   Handshake,
   Share2,
   Shield,
@@ -24,6 +30,7 @@ import {
   UserRound,
   UserRoundCheck,
   Users,
+  Zap,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -446,6 +453,90 @@ export function UserDetailPage() {
                   empty={!user.qeshmondiEndDate}
                   tone="ink"
                 />
+              </div>
+
+              <FormSectionTitle icon={Languages} className="mb-2.5 mt-6">
+                {t('users.qeshmondiSections.identity')}
+              </FormSectionTitle>
+              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+                <FormFactTile icon={Languages} label={t('users.latinFirstName')} value={user.latinFirstName || empty} empty={!user.latinFirstName} tone="teal" />
+                <FormFactTile icon={Languages} label={t('users.latinLastName')} value={user.latinLastName || empty} empty={!user.latinLastName} tone="mint" />
+                <FormFactTile icon={Languages} label={t('users.latinFatherName')} value={user.latinFatherName || empty} empty={!user.latinFatherName} tone="ink" />
+                <FormFactTile icon={Hash} label={t('users.identityNumber')} value={user.identityNumber ? localizeDigits(user.identityNumber, uiLocale) : empty} empty={!user.identityNumber} tone="teal" />
+                <FormFactTile icon={Hash} label={t('users.identitySerial')} value={user.identitySerial ? localizeDigits(user.identitySerial, uiLocale) : empty} empty={!user.identitySerial} tone="mint" />
+                <FormFactTile icon={FileText} label={t('users.religionBranch')} value={user.religionOther || empty} empty={!user.religionOther} tone="ink" />
+              </div>
+
+              <FormSectionTitle icon={Phone} className="mb-2.5 mt-6">
+                {t('users.qeshmondiSections.contact')}
+              </FormSectionTitle>
+              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+                <FormFactTile icon={Phone} label={t('users.landlinePhone')} value={user.landlinePhone ? localizeDigits(user.landlinePhone, uiLocale) : empty} empty={!user.landlinePhone} tone="teal" />
+                <FormFactTile icon={Printer} label={t('users.fax')} value={user.fax ? localizeDigits(user.fax, uiLocale) : empty} empty={!user.fax} tone="mint" />
+                <FormFactTile icon={Hash} label={t('users.postalCode')} value={user.postalCode ? localizeDigits(user.postalCode, uiLocale) : empty} empty={!user.postalCode} tone="ink" />
+                <FormFactTile icon={Zap} label={t('users.electricitySubscription')} value={user.electricitySubscription || empty} empty={!user.electricitySubscription} tone="teal" />
+                <FormFactTile icon={Building2} label={t('users.jobAddress')} value={user.jobAddress || empty} empty={!user.jobAddress} tone="mint" />
+                <FormFactTile icon={Phone} label={t('users.jobPhone')} value={user.jobPhone ? localizeDigits(user.jobPhone, uiLocale) : empty} empty={!user.jobPhone} tone="ink" />
+                <FormFactTile icon={Printer} label={t('users.jobFax')} value={user.jobFax ? localizeDigits(user.jobFax, uiLocale) : empty} empty={!user.jobFax} tone="teal" />
+                <FormFactTile icon={Hash} label={t('users.jobPostalCode')} value={user.jobPostalCode ? localizeDigits(user.jobPostalCode, uiLocale) : empty} empty={!user.jobPostalCode} tone="mint" />
+              </div>
+
+              <FormSectionTitle icon={GraduationCap} className="mb-2.5 mt-6">
+                {t('users.qeshmondiSections.status')}
+              </FormSectionTitle>
+              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+                <FormFactTile
+                  icon={Users}
+                  label={t('users.isSingle')}
+                  value={user.isSingle == null ? empty : user.isSingle ? t('users.single') : t('users.married')}
+                  empty={user.isSingle == null}
+                  tone="teal"
+                />
+                <FormFactTile icon={GraduationCap} label={t('users.education')} value={user.education || empty} empty={!user.education} tone="mint" />
+                <FormFactTile icon={Flag} label={t('users.nationality')} value={user.nationality || empty} empty={!user.nationality} tone="ink" />
+                <FormFactTile icon={Landmark} label={t('users.protectorOffice')} value={user.protectorOffice || empty} empty={!user.protectorOffice} tone="teal" />
+                <FormFactTile icon={Fingerprint} label={t('users.fingerprint')} value={user.hasFingerprint ? t('users.fingerprintSaved') : t('users.fingerprintEmpty')} tone="mint" />
+              </div>
+
+              <FormSectionTitle icon={Calendar} className="mb-2.5 mt-6">
+                {t('users.qeshmondiSections.expiry')}
+              </FormSectionTitle>
+              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+                <FormFactTile icon={Calendar} label={t('users.nationalIdExpiresAt')} value={user.nationalIdExpiresAt ? <DateText value={user.nationalIdExpiresAt} /> : empty} empty={!user.nationalIdExpiresAt} tone="teal" />
+                <FormFactTile icon={Calendar} label={t('users.passportExpiresAt')} value={user.passportExpiresAt ? <DateText value={user.passportExpiresAt} /> : empty} empty={!user.passportExpiresAt} tone="mint" />
+              </div>
+
+              <FormSectionTitle icon={Landmark} className="mb-2.5 mt-6">
+                {t('users.qeshmondiSections.bank')}
+              </FormSectionTitle>
+              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+                <FormFactTile
+                  icon={ToggleRight}
+                  label={t('users.isBank')}
+                  value={user.isBank == null ? empty : user.isBank ? t('users.hasBank') : t('users.noBank')}
+                  empty={user.isBank == null}
+                  tone="teal"
+                />
+                <FormFactTile icon={Landmark} label={t('users.bankFullName')} value={user.bankFullName || empty} empty={!user.bankFullName} tone="mint" />
+                <FormFactTile icon={Languages} label={t('users.bankFullLatinName')} value={user.bankFullLatinName || empty} empty={!user.bankFullLatinName} tone="ink" />
+                <FormFactTile icon={CreditCard} label={t('users.accountNumber')} value={user.accountNumber ? localizeDigits(user.accountNumber, uiLocale) : empty} empty={!user.accountNumber} tone="teal" />
+                <FormFactTile icon={CreditCard} label={t('users.cardNumber')} value={user.cardNumber ? localizeDigits(user.cardNumber, uiLocale) : empty} empty={!user.cardNumber} tone="mint" />
+                <FormFactTile icon={Hash} label={t('users.cardSeries')} value={user.cardSeries || empty} empty={!user.cardSeries} tone="ink" />
+                <FormFactTile icon={Calendar} label={t('users.accountOpeningDate')} value={user.accountOpeningDate ? <DateText value={user.accountOpeningDate} /> : empty} empty={!user.accountOpeningDate} tone="teal" />
+                <FormFactTile icon={Calendar} label={t('users.cardIssuanceDate')} value={user.cardIssuanceDate ? <DateText value={user.cardIssuanceDate} /> : empty} empty={!user.cardIssuanceDate} tone="mint" />
+                <FormFactTile icon={Calendar} label={t('users.cardDeliverDate')} value={user.cardDeliverDate ? <DateText value={user.cardDeliverDate} /> : empty} empty={!user.cardDeliverDate} tone="ink" />
+              </div>
+
+              <FormSectionTitle icon={Building2} className="mb-2.5 mt-6">
+                {t('users.qeshmondiSections.company')}
+              </FormSectionTitle>
+              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+                <FormFactTile icon={Building2} label={t('users.companyName')} value={user.companyName || empty} empty={!user.companyName} tone="teal" />
+                <FormFactTile icon={FileText} label={t('users.companySubject')} value={user.companySubject || empty} empty={!user.companySubject} tone="mint" />
+                <FormFactTile icon={Hash} label={t('users.companyLicenseNumber')} value={user.companyLicenseNumber || empty} empty={!user.companyLicenseNumber} tone="ink" />
+                <FormFactTile icon={Calendar} label={t('users.companyLicenseDate')} value={user.companyLicenseDate ? <DateText value={user.companyLicenseDate} /> : empty} empty={!user.companyLicenseDate} tone="teal" />
+                <FormFactTile icon={Hash} label={t('users.companyPaperNumber')} value={user.companyPaperNumber || empty} empty={!user.companyPaperNumber} tone="mint" />
+                <FormFactTile icon={Calendar} label={t('users.companyPaperDate')} value={user.companyPaperDate ? <DateText value={user.companyPaperDate} /> : empty} empty={!user.companyPaperDate} tone="ink" />
               </div>
             </section>
           ) : null}
