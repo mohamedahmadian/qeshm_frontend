@@ -140,16 +140,19 @@ export function UnitRepForm({
             onChange={setNutritionRepId}
             placeholder={t('unitReps.selectRepresentative')}
             disabled={!unitId || employees.isLoading}
-            options={people.map((user) => {
-              const phone = user.phone ? localizeDigits(user.phone, locale) : ''
-              const nationalId = user.nationalId ? localizeDigits(user.nationalId, locale) : ''
-              const extras = [phone, nationalId].filter(Boolean)
-              return {
-                value: user.id,
-                label: extras.length ? `${user.fullName} — ${extras.join(' — ')}` : user.fullName,
-                keywords: [user.phone, user.nationalId].filter(Boolean).join(' '),
-              }
-            })}
+            options={[
+              { value: '', label: t('unitReps.selectRepresentative') },
+              ...people.map((user) => {
+                const phone = user.phone ? localizeDigits(user.phone, locale) : ''
+                const nationalId = user.nationalId ? localizeDigits(user.nationalId, locale) : ''
+                const extras = [phone, nationalId].filter(Boolean)
+                return {
+                  value: user.id,
+                  label: extras.length ? `${user.fullName} — ${extras.join(' — ')}` : user.fullName,
+                  keywords: [user.phone, user.nationalId].filter(Boolean).join(' '),
+                }
+              }),
+            ]}
           />
         </FormField>
         {unitId && !employees.isLoading && people.length === 0 ? (

@@ -9,6 +9,7 @@ export const CITIZEN_ROLE_CODE = "CITIZEN";
 export const BOARD_ADMIN_ROLE_CODE = "BOARD_ADMIN";
 export const CONTRACTOR_ROLE_CODE = "CONTRACTOR";
 export const STAKEHOLDERS_ADMIN_ROLE_CODE = "STAKEHOLDERS_ADMIN";
+export const FOOD_ADMIN_ROLE_CODE = "FOOD_ADMIN";
 
 export function isSystemRoleLocked(
   role?: { isSystem?: boolean; code?: string } | null,
@@ -34,12 +35,10 @@ const personalFoodMenuCodes = new Set([
 ]);
 
 function hidesPersonalFoodMenus(
-  user?:
-    | Pick<AuthUser, "isAdmin" | "permissionCodes" | "roles">
-    | null,
+  user?: Pick<AuthUser, "isAdmin" | "permissionCodes" | "roles"> | null,
 ) {
   if (!user) return false;
-  if (isAdmin(user)) return true;
+  if (isAdmin(user) || isFoodAdmin(user)) return true;
   return Boolean(user.permissionCodes?.includes("food-reservation"));
 }
 
@@ -70,6 +69,10 @@ export function isStakeholdersAdmin(
   return Boolean(
     user?.roles?.some((role) => role.code === STAKEHOLDERS_ADMIN_ROLE_CODE),
   );
+}
+
+export function isFoodAdmin(user?: { roles?: { code: string }[] } | null) {
+  return Boolean(user?.roles?.some((role) => role.code === FOOD_ADMIN_ROLE_CODE));
 }
 
 export function canSeeAllPortSalesReports(
