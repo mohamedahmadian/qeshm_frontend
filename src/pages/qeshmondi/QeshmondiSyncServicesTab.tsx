@@ -104,6 +104,17 @@ X-Port-Security-Token: <port-security-token>`}
           <p className="text-sm leading-8 text-ink-600">{t('qeshmondiInquiry.services.inquiryBody')}</p>
           <MethodLine method="GET" path={`${base}/cooperative/qeshmondi/inquiry?nationalId=0012345678`} />
           <Sample
+            label={t('qeshmondiInquiry.services.inquiryBorn')}
+            value={`{
+  "success": true,
+  "message": "",
+  "data": {
+    "nationalId": "3450000004",
+    "isQeshmvand": true
+  }
+}`}
+          />
+          <Sample
             label={t('qeshmondiInquiry.services.inquiryFound')}
             value={`{
   "success": true,

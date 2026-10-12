@@ -46,6 +46,25 @@
   background-image: linear-gradient(to inline-end, var(--tw-gradient-stops));
 }
 
+@keyframes food-days-slide {
+  from {
+    transform: translateX(var(--food-day-from, 0px));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.food-days-slide {
+  animation: food-days-slide 220ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .food-days-slide {
+    animation: none;
+  }
+}
+
 html,
 body,
 #root {
@@ -257,6 +276,10 @@ th {
 .rmdp-wrapper {
   font-family: var(--font-sans);
   z-index: 80;
+}
+
+.rmdp-wrapper.eskan-triple-cal {
+  overscroll-behavior: contain;
 }
 
 .recharts-wrapper,
@@ -2098,6 +2121,11 @@ th {
 .rmdp-week-day {
   height: 2.25rem;
   width: 2.25rem;
+}
+
+.rmdp-day:not(.rmdp-disabled) > span,
+.rmdp-arrow-container {
+  cursor: pointer;
 }
 
 .rmdp-day > span {

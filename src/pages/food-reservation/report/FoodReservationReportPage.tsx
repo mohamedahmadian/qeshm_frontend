@@ -41,7 +41,7 @@ import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api } from '../../../lib/api'
-import { formatNumber } from '../../../lib/datetime'
+import { formatGroupedNumber, formatNumber } from '../../../lib/datetime'
 import type {
   FoodReservationReport,
   ManagedUser,
@@ -49,7 +49,7 @@ import type {
   Restaurant,
   RestaurantMenuItem,
 } from '../../../types/app'
-import { FoodReservationStatusBadge } from '../FoodReservationStatusBadge'
+import { FoodReservationStatusBadge, ReservationGuestMark } from '../FoodReservationStatusBadge'
 import { foodReservationHistoryItemPath } from '../food-paths'
 
 export function FoodReservationReportPage() {
@@ -325,7 +325,7 @@ export function FoodReservationReportPage() {
                   <FormFactTile
                     icon={Wallet}
                     label={t('foodReservations.totalAmount')}
-                    value={`${formatNumber(summary.totalPrice, locale)} ${t('foodReservations.toman')}`}
+                    value={`${formatGroupedNumber(summary.totalPrice, locale)} ${t('foodReservations.toman')}`}
                   />
                   <FormFactTile
                     icon={Ticket}
@@ -341,7 +341,7 @@ export function FoodReservationReportPage() {
                   <FormFactTile
                     icon={Wallet}
                     label={t('foodReservations.confirmed')}
-                    value={`${formatNumber(summary.confirmedTotal, locale)} ${t('foodReservations.toman')}`}
+                    value={`${formatGroupedNumber(summary.confirmedTotal, locale)} ${t('foodReservations.toman')}`}
                     tone="teal"
                   />
                 </div>
@@ -365,7 +365,7 @@ export function FoodReservationReportPage() {
                               <td className="px-4 py-3">{formatNumber(item.count, locale)}</td>
                               <td className="px-4 py-3">{formatNumber(item.quantity, locale)}</td>
                               <td className="px-4 py-3">
-                                {formatNumber(item.totalPrice, locale)} {t('foodReservations.toman')}
+                                {formatGroupedNumber(item.totalPrice, locale)} {t('foodReservations.toman')}
                               </td>
                             </tr>
                           ))}
@@ -384,6 +384,7 @@ export function FoodReservationReportPage() {
                             <th className="px-4 py-3 text-start">{t('foodReservations.orgUnit')}</th>
                             <th className="px-4 py-3 text-start">{t('foodReservations.totalCount')}</th>
                             <th className="px-4 py-3 text-start">{t('foodReservations.quantity')}</th>
+                            <th className="px-4 py-3 text-start">{t('foodReservations.guestQuantity')}</th>
                             <th className="px-4 py-3 text-start">{t('foodReservations.totalPrice')}</th>
                           </tr>
                         </thead>
@@ -393,8 +394,9 @@ export function FoodReservationReportPage() {
                               <td className="px-4 py-3">{item.name}</td>
                               <td className="px-4 py-3">{formatNumber(item.count, locale)}</td>
                               <td className="px-4 py-3">{formatNumber(item.quantity, locale)}</td>
+                              <td className="px-4 py-3">{formatNumber(item.guestQuantity ?? 0, locale)}</td>
                               <td className="px-4 py-3">
-                                {formatNumber(item.totalPrice, locale)} {t('foodReservations.toman')}
+                                {formatGroupedNumber(item.totalPrice, locale)} {t('foodReservations.toman')}
                               </td>
                             </tr>
                           ))}
@@ -430,7 +432,12 @@ export function FoodReservationReportPage() {
                     <td className="px-4 py-3">{item.user.fullName}</td>
                     <td className="px-4 py-3">{item.orgUnit.name}</td>
                     <td className="px-4 py-3">{item.food.name}</td>
-                    <td className="px-4 py-3">{formatNumber(item.quantity, locale)}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-2">
+                        {formatNumber(item.quantity, locale)}
+                        <ReservationGuestMark forGuest={item.forGuest} />
+                      </span>
+                    </td>
                     <td className="px-4 py-3"><FoodReservationStatusBadge status={item.status} /></td>
                     <td className={actionsColClassName}>
                       <EntityRowActions viewTo={foodReservationHistoryItemPath(item.id)} />

@@ -1,4 +1,4 @@
-import { Building2, CookingPot, ImagePlus, MapPin, Phone, Store, Type, UtensilsCrossed } from 'lucide-react'
+import { Briefcase, Building2, CookingPot, ImagePlus, MapPin, Phone, Store, Type, Users, UtensilsCrossed } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -12,10 +12,15 @@ import {
 import { FormCard, FormFactTile, FormSectionTitle } from '../../../components/ui/FormLayout'
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { api } from '../../../lib/api'
-import { formatNumber } from '../../../lib/datetime'
+import { formatGroupedNumber, formatNumber } from '../../../lib/datetime'
 import type { Restaurant } from '../../../types/app'
 import { ImageFact } from '../EntityThumb'
 import { restaurantMenuPath, restaurantPath, restaurantUnitsPath, restaurantsPath } from '../food-paths'
+
+function mealPrice(price: number | null, locale: string, unit: string) {
+  if (price == null) return '—'
+  return `${formatGroupedNumber(price, locale)} ${unit}`
+}
 
 export function RestaurantDetailPage() {
   const { t, i18n } = useTranslation()
@@ -59,6 +64,18 @@ export function RestaurantDetailPage() {
               icon={UtensilsCrossed}
               label={t('restaurants.menuItemCount')}
               value={formatNumber(restaurant._count?.menuItems ?? 0, locale)}
+            />
+            <FormFactTile
+              icon={Users}
+              label={t('restaurants.staffMeal', { name: restaurant.name })}
+              value={mealPrice(restaurant.employeeMealPrice, locale, t('restaurantMenuItems.toman'))}
+              tone="teal"
+            />
+            <FormFactTile
+              icon={Briefcase}
+              label={t('restaurants.managementMeal', { name: restaurant.name })}
+              value={mealPrice(restaurant.managementMealPrice, locale, t('restaurantMenuItems.toman'))}
+              tone="mint"
             />
             <FormFactTile
               icon={MapPin}

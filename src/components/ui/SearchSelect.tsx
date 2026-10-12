@@ -17,6 +17,8 @@ import { fieldClassName } from './Form'
 export type SearchSelectOption<T extends string = string> = {
   value: T
   label: string
+  /** Extra text matched by the list search, not shown in the option. */
+  keywords?: string
   disabled?: boolean
 }
 
@@ -129,6 +131,10 @@ function labelsMatch(left: string, right: string) {
   return left.trim().toLowerCase() === right.trim().toLowerCase()
 }
 
+function optionHaystack(option: SearchSelectOption) {
+  return `${option.label} ${option.keywords ?? ''}`.toLowerCase()
+}
+
 export function SearchSelect<T extends string = string>({
   id,
   name,
@@ -173,7 +179,7 @@ export function SearchSelect<T extends string = string>({
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase()
     if (!term) return options
-    return options.filter((option) => option.label.toLowerCase().includes(term))
+    return options.filter((option) => optionHaystack(option).includes(term))
   }, [options, query])
 
   const createQuery = query.trim()
@@ -429,7 +435,7 @@ export function SearchSelect<T extends string = string>({
               onCreate && term && !options.some((option) => labelsMatch(option.label, term)),
             )
             const matchCount = term
-              ? options.filter((option) => option.label.toLowerCase().includes(term.toLowerCase())).length
+              ? options.filter((option) => optionHaystack(option).includes(term.toLowerCase())).length
               : options.length
             setActiveIndex(creating && matchCount ? 1 : 0)
           }}

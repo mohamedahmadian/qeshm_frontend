@@ -1,12 +1,12 @@
-import { ImagePlus, MapPin, Phone, Store, Type } from 'lucide-react'
+import { Briefcase, ImagePlus, MapPin, Phone, Store, Type, Users, UtensilsCrossed, type LucideIcon } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { FileDropField } from '../../../components/ui/FileDropField'
 import { AppForm, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
-import { FormCard, formCardBodyClassName } from '../../../components/ui/FormLayout'
+import { FormCard, FormSectionTitle, formCardBodyClassName } from '../../../components/ui/FormLayout'
 import { api, getApiErrorMessage, getImageUrl } from '../../../lib/api'
-import { toLatinDigits } from '../../../lib/datetime'
+import { formatGroupedNumber, parseDigitString, toLatinDigits } from '../../../lib/datetime'
 import { optimizeImageFile } from '../../../lib/optimize-image'
 import type { Restaurant } from '../../../types/app'
 import { RestaurantMenuListPage } from './menu/RestaurantMenuPages'
@@ -18,6 +18,8 @@ export type RestaurantPayload = {
   phone: string | null
   address: string | null
   logoId: string | null
+  employeeMealPrice: number
+  managementMealPrice: number
 }
 
 export function RestaurantForm({
@@ -25,17 +27,27 @@ export function RestaurantForm({
   restaurantId,
   onSubmit,
 }: {
-  initial?: Pick<Restaurant, 'name' | 'phone' | 'address' | 'logoId'>
+  initial?: Pick<
+    Restaurant,
+    'name' | 'phone' | 'address' | 'logoId' | 'employeeMealPrice' | 'managementMealPrice'
+  >
   restaurantId?: string
   onSubmit: (payload: RestaurantPayload) => Promise<void>
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   const [tab, setTab] = useState<RestaurantManageTab>('info')
   const manage = Boolean(initial && restaurantId)
   const [name, setName] = useState(initial?.name ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
   const [address, setAddress] = useState(initial?.address ?? '')
   const [logoId, setLogoId] = useState(initial?.logoId ?? '')
+  const [employeeMealPrice, setEmployeeMealPrice] = useState(
+    initial?.employeeMealPrice != null ? String(initial.employeeMealPrice) : '',
+  )
+  const [managementMealPrice, setManagementMealPrice] = useState(
+    initial?.managementMealPrice != null ? String(initial.managementMealPrice) : '',
+  )
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -63,6 +75,8 @@ export function RestaurantForm({
         phone: emptyToNull(toLatinDigits(phone).replace(/[^\d+]/g, '')),
         address: emptyToNull(address),
         logoId: emptyToNull(logoId),
+        employeeMealPrice: Number(employeeMealPrice),
+        managementMealPrice: Number(managementMealPrice),
       })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
@@ -102,6 +116,34 @@ export function RestaurantForm({
             minLength={2}
           />
         </FormField>
+        <FormSectionTitle icon={UtensilsCrossed} className="mb-2.5 mt-2">
+          {t('restaurants.mealsSection')}
+        </FormSectionTitle>
+        <p className="text-xs leading-6 text-ink-500">{t('restaurants.mealsHint')}</p>
+        <MealPriceField
+          id="employeeMealPrice"
+          icon={Users}
+          label={t('restaurants.staffMeal', {
+            name: name.trim() || t('restaurants.mealNamePending'),
+          })}
+          value={employeeMealPrice}
+          onChange={setEmployeeMealPrice}
+          locale={locale}
+          priceLabel={t('restaurants.mealPrice')}
+          unit={t('restaurantMenuItems.toman')}
+        />
+        <MealPriceField
+          id="managementMealPrice"
+          icon={Briefcase}
+          label={t('restaurants.managementMeal', {
+            name: name.trim() || t('restaurants.mealNamePending'),
+          })}
+          value={managementMealPrice}
+          onChange={setManagementMealPrice}
+          locale={locale}
+          priceLabel={t('restaurants.mealPrice')}
+          unit={t('restaurantMenuItems.toman')}
+        />
         <FormField icon={Phone} label={t('restaurants.phone')} htmlFor="restaurantPhone">
           <input
             id="restaurantPhone"
@@ -139,6 +181,46 @@ export function RestaurantForm({
         />
       </AppForm>
     </FormCard>
+  )
+}
+
+function MealPriceField({
+  id,
+  icon,
+  label,
+  value,
+  onChange,
+  priceLabel,
+  unit,
+  locale,
+}: {
+  id: string
+  icon: LucideIcon
+  label: string
+  value: string
+  onChange: (value: string) => void
+  priceLabel: string
+  unit: string
+  locale: string
+}) {
+  const shown =
+    value === '' || !Number.isFinite(Number(value)) ? '' : formatGroupedNumber(Number(value), locale)
+  return (
+    <FormField icon={icon} label={label} htmlFor={id}>
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="text"
+          inputMode="numeric"
+          required
+          placeholder={priceLabel}
+          className={`${fieldClassName} digit-field`}
+          value={shown}
+          onChange={(event) => onChange(parseDigitString(event.target.value))}
+        />
+        <span className="shrink-0 text-sm text-ink-500">{unit}</span>
+      </div>
+    </FormField>
   )
 }
 

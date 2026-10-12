@@ -1,4 +1,4 @@
-import { CalendarRange, ClipboardList, FileSpreadsheet, Hash, Plus, Store, Ticket, Trash2, UserRound, UtensilsCrossed, Wallet } from 'lucide-react'
+import { CalendarRange, ClipboardList, FileSpreadsheet, Hash, Plus, Store, Ticket, Trash2, UserRound, Users, UtensilsCrossed, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -28,10 +28,10 @@ import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api, getApiErrorMessage } from '../../../lib/api'
-import { formatNumber } from '../../../lib/datetime'
+import { formatGroupedNumber, formatNumber } from '../../../lib/datetime'
 import { hasPermission } from '../../../lib/roles'
 import type { FoodReservation, FoodReservationContext, Paginated } from '../../../types/app'
-import { FoodReservationStatusBadge } from '../FoodReservationStatusBadge'
+import { FoodReservationStatusBadge, ReservationGuestMark } from '../FoodReservationStatusBadge'
 import { foodMyOrderItemPath, foodMyOrdersPath, foodReserveItemPath, foodReservePath } from '../food-paths'
 import { FoodReserveForm } from './FoodReserveForm'
 
@@ -127,7 +127,12 @@ export function FoodReserveListPage() {
                 <td className="px-4 py-3"><DateText value={item.reservedAt} /></td>
                 <td className="px-4 py-3">{item.restaurant.name}</td>
                 <td className="px-4 py-3">{item.food.name}</td>
-                <td className="px-4 py-3">{formatNumber(item.quantity, locale)}</td>
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center gap-2">
+                    {formatNumber(item.quantity, locale)}
+                    <ReservationGuestMark forGuest={item.forGuest} />
+                  </span>
+                </td>
                 <td className="px-4 py-3"><FoodReservationStatusBadge status={item.status} /></td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
@@ -251,18 +256,19 @@ export function FoodReserveDetailPage() {
             <FormFactTile icon={CalendarRange} label={t('foodReservations.reservedAt')} value={<DateText value={item.reservedAt} />} tone="teal" />
             <FormFactTile icon={Store} label={t('foodReservations.restaurant')} value={item.restaurant.name} tone="mint" />
             <FormFactTile icon={UtensilsCrossed} label={t('foodReservations.food')} value={item.food.name} />
-            <FormFactTile icon={Hash} label={t('foodReservations.quantity')} value={formatNumber(item.quantity, locale)} />
+            <FormFactTile icon={Hash} label={item.forGuest ? t('foodReservations.guestQuantity') : t('foodReservations.quantity')} value={formatNumber(item.quantity, locale)} />
+            <FormFactTile icon={Users} label={t('foodReservations.orderFor')} value={item.forGuest ? t('foodReservations.guestOrder') : t('foodReservations.unitOrder')} tone={item.forGuest ? 'mint' : 'teal'} />
             <FormFactTile icon={UserRound} label={t('foodReservations.orgUnit')} value={item.orgUnit.name} />
             <FormFactTile icon={Ticket} label={t('foodReservations.status')} value={<FoodReservationStatusBadge status={item.status} />} />
             <FormFactTile
               icon={Wallet}
               label={t('foodReservations.unitPrice')}
-              value={`${formatNumber(item.unitPrice, locale)} ${t('foodReservations.toman')}`}
+              value={`${formatGroupedNumber(item.unitPrice, locale)} ${t('foodReservations.toman')}`}
             />
             <FormFactTile
               icon={Wallet}
               label={t('foodReservations.totalPrice')}
-              value={`${formatNumber(item.totalPrice, locale)} ${t('foodReservations.toman')}`}
+              value={`${formatGroupedNumber(item.totalPrice, locale)} ${t('foodReservations.toman')}`}
             />
           </div>
           {item.status === 'PENDING' ? (

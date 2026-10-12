@@ -1,4 +1,4 @@
-import { Building2, Phone, Plus, Store, Tags, UserRoundCheck } from 'lucide-react'
+import { Building2, Hash, Phone, Plus, Store, Tags, UserRoundCheck, Users, UtensilsCrossed } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -27,6 +27,7 @@ import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api } from '../../../lib/api'
+import { formatNumber } from '../../../lib/datetime'
 import type { OrganizationUnit, Paginated, UnitRepresentative } from '../../../types/app'
 import { unitRepPath, unitRepsPath } from '../food-paths'
 import { UnitRepForm } from './UnitRepForm'
@@ -43,7 +44,8 @@ function useUnitRep(unitId?: string) {
 }
 
 export function UnitRepListPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
@@ -111,6 +113,27 @@ export function UnitRepListPage() {
                 sortDir={sortDir}
                 onSort={onSort}
               />
+              <SortableTh
+                column="maxMeals"
+                label={t('unitReps.maxMeals')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
+                column="guestMealsEnabled"
+                label={t('unitReps.guestMeals')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
+                column="maxGuestMeals"
+                label={t('unitReps.maxGuestMeals')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
               <ActionsTh />
             </tr>
           </thead>
@@ -120,6 +143,17 @@ export function UnitRepListPage() {
                 <td className="px-4 py-3">{item.pathLabel || item.name}</td>
                 <td className="px-4 py-3">{item.kind.name}</td>
                 <td className="px-4 py-3">{item.nutritionRep?.fullName || '—'}</td>
+                <td className="px-4 py-3">
+                  {item.maxMeals != null ? formatNumber(item.maxMeals, locale) : '—'}
+                </td>
+                <td className="px-4 py-3">
+                  {item.guestMealsEnabled ? t('geo.active') : t('geo.inactive')}
+                </td>
+                <td className="px-4 py-3">
+                  {item.guestMealsEnabled && item.maxGuestMeals != null
+                    ? formatNumber(item.maxGuestMeals, locale)
+                    : '—'}
+                </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
                     viewTo={unitRepPath(item.id)}
@@ -214,6 +248,9 @@ export function UnitRepEditPage() {
           onSubmit={async (payload) => {
             await api.patch(`/food-reservation/unit-reps/${id}`, {
               nutritionRepId: payload.nutritionRepId,
+              maxMeals: payload.maxMeals,
+              guestMealsEnabled: payload.guestMealsEnabled,
+              maxGuestMeals: payload.maxGuestMeals,
             })
             await queryClient.invalidateQueries({ queryKey: ['unit-reps'] })
             await queryClient.invalidateQueries({ queryKey: ['unit-rep'] })
@@ -237,7 +274,8 @@ export function UnitRepEditPage() {
 }
 
 export function UnitRepDetailPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -277,6 +315,32 @@ export function UnitRepDetailPage() {
               copyValue={unit.nutritionRep?.phone}
               empty={!unit.nutritionRep?.phone}
               tone="mint"
+            />
+          </div>
+          <FormSectionTitle icon={UtensilsCrossed}>{t('unitReps.mealsSection')}</FormSectionTitle>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <FormFactTile
+              icon={Hash}
+              label={t('unitReps.maxMeals')}
+              value={unit.maxMeals != null ? formatNumber(unit.maxMeals, locale) : '—'}
+              empty={unit.maxMeals == null}
+              tone="teal"
+            />
+            <FormFactTile
+              icon={Users}
+              label={t('unitReps.guestMeals')}
+              value={unit.guestMealsEnabled ? t('geo.active') : t('geo.inactive')}
+              tone="mint"
+            />
+            <FormFactTile
+              icon={Hash}
+              label={t('unitReps.maxGuestMeals')}
+              value={
+                unit.guestMealsEnabled && unit.maxGuestMeals != null
+                  ? formatNumber(unit.maxGuestMeals, locale)
+                  : '—'
+              }
+              empty={!unit.guestMealsEnabled || unit.maxGuestMeals == null}
             />
           </div>
           <DetailActions

@@ -1,14 +1,14 @@
-import { Building2, IdCard, Phone, UserPlus, UserRound, UserRoundCheck, X } from 'lucide-react'
+import { Building2, Hash, IdCard, Phone, UserPlus, UserRound, UserRoundCheck, Users, UtensilsCrossed, X } from 'lucide-react'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { AppForm, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
-import { FormCard, formCardBodyClassName } from '../../../components/ui/FormLayout'
+import { AppForm, FormActions, FormField, ToggleField, fieldClassName } from '../../../components/ui/Form'
+import { FormCard, FormSectionTitle, formCardBodyClassName } from '../../../components/ui/FormLayout'
 import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { api, getApiErrorMessage } from '../../../lib/api'
-import { toLatinDigits } from '../../../lib/datetime'
+import { localizeDigits, toLatinDigits } from '../../../lib/datetime'
 import { isPhoneReady } from '../../../lib/identity'
 import { isValidIranianNationalId, normalizeNationalId } from '../../../lib/national-id'
 import { organizationUnitPathLabel } from '../../organization/organization-unit-label'
@@ -16,7 +16,22 @@ import type { ManagedUser, OrganizationUnit, UnitRepresentative } from '../../..
 
 export type UnitRepPayload = {
   unitId: string
-  nutritionRepId: string
+  nutritionRepId: string | null
+  maxMeals: number
+  guestMealsEnabled: boolean
+  maxGuestMeals: number | null
+}
+
+function parseMealLimit(value: string) {
+  const trimmed = toLatinDigits(value).replace(/\D/g, '')
+  if (!trimmed) return { ok: true as const, value: 1 }
+  const parsed = Number(trimmed)
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 9999) return { ok: false as const }
+  return { ok: true as const, value: parsed }
+}
+
+function mealLimitText(value: number | null | undefined) {
+  return value != null ? String(value) : '1'
 }
 
 export function UnitRepForm({
@@ -28,9 +43,13 @@ export function UnitRepForm({
   initial?: UnitRepresentative
   onSubmit: (payload: UnitRepPayload) => Promise<void>
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   const [unitId, setUnitId] = useState(initial?.id ?? '')
   const [nutritionRepId, setNutritionRepId] = useState(initial?.nutritionRepId ?? '')
+  const [maxMeals, setMaxMeals] = useState(mealLimitText(initial?.maxMeals))
+  const [guestMealsEnabled, setGuestMealsEnabled] = useState(initial?.guestMealsEnabled ?? false)
+  const [maxGuestMeals, setMaxGuestMeals] = useState(mealLimitText(initial?.maxGuestMeals))
   const [saving, setSaving] = useState(false)
   const [personOpen, setPersonOpen] = useState(false)
   const queryClient = useQueryClient()
@@ -54,13 +73,25 @@ export function UnitRepForm({
       toast.error(t('unitReps.selectUnit'))
       return
     }
-    if (!nutritionRepId) {
-      toast.error(t('unitReps.selectRepresentative'))
+    const mealsLimit = parseMealLimit(maxMeals)
+    if (!mealsLimit.ok) {
+      toast.error(t('unitReps.maxMealsInvalid'))
+      return
+    }
+    const guestLimit = parseMealLimit(maxGuestMeals)
+    if (guestMealsEnabled && !guestLimit.ok) {
+      toast.error(t('unitReps.maxGuestMealsInvalid'))
       return
     }
     setSaving(true)
     try {
-      await onSubmit({ unitId, nutritionRepId })
+      await onSubmit({
+        unitId,
+        nutritionRepId: nutritionRepId || null,
+        maxMeals: mealsLimit.value,
+        guestMealsEnabled,
+        maxGuestMeals: guestMealsEnabled && guestLimit.ok ? guestLimit.value : null,
+      })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
     } finally {
@@ -88,6 +119,10 @@ export function UnitRepForm({
               onChange={(next) => {
                 setUnitId(next)
                 setNutritionRepId('')
+                const unit = units?.find((item) => item.id === next)
+                setMaxMeals(mealLimitText(unit?.maxMeals))
+                setGuestMealsEnabled(Boolean(unit?.guestMealsEnabled))
+                setMaxGuestMeals(mealLimitText(unit?.maxGuestMeals))
               }}
               placeholder={t('unitReps.selectUnit')}
               required
@@ -104,17 +139,63 @@ export function UnitRepForm({
             value={nutritionRepId}
             onChange={setNutritionRepId}
             placeholder={t('unitReps.selectRepresentative')}
-            required
             disabled={!unitId || employees.isLoading}
-            options={people.map((user) => ({
-              value: user.id,
-              label: user.fullName,
-            }))}
+            options={people.map((user) => {
+              const phone = user.phone ? localizeDigits(user.phone, locale) : ''
+              const nationalId = user.nationalId ? localizeDigits(user.nationalId, locale) : ''
+              const extras = [phone, nationalId].filter(Boolean)
+              return {
+                value: user.id,
+                label: extras.length ? `${user.fullName} — ${extras.join(' — ')}` : user.fullName,
+                keywords: [user.phone, user.nationalId].filter(Boolean).join(' '),
+              }
+            })}
           />
         </FormField>
         {unitId && !employees.isLoading && people.length === 0 ? (
           <p className="text-xs leading-6 text-ink-500">{t('unitReps.noEmployees')}</p>
         ) : null}
+        <FormSectionTitle icon={UtensilsCrossed}>{t('unitReps.mealsSection')}</FormSectionTitle>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField icon={Hash} label={t('unitReps.maxMeals')} htmlFor="unitRepMaxMeals">
+            <input
+              id="unitRepMaxMeals"
+              type="number"
+              min={1}
+              max={9999}
+              className={fieldClassName}
+              value={maxMeals}
+              onChange={(event) => setMaxMeals(toLatinDigits(event.target.value).replace(/\D/g, '').slice(0, 4))}
+            />
+          </FormField>
+          <FormField icon={Users} label={t('unitReps.guestMeals')}>
+            <ToggleField
+              id="unitRepGuestMeals"
+              checked={guestMealsEnabled}
+              onChange={(checked) => {
+                setGuestMealsEnabled(checked)
+                if (checked && !maxGuestMeals) setMaxGuestMeals('1')
+              }}
+              onLabel={t('geo.active')}
+              offLabel={t('geo.inactive')}
+            />
+          </FormField>
+          {guestMealsEnabled ? (
+            <FormField icon={Hash} label={t('unitReps.maxGuestMeals')} htmlFor="unitRepMaxGuestMeals">
+              <input
+                id="unitRepMaxGuestMeals"
+                type="number"
+                min={1}
+                max={9999}
+                className={fieldClassName}
+                value={maxGuestMeals}
+                onChange={(event) =>
+                  setMaxGuestMeals(toLatinDigits(event.target.value).replace(/\D/g, '').slice(0, 4))
+                }
+              />
+            </FormField>
+          ) : null}
+        </div>
         <FormActions
           submitting={saving}
           submitLabel={t('unitReps.save')}

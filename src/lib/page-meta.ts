@@ -437,6 +437,12 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/food-reservation/my-report')) {
     return { titleKey: 'menus.foodMyReport', subtitleKey: 'foodMyReport.subtitle' }
   }
+  if (/\/food-reservation\/advanced\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'advancedFoodOrders.details', subtitleKey: 'advancedFoodOrders.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/food-reservation/advanced')) {
+    return { titleKey: 'menus.foodAdvancedReserve', subtitleKey: 'advancedFoodOrders.subtitle' }
+  }
   if (pathname === '/food-reservation/reserve/new') {
     return { titleKey: 'foodReservations.create', subtitleKey: 'foodReservations.createSubtitle' }
   }

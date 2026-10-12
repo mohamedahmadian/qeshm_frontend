@@ -27,6 +27,29 @@ const contractorOnlyMenus = new Set([
   "stakeholders.correspondence",
 ]);
 
+/** سفارش شخصی کارمند؛ برای مدیریت و مدیر ماژول غذا نشان داده نمی‌شود. */
+const personalFoodMenuCodes = new Set([
+  "food-reservation.my-orders",
+  "food-reservation.my-report",
+]);
+
+function hidesPersonalFoodMenus(
+  user?:
+    | Pick<AuthUser, "isAdmin" | "permissionCodes" | "roles">
+    | null,
+) {
+  if (!user) return false;
+  if (isAdmin(user)) return true;
+  return Boolean(user.permissionCodes?.includes("food-reservation"));
+}
+
+function isPersonalFoodPath(pathname: string) {
+  return (
+    menuPathMatches(pathname, "/food-reservation/my-orders") ||
+    menuPathMatches(pathname, "/food-reservation/my-report")
+  );
+}
+
 export function isContractor(user?: { roles?: { code: string }[] } | null) {
   return Boolean(
     user?.roles?.some((role) => role.code === CONTRACTOR_ROLE_CODE),
@@ -116,6 +139,9 @@ export function hasMenuAccess(
   moduleCode: string,
 ) {
   if (menuCode === "dashboard.home") return true;
+  if (personalFoodMenuCodes.has(menuCode) && hidesPersonalFoodMenus(user)) {
+    return false;
+  }
   if (moduleCode === "board") {
     if (
       menuCode === "board.minutes" ||
@@ -146,6 +172,21 @@ function withoutContractorPortal(nav: NavModule[]) {
     .filter((mod) => mod.menus.length > 0);
 }
 
+function withoutPersonalFoodMenus(nav: NavModule[]) {
+  return nav
+    .map((mod) =>
+      mod.code === "food-reservation"
+        ? {
+            ...mod,
+            menus: mod.menus.filter(
+              (menu) => !personalFoodMenuCodes.has(menu.code),
+            ),
+          }
+        : mod,
+    )
+    .filter((mod) => mod.menus.length > 0);
+}
+
 export function filterNavByAccess(
   nav: NavModule[],
   user:
@@ -154,7 +195,8 @@ export function filterNavByAccess(
     | undefined,
 ) {
   if (isAdmin(user)) {
-    return isContractor(user) ? nav : withoutContractorPortal(nav);
+    const visible = isContractor(user) ? nav : withoutContractorPortal(nav);
+    return withoutPersonalFoodMenus(visible);
   }
   return nav
     .map((mod) => ({
@@ -211,6 +253,7 @@ export function canAccessPath(
   pathname: string,
 ) {
   if (!user) return false;
+  if (isPersonalFoodPath(pathname) && hidesPersonalFoodMenus(user)) return false;
   if (isAdmin(user)) return orgStakeholderRedirect(user, pathname) == null;
   if (pathname === "/" || pathname === "/dashboard") return true;
   if (

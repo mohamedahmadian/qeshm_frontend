@@ -2,12 +2,15 @@ import {
   Building2,
   CalendarRange,
   Check,
+  ChevronDown,
+  ClipboardCheck,
   FileSpreadsheet,
   Hash,
   Store,
   Ticket,
   Trash2,
   UserRound,
+  Users,
   UtensilsCrossed,
   Wallet,
   History,
@@ -44,7 +47,7 @@ import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api, getApiErrorMessage } from '../../../lib/api'
-import { formatNumber } from '../../../lib/datetime'
+import { formatGroupedNumber, formatNumber, formatWeekday } from '../../../lib/datetime'
 import type {
   Food,
   FoodReservation,
@@ -52,9 +55,23 @@ import type {
   Paginated,
   Restaurant,
 } from '../../../types/app'
-import { FoodReservationStatusBadge } from '../FoodReservationStatusBadge'
+import { FoodReservationStatusBadge, ReservationGuestMark } from '../FoodReservationStatusBadge'
 import { foodReservationHistoryItemPath, foodReservationHistoryPath } from '../food-paths'
 import { FoodReservationBulkActions } from './FoodReservationBulkActions'
+
+function ReservationDateCell({ value, locale }: { value: string; locale: string }) {
+  const weekday = formatWeekday(value, locale)
+  return (
+    <span className="flex flex-col items-start gap-1">
+      <DateText value={value} />
+      {weekday ? (
+        <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-800 ring-1 ring-teal-100">
+          {weekday}
+        </span>
+      ) : null}
+    </span>
+  )
+}
 
 export function FoodReservationHistoryListPage() {
   const { t, i18n } = useTranslation()
@@ -67,7 +84,10 @@ export function FoodReservationHistoryListPage() {
   const foodId = searchParams.get('foodId') ?? ''
   const status = searchParams.get('status') ?? ''
   const reservedAt = searchParams.get('reservedAt') ?? ''
+  const queryClient = useQueryClient()
   const [exporting, setExporting] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
 
   const units = useQuery({
     queryKey: ['organization-units', 'lookup'],
@@ -151,14 +171,59 @@ export function FoodReservationHistoryListPage() {
     }
   }
 
+  function deleteAllOrders() {
+    confirmToast({
+      title: t('foodReservations.deleteAllAsk'),
+      confirmLabel: t('foodReservations.deleteAll'),
+      cancelLabel: t('common.cancel'),
+      confirmVariant: 'danger',
+      onConfirm: async () => {
+        setDeletingAll(true)
+        try {
+          const { data } = await api.post<{ count: number }>('/food-reservations/delete-all')
+          if (data.count === 0) {
+            toast.message(t('foodReservations.deleteAllNone'))
+          } else {
+            toast.success(t('foodReservations.deleteAllSuccess', { count: formatNumber(data.count, locale) }))
+          }
+          void queryClient.invalidateQueries({ queryKey: ['food-reservations'] })
+          void queryClient.invalidateQueries({ queryKey: ['food-reservation'] })
+        } catch (error) {
+          toast.error(getApiErrorMessage(error, t('common.error')))
+        } finally {
+          setDeletingAll(false)
+        }
+      },
+    })
+  }
+
   return (
     <div className={listShellClassName}>
       <PageHeader
         icon={History}
         title={t('menus.foodReservationHistory')}
         subtitle={t('foodReservations.historySubtitle')}
+        action={
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              aria-expanded={bulkOpen}
+              aria-controls="food-reservation-bulk-panel"
+              onClick={() => setBulkOpen((value) => !value)}
+            >
+              <ClipboardCheck className="size-4" aria-hidden />
+              {t('foodReservations.bulkTitle')}
+              <ChevronDown className={`size-4 transition ${bulkOpen ? 'rotate-180' : ''}`} aria-hidden />
+            </Button>
+            <Button type="button" variant="danger" disabled={deletingAll} onClick={deleteAllOrders}>
+              <Trash2 className="size-4" aria-hidden />
+              {t('foodReservations.deleteAll')}
+            </Button>
+          </>
+        }
       />
-      <FoodReservationBulkActions />
+      <FoodReservationBulkActions open={bulkOpen} />
       <SearchBar
         term={term}
         onTermChange={setTerm}
@@ -240,7 +305,7 @@ export function FoodReservationHistoryListPage() {
           <thead className="bg-cream-50 text-ink-700">
             <tr>
               <SortableTh column="reservedAt" label={t('foodReservations.reservedAt')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="user" label={t('foodReservations.employee')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="user" label={t('foodReservations.orderer')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="orgUnit" label={t('foodReservations.orgUnit')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="restaurant" label={t('foodReservations.restaurant')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="food" label={t('foodReservations.food')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
@@ -252,12 +317,19 @@ export function FoodReservationHistoryListPage() {
           <tbody>
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
-                <td className="px-4 py-3"><DateText value={item.reservedAt} /></td>
+                <td className="px-4 py-3">
+                  <ReservationDateCell value={item.reservedAt} locale={locale} />
+                </td>
                 <td className="px-4 py-3">{item.user.fullName}</td>
                 <td className="px-4 py-3">{item.orgUnit.name}</td>
                 <td className="px-4 py-3">{item.restaurant.name}</td>
                 <td className="px-4 py-3">{item.food.name}</td>
-                <td className="px-4 py-3">{formatNumber(item.quantity, locale)}</td>
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center gap-2">
+                    {formatNumber(item.quantity, locale)}
+                    <ReservationGuestMark forGuest={item.forGuest} />
+                  </span>
+                </td>
                 <td className="px-4 py-3"><FoodReservationStatusBadge status={item.status} /></td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
@@ -356,16 +428,17 @@ export function FoodReservationHistoryDetailPage() {
           <FormSectionTitle icon={Ticket}>{t('foodReservations.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile icon={CalendarRange} label={t('foodReservations.reservedAt')} value={<DateText value={item.reservedAt} />} tone="teal" />
-            <FormFactTile icon={UserRound} label={t('foodReservations.employee')} value={item.user.fullName} tone="mint" />
+            <FormFactTile icon={UserRound} label={t('foodReservations.orderer')} value={item.user.fullName} tone="mint" />
             <FormFactTile icon={Building2} label={t('foodReservations.orgUnit')} value={item.orgUnit.name} />
             <FormFactTile icon={Store} label={t('foodReservations.restaurant')} value={item.restaurant.name} />
             <FormFactTile icon={UtensilsCrossed} label={t('foodReservations.food')} value={item.food.name} />
-            <FormFactTile icon={Hash} label={t('foodReservations.quantity')} value={formatNumber(item.quantity, locale)} />
+            <FormFactTile icon={Hash} label={item.forGuest ? t('foodReservations.guestQuantity') : t('foodReservations.quantity')} value={formatNumber(item.quantity, locale)} />
+            <FormFactTile icon={Users} label={t('foodReservations.orderFor')} value={item.forGuest ? t('foodReservations.guestOrder') : t('foodReservations.unitOrder')} tone={item.forGuest ? 'mint' : 'teal'} />
             <FormFactTile icon={Ticket} label={t('foodReservations.status')} value={<FoodReservationStatusBadge status={item.status} />} />
             <FormFactTile
               icon={Wallet}
               label={t('foodReservations.totalPrice')}
-              value={`${formatNumber(item.totalPrice, locale)} ${t('foodReservations.toman')}`}
+              value={`${formatGroupedNumber(item.totalPrice, locale)} ${t('foodReservations.toman')}`}
             />
           </div>
           {item.status === 'PENDING' ? (

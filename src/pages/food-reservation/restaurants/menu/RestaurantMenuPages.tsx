@@ -20,7 +20,7 @@ import {
 } from '../../../../components/ui/FormLayout'
 import { SearchSelect } from '../../../../components/ui/SearchSelect'
 import { api, getApiErrorMessage } from '../../../../lib/api'
-import { formatNumber } from '../../../../lib/datetime'
+import { formatGroupedNumber, formatNumber, parseDigitString } from '../../../../lib/datetime'
 import type { Food, Restaurant, RestaurantMenuItem } from '../../../../types/app'
 import { EntityThumb } from '../../EntityThumb'
 
@@ -212,17 +212,22 @@ function WeeklyMenuEditor({
                               </label>
                               <input
                                 id={priceFieldId(weekday, item.foodId)}
-                                type="number"
-                                min={0}
+                                type="text"
                                 inputMode="numeric"
                                 placeholder={t('restaurantMenuItems.pricePlaceholder')}
-                                className={`${fieldClassName} h-9 w-28 py-1`}
-                                value={item.price}
+                                className={`${fieldClassName} digit-field h-9 w-36 py-1`}
+                                value={
+                                  item.price === '' || !Number.isFinite(Number(item.price))
+                                    ? ''
+                                    : formatGroupedNumber(Number(item.price), locale)
+                                }
                                 onChange={(event) =>
                                   updateDay(
                                     weekday,
                                     list.map((row) =>
-                                      row.key === item.key ? { ...row, price: event.target.value } : row,
+                                      row.key === item.key
+                                        ? { ...row, price: parseDigitString(event.target.value) }
+                                        : row,
                                     ),
                                   )
                                 }

@@ -9,13 +9,14 @@ import {
   Share2,
   Tags,
   Type,
+  Users,
   UtensilsCrossed,
 } from 'lucide-react'
 import { type FormEvent, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { AppForm, FormActions, FormField, fieldClassName } from '../../../components/ui/Form'
+import { AppForm, FormActions, FormField, ToggleField, fieldClassName } from '../../../components/ui/Form'
 import { FormCard, FormSectionTitle, formCardBodyClassName } from '../../../components/ui/FormLayout'
 import { OsmMapPicker } from '../../../components/ui/OsmMapPicker'
 import { SearchSelect } from '../../../components/ui/SearchSelect'
@@ -41,6 +42,8 @@ export type OrganizationUnitPayload = {
   whatsapp: string | null
   nutritionRepId: string | null
   maxMeals: number | null
+  guestMealsEnabled: boolean
+  maxGuestMeals: number | null
 }
 
 function toCoordString(value: number | null | undefined) {
@@ -81,7 +84,11 @@ export function OrganizationUnitForm({
   const [telegram, setTelegram] = useState(initial?.telegram ?? '')
   const [whatsapp, setWhatsapp] = useState(initial?.whatsapp ?? '')
   const [nutritionRepId, setNutritionRepId] = useState(initial?.nutritionRepId ?? '')
-  const [maxMeals, setMaxMeals] = useState(initial?.maxMeals != null ? String(initial.maxMeals) : '')
+  const [maxMeals, setMaxMeals] = useState(initial?.maxMeals != null ? String(initial.maxMeals) : '1')
+  const [guestMealsEnabled, setGuestMealsEnabled] = useState(initial?.guestMealsEnabled ?? false)
+  const [maxGuestMeals, setMaxGuestMeals] = useState(
+    initial?.maxGuestMeals != null ? String(initial.maxGuestMeals) : '1',
+  )
   const [saving, setSaving] = useState(false)
 
   const units = useQuery({
@@ -131,9 +138,14 @@ export function OrganizationUnitForm({
       toast.error(t('organizationPhones.phoneInvalid'))
       return
     }
-    const mealsLimit = toOptionalNumber(toLatinDigits(maxMeals))
-    if (mealsLimit != null && (!Number.isInteger(mealsLimit) || mealsLimit < 1)) {
+    const mealsLimit = toOptionalNumber(toLatinDigits(maxMeals)) ?? 1
+    if (!Number.isInteger(mealsLimit) || mealsLimit < 1 || mealsLimit > 9999) {
       toast.error(t('organizationUnits.maxMealsInvalid'))
+      return
+    }
+    const guestLimit = toOptionalNumber(toLatinDigits(maxGuestMeals)) ?? 1
+    if (guestMealsEnabled && (!Number.isInteger(guestLimit) || guestLimit < 1 || guestLimit > 9999)) {
+      toast.error(t('organizationUnits.maxGuestMealsInvalid'))
       return
     }
     setSaving(true)
@@ -154,6 +166,8 @@ export function OrganizationUnitForm({
         whatsapp: emptyToNull(whatsapp),
         nutritionRepId: emptyToNull(nutritionRepId),
         maxMeals: mealsLimit,
+        guestMealsEnabled,
+        maxGuestMeals: guestMealsEnabled ? guestLimit : null,
       })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
@@ -257,6 +271,31 @@ export function OrganizationUnitForm({
                 onChange={(e) => setMaxMeals(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 4))}
               />
             </FormField>
+            <FormField icon={Users} label={t('organizationUnits.guestMeals')}>
+              <ToggleField
+                id="unitGuestMeals"
+                checked={guestMealsEnabled}
+                onChange={(checked) => {
+                  setGuestMealsEnabled(checked)
+                  if (checked && !maxGuestMeals) setMaxGuestMeals('1')
+                }}
+                onLabel={t('geo.active')}
+                offLabel={t('geo.inactive')}
+              />
+            </FormField>
+            {guestMealsEnabled ? (
+              <FormField icon={Hash} label={t('organizationUnits.maxGuestMeals')} htmlFor="unitMaxGuestMeals">
+                <input
+                  id="unitMaxGuestMeals"
+                  type="number"
+                  min={1}
+                  max={9999}
+                  className={fieldClassName}
+                  value={maxGuestMeals}
+                  onChange={(e) => setMaxGuestMeals(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 4))}
+                />
+              </FormField>
+            ) : null}
           </div>
         ) : (
           <>
@@ -272,6 +311,31 @@ export function OrganizationUnitForm({
                 onChange={(e) => setMaxMeals(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 4))}
               />
             </FormField>
+            <FormField icon={Users} label={t('organizationUnits.guestMeals')}>
+              <ToggleField
+                id="unitGuestMeals"
+                checked={guestMealsEnabled}
+                onChange={(checked) => {
+                  setGuestMealsEnabled(checked)
+                  if (checked && !maxGuestMeals) setMaxGuestMeals('1')
+                }}
+                onLabel={t('geo.active')}
+                offLabel={t('geo.inactive')}
+              />
+            </FormField>
+            {guestMealsEnabled ? (
+              <FormField icon={Hash} label={t('organizationUnits.maxGuestMeals')} htmlFor="unitMaxGuestMeals">
+                <input
+                  id="unitMaxGuestMeals"
+                  type="number"
+                  min={1}
+                  max={9999}
+                  className={fieldClassName}
+                  value={maxGuestMeals}
+                  onChange={(e) => setMaxGuestMeals(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 4))}
+                />
+              </FormField>
+            ) : null}
           </>
         )}
         <FormSectionTitle icon={MapPin}>{t('organizationUnits.locationSection')}</FormSectionTitle>

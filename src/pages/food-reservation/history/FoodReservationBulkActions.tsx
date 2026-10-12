@@ -20,7 +20,7 @@ type RangePayload = {
   restaurantId?: string
 }
 
-export function FoodReservationBulkActions() {
+export function FoodReservationBulkActions({ open }: { open: boolean }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const queryClient = useQueryClient()
@@ -37,6 +37,7 @@ export function FoodReservationBulkActions() {
       const { data } = await api.get<OrganizationUnit[]>('/organization/units')
       return data
     },
+    enabled: open,
   })
   const restaurants = useQuery({
     queryKey: ['restaurants', 'lookup'],
@@ -44,6 +45,7 @@ export function FoodReservationBulkActions() {
       const { data } = await api.get<Restaurant[]>('/restaurants')
       return data
     },
+    enabled: open,
   })
 
   function rangePayload(): RangePayload | null {
@@ -114,93 +116,94 @@ export function FoodReservationBulkActions() {
   }
 
   return (
-    <FormCard
-      className="mb-6"
-      icon={ClipboardCheck}
-      title={t('foodReservations.bulkTitle')}
-      subtitle={t('foodReservations.bulkSubtitle')}
-      onDoubleClick={() => {}}
-    >
-      <AppForm
-        autoFocusFirst={false}
-        className={formCardBodyClassName}
-        onSubmit={(event) => {
-          event.preventDefault()
-          confirmRange()
-        }}
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField icon={Store} label={t('foodReservations.restaurant')} htmlFor="bulkRestaurant">
-            <SearchSelect
-              id="bulkRestaurant"
-              value={restaurantId}
-              onChange={setRestaurantId}
-              placeholder={t('foodReservations.selectRestaurant')}
-              options={[
-                { value: '', label: t('foodReservations.allRestaurants') },
-                ...(restaurants.data ?? []).map((item) => ({ value: item.id, label: item.name })),
-              ]}
-            />
-          </FormField>
-          <FormField icon={Building2} label={t('foodReservations.orgUnit')} htmlFor="bulkUnit">
-            <SearchSelect
-              id="bulkUnit"
-              value={orgUnitId}
-              onChange={setOrgUnitId}
-              placeholder={t('foodReservations.filterUnit')}
-              options={[
-                { value: '', label: t('foodReservations.allUnits') },
-                ...(units.data ?? []).map((unit) => ({
-                  value: unit.id,
-                  label: unit.pathLabel || unit.name,
-                })),
-              ]}
-            />
-          </FormField>
-          <FormField icon={CalendarRange} label={t('foodReservations.bulkFrom')} htmlFor="bulkFrom">
-            <PersianDateField
-              id="bulkFrom"
-              value={reservedFrom}
-              maxDate={reservedTo || undefined}
-              onChange={(value) => {
-                const next = value ?? ''
-                setReservedFrom(next)
-                if (reservedTo && next && reservedTo < next) {
-                  setReservedTo('')
-                }
-              }}
-            />
-          </FormField>
-          <FormField icon={CalendarRange} label={t('foodReservations.bulkTo')} htmlFor="bulkTo">
-            <PersianDateField
-              id="bulkTo"
-              value={reservedTo}
-              minDate={reservedFrom || undefined}
-              onChange={(value) => setReservedTo(value ?? '')}
-            />
-            <p className="text-xs text-ink-500">{t('foodReservations.bulkToHint')}</p>
-          </FormField>
-        </div>
-        <FormField icon={Trash2} label={t('foodReservations.bulkDeleteScope')} htmlFor="includeConfirmed">
-          <CheckboxField
-            id="includeConfirmed"
-            checked={includeConfirmed}
-            onChange={setIncludeConfirmed}
-            label={t('foodReservations.bulkIncludeConfirmed')}
-          />
-          <p className="text-xs text-ink-500">{t('foodReservations.bulkIncludeConfirmedHint')}</p>
-        </FormField>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button type="button" variant="danger" disabled={saving} onClick={deleteRange}>
-            <Trash2 className="size-4" aria-hidden />
-            {t('foodReservations.bulkDelete')}
-          </Button>
-          <Button type="submit" variant="soft" disabled={saving}>
-            <Check className="size-4" aria-hidden />
-            {t('foodReservations.bulkConfirm')}
-          </Button>
-        </div>
-      </AppForm>
-    </FormCard>
+    <div id="food-reservation-bulk-panel" className={open ? 'mb-6' : 'hidden'}>
+        <FormCard
+          icon={ClipboardCheck}
+          title={t('foodReservations.bulkTitle')}
+          subtitle={t('foodReservations.bulkSubtitle')}
+          onDoubleClick={() => {}}
+        >
+          <AppForm
+            autoFocusFirst={false}
+            className={formCardBodyClassName}
+            onSubmit={(event) => {
+              event.preventDefault()
+              confirmRange()
+            }}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={Store} label={t('foodReservations.restaurant')} htmlFor="bulkRestaurant">
+                <SearchSelect
+                  id="bulkRestaurant"
+                  value={restaurantId}
+                  onChange={setRestaurantId}
+                  placeholder={t('foodReservations.selectRestaurant')}
+                  options={[
+                    { value: '', label: t('foodReservations.allRestaurants') },
+                    ...(restaurants.data ?? []).map((item) => ({ value: item.id, label: item.name })),
+                  ]}
+                />
+              </FormField>
+              <FormField icon={Building2} label={t('foodReservations.orgUnit')} htmlFor="bulkUnit">
+                <SearchSelect
+                  id="bulkUnit"
+                  value={orgUnitId}
+                  onChange={setOrgUnitId}
+                  placeholder={t('foodReservations.filterUnit')}
+                  options={[
+                    { value: '', label: t('foodReservations.allUnits') },
+                    ...(units.data ?? []).map((unit) => ({
+                      value: unit.id,
+                      label: unit.pathLabel || unit.name,
+                    })),
+                  ]}
+                />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('foodReservations.bulkFrom')} htmlFor="bulkFrom">
+                <PersianDateField
+                  id="bulkFrom"
+                  value={reservedFrom}
+                  maxDate={reservedTo || undefined}
+                  onChange={(value) => {
+                    const next = value ?? ''
+                    setReservedFrom(next)
+                    if (reservedTo && next && reservedTo < next) {
+                      setReservedTo('')
+                    }
+                  }}
+                />
+              </FormField>
+              <FormField icon={CalendarRange} label={t('foodReservations.bulkTo')} htmlFor="bulkTo">
+                <PersianDateField
+                  id="bulkTo"
+                  value={reservedTo}
+                  minDate={reservedFrom || undefined}
+                  onChange={(value) => setReservedTo(value ?? '')}
+                />
+                <p className="text-xs text-ink-500">{t('foodReservations.bulkToHint')}</p>
+              </FormField>
+            </div>
+            <FormField icon={Trash2} label={t('foodReservations.bulkDeleteScope')} htmlFor="includeConfirmed">
+              <CheckboxField
+                id="includeConfirmed"
+                checked={includeConfirmed}
+                onChange={setIncludeConfirmed}
+                label={t('foodReservations.bulkIncludeConfirmed')}
+              />
+              <p className="text-xs text-ink-500">{t('foodReservations.bulkIncludeConfirmedHint')}</p>
+            </FormField>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Button type="button" variant="danger" disabled={saving} onClick={deleteRange}>
+                <Trash2 className="size-4" aria-hidden />
+                {t('foodReservations.bulkDelete')}
+              </Button>
+              <Button type="submit" variant="soft" disabled={saving}>
+                <Check className="size-4" aria-hidden />
+                {t('foodReservations.bulkConfirm')}
+              </Button>
+            </div>
+          </AppForm>
+        </FormCard>
+    </div>
   )
 }

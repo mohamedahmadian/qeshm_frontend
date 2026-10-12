@@ -340,6 +340,13 @@ export function calendarDaysUntil(iso?: string | null, fromIso = todayIsoDate())
   return Math.round((end - start) / 86_400_000)
 }
 
+/** 0 = شنبه … 6 = جمعه */
+export function iranWeekdayIndex(iso: string) {
+  const js = new Date(`${iso}T12:00:00`)
+  if (Number.isNaN(js.getTime())) return 0
+  return (js.getDay() + 1) % 7
+}
+
 /** شنبهٔ هفتهٔ جاری در تقویم ایران */
 export function startOfIranWeekIso(iso = todayIsoDate()) {
   const js = new Date(`${iso}T12:00:00`)

@@ -617,6 +617,23 @@ export function OrganizationUnitDetailPage() {
                   empty={item.maxMeals == null}
                   tone="mint"
                 />
+                <FormFactTile
+                  icon={Users}
+                  label={t('organizationUnits.guestMeals')}
+                  value={item.guestMealsEnabled ? t('geo.active') : t('geo.inactive')}
+                  tone="teal"
+                />
+                <FormFactTile
+                  icon={Hash}
+                  label={t('organizationUnits.maxGuestMeals')}
+                  value={
+                    item.guestMealsEnabled && item.maxGuestMeals != null
+                      ? formatNumber(item.maxGuestMeals, locale)
+                      : empty
+                  }
+                  empty={!item.guestMealsEnabled || item.maxGuestMeals == null}
+                  tone="mint"
+                />
               </div>
               <FormSectionTitle icon={MapPin}>{t('organizationUnits.locationSection')}</FormSectionTitle>
               <FormFactTile

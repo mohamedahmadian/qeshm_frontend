@@ -26,6 +26,14 @@ export function restaurantUnitPath(restaurantId: string, linkId: string) {
   return `${restaurantUnitsPath(restaurantId)}/${linkId}`
 }
 
+export function foodAdvancedPath() {
+  return '/food-reservation/advanced'
+}
+
+export function foodAdvancedItemPath(id: string) {
+  return `${foodAdvancedPath()}/${id}`
+}
+
 export function foodReservePath() {
   return '/food-reservation/reserve'
 }

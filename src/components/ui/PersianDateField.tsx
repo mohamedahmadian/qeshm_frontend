@@ -19,6 +19,52 @@ const DatePicker =
   (DatePickerImport as unknown as { default?: typeof DatePickerImport }).default ??
   DatePickerImport
 
+const calendarViewportGap = 12
+
+/** اگر تقویم از صفحه بیرون بزند، به داخل نما برمی‌گردد. */
+function clampOpenCalendar() {
+  const wrapper = document.querySelector<HTMLElement>('.rmdp-wrapper.eskan-triple-cal')
+  if (!wrapper) return
+  const popper =
+    wrapper.closest<HTMLElement>('.ep-popper-shadow') ?? wrapper.parentElement?.parentElement
+  if (!(popper instanceof HTMLElement)) return
+
+  const viewport = window.visualViewport
+  const originTop = viewport?.offsetTop ?? 0
+  const originLeft = viewport?.offsetLeft ?? 0
+  const viewHeight = viewport?.height ?? window.innerHeight
+  const viewWidth = viewport?.width ?? window.innerWidth
+  const minTop = originTop + calendarViewportGap
+  const minLeft = originLeft + calendarViewportGap
+  const maxBottom = originTop + viewHeight - calendarViewportGap
+  const maxRight = originLeft + viewWidth - calendarViewportGap
+  const available = Math.max(160, viewHeight - calendarViewportGap * 2)
+
+  if (wrapper.scrollHeight > available) {
+    wrapper.style.maxHeight = `${available}px`
+    wrapper.style.overflowY = 'auto'
+  } else if (wrapper.style.maxHeight) {
+    wrapper.style.maxHeight = ''
+    wrapper.style.overflowY = ''
+  }
+
+  const rect = wrapper.getBoundingClientRect()
+  let shiftX = 0
+  let shiftY = 0
+  if (rect.bottom > maxBottom) shiftY = maxBottom - rect.bottom
+  if (rect.top + shiftY < minTop) shiftY += minTop - (rect.top + shiftY)
+  if (rect.right > maxRight) shiftX = maxRight - rect.right
+  if (rect.left + shiftX < minLeft) shiftX += minLeft - (rect.left + shiftX)
+  if (Math.abs(shiftX) < 0.5 && Math.abs(shiftY) < 0.5) return
+
+  const match = /translate\(\s*([-\d.]+)px,\s*([-\d.]+)px\s*\)/.exec(popper.style.transform)
+  if (!match) return
+  popper.style.transform = `translate(${Number(match[1]) + shiftX}px, ${Number(match[2]) + shiftY}px)`
+
+  const arrow = popper.parentElement?.querySelector<HTMLElement>('.rmdp-ep-arrow')
+  if (arrow) arrow.style.visibility = 'hidden'
+}
+
 function dayValue(date: DateObject) {
   return date.year * 10_000 + date.month.number * 100 + date.day
 }
@@ -90,14 +136,14 @@ function DatePickerActions({
     >
       <button
         type="button"
-        className="inline-flex flex-1 items-center justify-center rounded-xl bg-mint-500 px-2 py-1.5 text-xs font-medium text-white hover:bg-mint-600"
+        className="inline-flex flex-1 cursor-pointer items-center justify-center rounded-xl bg-mint-500 px-2 py-1.5 text-xs font-medium text-white hover:bg-mint-600"
         onClick={goToToday}
       >
         {t('common.today')}
       </button>
       <button
         type="button"
-        className="inline-flex flex-1 items-center justify-center rounded-xl border border-line bg-white px-2 py-1.5 text-xs font-medium text-ink-700 hover:bg-cream-100 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-line bg-white px-2 py-1.5 text-xs font-medium text-ink-700 hover:bg-cream-100 disabled:cursor-not-allowed disabled:opacity-40"
         disabled={!selected}
         onClick={clearDate}
       >
@@ -169,8 +215,11 @@ export function PersianDateField({
         containerClassName="w-full"
         portal
         zIndex={80}
-        hideOnScroll
         onOpenPickNewDate={false}
+        onPositionChange={() => {
+          clampOpenCalendar()
+          requestAnimationFrame(clampOpenCalendar)
+        }}
         mapDays={({ date }) => {
           const parts = calendarDayParts(date, locale)
           const friday = usesJalaliCalendar(locale) && date.weekDay?.index === 6
@@ -193,35 +242,45 @@ export function PersianDateField({
           <DatePickerActions key="actions" position="bottom" />,
         ]}
         render={(formatted, openCalendar) => (
-          <div className={`${fieldClassName} flex items-center gap-1`}>
+          <div className="relative w-full">
+            {/* بدون اینپوت، کتابخانه همان کلیک را می‌بندد. */}
+            <input type="hidden" defaultValue="" />
             <button
               type="button"
               id={id}
-              className="min-w-0 flex-1 truncate text-start"
-              onClick={openCalendar}
+              className={`${fieldClassName} flex cursor-pointer items-center gap-1 text-start`}
+              onPointerDown={(event) => {
+                if (event.button !== 0) return
+                event.preventDefault()
+                openCalendar()
+              }}
+              onClick={(event) => {
+                event.stopPropagation()
+                openCalendar()
+              }}
             >
-              <span className={formatted ? 'text-ink-900' : 'text-ink-400'}>
+              <span className={`min-w-0 flex-1 truncate ${formatted ? 'text-ink-900' : 'text-ink-400'}`}>
                 {formatted || t('common.selectDate')}
+              </span>
+              {value ? <span className="size-8 shrink-0" aria-hidden /> : null}
+              <span className="inline-flex size-8 shrink-0 items-center justify-center text-teal-600">
+                <CalendarDays className="size-4" aria-hidden />
               </span>
             </button>
             {value ? (
               <button
                 type="button"
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-ink-400 hover:bg-cream-100 hover:text-ink-700"
+                className="absolute end-12 top-1/2 z-10 inline-flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-ink-400 hover:bg-cream-100 hover:text-ink-700"
                 aria-label={t('common.clearDate')}
-                onClick={() => onChange(undefined)}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onChange(undefined)
+                }}
               >
                 <X className="size-4" aria-hidden />
               </button>
             ) : null}
-            <button
-              type="button"
-              className="inline-flex size-8 shrink-0 items-center justify-center text-teal-600"
-              aria-label={t('common.selectDate')}
-              onClick={openCalendar}
-            >
-              <CalendarDays className="size-4" aria-hidden />
-            </button>
           </div>
         )}
         onChange={(date: DateObject | DateObject[] | null) => {

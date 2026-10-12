@@ -135,6 +135,10 @@ import { FoodUnitReportPage } from './pages/food-reservation/report/FoodUnitRepo
 import { FoodMyReportPage } from './pages/food-reservation/report/FoodMyReportPage'
 import { FoodReservationReportPage } from './pages/food-reservation/report/FoodReservationReportPage'
 import {
+  AdvancedFoodOrderDetailPage,
+  AdvancedFoodOrderListPage,
+} from './pages/food-reservation/advanced/AdvancedFoodOrderPages'
+import {
   FoodReserveCreatePage,
   FoodReserveDetailPage,
   FoodReserveListPage,
@@ -430,6 +434,8 @@ export default function App() {
                   <Route path="/food-reservation/my-orders" element={<FoodReserveListPage />} />
                   <Route path="/food-reservation/my-orders/:id" element={<FoodReserveDetailPage />} />
                   <Route path="/food-reservation/my-report" element={<FoodMyReportPage />} />
+                  <Route path="/food-reservation/advanced" element={<AdvancedFoodOrderListPage />} />
+                  <Route path="/food-reservation/advanced/:id" element={<AdvancedFoodOrderDetailPage />} />
                   <Route path="/food-reservation/reserve" element={<FoodReserveListPage />} />
                   <Route path="/food-reservation/reserve/new" element={<FoodReserveCreatePage />} />
                   <Route path="/food-reservation/reserve/:id" element={<FoodReserveDetailPage />} />

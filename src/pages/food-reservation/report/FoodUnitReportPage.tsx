@@ -6,6 +6,7 @@ import {
   Store,
   Ticket,
   UserRound,
+  Users,
   UtensilsCrossed,
   Wallet,
 } from 'lucide-react'
@@ -191,6 +192,12 @@ export function FoodUnitReportPage() {
                 tone="mint"
               />
               <FormFactTile
+                icon={Users}
+                label={t('foodUnitReport.guestQuantity')}
+                value={formatNumber(kpis.guestQuantity, locale)}
+                tone="teal"
+              />
+              <FormFactTile
                 icon={Wallet}
                 label={t('foodUnitReport.amount')}
                 value={money(kpis.totalCost, locale, toman)}
@@ -303,6 +310,7 @@ export function FoodUnitReportPage() {
                 totalCost={totalCost}
                 locale={locale}
                 toman={toman}
+                showGuest
               />
             </>
           ) : null}
@@ -322,6 +330,7 @@ export function FoodUnitReportPage() {
             totalCost={totalCost}
             locale={locale}
             toman={toman}
+            showGuest
           />
           <GroupCharts
             icon={Store}
@@ -338,6 +347,7 @@ export function FoodUnitReportPage() {
             totalCost={totalCost}
             locale={locale}
             toman={toman}
+            showGuest
           />
 
           {grains.map((grain) => (
@@ -349,6 +359,7 @@ export function FoodUnitReportPage() {
               locale={locale}
               toman={toman}
               labelOf={(period) => labelOf(grain, period)}
+              showGuest
             />
           ))}
         </div>
@@ -394,13 +405,15 @@ function GroupTable({
   totalCost,
   locale,
   toman,
+  showGuest = false,
 }: {
   icon: typeof Building2
   title: string
-  rows: FoodCostEstimateGroup[]
+  rows: (FoodCostEstimateGroup & { guestQuantity?: number })[]
   totalCost: number
   locale: string
   toman: string
+  showGuest?: boolean
 }) {
   const { t } = useTranslation()
   return (
@@ -413,6 +426,7 @@ function GroupTable({
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.name')}</th>
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.count')}</th>
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.quantity')}</th>
+                {showGuest ? <th className="px-4 py-3 text-start">{t('foodUnitReport.guestQuantity')}</th> : null}
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.amount')}</th>
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.share')}</th>
               </tr>
@@ -423,6 +437,9 @@ function GroupTable({
                   <td className="px-4 py-3">{item.name}</td>
                   <td className="px-4 py-3">{formatNumber(item.count, locale)}</td>
                   <td className="px-4 py-3">{formatNumber(item.quantity, locale)}</td>
+                  {showGuest ? (
+                    <td className="px-4 py-3">{formatNumber(item.guestQuantity ?? 0, locale)}</td>
+                  ) : null}
                   <td className="px-4 py-3">{money(item.totalPrice, locale, toman)}</td>
                   <td className="px-4 py-3">{shareOf(item.totalPrice, totalCost, locale)}</td>
                 </tr>
@@ -442,13 +459,15 @@ function PeriodSection({
   locale,
   toman,
   labelOf,
+  showGuest = false,
 }: {
   grain: Grain
-  rows: FoodCostEstimatePeriod[]
+  rows: (FoodCostEstimatePeriod & { guestQuantity?: number })[]
   totalCost: number
   locale: string
   toman: string
   labelOf: (period: string) => string
+  showGuest?: boolean
 }) {
   const { t } = useTranslation()
   const titleKey = grain === 'week' ? 'byWeek' : grain === 'month' ? 'byMonth' : 'byYear'
@@ -506,6 +525,7 @@ function PeriodSection({
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.period')}</th>
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.count')}</th>
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.quantity')}</th>
+                {showGuest ? <th className="px-4 py-3 text-start">{t('foodUnitReport.guestQuantity')}</th> : null}
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.amount')}</th>
                 <th className="px-4 py-3 text-start">{t('foodUnitReport.share')}</th>
               </tr>
@@ -516,6 +536,9 @@ function PeriodSection({
                   <td className="px-4 py-3">{labelOf(item.period)}</td>
                   <td className="px-4 py-3">{formatNumber(item.count, locale)}</td>
                   <td className="px-4 py-3">{formatNumber(item.quantity, locale)}</td>
+                  {showGuest ? (
+                    <td className="px-4 py-3">{formatNumber(item.guestQuantity ?? 0, locale)}</td>
+                  ) : null}
                   <td className="px-4 py-3">{money(item.totalPrice, locale, toman)}</td>
                   <td className="px-4 py-3">{shareOf(item.totalPrice, totalCost, locale)}</td>
                 </tr>
