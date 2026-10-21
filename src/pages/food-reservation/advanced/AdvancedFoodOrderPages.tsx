@@ -1,6 +1,23 @@
-import { Briefcase, Building2, CalendarDays, CalendarRange, Check, Hash, Store, Users, UtensilsCrossed, Wallet } from 'lucide-react'
+import {
+  Briefcase,
+  Building2,
+  CalendarDays,
+  CalendarRange,
+  ChefHat,
+  Hash,
+  Minus,
+  Moon,
+  Plus,
+  Store,
+  Sun,
+  UserPlus,
+  Users,
+  Utensils,
+  UtensilsCrossed,
+  Wallet,
+} from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -34,7 +51,7 @@ import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api, getApiErrorMessage } from '../../../lib/api'
-import { formatGroupedNumber, formatNumber, formatWeekday, parseDigitString, toLatinDigits } from '../../../lib/datetime'
+import { formatGroupedNumber, formatNumber, formatWeekday, parseDigitString, toLatinDigits, todayIsoDate } from '../../../lib/datetime'
 import type {
   AdvancedFoodOrder,
   AdvancedFoodOrderContext,
@@ -42,12 +59,13 @@ import type {
   AdvancedFoodOrderLine,
   AdvancedFoodOrderSource,
   AdvancedFoodWeekDay,
+  FoodMealType,
   Paginated,
 } from '../../../types/app'
+import { foodMealTypes } from '../../../types/app'
 import { foodAdvancedItemPath, foodAdvancedPath } from '../food-paths'
-import { FoodReservationStatusBadge } from '../FoodReservationStatusBadge'
+import { FoodMealTypeBadge, FoodReservationStatusBadge } from '../FoodReservationStatusBadge'
 
-const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const
 const ORDER_WEEKDAYS = [0, 1, 2, 3, 4] as const
 
 function digitsOnly(value: string) {
@@ -62,6 +80,19 @@ function groupedPrice(value: string, locale: string) {
 function money(value: number | null, locale: string, unit: string) {
   if (value == null) return '—'
   return `${formatGroupedNumber(value, locale)} ${unit}`
+}
+
+function lineAudienceQty(item: AdvancedFoodOrderLine, order: AdvancedFoodOrderDetail) {
+  if (item.food.name.startsWith('غذای کارمندی')) {
+    return { unit: order.employeeQuantity, guest: order.employeeGuestQuantity }
+  }
+  if (item.food.name.startsWith('غذای مدیریتی')) {
+    return { unit: order.managementQuantity, guest: order.managementGuestQuantity }
+  }
+  return {
+    unit: order.employeeQuantity + order.managementQuantity,
+    guest: order.employeeGuestQuantity + order.managementGuestQuantity,
+  }
 }
 
 function WeekdayBadge({
@@ -93,27 +124,26 @@ function DateWithWeekday({ value, locale }: { value: string; locale: string }) {
   )
 }
 
-function SourceChoice({
+function SegmentedTwo<T extends string>({
   value,
   onChange,
   label,
-  defaultLabel,
-  menuLabel,
+  options,
 }: {
-  value: AdvancedFoodOrderSource
-  onChange: (next: AdvancedFoodOrderSource) => void
+  value: T
+  onChange: (next: T) => void
   label: string
-  defaultLabel: string
-  menuLabel: string
+  options: { value: T; label: string; icon: typeof Sun }[]
 }) {
-  const options: { value: AdvancedFoodOrderSource; label: string }[] = [
-    { value: 'DEFAULT', label: defaultLabel },
-    { value: 'MENU', label: menuLabel },
-  ]
   return (
-    <div role="radiogroup" aria-label={label} className="grid gap-2 sm:grid-cols-2">
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className="grid w-1/3 min-w-[12rem] grid-cols-2 gap-1 rounded-2xl border border-line bg-cream-50 p-1"
+    >
       {options.map((option) => {
         const selected = value === option.value
+        const Icon = option.icon
         return (
           <button
             key={option.value}
@@ -121,13 +151,314 @@ function SourceChoice({
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(option.value)}
-            className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 bg-white px-3 py-2 text-sm font-medium text-ink-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
-              selected ? 'border-teal-500' : 'border-line hover:border-teal-300'
+            className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+              selected ? 'bg-teal-500 text-white shadow-sm' : 'text-ink-600 hover:bg-white'
             }`}
           >
-            {selected ? <Check className="size-4 shrink-0 text-teal-600" aria-hidden /> : null}
+            <Icon className="size-4 shrink-0" aria-hidden />
             <span>{option.label}</span>
           </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function SourcePick<T extends string>({
+  value,
+  onChange,
+  label,
+  options,
+}: {
+  value: T
+  onChange: (next: T) => void
+  label: string
+  options: { value: T; title: string; hint: string; icon: typeof ChefHat }[]
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="grid gap-2 sm:grid-cols-2">
+      {options.map((option) => {
+        const selected = value === option.value
+        const Icon = option.icon
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(option.value)}
+            className={`flex min-h-[6.25rem] cursor-pointer flex-col items-start gap-2 rounded-2xl border-2 p-4 text-start transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+              selected
+                ? 'border-teal-500 bg-gradient-to-b from-teal-50 to-white shadow-[0_8px_18px_rgba(46,189,182,0.14)]'
+                : 'border-line bg-white hover:border-teal-300'
+            }`}
+          >
+            <span
+              className={`flex size-9 items-center justify-center rounded-xl ${
+                selected ? 'bg-teal-500 text-white' : 'bg-teal-50 text-teal-700'
+              }`}
+            >
+              <Icon className="size-4" aria-hidden />
+            </span>
+            <span className="text-sm font-semibold text-ink-900">{option.title}</span>
+            <span className="text-xs leading-5 text-ink-500">{option.hint}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function bumpQty(current: string, delta: number, zeroValue = '') {
+  const next = Math.max(0, (current === '' ? 0 : Number(current)) + delta)
+  return next === 0 ? zeroValue : String(next)
+}
+
+function QtyStepper({
+  id,
+  value,
+  onChange,
+  decreaseLabel,
+  increaseLabel,
+  zeroValue = '',
+}: {
+  id: string
+  value: string
+  onChange: (next: string) => void
+  decreaseLabel: string
+  increaseLabel: string
+  zeroValue?: string
+}) {
+  return (
+    <div dir="ltr" className="flex h-11 w-1/3 min-w-[8.5rem] items-center overflow-hidden rounded-2xl border border-line bg-cream-50">
+      <button
+        type="button"
+        aria-label={decreaseLabel}
+        onClick={() => onChange(bumpQty(value, -1, zeroValue))}
+        className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center text-teal-700 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-300"
+      >
+        <Minus className="size-4" aria-hidden />
+      </button>
+      <input
+        id={id}
+        inputMode="numeric"
+        className="digit-field min-w-0 flex-1 border-0 bg-transparent py-2 text-center text-sm text-ink-900 outline-none"
+        value={value}
+        onChange={(event) => onChange(digitsOnly(event.target.value) || zeroValue)}
+      />
+      <button
+        type="button"
+        aria-label={increaseLabel}
+        onClick={() => onChange(bumpQty(value, 1, zeroValue))}
+        className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center text-teal-700 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-300"
+      >
+        <Plus className="size-4" aria-hidden />
+      </button>
+    </div>
+  )
+}
+
+function GuestOrderCard({
+  tone,
+  icon: Icon,
+  title,
+  subtitle,
+  priceId,
+  priceLabel,
+  price,
+  onPriceChange,
+  showPrice,
+  priceHint,
+  qtyId,
+  qtyLabel,
+  quantity,
+  onQuantityChange,
+  guestId,
+  guestLabel,
+  guests,
+  onGuestsChange,
+  decreaseLabel,
+  increaseLabel,
+  totalLabel,
+  total,
+  unit,
+  locale,
+}: {
+  tone: 'teal' | 'mint'
+  icon: typeof Users
+  title: string
+  subtitle: string
+  priceId: string
+  priceLabel: string
+  price: string
+  onPriceChange: (next: string) => void
+  showPrice: boolean
+  priceHint?: string
+  qtyId: string
+  qtyLabel: string
+  quantity: string
+  onQuantityChange: (next: string) => void
+  guestId: string
+  guestLabel: string
+  guests: string
+  onGuestsChange: (next: string) => void
+  decreaseLabel: string
+  increaseLabel: string
+  totalLabel: string
+  total: number
+  unit: string
+  locale: string
+}) {
+  const wrap =
+    tone === 'teal'
+      ? 'border-teal-100 bg-gradient-to-b from-teal-50 to-white'
+      : 'border-mint-100 bg-gradient-to-b from-mint-50 to-white'
+  const iconWrap = tone === 'teal' ? 'bg-teal-500 text-white' : 'bg-mint-500 text-white'
+  return (
+    <article className={`flex min-w-0 flex-col gap-4 rounded-2xl border p-4 ${wrap}`}>
+      <div className="flex items-start gap-3">
+        <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${iconWrap}`}>
+          <Icon className="size-4" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-ink-900">{title}</p>
+          <p className="mt-0.5 text-xs leading-5 text-ink-500">{subtitle}</p>
+        </div>
+      </div>
+      {showPrice ? (
+        <FormField icon={Wallet} label={priceLabel} htmlFor={priceId}>
+          <div className="flex items-center gap-2">
+            <input
+              id={priceId}
+              inputMode="numeric"
+              className={`${fieldClassName} digit-field`}
+              value={groupedPrice(price, locale)}
+              onChange={(event) => onPriceChange(parseDigitString(event.target.value))}
+            />
+            <span className="shrink-0 text-sm text-ink-500">{unit}</span>
+          </div>
+        </FormField>
+      ) : priceHint ? (
+        <p className="rounded-xl bg-white/80 px-3 py-2 text-xs leading-5 text-ink-500">{priceHint}</p>
+      ) : null}
+      <FormField icon={Hash} label={qtyLabel} htmlFor={qtyId}>
+        <QtyStepper
+          id={qtyId}
+          value={quantity}
+          onChange={onQuantityChange}
+          decreaseLabel={decreaseLabel}
+          increaseLabel={increaseLabel}
+        />
+      </FormField>
+      <FormField icon={UserPlus} label={guestLabel} htmlFor={guestId}>
+        <QtyStepper
+          id={guestId}
+          value={guests}
+          onChange={onGuestsChange}
+          decreaseLabel={decreaseLabel}
+          increaseLabel={increaseLabel}
+          zeroValue="0"
+        />
+      </FormField>
+      {showPrice && total > 0 ? (
+        <p className="flex items-center justify-between text-sm font-medium text-ink-800">
+          <span className="text-ink-500">{totalLabel}</span>
+          <span>
+            {formatGroupedNumber(total, locale)} {unit}
+          </span>
+        </p>
+      ) : null}
+    </article>
+  )
+}
+
+function SummaryRow({
+  icon: Icon,
+  label,
+  qty,
+  guests,
+  amount,
+  unit,
+  locale,
+}: {
+  icon: typeof Users
+  label: string
+  qty: number
+  guests: number
+  amount: number
+  unit: string
+  locale: string
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-ink-800">
+      <span className="inline-flex items-center gap-2 font-medium">
+        <Icon className="size-4 text-teal-600" aria-hidden />
+        {label}
+      </span>
+      <span className={qty > 0 ? '' : 'text-ink-400'}>
+        {t('advancedFoodOrders.summaryServings', { qty: formatNumber(qty, locale) })}
+        {guests > 0
+          ? ` (${t('advancedFoodOrders.summaryGuests', { qty: formatNumber(guests, locale) })})`
+          : ''}
+        {amount > 0 ? ` · ${formatGroupedNumber(amount, locale)} ${unit}` : ''}
+      </span>
+    </div>
+  )
+}
+
+function WeekMenuPreview({
+  days,
+  weekdays,
+  data,
+  loading,
+  locale,
+  unit,
+}: {
+  days: readonly number[]
+  weekdays: number[]
+  data?: AdvancedFoodWeekDay[]
+  loading: boolean
+  locale: string
+  unit: string
+}) {
+  const { t } = useTranslation()
+  if (loading) return <LoadingState />
+  if (!data) return null
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      {days.map((weekday) => {
+        const selected = weekdays.includes(weekday)
+        const foods = data.find((day) => day.weekday === weekday)?.foods ?? []
+        let body: ReactNode
+        if (!selected) body = t('advancedFoodOrders.weekdayOff')
+        else if (foods.length === 0) body = t('advancedFoodOrders.noDayFood')
+        else {
+          body = (
+            <ul className="space-y-1">
+              {foods.map((food) => (
+                <li key={food.id}>
+                  <span>{food.name}</span>
+                  <span className="mt-0.5 block text-[11px] font-medium text-teal-700">
+                    {formatGroupedNumber(food.price, locale)} {unit}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+        return (
+          <div
+            key={weekday}
+            className={`rounded-2xl border p-3 ${
+              selected
+                ? 'border-teal-200 bg-gradient-to-b from-teal-50 to-white'
+                : 'border-line bg-cream-50 text-ink-400'
+            }`}
+          >
+            <p className="text-xs font-semibold text-ink-800">{t(`restaurantMenuItems.day${weekday}`)}</p>
+            <div className="mt-1.5 text-xs leading-5">{body}</div>
+          </div>
         )
       })}
     </div>
@@ -143,20 +474,36 @@ function OrderForm({
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
-  const [startsOn, setStartsOn] = useState('')
-  const [endsOn, setEndsOn] = useState('')
+  const [startsOn, setStartsOn] = useState(todayIsoDate)
+  const [endsOn, setEndsOn] = useState(todayIsoDate)
   const [weekdays, setWeekdays] = useState<number[]>([...ORDER_WEEKDAYS])
   const [orgUnitId, setOrgUnitId] = useState(context.units.length === 1 ? context.units[0].id : '')
   const [restaurantId, setRestaurantId] = useState('')
   const [source, setSource] = useState<AdvancedFoodOrderSource>('DEFAULT')
+  const [mealType, setMealType] = useState<FoodMealType>(foodMealTypes.LUNCH)
   const [employeeQuantity, setEmployeeQuantity] = useState('')
   const [managementQuantity, setManagementQuantity] = useState('')
+  const [employeeGuests, setEmployeeGuests] = useState('0')
+  const [managementGuests, setManagementGuests] = useState('0')
   const [employeePrice, setEmployeePrice] = useState('')
   const [managementPrice, setManagementPrice] = useState('')
   const [saving, setSaving] = useState(false)
 
   const restaurants = context.restaurants
   const restaurant = restaurants.find((item) => item.id === restaurantId)
+  const toman = t('advancedFoodOrders.toman')
+  const employeeGuestQty = employeeGuests === '' ? 0 : Number(employeeGuests)
+  const managementGuestQty = managementGuests === '' ? 0 : Number(managementGuests)
+  const employeeQty =
+    (employeeQuantity === '' ? 0 : Number(employeeQuantity)) + employeeGuestQty
+  const managementQty =
+    (managementQuantity === '' ? 0 : Number(managementQuantity)) + managementGuestQty
+  const employeeLine =
+    employeeQty > 0 && employeePrice !== '' ? employeeQty * Number(employeePrice) : 0
+  const managementLine =
+    managementQty > 0 && managementPrice !== '' ? managementQty * Number(managementPrice) : 0
+  const totalQty = employeeQty + managementQty
+  const dailyTotal = employeeLine + managementLine
 
   useEffect(() => {
     if (restaurants.length === 1) {
@@ -192,11 +539,14 @@ function OrderForm({
   })
 
   function resetOrder() {
-    setStartsOn('')
-    setEndsOn('')
+    const today = todayIsoDate()
+    setStartsOn(today)
+    setEndsOn(today)
     setWeekdays([...ORDER_WEEKDAYS])
     setEmployeeQuantity('')
     setManagementQuantity('')
+    setEmployeeGuests('0')
+    setManagementGuests('0')
   }
 
   function toggleWeekday(day: number, checked: boolean) {
@@ -228,8 +578,8 @@ function OrderForm({
       toast.error(t('advancedFoodOrders.selectRestaurant'))
       return
     }
-    const employeeQty = employeeQuantity === '' ? 0 : Number(employeeQuantity)
-    const managementQty = managementQuantity === '' ? 0 : Number(managementQuantity)
+    const employeeBase = employeeQuantity === '' ? 0 : Number(employeeQuantity)
+    const managementBase = managementQuantity === '' ? 0 : Number(managementQuantity)
     if (employeeQty + managementQty < 1) {
       toast.error(t('advancedFoodOrders.enterQuantity'))
       return
@@ -251,8 +601,11 @@ function OrderForm({
         orgUnitId,
         restaurantId,
         source,
-        employeeQuantity: employeeQty,
-        managementQuantity: managementQty,
+        mealType,
+        employeeQuantity: employeeBase,
+        managementQuantity: managementBase,
+        employeeGuestQuantity: employeeGuestQty,
+        managementGuestQuantity: managementGuestQty,
         ...(source === 'DEFAULT'
           ? {
               ...(employeeQty > 0 ? { employeeUnitPrice: Number(employeePrice) } : {}),
@@ -287,6 +640,7 @@ function OrderForm({
       subtitle={t('advancedFoodOrders.createSubtitle')}
     >
       <AppForm onSubmit={submit} autoFocusFirst className={formCardBodyClassName}>
+        <FormSectionTitle icon={CalendarRange}>{t('advancedFoodOrders.setupSection')}</FormSectionTitle>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField icon={CalendarRange} label={t('advancedFoodOrders.startsOn')} htmlFor="advancedFrom">
             <PersianDateField
@@ -349,106 +703,153 @@ function OrderForm({
         </div>
         {restaurants.length === 0 ? (
           <FormEmptyHint>{t('advancedFoodOrders.noRestaurants')}</FormEmptyHint>
-        ) : null}
-        <FormField icon={UtensilsCrossed} label={t('advancedFoodOrders.foodSource')}>
-          <SourceChoice
-            value={source}
-            onChange={setSource}
-            label={t('advancedFoodOrders.foodSource')}
-            defaultLabel={t('advancedFoodOrders.sourceDefault')}
-            menuLabel={t('advancedFoodOrders.sourceMenu')}
-          />
-          <p className="text-xs leading-6 text-ink-500">
-            {source === 'DEFAULT'
-              ? t('advancedFoodOrders.sourceDefaultHint')
-              : t('advancedFoodOrders.sourceMenuHint')}
-          </p>
-        </FormField>
-        {source === 'MENU' && restaurantId && weekMenu.data ? (
-          <div className="space-y-2">
-          <p className="text-xs font-medium text-ink-600">{t('advancedFoodOrders.weekPreview')}</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {WEEKDAYS.map((weekday) => {
-              const weekend = weekday === 5 || weekday === 6
-              const selected = weekdays.includes(weekday)
-              const foods = weekMenu.data.find((day) => day.weekday === weekday)?.foods ?? []
-              const label = weekend
-                ? t('advancedFoodOrders.weekendSkip')
-                : !selected
-                  ? t('advancedFoodOrders.weekdayOff')
-                  : foods.length === 0
-                  ? t('advancedFoodOrders.noDayFood')
-                  : foods
-                      .map(
-                        (food) =>
-                          `${food.name} (${formatGroupedNumber(food.price, locale)} ${t('advancedFoodOrders.toman')})`,
-                      )
-                      .join('، ')
-              return (
-                <p key={weekday} className="text-sm text-ink-700">
-                  <span className="font-medium">{t(`restaurantMenuItems.day${weekday}`)}: </span>
-                  {label}
-                </p>
-              )
-            })}
-          </div>
-          </div>
-        ) : null}
-        {source === 'DEFAULT' ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField icon={Wallet} label={t('advancedFoodOrders.employeePrice')} htmlFor="advancedEmployeePrice">
-              <div className="flex items-center gap-2">
-                <input
-                  id="advancedEmployeePrice"
-                  inputMode="numeric"
-                  className={`${fieldClassName} digit-field`}
-                  value={groupedPrice(employeePrice, locale)}
-                  onChange={(event) => setEmployeePrice(parseDigitString(event.target.value))}
-                />
-                <span className="shrink-0 text-sm text-ink-500">{t('advancedFoodOrders.toman')}</span>
-              </div>
+        ) : !restaurant ? (
+          <FormEmptyHint>{t('advancedFoodOrders.pickRestaurantFirst')}</FormEmptyHint>
+        ) : (
+          <div className="space-y-4">
+            <FormSectionTitle icon={UtensilsCrossed}>{t('advancedFoodOrders.composeSection')}</FormSectionTitle>
+            <FormField icon={Utensils} label={t('advancedFoodOrders.mealType')}>
+              <SegmentedTwo
+                value={mealType}
+                onChange={setMealType}
+                label={t('advancedFoodOrders.mealType')}
+                options={[
+                  { value: foodMealTypes.LUNCH, label: t('advancedFoodOrders.lunch'), icon: Sun },
+                  { value: foodMealTypes.DINNER, label: t('advancedFoodOrders.dinner'), icon: Moon },
+                ]}
+              />
             </FormField>
-            <FormField icon={Wallet} label={t('advancedFoodOrders.managementPrice')} htmlFor="advancedManagementPrice">
-              <div className="flex items-center gap-2">
-                <input
-                  id="advancedManagementPrice"
-                  inputMode="numeric"
-                  className={`${fieldClassName} digit-field`}
-                  value={groupedPrice(managementPrice, locale)}
-                  onChange={(event) => setManagementPrice(parseDigitString(event.target.value))}
-                />
-                <span className="shrink-0 text-sm text-ink-500">{t('advancedFoodOrders.toman')}</span>
-              </div>
+            <FormField icon={ChefHat} label={t('advancedFoodOrders.foodSource')}>
+              <SourcePick
+                value={source}
+                onChange={setSource}
+                label={t('advancedFoodOrders.foodSource')}
+                options={[
+                  {
+                    value: 'DEFAULT' as const,
+                    title: t('advancedFoodOrders.sourceDefault'),
+                    hint: t('advancedFoodOrders.sourceDefaultCard'),
+                    icon: ChefHat,
+                  },
+                  {
+                    value: 'MENU' as const,
+                    title: t('advancedFoodOrders.sourceMenu'),
+                    hint: t('advancedFoodOrders.sourceMenuCard'),
+                    icon: CalendarDays,
+                  },
+                ]}
+              />
             </FormField>
+            {source === 'MENU' ? (
+              <div className="space-y-2">
+                <FormSectionTitle icon={CalendarDays} className="mb-0">
+                  {t('advancedFoodOrders.weekPreview')}
+                </FormSectionTitle>
+                <WeekMenuPreview
+                  days={ORDER_WEEKDAYS}
+                  weekdays={weekdays}
+                  data={weekMenu.data}
+                  loading={weekMenu.isLoading}
+                  locale={locale}
+                  unit={toman}
+                />
+              </div>
+            ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              <GuestOrderCard
+                tone="teal"
+                icon={Users}
+                title={t('advancedFoodOrders.employeeMeal')}
+                subtitle={restaurant.name}
+                priceId="advancedEmployeePrice"
+                priceLabel={t('advancedFoodOrders.unitPrice')}
+                price={employeePrice}
+                onPriceChange={setEmployeePrice}
+                showPrice={source === 'DEFAULT'}
+                priceHint={t('advancedFoodOrders.priceFromMenu')}
+                qtyId="advancedEmployeeQty"
+                qtyLabel={t('advancedFoodOrders.dailyQty')}
+                quantity={employeeQuantity}
+                onQuantityChange={setEmployeeQuantity}
+                guestId="advancedEmployeeGuests"
+                guestLabel={t('advancedFoodOrders.guestQty')}
+                guests={employeeGuests}
+                onGuestsChange={setEmployeeGuests}
+                decreaseLabel={t('advancedFoodOrders.qtyDecrease')}
+                increaseLabel={t('advancedFoodOrders.qtyIncrease')}
+                totalLabel={t('advancedFoodOrders.lineDailyTotal')}
+                total={employeeLine}
+                unit={toman}
+                locale={locale}
+              />
+              <GuestOrderCard
+                tone="mint"
+                icon={Briefcase}
+                title={t('advancedFoodOrders.managementMeal')}
+                subtitle={restaurant.name}
+                priceId="advancedManagementPrice"
+                priceLabel={t('advancedFoodOrders.unitPrice')}
+                price={managementPrice}
+                onPriceChange={setManagementPrice}
+                showPrice={source === 'DEFAULT'}
+                priceHint={t('advancedFoodOrders.priceFromMenu')}
+                qtyId="advancedManagementQty"
+                qtyLabel={t('advancedFoodOrders.dailyQty')}
+                quantity={managementQuantity}
+                onQuantityChange={setManagementQuantity}
+                guestId="advancedManagementGuests"
+                guestLabel={t('advancedFoodOrders.guestQty')}
+                guests={managementGuests}
+                onGuestsChange={setManagementGuests}
+                decreaseLabel={t('advancedFoodOrders.qtyDecrease')}
+                increaseLabel={t('advancedFoodOrders.qtyIncrease')}
+                totalLabel={t('advancedFoodOrders.lineDailyTotal')}
+                total={managementLine}
+                unit={toman}
+                locale={locale}
+              />
+            </div>
+            <div className="space-y-2 rounded-2xl border border-teal-100 bg-gradient-to-e from-mint-50 via-white to-teal-50 px-4 py-3">
+              <p className="text-xs font-medium text-ink-500">{t('advancedFoodOrders.orderSummary')}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <SummaryRow
+                  icon={Users}
+                  label={t('advancedFoodOrders.employeeMeal')}
+                  qty={employeeQty}
+                  guests={employeeGuestQty}
+                  amount={source === 'DEFAULT' ? employeeLine : 0}
+                  unit={toman}
+                  locale={locale}
+                />
+                <SummaryRow
+                  icon={Briefcase}
+                  label={t('advancedFoodOrders.managementMeal')}
+                  qty={managementQty}
+                  guests={managementGuestQty}
+                  amount={source === 'DEFAULT' ? managementLine : 0}
+                  unit={toman}
+                  locale={locale}
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-teal-100 pt-2 text-sm font-semibold text-ink-900">
+                <span>{t('advancedFoodOrders.summaryTotal')}</span>
+                <span>
+                  {t('advancedFoodOrders.summaryServings', { qty: formatNumber(totalQty, locale) })}
+                  {source === 'DEFAULT' && dailyTotal > 0
+                    ? ` · ${formatGroupedNumber(dailyTotal, locale)} ${toman}`
+                    : ''}
+                </span>
+              </div>
+            </div>
+            <FormActions
+              headerIcons={false}
+              submitLabel={t('advancedFoodOrders.order')}
+              cancelLabel={t('advancedFoodOrders.cancel')}
+              submitting={saving}
+              onCancel={resetOrder}
+            />
           </div>
-        ) : null}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField icon={Users} label={t('advancedFoodOrders.employeeQuantity')} htmlFor="advancedEmployeeQty">
-            <input
-              id="advancedEmployeeQty"
-              inputMode="numeric"
-              className={`${fieldClassName} digit-field`}
-              value={employeeQuantity}
-              onChange={(event) => setEmployeeQuantity(digitsOnly(event.target.value))}
-            />
-          </FormField>
-          <FormField icon={Briefcase} label={t('advancedFoodOrders.managementQuantity')} htmlFor="advancedManagementQty">
-            <input
-              id="advancedManagementQty"
-              inputMode="numeric"
-              className={`${fieldClassName} digit-field`}
-              value={managementQuantity}
-              onChange={(event) => setManagementQuantity(digitsOnly(event.target.value))}
-            />
-          </FormField>
-        </div>
-        <FormActions
-          headerIcons={false}
-          submitLabel={t('advancedFoodOrders.order')}
-          cancelLabel={t('advancedFoodOrders.cancel')}
-          submitting={saving}
-          onCancel={resetOrder}
-        />
+        )}
       </AppForm>
     </FormCard>
   )
@@ -516,11 +917,13 @@ export function AdvancedFoodOrderListPage() {
               <SortableTh column="createdAt" label={t('advancedFoodOrders.registeredAt')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="orgUnit" label={t('advancedFoodOrders.orgUnit')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="restaurant" label={t('advancedFoodOrders.restaurant')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="mealType" label={t('advancedFoodOrders.mealType')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="startsOn" label={t('advancedFoodOrders.startsOn')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="endsOn" label={t('advancedFoodOrders.endsOn')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="food" label={t('advancedFoodOrders.food')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="employeeQuantity" label={t('advancedFoodOrders.employeeQuantity')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="managementQuantity" label={t('advancedFoodOrders.managementQuantity')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="employeeQuantity" label={t('advancedFoodOrders.employeeMeal')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="managementQuantity" label={t('advancedFoodOrders.managementMeal')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="employeeGuestQuantity" label={t('advancedFoodOrders.employeeGuest')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="managementGuestQuantity" label={t('advancedFoodOrders.managementGuest')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <ActionsTh />
             </tr>
           </thead>
@@ -530,13 +933,16 @@ export function AdvancedFoodOrderListPage() {
                 <td className="px-4 py-3"><DateText value={item.createdAt} withTime /></td>
                 <td className="px-4 py-3">{item.orgUnit.name}</td>
                 <td className="px-4 py-3">{item.restaurant.name}</td>
+                <td className="px-4 py-3"><FoodMealTypeBadge mealType={item.mealType} /></td>
                 <td className="px-4 py-3"><DateWithWeekday value={item.startsOn} locale={locale} /></td>
                 <td className="px-4 py-3"><DateWithWeekday value={item.endsOn} locale={locale} /></td>
-                <td className="px-4 py-3">{item.foodLabel}</td>
                 <td className="px-4 py-3">{formatNumber(item.employeeQuantity, locale)}</td>
                 <td className="px-4 py-3">{formatNumber(item.managementQuantity, locale)}</td>
+                <td className="px-4 py-3">{formatNumber(item.employeeGuestQuantity, locale)}</td>
+                <td className="px-4 py-3">{formatNumber(item.managementGuestQuantity, locale)}</td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
+                    showView={false}
                     viewTo={foodAdvancedItemPath(item.id)}
                     onDelete={() =>
                       confirmDelete({
@@ -615,6 +1021,12 @@ export function AdvancedFoodOrderDetailPage() {
             <FormFactTile icon={Building2} label={t('advancedFoodOrders.orgUnit')} value={order.orgUnit.name} tone="mint" />
             <FormFactTile icon={Store} label={t('advancedFoodOrders.restaurant')} value={order.restaurant.name} tone="teal" />
             <FormFactTile
+              icon={Utensils}
+              label={t('advancedFoodOrders.mealType')}
+              value={<FoodMealTypeBadge mealType={order.mealType} />}
+              tone="mint"
+            />
+            <FormFactTile
               icon={UtensilsCrossed}
               label={t('advancedFoodOrders.source')}
               value={order.source === 'DEFAULT' ? t('advancedFoodOrders.sourceDefault') : t('advancedFoodOrders.sourceMenu')}
@@ -649,6 +1061,8 @@ export function AdvancedFoodOrderDetailPage() {
             <FormFactTile icon={UtensilsCrossed} label={t('advancedFoodOrders.food')} value={order.foodLabel} className="sm:col-span-2" />
             <FormFactTile icon={Users} label={t('advancedFoodOrders.employeeQuantity')} value={formatNumber(order.employeeQuantity, locale)} tone="teal" />
             <FormFactTile icon={Briefcase} label={t('advancedFoodOrders.managementQuantity')} value={formatNumber(order.managementQuantity, locale)} tone="mint" />
+            <FormFactTile icon={UserPlus} label={t('advancedFoodOrders.employeeGuestQuantity')} value={formatNumber(order.employeeGuestQuantity, locale)} tone="teal" />
+            <FormFactTile icon={UserPlus} label={t('advancedFoodOrders.managementGuestQuantity')} value={formatNumber(order.managementGuestQuantity, locale)} tone="mint" />
             {order.employeeUnitPrice != null ? (
               <FormFactTile icon={Wallet} label={t('advancedFoodOrders.employeePrice')} value={money(order.employeeUnitPrice, locale, unit)} tone="teal" />
             ) : null}
@@ -670,7 +1084,7 @@ export function AdvancedFoodOrderDetailPage() {
                   <tr>
                     <th className="px-4 py-3 text-start font-medium">{t('foodReservations.reservedAt')}</th>
                     <th className="px-4 py-3 text-start font-medium">{t('foodReservations.food')}</th>
-                    <th className="px-4 py-3 text-start font-medium">{t('foodReservations.quantity')}</th>
+                    <th className="px-4 py-3 text-start font-medium">{t('foodReservations.quantityBreakdown')}</th>
                     <th className="px-4 py-3 text-start font-medium">{t('foodReservations.unitPrice')}</th>
                     <th className="px-4 py-3 text-start font-medium">{t('foodReservations.totalPrice')}</th>
                     <th className="px-4 py-3 text-start font-medium">{t('foodReservations.status')}</th>
@@ -681,7 +1095,12 @@ export function AdvancedFoodOrderDetailPage() {
                     <tr key={item.id} className="border-t border-line">
                       <td className="px-4 py-3"><DateWithWeekday value={item.reservedAt} locale={locale} /></td>
                       <td className="px-4 py-3">{item.food.name}</td>
-                      <td className="px-4 py-3">{formatNumber(item.quantity, locale)}</td>
+                      <td className="px-4 py-3">
+                        {t('foodReservations.quantitySplit', {
+                          unit: formatNumber(lineAudienceQty(item, order).unit, locale),
+                          guest: formatNumber(lineAudienceQty(item, order).guest, locale),
+                        })}
+                      </td>
                       <td className="px-4 py-3">{money(item.unitPrice, locale, unit)}</td>
                       <td className="px-4 py-3">{money(item.totalPrice, locale, unit)}</td>
                       <td className="px-4 py-3"><FoodReservationStatusBadge status={item.status} /></td>

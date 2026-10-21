@@ -292,6 +292,7 @@ export function OrganizationUnitListPage() {
             <thead className="bg-cream-50 text-ink-700">
               <tr>
                 <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.name')}</th>
+                <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.code')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.kind')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('organizationUnits.phone')}</th>
                 <th className="px-4 py-3 text-center font-medium">{t('organizationUnits.employeeCount')}</th>
@@ -362,6 +363,11 @@ export function OrganizationUnitListPage() {
                         )}
                       </div>
                     </td>
+                    <td className="px-4 py-3">
+                      <span className="digit-field" dir="ltr">
+                        {localizeDigits(item.code, locale)}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">{item.kind.name}</td>
                     <td className="px-4 py-3">
                       {item.phone ? (
@@ -393,6 +399,7 @@ export function OrganizationUnitListPage() {
               <thead className="bg-cream-50 text-ink-700">
                 <tr>
                   <SortableTh column="name" label={t('organizationUnits.name')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                  <SortableTh column="code" label={t('organizationUnits.code')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
                   <SortableTh column="kind" label={t('organizationUnits.kind')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
                   <SortableTh column="parent" label={t('organizationUnits.parent')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
                   <SortableTh column="phone" label={t('organizationUnits.phone')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
@@ -411,6 +418,11 @@ export function OrganizationUnitListPage() {
                 {rows.map((item) => (
                   <tr key={item.id} className="border-t border-line">
                     <td className="px-4 py-3">{item.name}</td>
+                    <td className="px-4 py-3">
+                      <span className="digit-field" dir="ltr">
+                        {localizeDigits(item.code, locale)}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">{item.kind.name}</td>
                     <td className="px-4 py-3">{item.parent?.name || '—'}</td>
                     <td className="px-4 py-3">
@@ -563,6 +575,13 @@ export function OrganizationUnitDetailPage() {
               <FormSectionTitle icon={Building2}>{t('organizationUnits.section')}</FormSectionTitle>
               <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
                 <FormFactTile icon={Type} label={t('organizationUnits.name')} value={item.name} tone="teal" />
+                <FormFactTile
+                  icon={Hash}
+                  label={t('organizationUnits.code')}
+                  value={localizeDigits(item.code, locale)}
+                  copyValue={item.code}
+                  tone="mint"
+                />
                 <FormFactTile
                   icon={Tags}
                   label={t('organizationUnits.kind')}

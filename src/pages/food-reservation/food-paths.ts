@@ -74,6 +74,10 @@ export function foodUnitReportPath() {
   return '/food-reservation/unit-report'
 }
 
+export function foodDailyReportPath() {
+  return '/food-reservation/daily-report'
+}
+
 export function unitRepsPath() {
   return '/food-reservation/unit-reps'
 }

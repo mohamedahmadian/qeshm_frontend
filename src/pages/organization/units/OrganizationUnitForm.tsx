@@ -28,6 +28,7 @@ import { descendantUnitIds, organizationUnitPathLabel } from '../organization-un
 
 export type OrganizationUnitPayload = {
   name: string
+  code: string
   kindId: string
   parentId: string | null
   phone: string | null
@@ -71,6 +72,7 @@ export function OrganizationUnitForm({
 }) {
   const { t } = useTranslation()
   const [name, setName] = useState(initial?.name ?? '')
+  const [code, setCode] = useState(initial?.code ?? '')
   const [kindId, setKindId] = useState(initial?.kindId ?? '')
   const [parentId, setParentId] = useState(initial?.parentId ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
@@ -133,6 +135,11 @@ export function OrganizationUnitForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault()
+    const normalizedCode = toLatinDigits(code).trim()
+    if (!normalizedCode) {
+      toast.error(t('organizationUnits.codeRequired'))
+      return
+    }
     const digits = toLatinDigits(phone).replace(/\D/g, '')
     if (digits && (digits.length < 8 || digits.length > 15)) {
       toast.error(t('organizationPhones.phoneInvalid'))
@@ -152,6 +159,7 @@ export function OrganizationUnitForm({
     try {
       await onSubmit({
         name: name.trim(),
+        code: normalizedCode,
         kindId,
         parentId: emptyToNull(parentId),
         phone: digits || null,
@@ -184,16 +192,30 @@ export function OrganizationUnitForm({
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
         <FormSectionTitle icon={Building2}>{t('organizationUnits.section')}</FormSectionTitle>
-        <FormField icon={Type} label={t('organizationUnits.name')} htmlFor="unitName">
-          <input
-            id="unitName"
-            className={fieldClassName}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            minLength={2}
-          />
-        </FormField>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField icon={Type} label={t('organizationUnits.name')} htmlFor="unitName">
+            <input
+              id="unitName"
+              className={fieldClassName}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              minLength={2}
+            />
+          </FormField>
+          <FormField icon={Hash} label={t('organizationUnits.code')} htmlFor="unitCode">
+            <input
+              id="unitCode"
+              className={`${fieldClassName} digit-field`}
+              value={code}
+              onChange={(e) => setCode(toLatinDigits(e.target.value).trimStart().slice(0, 40))}
+              required
+              minLength={1}
+              maxLength={40}
+              placeholder={t('organizationUnits.codeHint')}
+            />
+          </FormField>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField icon={Tags} label={t('organizationUnits.kind')} htmlFor="unitKind">
             <SearchSelect
@@ -218,7 +240,10 @@ export function OrganizationUnitForm({
                 { value: '', label: t('organizationUnits.noParent') },
                 ...parentOptions.map((unit) => ({
                   value: unit.id,
-                  label: organizationUnitPathLabel(unit),
+                  label: unit.code
+                    ? `${unit.code} — ${organizationUnitPathLabel(unit)}`
+                    : organizationUnitPathLabel(unit),
+                  keywords: unit.code,
                 })),
               ]}
             />

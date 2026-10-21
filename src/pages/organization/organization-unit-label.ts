@@ -37,6 +37,7 @@ export function organizationUnitMatches(
   if (!term) return true
   const hay = [
     unit.name,
+    unit.code,
     unit.kind.name,
     unit.parent?.name,
     unit.pathLabel,

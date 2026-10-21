@@ -6,6 +6,7 @@ import {
   Store,
   Ticket,
   UserRound,
+  Utensils,
   UtensilsCrossed,
   Wallet,
 } from 'lucide-react'
@@ -49,7 +50,7 @@ import type {
   Restaurant,
   RestaurantMenuItem,
 } from '../../../types/app'
-import { FoodReservationStatusBadge, ReservationGuestMark } from '../FoodReservationStatusBadge'
+import { FoodMealTypeBadge, FoodReservationStatusBadge, ReservationGuestMark } from '../FoodReservationStatusBadge'
 import { foodReservationHistoryItemPath } from '../food-paths'
 
 export function FoodReservationReportPage() {
@@ -64,6 +65,7 @@ export function FoodReservationReportPage() {
   const status = searchParams.get('status') ?? ''
   const reservedFrom = searchParams.get('reservedFrom') ?? ''
   const reservedTo = searchParams.get('reservedTo') ?? ''
+  const mealType = searchParams.get('mealType') ?? ''
 
   const restaurants = useQuery({
     queryKey: ['restaurants', 'lookup'],
@@ -107,6 +109,7 @@ export function FoodReservationReportPage() {
       status,
       reservedFrom,
       reservedTo,
+      mealType,
       q,
       page,
       sortBy,
@@ -124,6 +127,7 @@ export function FoodReservationReportPage() {
           ...(status ? { status } : {}),
           ...(reservedFrom ? { reservedFrom } : {}),
           ...(reservedTo ? { reservedTo } : {}),
+          ...(mealType ? { mealType } : {}),
           ...(q ? { q } : {}),
           ...sortParams,
         },
@@ -140,7 +144,7 @@ export function FoodReservationReportPage() {
   ]
   const rows = report.data?.items ?? []
   const summary = report.data?.summary
-  const filtersActive = Boolean(foodId || orgUnitId || userId || status || reservedFrom || reservedTo)
+  const filtersActive = Boolean(foodId || orgUnitId || userId || status || reservedFrom || reservedTo || mealType)
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -158,6 +162,7 @@ export function FoodReservationReportPage() {
         status: undefined,
         reservedFrom: undefined,
         reservedTo: undefined,
+        mealType: undefined,
         q: undefined,
       },
       { resetPage: true },
@@ -269,6 +274,19 @@ export function FoodReservationReportPage() {
                   { value: '', label: t('foodReservations.allStatuses') },
                   { value: 'PENDING', label: t('foodReservations.pending') },
                   { value: 'CONFIRMED', label: t('foodReservations.confirmed') },
+                ]}
+              />
+            </FormField>
+            <FormField icon={Utensils} label={t('foodReservations.mealType')} htmlFor="reportMealType">
+              <SearchSelect
+                id="reportMealType"
+                value={mealType}
+                onChange={(next) => setParams({ mealType: next || undefined }, { resetPage: true })}
+                placeholder={t('foodReservations.mealType')}
+                options={[
+                  { value: '', label: t('foodReservations.allMealTypes') },
+                  { value: 'LUNCH', label: t('foodReservations.lunch') },
+                  { value: 'DINNER', label: t('foodReservations.dinner') },
                 ]}
               />
             </FormField>
@@ -417,6 +435,7 @@ export function FoodReservationReportPage() {
               <thead className="bg-cream-50 text-ink-700">
                 <tr>
                   <SortableTh column="reservedAt" label={t('foodReservations.reservedAt')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                  <SortableTh column="mealType" label={t('foodReservations.mealType')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
                   <SortableTh column="user" label={t('foodReservations.employee')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
                   <SortableTh column="orgUnit" label={t('foodReservations.orgUnit')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
                   <SortableTh column="food" label={t('foodReservations.food')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
@@ -429,6 +448,7 @@ export function FoodReservationReportPage() {
                 {rows.map((item) => (
                   <tr key={item.id} className="border-t border-line">
                     <td className="px-4 py-3"><DateText value={item.reservedAt} /></td>
+                    <td className="px-4 py-3"><FoodMealTypeBadge mealType={item.mealType} /></td>
                     <td className="px-4 py-3">{item.user.fullName}</td>
                     <td className="px-4 py-3">{item.orgUnit.name}</td>
                     <td className="px-4 py-3">{item.food.name}</td>

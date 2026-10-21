@@ -1,7 +1,7 @@
 import { Building2, Hash, Phone, Plus, Store, Tags, UserRoundCheck, Users, UtensilsCrossed } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ActionsTh,
@@ -27,7 +27,7 @@ import { useConfirmDelete } from '../../../hooks/useConfirmDelete'
 import { useListParams } from '../../../hooks/useListParams'
 import { useListSort } from '../../../hooks/useListSort'
 import { api } from '../../../lib/api'
-import { formatNumber } from '../../../lib/datetime'
+import { formatNumber, localizeDigits } from '../../../lib/datetime'
 import type { OrganizationUnit, Paginated, UnitRepresentative } from '../../../types/app'
 import { unitRepPath, unitRepsPath } from '../food-paths'
 import { UnitRepForm } from './UnitRepForm'
@@ -69,12 +69,20 @@ export function UnitRepListPage() {
         title={t('menus.unitReps')}
         subtitle={t('unitReps.subtitle')}
         action={
-          <Link to={`${unitRepsPath()}/new`}>
-            <Button>
-              <Plus className="size-4" />
-              {t('unitReps.create')}
-            </Button>
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link to={`${unitRepsPath()}/new?createUnit=1`}>
+              <Button variant="soft">
+                <Building2 className="size-4" />
+                {t('unitReps.createUnit')}
+              </Button>
+            </Link>
+            <Link to={`${unitRepsPath()}/new`}>
+              <Button>
+                <Plus className="size-4" />
+                {t('unitReps.create')}
+              </Button>
+            </Link>
+          </div>
         }
       />
       <SearchBar
@@ -95,6 +103,13 @@ export function UnitRepListPage() {
               <SortableTh
                 column="name"
                 label={t('unitReps.unit')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
+                column="code"
+                label={t('organizationUnits.code')}
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
@@ -141,6 +156,11 @@ export function UnitRepListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3">{item.pathLabel || item.name}</td>
+                <td className="px-4 py-3">
+                  <span className="digit-field" dir="ltr">
+                    {localizeDigits(item.code, locale)}
+                  </span>
+                </td>
                 <td className="px-4 py-3">{item.kind.name}</td>
                 <td className="px-4 py-3">{item.nutritionRep?.fullName || '—'}</td>
                 <td className="px-4 py-3">
@@ -193,6 +213,8 @@ export function UnitRepCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const creatingUnit = searchParams.get('createUnit') === '1'
   const units = useQuery({
     queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
@@ -201,21 +223,44 @@ export function UnitRepCreatePage() {
     },
   })
 
+  function setCreatingUnit(next: boolean) {
+    const nextParams = new URLSearchParams(searchParams)
+    if (next) nextParams.set('createUnit', '1')
+    else nextParams.delete('createUnit')
+    setSearchParams(nextParams, { replace: true })
+  }
+
   if (!units.data) {
     return <LoadingState />
   }
 
   return (
     <div className={formShellClassName}>
-      <PageHeader icon={UserRoundCheck} title={t('unitReps.create')} subtitle={t('unitReps.createSubtitle')} />
+      <PageHeader
+        icon={creatingUnit ? Building2 : UserRoundCheck}
+        title={creatingUnit ? t('unitReps.createUnit') : t('unitReps.create')}
+        subtitle={creatingUnit ? t('unitReps.createUnitSubtitle') : t('unitReps.createSubtitle')}
+      />
       <UnitRepForm
         units={units.data}
+        creatingUnit={creatingUnit}
+        onCreatingUnitChange={setCreatingUnit}
         onSubmit={async (payload) => {
-          await api.post('/food-reservation/unit-reps', payload)
+          if (payload.newUnit) {
+            await api.post('/food-reservation/unit-reps/units', {
+              ...payload.newUnit,
+              maxMeals: payload.maxMeals,
+              guestMealsEnabled: payload.guestMealsEnabled,
+              maxGuestMeals: payload.maxGuestMeals,
+            })
+            toast.success(t('unitReps.unitCreated'))
+          } else {
+            await api.post('/food-reservation/unit-reps', payload)
+            toast.success(t('unitReps.created'))
+          }
           await queryClient.invalidateQueries({ queryKey: ['unit-reps'] })
           await queryClient.invalidateQueries({ queryKey: ['unit-rep'] })
           await queryClient.invalidateQueries({ queryKey: ['organization-units'] })
-          toast.success(t('unitReps.created'))
           navigate(unitRepsPath())
         }}
       />
@@ -247,6 +292,7 @@ export function UnitRepEditPage() {
           initial={unit}
           onSubmit={async (payload) => {
             await api.patch(`/food-reservation/unit-reps/${id}`, {
+              code: payload.code,
               nutritionRepId: payload.nutritionRepId,
               maxMeals: payload.maxMeals,
               guestMealsEnabled: payload.guestMealsEnabled,
@@ -300,6 +346,13 @@ export function UnitRepDetailPage() {
           <FormSectionTitle icon={UserRoundCheck}>{t('unitReps.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile icon={Building2} label={t('unitReps.unit')} value={name} tone="teal" />
+            <FormFactTile
+              icon={Hash}
+              label={t('organizationUnits.code')}
+              value={localizeDigits(unit.code, locale)}
+              copyValue={unit.code}
+              tone="mint"
+            />
             <FormFactTile icon={Tags} label={t('organizationUnits.kind')} value={unit.kind.name} tone="mint" />
             <FormFactTile
               icon={UserRoundCheck}

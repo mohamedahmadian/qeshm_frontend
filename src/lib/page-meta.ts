@@ -461,6 +461,9 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/food-reservation/cost-estimate')) {
     return { titleKey: 'menus.foodCostEstimate', subtitleKey: 'foodCostEstimate.subtitle' }
   }
+  if (pathname.startsWith('/food-reservation/daily-report')) {
+    return { titleKey: 'menus.foodDailyReport', subtitleKey: 'foodDailyReport.subtitle' }
+  }
   if (pathname.startsWith('/food-reservation/unit-report')) {
     return { titleKey: 'menus.foodUnitReport', subtitleKey: 'foodUnitReport.subtitle' }
   }

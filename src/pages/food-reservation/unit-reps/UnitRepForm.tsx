@@ -1,4 +1,4 @@
-import { Building2, Hash, IdCard, Phone, UserPlus, UserRound, UserRoundCheck, Users, UtensilsCrossed, X } from 'lucide-react'
+import { Building2, Hash, IdCard, Network, Phone, Tags, Type, UserPlus, UserRound, UserRoundCheck, Users, UtensilsCrossed, X } from 'lucide-react'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -12,10 +12,12 @@ import { localizeDigits, toLatinDigits } from '../../../lib/datetime'
 import { isPhoneReady } from '../../../lib/identity'
 import { isValidIranianNationalId, normalizeNationalId } from '../../../lib/national-id'
 import { organizationUnitPathLabel } from '../../organization/organization-unit-label'
-import type { ManagedUser, OrganizationUnit, UnitRepresentative } from '../../../types/app'
+import type { ManagedUser, OrganizationUnit, OrganizationUnitKind, UnitRepresentative } from '../../../types/app'
 
 export type UnitRepPayload = {
-  unitId: string
+  unitId?: string
+  newUnit?: { name: string; code: string; kindId: string; parentId: string | null }
+  code?: string
   nutritionRepId: string | null
   maxMeals: number
   guestMealsEnabled: boolean
@@ -37,15 +39,23 @@ function mealLimitText(value: number | null | undefined) {
 export function UnitRepForm({
   units,
   initial,
+  creatingUnit = false,
+  onCreatingUnitChange,
   onSubmit,
 }: {
   units?: OrganizationUnit[]
   initial?: UnitRepresentative
+  creatingUnit?: boolean
+  onCreatingUnitChange?: (next: boolean) => void
   onSubmit: (payload: UnitRepPayload) => Promise<void>
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const [unitId, setUnitId] = useState(initial?.id ?? '')
+  const [unitName, setUnitName] = useState('')
+  const [unitCode, setUnitCode] = useState(initial?.code ?? '')
+  const [kindId, setKindId] = useState('')
+  const [parentId, setParentId] = useState('')
   const [nutritionRepId, setNutritionRepId] = useState(initial?.nutritionRepId ?? '')
   const [maxMeals, setMaxMeals] = useState(mealLimitText(initial?.maxMeals))
   const [guestMealsEnabled, setGuestMealsEnabled] = useState(initial?.guestMealsEnabled ?? false)
@@ -53,6 +63,14 @@ export function UnitRepForm({
   const [saving, setSaving] = useState(false)
   const [personOpen, setPersonOpen] = useState(false)
   const queryClient = useQueryClient()
+  const kinds = useQuery({
+    queryKey: ['organization-unit-kinds', 'lookup'],
+    enabled: creatingUnit && !initial,
+    queryFn: async () => {
+      const { data } = await api.get<OrganizationUnitKind[]>('/organization/unit-kinds')
+      return data
+    },
+  })
   const employees = useQuery({
     queryKey: ['users', 'unit', unitId, 'reps'],
     enabled: Boolean(unitId),
@@ -69,7 +87,24 @@ export function UnitRepForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (!unitId) {
+    const normalizedCode = toLatinDigits(unitCode).trim()
+    if (creatingUnit && !initial) {
+      if (unitName.trim().length < 2) {
+        toast.error(t('organizationUnits.name'))
+        return
+      }
+      if (!normalizedCode) {
+        toast.error(t('organizationUnits.codeRequired'))
+        return
+      }
+      if (!kindId) {
+        toast.error(t('organizationUnits.selectKind'))
+        return
+      }
+    } else if (initial && !normalizedCode) {
+      toast.error(t('organizationUnits.codeRequired'))
+      return
+    } else if (!unitId) {
       toast.error(t('unitReps.selectUnit'))
       return
     }
@@ -86,8 +121,13 @@ export function UnitRepForm({
     setSaving(true)
     try {
       await onSubmit({
-        unitId,
-        nutritionRepId: nutritionRepId || null,
+        unitId: creatingUnit && !initial ? undefined : unitId,
+        newUnit:
+          creatingUnit && !initial
+            ? { name: unitName.trim(), code: normalizedCode, kindId, parentId: parentId || null }
+            : undefined,
+        code: initial ? normalizedCode : undefined,
+        nutritionRepId: creatingUnit && !initial ? null : nutritionRepId || null,
         maxMeals: mealsLimit.value,
         guestMealsEnabled,
         maxGuestMeals: guestMealsEnabled && guestLimit.ok ? guestLimit.value : null,
@@ -102,15 +142,89 @@ export function UnitRepForm({
   return (
     <>
     <FormCard
-      icon={UserRoundCheck}
-      title={initial ? unitLabel : t('unitReps.create')}
-      subtitle={initial ? undefined : t('unitReps.createSubtitle')}
+      icon={initial || creatingUnit ? Building2 : UserRoundCheck}
+      title={initial ? unitLabel : creatingUnit ? t('unitReps.createUnit') : t('unitReps.create')}
+      subtitle={initial ? undefined : creatingUnit ? t('unitReps.createUnitSubtitle') : t('unitReps.createSubtitle')}
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
         {initial ? (
-          <FormField icon={Building2} label={t('unitReps.unit')} htmlFor="unitRepUnit">
-            <input id="unitRepUnit" className={fieldClassName} value={unitLabel} readOnly />
-          </FormField>
+          <>
+            <FormField icon={Building2} label={t('unitReps.unit')} htmlFor="unitRepUnit">
+              <input id="unitRepUnit" className={fieldClassName} value={unitLabel} readOnly />
+            </FormField>
+            <FormField icon={Hash} label={t('organizationUnits.code')} htmlFor="unitRepCode">
+              <input
+                id="unitRepCode"
+                className={`${fieldClassName} digit-field`}
+                value={unitCode}
+                onChange={(event) => setUnitCode(toLatinDigits(event.target.value).trimStart().slice(0, 40))}
+                required
+                minLength={1}
+                maxLength={40}
+                placeholder={t('organizationUnits.codeHint')}
+              />
+            </FormField>
+          </>
+        ) : creatingUnit ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={Type} label={t('organizationUnits.name')} htmlFor="unitRepUnitName">
+                <input
+                  id="unitRepUnitName"
+                  className={fieldClassName}
+                  value={unitName}
+                  onChange={(event) => setUnitName(event.target.value)}
+                  required
+                  minLength={2}
+                />
+              </FormField>
+              <FormField icon={Hash} label={t('organizationUnits.code')} htmlFor="unitRepUnitCode">
+                <input
+                  id="unitRepUnitCode"
+                  className={`${fieldClassName} digit-field`}
+                  value={unitCode}
+                  onChange={(event) => setUnitCode(toLatinDigits(event.target.value).trimStart().slice(0, 40))}
+                  required
+                  minLength={1}
+                  maxLength={40}
+                  placeholder={t('organizationUnits.codeHint')}
+                />
+              </FormField>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField icon={Tags} label={t('organizationUnits.kind')} htmlFor="unitRepKind">
+                <SearchSelect
+                  id="unitRepKind"
+                  value={kindId}
+                  required
+                  onChange={setKindId}
+                  placeholder={t('organizationUnits.selectKind')}
+                  options={(kinds.data ?? []).map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  }))}
+                />
+              </FormField>
+              <FormField icon={Network} label={t('organizationUnits.parent')} htmlFor="unitRepParent">
+                <SearchSelect
+                  id="unitRepParent"
+                  value={parentId}
+                  onChange={setParentId}
+                  placeholder={t('organizationUnits.selectParent')}
+                  options={[
+                    { value: '', label: t('organizationUnits.noParent') },
+                    ...(units ?? []).map((unit) => ({
+                      value: unit.id,
+                      label: unit.code
+                        ? `${unit.code} — ${organizationUnitPathLabel(unit)}`
+                        : organizationUnitPathLabel(unit),
+                      keywords: unit.code,
+                    })),
+                  ]}
+                />
+              </FormField>
+            </div>
+          </>
         ) : (
           <FormField icon={Building2} label={t('unitReps.unit')} htmlFor="unitRepUnit">
             <SearchSelect
@@ -128,36 +242,45 @@ export function UnitRepForm({
               required
               options={(units ?? []).map((unit) => ({
                 value: unit.id,
-                label: organizationUnitPathLabel(unit),
+                label: unit.code
+                  ? `${unit.code} — ${organizationUnitPathLabel(unit)}`
+                  : organizationUnitPathLabel(unit),
+                keywords: unit.code,
               }))}
             />
           </FormField>
         )}
-        <FormField icon={UserRoundCheck} label={t('unitReps.representative')} htmlFor="unitRepPerson">
-          <SearchSelect
-            id="unitRepPerson"
-            value={nutritionRepId}
-            onChange={setNutritionRepId}
-            placeholder={t('unitReps.selectRepresentative')}
-            disabled={!unitId || employees.isLoading}
-            options={[
-              { value: '', label: t('unitReps.selectRepresentative') },
-              ...people.map((user) => {
-                const phone = user.phone ? localizeDigits(user.phone, locale) : ''
-                const nationalId = user.nationalId ? localizeDigits(user.nationalId, locale) : ''
-                const extras = [phone, nationalId].filter(Boolean)
-                return {
-                  value: user.id,
-                  label: extras.length ? `${user.fullName} — ${extras.join(' — ')}` : user.fullName,
-                  keywords: [user.phone, user.nationalId].filter(Boolean).join(' '),
-                }
-              }),
-            ]}
-          />
-        </FormField>
-        {unitId && !employees.isLoading && people.length === 0 ? (
-          <p className="text-xs leading-6 text-ink-500">{t('unitReps.noEmployees')}</p>
-        ) : null}
+        {creatingUnit && !initial ? (
+          <p className="text-xs leading-6 text-ink-500">{t('unitReps.createUnitRepHint')}</p>
+        ) : (
+          <>
+            <FormField icon={UserRoundCheck} label={t('unitReps.representative')} htmlFor="unitRepPerson">
+              <SearchSelect
+                id="unitRepPerson"
+                value={nutritionRepId}
+                onChange={setNutritionRepId}
+                placeholder={t('unitReps.selectRepresentative')}
+                disabled={!unitId || employees.isLoading}
+                options={[
+                  { value: '', label: t('unitReps.selectRepresentative') },
+                  ...people.map((user) => {
+                    const phone = user.phone ? localizeDigits(user.phone, locale) : ''
+                    const nationalId = user.nationalId ? localizeDigits(user.nationalId, locale) : ''
+                    const extras = [phone, nationalId].filter(Boolean)
+                    return {
+                      value: user.id,
+                      label: extras.length ? `${user.fullName} — ${extras.join(' — ')}` : user.fullName,
+                      keywords: [user.phone, user.nationalId].filter(Boolean).join(' '),
+                    }
+                  }),
+                ]}
+              />
+            </FormField>
+            {unitId && !employees.isLoading && people.length === 0 ? (
+              <p className="text-xs leading-6 text-ink-500">{t('unitReps.noEmployees')}</p>
+            ) : null}
+          </>
+        )}
         <FormSectionTitle icon={UtensilsCrossed}>{t('unitReps.mealsSection')}</FormSectionTitle>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField icon={Hash} label={t('unitReps.maxMeals')} htmlFor="unitRepMaxMeals">
@@ -214,7 +337,16 @@ export function UnitRepForm({
                     onClick: () => setPersonOpen(true),
                   },
                 ]
-              : undefined
+              : onCreatingUnitChange
+                ? [
+                    {
+                      label: creatingUnit ? t('unitReps.selectExistingUnit') : t('unitReps.createUnit'),
+                      icon: Building2,
+                      variant: 'soft',
+                      onClick: () => onCreatingUnitChange(!creatingUnit),
+                    },
+                  ]
+                : undefined
           }
         />
       </AppForm>

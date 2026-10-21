@@ -11,6 +11,7 @@ import {
   Trash2,
   UserRound,
   Users,
+  Utensils,
   UtensilsCrossed,
   Wallet,
   History,
@@ -55,7 +56,7 @@ import type {
   Paginated,
   Restaurant,
 } from '../../../types/app'
-import { FoodReservationStatusBadge, ReservationGuestMark } from '../FoodReservationStatusBadge'
+import { FoodMealTypeBadge, FoodReservationStatusBadge, ReservationOrderBadges, reservationAudienceQty } from '../FoodReservationStatusBadge'
 import { foodReservationHistoryItemPath, foodReservationHistoryPath } from '../food-paths'
 import { FoodReservationBulkActions } from './FoodReservationBulkActions'
 
@@ -84,6 +85,7 @@ export function FoodReservationHistoryListPage() {
   const foodId = searchParams.get('foodId') ?? ''
   const status = searchParams.get('status') ?? ''
   const reservedAt = searchParams.get('reservedAt') ?? ''
+  const mealType = searchParams.get('mealType') ?? ''
   const queryClient = useQueryClient()
   const [exporting, setExporting] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
@@ -121,6 +123,7 @@ export function FoodReservationHistoryListPage() {
       foodId,
       status,
       reservedAt,
+      mealType,
       sortBy,
       sortDir,
     ],
@@ -134,6 +137,7 @@ export function FoodReservationHistoryListPage() {
           ...(foodId ? { foodId } : {}),
           ...(status ? { status } : {}),
           ...(reservedAt ? { reservedAt } : {}),
+          ...(mealType ? { mealType } : {}),
           ...sortParams,
         },
       })
@@ -141,7 +145,7 @@ export function FoodReservationHistoryListPage() {
     },
   })
   const rows = query.data?.items ?? []
-  const filtersActive = Boolean(orgUnitId || restaurantId || foodId || status || reservedAt)
+  const filtersActive = Boolean(orgUnitId || restaurantId || foodId || status || reservedAt || mealType)
 
   async function downloadExcel() {
     setExporting(true)
@@ -154,6 +158,7 @@ export function FoodReservationHistoryListPage() {
           ...(foodId ? { foodId } : {}),
           ...(status ? { status } : {}),
           ...(reservedAt ? { reservedAt } : {}),
+          ...(mealType ? { mealType } : {}),
           ...sortParams,
         },
         responseType: 'blob',
@@ -286,6 +291,19 @@ export function FoodReservationHistoryListPage() {
                 ]}
               />
             </FormField>
+            <FormField icon={Utensils} label={t('foodReservations.mealType')} htmlFor="filterMealType">
+              <SearchSelect
+                id="filterMealType"
+                value={mealType}
+                onChange={(next) => setParams({ mealType: next || undefined }, { resetPage: true })}
+                placeholder={t('foodReservations.mealType')}
+                options={[
+                  { value: '', label: t('foodReservations.allMealTypes') },
+                  { value: 'LUNCH', label: t('foodReservations.lunch') },
+                  { value: 'DINNER', label: t('foodReservations.dinner') },
+                ]}
+              />
+            </FormField>
             <FormField icon={CalendarRange} label={t('foodReservations.reservedAt')} htmlFor="filterDate">
               <PersianDateField
                 id="filterDate"
@@ -305,11 +323,12 @@ export function FoodReservationHistoryListPage() {
           <thead className="bg-cream-50 text-ink-700">
             <tr>
               <SortableTh column="reservedAt" label={t('foodReservations.reservedAt')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="mealType" label={t('foodReservations.mealType')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="user" label={t('foodReservations.orderer')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="orgUnit" label={t('foodReservations.orgUnit')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="restaurant" label={t('foodReservations.restaurant')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="food" label={t('foodReservations.food')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="quantity" label={t('foodReservations.quantity')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="quantity" label={t('foodReservations.ordersColumn')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="status" label={t('foodReservations.status')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <ActionsTh />
             </tr>
@@ -320,16 +339,12 @@ export function FoodReservationHistoryListPage() {
                 <td className="px-4 py-3">
                   <ReservationDateCell value={item.reservedAt} locale={locale} />
                 </td>
+                <td className="px-4 py-3"><FoodMealTypeBadge mealType={item.mealType} /></td>
                 <td className="px-4 py-3">{item.user.fullName}</td>
                 <td className="px-4 py-3">{item.orgUnit.name}</td>
                 <td className="px-4 py-3">{item.restaurant.name}</td>
                 <td className="px-4 py-3">{item.food.name}</td>
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-2">
-                    {formatNumber(item.quantity, locale)}
-                    <ReservationGuestMark forGuest={item.forGuest} />
-                  </span>
-                </td>
+                <td className="px-4 py-3"><ReservationOrderBadges item={item} locale={locale} /></td>
                 <td className="px-4 py-3"><FoodReservationStatusBadge status={item.status} /></td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
@@ -428,12 +443,23 @@ export function FoodReservationHistoryDetailPage() {
           <FormSectionTitle icon={Ticket}>{t('foodReservations.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile icon={CalendarRange} label={t('foodReservations.reservedAt')} value={<DateText value={item.reservedAt} />} tone="teal" />
+            <FormFactTile icon={Utensils} label={t('foodReservations.mealType')} value={<FoodMealTypeBadge mealType={item.mealType} />} tone="mint" />
             <FormFactTile icon={UserRound} label={t('foodReservations.orderer')} value={item.user.fullName} tone="mint" />
             <FormFactTile icon={Building2} label={t('foodReservations.orgUnit')} value={item.orgUnit.name} />
             <FormFactTile icon={Store} label={t('foodReservations.restaurant')} value={item.restaurant.name} />
             <FormFactTile icon={UtensilsCrossed} label={t('foodReservations.food')} value={item.food.name} />
-            <FormFactTile icon={Hash} label={item.forGuest ? t('foodReservations.guestQuantity') : t('foodReservations.quantity')} value={formatNumber(item.quantity, locale)} />
-            <FormFactTile icon={Users} label={t('foodReservations.orderFor')} value={item.forGuest ? t('foodReservations.guestOrder') : t('foodReservations.unitOrder')} tone={item.forGuest ? 'mint' : 'teal'} />
+            <FormFactTile
+              icon={Users}
+              label={t('foodReservations.unitQuantity')}
+              value={formatNumber(reservationAudienceQty(item).unit, locale)}
+              tone="teal"
+            />
+            <FormFactTile
+              icon={Hash}
+              label={t('foodReservations.guestQuantity')}
+              value={formatNumber(reservationAudienceQty(item).guest, locale)}
+              tone="mint"
+            />
             <FormFactTile icon={Ticket} label={t('foodReservations.status')} value={<FoodReservationStatusBadge status={item.status} />} />
             <FormFactTile
               icon={Wallet}

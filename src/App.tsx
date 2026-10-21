@@ -132,6 +132,7 @@ import {
 } from './pages/food-reservation/history/FoodReservationHistoryPages'
 import { FoodCostEstimateReportPage } from './pages/food-reservation/report/FoodCostEstimateReportPage'
 import { FoodUnitReportPage } from './pages/food-reservation/report/FoodUnitReportPage'
+import { FoodDailyReportPage } from './pages/food-reservation/report/FoodDailyReportPage'
 import { FoodMyReportPage } from './pages/food-reservation/report/FoodMyReportPage'
 import { FoodReservationReportPage } from './pages/food-reservation/report/FoodReservationReportPage'
 import {
@@ -444,6 +445,7 @@ export default function App() {
                   <Route path="/food-reservation/report" element={<FoodReservationReportPage />} />
                   <Route path="/food-reservation/cost-estimate" element={<FoodCostEstimateReportPage />} />
                   <Route path="/food-reservation/unit-report" element={<FoodUnitReportPage />} />
+                  <Route path="/food-reservation/daily-report" element={<FoodDailyReportPage />} />
                   <Route path="/food-reservation/unit-reps" element={<UnitRepListPage />} />
                   <Route path="/food-reservation/unit-reps/new" element={<UnitRepCreatePage />} />
                   <Route path="/food-reservation/unit-reps/:id/restaurants/new" element={<OrganizationUnitRestaurantCreatePage />} />

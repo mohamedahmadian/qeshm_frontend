@@ -1,4 +1,4 @@
-import { CalendarRange, ClipboardList, FileSpreadsheet, Hash, Plus, Store, Ticket, Trash2, UserRound, Users, UtensilsCrossed, Wallet } from 'lucide-react'
+import { CalendarRange, ClipboardList, FileSpreadsheet, Hash, Plus, Store, Ticket, Trash2, UserRound, Users, Utensils, UtensilsCrossed, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -31,8 +31,8 @@ import { api, getApiErrorMessage } from '../../../lib/api'
 import { formatGroupedNumber, formatNumber } from '../../../lib/datetime'
 import { hasPermission } from '../../../lib/roles'
 import type { FoodReservation, FoodReservationContext, Paginated } from '../../../types/app'
-import { FoodReservationStatusBadge, ReservationGuestMark } from '../FoodReservationStatusBadge'
-import { foodMyOrderItemPath, foodMyOrdersPath, foodReserveItemPath, foodReservePath } from '../food-paths'
+import { FoodMealTypeBadge, FoodReservationStatusBadge, ReservationQtySplit, reservationAudienceQty } from '../FoodReservationStatusBadge'
+import { foodMyOrderItemPath, foodMyOrdersPath, foodReservationHistoryPath, foodReserveItemPath, foodReservePath } from '../food-paths'
 import { FoodReserveForm } from './FoodReserveForm'
 
 function isMyOrdersPath(pathname: string) {
@@ -114,9 +114,10 @@ export function FoodReserveListPage() {
           <thead className="bg-cream-50 text-ink-700">
             <tr>
               <SortableTh column="reservedAt" label={t('foodReservations.reservedAt')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="mealType" label={t('foodReservations.mealType')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="restaurant" label={t('foodReservations.restaurant')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="food" label={t('foodReservations.food')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="quantity" label={t('foodReservations.quantity')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="quantity" label={t('foodReservations.quantityBreakdown')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="status" label={t('foodReservations.status')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <ActionsTh />
             </tr>
@@ -125,14 +126,10 @@ export function FoodReserveListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3"><DateText value={item.reservedAt} /></td>
+                <td className="px-4 py-3"><FoodMealTypeBadge mealType={item.mealType} /></td>
                 <td className="px-4 py-3">{item.restaurant.name}</td>
                 <td className="px-4 py-3">{item.food.name}</td>
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-2">
-                    {formatNumber(item.quantity, locale)}
-                    <ReservationGuestMark forGuest={item.forGuest} />
-                  </span>
-                </td>
+                <td className="px-4 py-3"><ReservationQtySplit item={item} locale={locale} /></td>
                 <td className="px-4 py-3"><FoodReservationStatusBadge status={item.status} /></td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
@@ -211,9 +208,9 @@ export function FoodReserveCreatePage() {
       <FoodReserveForm
         context={context.data}
         onSubmit={async (payload) => {
-          await api.post('/food-reservations', payload)
+          await api.post('/food-reservations/batch', payload)
           toast.success(t('foodReservations.created'))
-          navigate(foodMyOrdersPath())
+          navigate(foodReservationHistoryPath())
         }}
       />
     </div>
@@ -254,10 +251,21 @@ export function FoodReserveDetailPage() {
           <FormSectionTitle icon={Ticket}>{t('foodReservations.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile icon={CalendarRange} label={t('foodReservations.reservedAt')} value={<DateText value={item.reservedAt} />} tone="teal" />
+            <FormFactTile icon={Utensils} label={t('foodReservations.mealType')} value={<FoodMealTypeBadge mealType={item.mealType} />} tone="mint" />
             <FormFactTile icon={Store} label={t('foodReservations.restaurant')} value={item.restaurant.name} tone="mint" />
             <FormFactTile icon={UtensilsCrossed} label={t('foodReservations.food')} value={item.food.name} />
-            <FormFactTile icon={Hash} label={item.forGuest ? t('foodReservations.guestQuantity') : t('foodReservations.quantity')} value={formatNumber(item.quantity, locale)} />
-            <FormFactTile icon={Users} label={t('foodReservations.orderFor')} value={item.forGuest ? t('foodReservations.guestOrder') : t('foodReservations.unitOrder')} tone={item.forGuest ? 'mint' : 'teal'} />
+            <FormFactTile
+              icon={Users}
+              label={t('foodReservations.unitQuantity')}
+              value={formatNumber(reservationAudienceQty(item).unit, locale)}
+              tone="teal"
+            />
+            <FormFactTile
+              icon={Hash}
+              label={t('foodReservations.guestQuantity')}
+              value={formatNumber(reservationAudienceQty(item).guest, locale)}
+              tone="mint"
+            />
             <FormFactTile icon={UserRound} label={t('foodReservations.orgUnit')} value={item.orgUnit.name} />
             <FormFactTile icon={Ticket} label={t('foodReservations.status')} value={<FoodReservationStatusBadge status={item.status} />} />
             <FormFactTile

@@ -3983,6 +3983,7 @@ export type OrganizationUnitKind = {
 export type OrganizationUnit = {
   id: string;
   name: string;
+  code: string;
   kindId: string;
   kind: Pick<OrganizationUnitKind, 'id' | 'name'>;
   parentId: string | null;
@@ -4011,6 +4012,7 @@ export type OrganizationUnit = {
 export type UnitRepresentative = {
   id: string;
   name: string;
+  code: string;
   pathLabel: string;
   kind: { id: string; name: string };
   nutritionRepId: string | null;
@@ -4028,15 +4030,25 @@ export const foodReservationStatuses = {
 export type FoodReservationStatus =
   (typeof foodReservationStatuses)[keyof typeof foodReservationStatuses];
 
+export const foodMealTypes = {
+  LUNCH: 'LUNCH',
+  DINNER: 'DINNER',
+} as const;
+
+export type FoodMealType = (typeof foodMealTypes)[keyof typeof foodMealTypes];
+
 export type FoodReservation = {
   id: string;
   reservedAt: string;
+  mealType: FoodMealType;
   restaurantId: string;
   foodId: string;
   userId: string;
   orgUnitId: string;
   quantity: number;
   forGuest: boolean;
+  unitQuantity?: number;
+  guestQuantity?: number;
   unitPrice: number;
   totalPrice: number;
   status: FoodReservationStatus;
@@ -4088,12 +4100,15 @@ export type AdvancedFoodOrder = {
   orgUnitId: string;
   restaurantId: string;
   source: AdvancedFoodOrderSource;
+  mealType: FoodMealType;
   startsOn: string;
   endsOn: string;
   weekdays: number[];
   foodLabel: string;
   employeeQuantity: number;
   managementQuantity: number;
+  employeeGuestQuantity: number;
+  managementGuestQuantity: number;
   employeeUnitPrice: number | null;
   managementUnitPrice: number | null;
   reservationCount: number;
@@ -4106,7 +4121,9 @@ export type AdvancedFoodOrder = {
 export type AdvancedFoodOrderLine = {
   id: string;
   reservedAt: string;
+  mealType: FoodMealType;
   quantity: number;
+  forGuest?: boolean;
   unitPrice: number;
   totalPrice: number;
   status: FoodReservationStatus;
@@ -4243,6 +4260,48 @@ export type FoodUnitReport = {
   byWeek: (FoodCostEstimatePeriod & { guestQuantity: number })[];
   byMonth: (FoodCostEstimatePeriod & { guestQuantity: number })[];
   byYear: (FoodCostEstimatePeriod & { guestQuantity: number })[];
+};
+
+export type FoodDailyReportTotals = {
+  orderCount: number;
+  servings: number;
+  employeeQuantity: number;
+  employeeGuestQuantity: number;
+  employeeAmount: number;
+  managementQuantity: number;
+  managementGuestQuantity: number;
+  managementAmount: number;
+  guestQuantity: number;
+  guestAmount: number;
+  totalAmount: number;
+  confirmedCount: number;
+  pendingCount: number;
+  confirmedAmount: number;
+  pendingAmount: number;
+};
+
+export type FoodDailyReportRow = FoodDailyReportTotals & {
+  unitId: string;
+  unitName: string;
+  restaurantId: string | null;
+  restaurantName: string | null;
+  mealType: FoodMealType | null;
+};
+
+export type FoodDailyReport = {
+  date: string;
+  previousDate: string;
+  summary: FoodDailyReportTotals & {
+    unitCount: number;
+    restaurantCount: number;
+    idleUnitCount: number;
+    avgPerServing: number;
+  };
+  previous: { orderCount: number; servings: number; totalAmount: number };
+  rows: FoodDailyReportRow[];
+  byRestaurant: (FoodDailyReportTotals & { id: string; name: string })[];
+  byMealType: (FoodDailyReportTotals & { mealType: FoodMealType })[];
+  trend: (FoodDailyReportTotals & { date: string })[];
 };
 
 export type FoodCostEstimateReport = {

@@ -1,47 +1,118 @@
-import { Building2, CalendarRange, Check, ChevronLeft, ChevronRight, Hash, Store, Ticket, Users, UtensilsCrossed } from 'lucide-react'
+import {
+  Building2,
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  Hash,
+  Minus,
+  Moon,
+  Plus,
+  Store,
+  Sun,
+  Ticket,
+  Users,
+  Utensils,
+  UtensilsCrossed,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { type FormEvent, type MouseEvent, type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { AppForm, Button, FormActions, FormField, ToggleField, fieldClassName } from '../../../components/ui/Form'
-import { FormCard, FormEmptyHint, formCardBodyClassName } from '../../../components/ui/FormLayout'
+import { AppForm, Button, FormActions, FormField } from '../../../components/ui/Form'
+import { FormCard, FormEmptyHint, FormSectionTitle, formCardBodyClassName } from '../../../components/ui/FormLayout'
 import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { languageDir } from '../../../i18n'
 import { api, getApiErrorMessage } from '../../../lib/api'
 import {
   addDaysIso,
   formatDate,
+  formatGroupedNumber,
+  formatNumber,
   formatWeekday,
   iranWeekdayIndex,
   startOfIranWeekIso,
+  toLatinDigits,
   todayIsoDate,
 } from '../../../lib/datetime'
-import type { FoodReservationContext, RestaurantMenuItem } from '../../../types/app'
+import type { FoodMealType, FoodReservationContext, RestaurantMenuItem } from '../../../types/app'
+import { foodMealTypes } from '../../../types/app'
+import { EntityThumb } from '../EntityThumb'
 
 export type FoodReservePayload = {
   reservedAt: string
+  mealType: FoodMealType
   orgUnitId?: string
   restaurantId: string
-  foodId: string
-  quantity: number
-  forGuest?: boolean
+  items: { foodId: string; quantity: number; forGuest?: boolean }[]
 }
 
-function ChoiceList({
+type FoodOrderCounts = { unit: string; guest: string }
+
+function digitsOnly(value: string) {
+  return toLatinDigits(value).replace(/\D/g, '')
+}
+
+function SegmentedTwo<T extends string>({
   value,
   onChange,
-  options,
   label,
-  disabled,
+  options,
+}: {
+  value: T
+  onChange: (next: T) => void
+  label: string
+  options: { value: T; label: string; icon: LucideIcon }[]
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className="grid w-1/3 min-w-[12rem] grid-cols-2 gap-1 rounded-2xl border border-line bg-cream-50 p-1"
+    >
+      {options.map((option) => {
+        const selected = value === option.value
+        const Icon = option.icon
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(option.value)}
+            className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+              selected ? 'bg-teal-500 text-white shadow-sm' : 'text-ink-600 hover:bg-white'
+            }`}
+          >
+            <Icon className="size-4 shrink-0" aria-hidden />
+            <span>{option.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function OptionPick({
+  value,
+  onChange,
+  label,
+  options,
+  columns = 2,
 }: {
   value: string
   onChange: (next: string) => void
-  options: { value: string; label: string }[]
   label: string
-  disabled?: boolean
+  options: { value: string; title: string; hint?: string; imageId?: string | null; icon: LucideIcon }[]
+  columns?: 2 | 4
 }) {
+  const compact = columns === 4
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap justify-center gap-2">
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className={compact ? 'grid grid-cols-4 gap-2' : 'grid grid-cols-2 gap-2'}
+    >
       {options.map((option) => {
         const selected = value === option.value
         return (
@@ -50,21 +121,79 @@ function ChoiceList({
             type="button"
             role="radio"
             aria-checked={selected}
-            disabled={disabled}
             onClick={() => onChange(option.value)}
-            className={`inline-flex h-11 w-[300px] max-w-full items-center justify-center gap-1.5 rounded-2xl border-2 bg-white px-3 text-sm font-medium text-ink-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
-              disabled
-                ? 'cursor-not-allowed border-line text-ink-300'
-                : selected
-                  ? 'cursor-pointer border-teal-500'
-                  : 'cursor-pointer border-line hover:border-teal-300'
+            className={`flex min-w-0 cursor-pointer rounded-2xl border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+              compact
+                ? 'min-h-[6.5rem] flex-col items-center gap-2 p-2.5 text-center'
+                : 'min-h-[4.75rem] items-start gap-3 p-3 text-start'
+            } ${
+              selected
+                ? 'border-teal-500 bg-gradient-to-b from-teal-50 to-white shadow-[0_8px_18px_rgba(46,189,182,0.14)]'
+                : 'border-line bg-white hover:border-teal-300'
             }`}
           >
-            {selected ? <Check className="size-4 shrink-0 text-teal-600" aria-hidden /> : null}
-            <span className="truncate">{option.label}</span>
+            <EntityThumb imageId={option.imageId} icon={option.icon} label={option.title} />
+            <span className="min-w-0">
+              <span className={`block font-semibold text-ink-900 ${compact ? 'line-clamp-2 text-xs leading-4' : 'text-sm'}`}>
+                {option.title}
+              </span>
+              {option.hint ? <span className="mt-0.5 block text-xs leading-5 text-ink-500">{option.hint}</span> : null}
+            </span>
           </button>
         )
       })}
+    </div>
+  )
+}
+
+function clampQty(value: string, max: number) {
+  return String(Math.max(0, Math.min(max, Number(value) || 0)))
+}
+
+function bumpQty(current: string, delta: number, max: number) {
+  return clampQty(String((Number(current) || 0) + delta), max)
+}
+
+function QtyStepper({
+  id,
+  value,
+  onChange,
+  max,
+  decreaseLabel,
+  increaseLabel,
+}: {
+  id: string
+  value: string
+  onChange: (next: string) => void
+  max: number
+  decreaseLabel: string
+  increaseLabel: string
+}) {
+  return (
+    <div dir="ltr" className="flex h-11 w-1/3 min-w-[8.5rem] items-center overflow-hidden rounded-2xl border border-line bg-cream-50">
+      <button
+        type="button"
+        aria-label={decreaseLabel}
+        onClick={() => onChange(bumpQty(value, -1, max))}
+        className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center text-teal-700 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-300"
+      >
+        <Minus className="size-4" aria-hidden />
+      </button>
+      <input
+        id={id}
+        inputMode="numeric"
+        className="digit-field min-w-0 flex-1 border-0 bg-transparent py-2 text-center text-sm text-ink-900 outline-none"
+        value={value === '' ? '0' : value}
+        onChange={(event) => onChange(clampQty(digitsOnly(event.target.value), max))}
+      />
+      <button
+        type="button"
+        aria-label={increaseLabel}
+        onClick={() => onChange(bumpQty(value, 1, max))}
+        className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center text-teal-700 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-300"
+      >
+        <Plus className="size-4" aria-hidden />
+      </button>
     </div>
   )
 }
@@ -200,12 +329,12 @@ function WeekDayPicker({
                     if (suppressClick.current || locked) return
                     onChange(iso)
                   }}
-                  className={`flex min-w-0 flex-col items-center gap-1 rounded-2xl border-[3px] px-1 py-2.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
+                  className={`flex min-w-0 flex-col items-center gap-1 rounded-2xl border-2 px-1 py-2.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${
                     locked
                       ? 'cursor-not-allowed border-transparent bg-cream-50 text-ink-300 opacity-55'
                       : selected
-                        ? 'cursor-pointer border-teal-600 bg-teal-50 text-teal-800 shadow-[0_0_0_1px_#148f8a]'
-                        : 'cursor-pointer border-transparent bg-cream-50 text-ink-700 hover:border-teal-300 hover:bg-teal-50'
+                        ? 'cursor-pointer border-teal-500 bg-gradient-to-b from-teal-50 to-white text-teal-800 shadow-[0_6px_14px_rgba(46,189,182,0.14)]'
+                        : 'cursor-pointer border-transparent bg-cream-50 text-ink-700 hover:border-teal-300 hover:bg-white'
                   }`}
                 >
                   <span className={`whitespace-nowrap text-[11px] font-medium ${selected ? 'text-teal-700' : locked ? 'text-ink-300' : 'text-ink-500'}`}>
@@ -275,9 +404,11 @@ export function FoodReserveForm({
   context: FoodReservationContext
   onSubmit: (payload: FoodReservePayload) => Promise<void>
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   const canManage = context.canManage
   const [reservedAt, setReservedAt] = useState(todayIsoDate)
+  const [mealType, setMealType] = useState<FoodMealType>(foodMealTypes.LUNCH)
   const [orgUnitId, setOrgUnitId] = useState(
     canManage && context.units.length === 1 ? context.units[0].id : '',
   )
@@ -285,10 +416,8 @@ export function FoodReserveForm({
   const onlyRestaurantId = unitRestaurants.length === 1 ? unitRestaurants[0].id : ''
   const [restaurantId, setRestaurantId] = useState(onlyRestaurantId)
   const [foodId, setFoodId] = useState('')
-  const [quantity, setQuantity] = useState('1')
-  const [forGuest, setForGuest] = useState(false)
+  const [orders, setOrders] = useState<Record<string, FoodOrderCounts>>({})
   const [saving, setSaving] = useState(false)
-  const quantityScope = canManage ? orgUnitId : 'self'
   const selectedRestaurantId = onlyRestaurantId || restaurantId
   const canChooseQuantity = canManage || context.isNutritionRep
   const activeUnit = canManage
@@ -341,32 +470,34 @@ export function FoodReserveForm({
   const foods = Array.isArray(menu.data) ? menu.data : []
   const resolvedFoodId =
     foods.length === 1 ? foods[0].food.id : foodId
-  const menuPending = Boolean(selectedRestaurantId && reservedAt && menu.isLoading)
-  const lastQuantity = useQuery({
-    queryKey: [
-      'food-reservation-last-quantity',
-      quantityScope,
-      selectedRestaurantId,
-      resolvedFoodId,
-      forGuest,
-    ],
-    enabled: canChooseQuantity && (!canManage || Boolean(orgUnitId)),
-    queryFn: async () => {
-      const { data } = await api.get<{ quantity: number | null }>(
-        '/food-reservations/last-quantity',
-        {
-          params: {
-            ...(canManage ? { orgUnitId } : {}),
-            ...(selectedRestaurantId ? { restaurantId: selectedRestaurantId } : {}),
-            ...(resolvedFoodId ? { foodId: resolvedFoodId } : {}),
-            ...(forGuest ? { forGuest: true } : {}),
-          },
-        },
-      )
-      return data
-    },
-  })
+  const selectedFood = foods.find((item) => item.food.id === resolvedFoodId)
+  const unitQtyMax = 500
+  const guestQtyMax = activeUnit?.maxGuestMeals ? activeUnit.maxGuestMeals : 500
+  const countsOf = (foodIdValue: string): FoodOrderCounts =>
+    orders[foodIdValue] ?? { unit: '0', guest: '0' }
+  const orderedLines = foods
+    .map((item) => {
+      const counts = countsOf(item.food.id)
+      const unit = Number(counts.unit) || 0
+      const guest = guestMealsEnabled ? Number(counts.guest) || 0 : 0
+      return { item, unit, guest }
+    })
+    .filter((line) => line.unit + line.guest > 0)
+  const orderedServings = orderedLines.reduce((sum, line) => sum + line.unit + line.guest, 0)
+  const orderedTotal = orderedLines.reduce(
+    (sum, line) => sum + (line.unit + line.guest) * line.item.price,
+    0,
+  )
+  const lineTotal = canChooseQuantity ? orderedTotal : (selectedFood?.price ?? 0)
 
+  function setCount(foodIdValue: string, field: keyof FoodOrderCounts, next: string) {
+    setOrders((current) => ({
+      ...current,
+      [foodIdValue]: { ...(current[foodIdValue] ?? { unit: '0', guest: '0' }), [field]: next },
+    }))
+  }
+  const toman = t('foodReservations.toman')
+  const menuPending = Boolean(selectedRestaurantId && reservedAt && menu.isLoading)
   useEffect(() => {
     if (unitRestaurants.length === 1) {
       setRestaurantId(unitRestaurants[0].id)
@@ -376,10 +507,6 @@ export function FoodReserveForm({
       unitRestaurants.some((item) => item.id === current) ? current : '',
     )
   }, [unitRestaurants])
-
-  useEffect(() => {
-    if (!guestMealsEnabled) setForGuest(false)
-  }, [guestMealsEnabled])
 
   useEffect(() => {
     if (!selectedRestaurantId) {
@@ -398,23 +525,6 @@ export function FoodReserveForm({
       menu.data.some((item) => item.food.id === current) ? current : '',
     )
   }, [selectedRestaurantId, reservedAt, menu.data])
-
-  const quantityLookupKey = `${quantityScope}|${selectedRestaurantId}|${resolvedFoodId}|${forGuest ? 'guest' : 'unit'}`
-  const appliedQuantityKey = useRef('')
-
-  useEffect(() => {
-    if (!canChooseQuantity || !lastQuantity.isFetched || lastQuantity.isFetching) return
-    if (appliedQuantityKey.current === quantityLookupKey) return
-    appliedQuantityKey.current = quantityLookupKey
-    const previous = lastQuantity.data?.quantity
-    setQuantity(previous && previous > 0 ? String(previous) : '1')
-  }, [
-    canChooseQuantity,
-    quantityLookupKey,
-    lastQuantity.isFetched,
-    lastQuantity.isFetching,
-    lastQuantity.data,
-  ])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -441,20 +551,33 @@ export function FoodReserveForm({
       toast.error(t('foodReservations.noActiveFood'))
       return
     }
-    if (!resolvedFoodId) {
-      toast.error(t('foodReservations.selectFood'))
-      return
+    const items: FoodReservePayload['items'] = []
+    if (canChooseQuantity) {
+      for (const line of orderedLines) {
+        if (line.unit > 0) items.push({ foodId: line.item.food.id, quantity: line.unit })
+        if (line.guest > 0) {
+          items.push({ foodId: line.item.food.id, quantity: line.guest, forGuest: true })
+        }
+      }
+      if (!items.length) {
+        toast.error(t('foodReservations.enterQuantity'))
+        return
+      }
+    } else {
+      if (!resolvedFoodId) {
+        toast.error(t('foodReservations.selectFood'))
+        return
+      }
+      items.push({ foodId: resolvedFoodId, quantity: 1 })
     }
-    const qty = canChooseQuantity ? Number(quantity) || 1 : 1
     setSaving(true)
     try {
       await onSubmit({
         reservedAt,
+        mealType,
         ...(canManage ? { orgUnitId } : {}),
         restaurantId: selectedRestaurantId,
-        foodId: resolvedFoodId,
-        quantity: qty,
-        ...(canChooseQuantity && guestMealsEnabled ? { forGuest } : {}),
+        items,
       })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
@@ -500,6 +623,7 @@ export function FoodReserveForm({
       subtitle={t('foodReservations.createSubtitle')}
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
+        <FormSectionTitle icon={CalendarRange}>{t('foodReservations.setupSection')}</FormSectionTitle>
         <FormField icon={CalendarRange} label={t('foodReservations.weekDays')}>
           <WeekDayPicker
             value={reservedAt}
@@ -510,97 +634,161 @@ export function FoodReserveForm({
           />
         </FormField>
         {canManage ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField icon={Building2} label={t('foodReservations.orgUnit')} htmlFor="reserveUnit">
-              <SearchSelect
-                id="reserveUnit"
-                value={orgUnitId}
-                required
-                onChange={setOrgUnitId}
-                placeholder={t('foodReservations.selectUnit')}
-                options={context.units.map((unit) => ({
-                  value: unit.id,
-                  label: unit.pathLabel || unit.name,
-                }))}
-              />
-            </FormField>
-          </div>
+          <FormField icon={Building2} label={t('foodReservations.orgUnit')} htmlFor="reserveUnit">
+            <SearchSelect
+              id="reserveUnit"
+              value={orgUnitId}
+              required
+              onChange={setOrgUnitId}
+              placeholder={t('foodReservations.selectUnit')}
+              options={context.units.map((unit) => ({
+                value: unit.id,
+                label: unit.pathLabel || unit.name,
+              }))}
+            />
+          </FormField>
         ) : null}
-        <div className="flex flex-col items-center gap-4 pt-8 [&_label]:justify-center">
-          <FormField icon={Store} label={t('foodReservations.restaurant')}>
-            {canManage && !orgUnitId ? (
-              <p className="w-[300px] max-w-full px-1 py-2.5 text-center text-sm text-ink-400">
-                {t('foodReservations.selectUnit')}
-              </p>
+        <FormSectionTitle icon={Utensils}>{t('foodReservations.composeSection')}</FormSectionTitle>
+        <FormField icon={Utensils} label={t('foodReservations.mealType')}>
+          <SegmentedTwo
+            value={mealType}
+            onChange={setMealType}
+            label={t('foodReservations.mealType')}
+            options={[
+              { value: foodMealTypes.LUNCH, label: t('foodReservations.lunch'), icon: Sun },
+              { value: foodMealTypes.DINNER, label: t('foodReservations.dinner'), icon: Moon },
+            ]}
+          />
+        </FormField>
+        <FormField icon={Store} label={t('foodReservations.restaurant')}>
+          {canManage && !orgUnitId ? (
+            <FormEmptyHint>{t('foodReservations.selectUnit')}</FormEmptyHint>
+          ) : unitRestaurants.length === 0 ? (
+            <FormEmptyHint>{t('foodReservations.noUnitRestaurants')}</FormEmptyHint>
+          ) : (
+            <OptionPick
+              value={selectedRestaurantId}
+              onChange={setRestaurantId}
+              label={t('foodReservations.restaurant')}
+              columns={4}
+              options={unitRestaurants.map((item) => ({
+                value: item.id,
+                title: item.name,
+                imageId: item.logoId,
+                icon: Store,
+              }))}
+            />
+          )}
+        </FormField>
+        {!selectedRestaurantId ? (
+          canManage && !orgUnitId || unitRestaurants.length === 0 ? null : (
+            <FormEmptyHint>{t('foodReservations.pickRestaurantFirst')}</FormEmptyHint>
+          )
+        ) : (
+          <div className="space-y-4">
+            <FormSectionTitle icon={UtensilsCrossed}>{t('foodReservations.orderSection')}</FormSectionTitle>
+            {menuPending ? (
+              <p className="text-sm text-ink-500">{t('common.loading')}</p>
+            ) : foods.length === 0 ? (
+              <FormEmptyHint>{t('foodReservations.noActiveFood')}</FormEmptyHint>
+            ) : canChooseQuantity ? (
+              <div className="space-y-3">
+                <p className="text-xs leading-6 text-ink-500">{t('foodReservations.foodsHint')}</p>
+                {foods.map((item) => {
+                  const counts = countsOf(item.food.id)
+                  return (
+                    <article
+                      key={item.food.id}
+                      className="flex flex-col gap-3 rounded-2xl border border-teal-100 bg-gradient-to-b from-teal-50 to-white p-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <EntityThumb imageId={item.food.photoId} icon={UtensilsCrossed} label={item.food.name} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-ink-900">{item.food.name}</p>
+                          <p className="mt-0.5 text-xs text-ink-500">
+                            {formatGroupedNumber(item.price, locale)} {toman}
+                          </p>
+                        </div>
+                      </div>
+                      <div className={`grid gap-3 ${guestMealsEnabled ? 'sm:grid-cols-2' : ''}`}>
+                        <FormField
+                          icon={Hash}
+                          label={t('foodReservations.unitQuantity')}
+                          htmlFor={`reserveUnitQty-${item.food.id}`}
+                        >
+                          <QtyStepper
+                            id={`reserveUnitQty-${item.food.id}`}
+                            value={counts.unit}
+                            onChange={(next) => setCount(item.food.id, 'unit', next)}
+                            max={unitQtyMax}
+                            decreaseLabel={t('foodReservations.qtyDecrease')}
+                            increaseLabel={t('foodReservations.qtyIncrease')}
+                          />
+                        </FormField>
+                        {guestMealsEnabled ? (
+                          <FormField
+                            icon={Users}
+                            label={t('foodReservations.guestQuantity')}
+                            htmlFor={`reserveGuestQty-${item.food.id}`}
+                          >
+                            <QtyStepper
+                              id={`reserveGuestQty-${item.food.id}`}
+                              value={counts.guest}
+                              onChange={(next) => setCount(item.food.id, 'guest', next)}
+                              max={guestQtyMax}
+                              decreaseLabel={t('foodReservations.qtyDecrease')}
+                              increaseLabel={t('foodReservations.qtyIncrease')}
+                            />
+                          </FormField>
+                        ) : null}
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
             ) : (
-              <ChoiceList
-                value={selectedRestaurantId}
-                onChange={setRestaurantId}
-                label={t('foodReservations.restaurant')}
-                options={unitRestaurants.map((item) => ({ value: item.id, label: item.name }))}
-              />
-            )}
-          </FormField>
-          <FormField icon={UtensilsCrossed} label={t('foodReservations.food')}>
-            {foods.length > 0 ? (
-              <ChoiceList
-                value={resolvedFoodId}
-                onChange={setFoodId}
-                label={t('foodReservations.food')}
-                options={foods.map((item) => ({ value: item.food.id, label: item.food.name }))}
-              />
-            ) : (
-              <p className="w-[300px] max-w-full px-1 py-2.5 text-center text-sm text-ink-400">
-                {selectedRestaurantId ? '—' : t('foodReservations.selectRestaurant')}
-              </p>
-            )}
-          </FormField>
-          {canChooseQuantity ? (
-            <div className="flex w-[300px] max-w-full flex-col items-center gap-4">
-              {guestMealsEnabled ? (
-                <FormField icon={Users} label={t('foodReservations.forGuest')}>
-                  <div className="flex justify-center">
-                    <ToggleField
-                      checked={forGuest}
-                      onChange={setForGuest}
-                      onLabel={t('foodReservations.guestOrder')}
-                      offLabel={t('foodReservations.unitOrder')}
-                    />
-                  </div>
-                </FormField>
-              ) : null}
-              <FormField
-                icon={Hash}
-                label={forGuest ? t('foodReservations.guestQuantity') : t('foodReservations.quantity')}
-                htmlFor="reserveQuantity"
-              >
-                <input
-                  id="reserveQuantity"
-                  type="number"
-                  min={1}
-                  max={forGuest && activeUnit?.maxGuestMeals ? activeUnit.maxGuestMeals : 500}
-                  className={`${fieldClassName} text-center`}
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  required
+              <FormField icon={UtensilsCrossed} label={t('foodReservations.food')}>
+                <OptionPick
+                  value={resolvedFoodId}
+                  onChange={setFoodId}
+                  label={t('foodReservations.food')}
+                  options={foods.map((item) => ({
+                    value: item.food.id,
+                    title: item.food.name,
+                    hint: `${formatGroupedNumber(item.price, locale)} ${toman}`,
+                    imageId: item.food.photoId,
+                    icon: UtensilsCrossed,
+                  }))}
                 />
               </FormField>
-            </div>
-          ) : null}
-        </div>
-        {canManage && orgUnitId && unitRestaurants.length === 0 ? (
-          <FormEmptyHint>{t('restaurants.noRestaurants')}</FormEmptyHint>
-        ) : null}
-        {selectedRestaurantId && menu.isSuccess && foods.length === 0 ? (
-          <FormEmptyHint>{t('foodReservations.noActiveFood')}</FormEmptyHint>
-        ) : (
-          <FormActions
-            className="justify-center [&>div]:flex-row-reverse [&>div]:gap-8"
-            submitLabel={t('foodReservations.save')}
-            cancelLabel={t('foodReservations.cancel')}
-            submitting={saving || menuPending}
-            onCancel={() => history.back()}
-          />
+            )}
+            {foods.length > 0 ? (
+              <>
+                <div className="rounded-2xl border border-teal-100 bg-gradient-to-e from-mint-50 via-white to-teal-50 px-4 py-3">
+                  <p className="text-xs font-medium text-ink-500">{t('foodReservations.orderSummary')}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-ink-900">
+                    {canChooseQuantity
+                      ? orderedLines.length
+                        ? orderedLines.map((line) => line.item.food.name).join('، ')
+                        : t('foodReservations.selectFood')
+                      : selectedFood
+                        ? selectedFood.food.name
+                        : t('foodReservations.selectFood')}
+                    {canChooseQuantity
+                      ? ` · ${t('foodReservations.summaryServings', { qty: formatNumber(orderedServings, locale) })}`
+                      : ''}
+                    {lineTotal > 0 ? ` · ${formatGroupedNumber(lineTotal, locale)} ${toman}` : ''}
+                  </p>
+                </div>
+                <FormActions
+                  submitLabel={t('foodReservations.save')}
+                  cancelLabel={t('foodReservations.cancel')}
+                  submitting={saving || menuPending}
+                  onCancel={() => history.back()}
+                />
+              </>
+            ) : null}
+          </div>
         )}
       </AppForm>
     </FormCard>
