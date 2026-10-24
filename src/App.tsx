@@ -262,6 +262,12 @@ import { BoardRequestDetailPage } from './pages/board/BoardRequestDetailPage'
 import { BoardPlansPage } from './pages/board/BoardPlansPage'
 import { BoardPermissionsPage } from './pages/board/BoardPermissionsPage'
 import {
+  BoardSignatoryCreatePage,
+  BoardSignatoryDetailPage,
+  BoardSignatoryEditPage,
+  BoardSignatoryListPage,
+} from './pages/board/BoardSignatoryPages'
+import {
   BoardMinutesCreatePage,
   BoardMinutesDetailPage,
   BoardMinutesEditPage,
@@ -534,6 +540,10 @@ export default function App() {
                   <Route path="/board/requests/:id/edit" element={<BoardRequestEditPage />} />
                   <Route path="/board/requests/:id" element={<BoardRequestDetailPage />} />
                   <Route path="/board/plans" element={<BoardPlansPage />} />
+                  <Route path="/board/signatories" element={<BoardSignatoryListPage />} />
+                  <Route path="/board/signatories/new" element={<BoardSignatoryCreatePage />} />
+                  <Route path="/board/signatories/:id/edit" element={<BoardSignatoryEditPage />} />
+                  <Route path="/board/signatories/:id" element={<BoardSignatoryDetailPage />} />
                   <Route path="/board/calendar" element={<ResolutionCalendarPage />} />
                   <Route path="/board/reports" element={<BoardReportsPage />} />
                   <Route path="/board/search" element={<BoardSmartSearchPage />} />

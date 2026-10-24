@@ -18,6 +18,26 @@ export function boardPlansPath() {
   return '/board/plans'
 }
 
+export function boardSignatoriesPath() {
+  return '/board/signatories'
+}
+
+export function boardSignatoryPath(id: string) {
+  return `${boardSignatoriesPath()}/${id}`
+}
+
+export function boardSignatoryCreatePath() {
+  return `${boardSignatoriesPath()}/new`
+}
+
+export function boardSignatoryEditPath(id: string) {
+  return `${boardSignatoryPath(id)}/edit`
+}
+
+export function boardSignatoryFullName(item: { firstName: string; lastName: string }) {
+  return `${item.firstName} ${item.lastName}`.trim()
+}
+
 export function boardPermissionsPath() {
   return '/board/permissions'
 }

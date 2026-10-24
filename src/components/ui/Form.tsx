@@ -236,6 +236,7 @@ function resolvePageBackTo(pathname: string): string | undefined {
 export function PageHeader({
   title,
   subtitle,
+  chips,
   action,
   backTo,
   icon,
@@ -243,6 +244,7 @@ export function PageHeader({
 }: {
   title: ReactNode
   subtitle?: ReactNode
+  chips?: ReactNode
   action?: ReactNode
   icon: LucideIcon
   /** مسیر بازگشت اگر تاریخچه خالی باشد. `false` آیکون را مخفی می‌کند. */
@@ -275,6 +277,7 @@ export function PageHeader({
         heading="h1"
         title={title}
         subtitle={subtitle}
+        chips={chips}
         action={
           <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
             {action}
@@ -813,6 +816,7 @@ export function DetailActions({
   extraItems,
   className = 'mt-6',
   headerIcons = true,
+  footer = true,
 }: {
   editTo: string
   editLabel: string
@@ -823,6 +827,8 @@ export function DetailActions({
   className?: string
   /** آیکون ویرایش/حذف در هدر صفحه برای دسترسی سریع */
   headerIcons?: boolean
+  /** کادر دکمه‌های پایین. اگر خاموش باشد فقط آیکون هدر می‌ماند */
+  footer?: boolean
 }) {
   const { t } = useTranslation()
   useRegisterDetailEditTo(showEdit ? editTo : '')
@@ -833,6 +839,7 @@ export function DetailActions({
   const hasExtra = extras.length > 0
   const hasDelete = Boolean(onDelete && deleteLabel)
   if (!showEdit && !hasDelete && !hasExtra) return null
+  if (!footer && !headerIcons) return null
 
   const coreButtons = (
     <>
@@ -852,6 +859,22 @@ export function DetailActions({
       ) : null}
     </>
   )
+
+  const header = headerIcons ? (
+    <PageHeaderActionsPortal>
+      <HeaderDetailActions
+        editTo={editTo}
+        editLabel={editLabel}
+        deleteLabel={deleteLabel}
+        showEdit={showEdit}
+        onDelete={onDelete}
+      />
+    </PageHeaderActionsPortal>
+  ) : null
+
+  if (!footer) {
+    return header
+  }
 
   return (
     <div
@@ -894,17 +917,7 @@ export function DetailActions({
           onDelete={onDelete}
         />
       ) : null}
-      {headerIcons ? (
-        <PageHeaderActionsPortal>
-          <HeaderDetailActions
-            editTo={editTo}
-            editLabel={editLabel}
-            deleteLabel={deleteLabel}
-            showEdit={showEdit}
-            onDelete={onDelete}
-          />
-        </PageHeaderActionsPortal>
-      ) : null}
+      {header}
     </div>
   )
 }

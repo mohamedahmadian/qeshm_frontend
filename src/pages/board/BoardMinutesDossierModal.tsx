@@ -53,6 +53,8 @@ function hasReview(item: BoardRequest) {
       item.budgetComment ||
       item.secretaryAt ||
       item.secretaryComment ||
+      item.ceoAt ||
+      item.ceoComment ||
       item.rejectedAt,
   )
 }
@@ -242,6 +244,13 @@ export function BoardMinutesDossierModal({
                             icon={Stamp}
                             label={t('board.stages.SECRETARY')}
                             value={request.secretaryComment || <DateText value={request.secretaryAt} />}
+                          />
+                        ) : null}
+                        {request.ceoAt || request.ceoComment ? (
+                          <FormFactTile
+                            icon={Stamp}
+                            label={t('board.stages.CEO')}
+                            value={request.ceoComment || <DateText value={request.ceoAt} />}
                           />
                         ) : null}
                         {request.rejectedAt ? (

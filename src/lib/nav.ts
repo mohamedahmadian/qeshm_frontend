@@ -1,6 +1,27 @@
-import type { NavModule } from "../types/app";
+import type { NavMenu, NavModule } from "../types/app";
 
 export const MANAGEMENT_MODULE_CODE = "management";
+export const BOARD_MEMORY_SECTION_KEY = "menuSections.boardMemory";
+export const BOARD_TOPICS_SECTION_KEY = "menuSections.boardTopics";
+
+export type NavMenuSection = {
+  sectionKey?: string;
+  items: NavMenu[];
+};
+
+/** Keep consecutive items that share a sectionKey together for sidebar headings. */
+export function groupNavMenusBySection(menus: NavMenu[]): NavMenuSection[] {
+  const groups: NavMenuSection[] = [];
+  for (const item of menus) {
+    const last = groups[groups.length - 1];
+    if (last && last.sectionKey === item.sectionKey) {
+      last.items.push(item);
+    } else {
+      groups.push({ sectionKey: item.sectionKey, items: [item] });
+    }
+  }
+  return groups;
+}
 
 /** ماژول مدیریت کاربران همیشه آخرین کارت منوی اصلی می‌ماند. */
 export function withManagementLast(nav: NavModule[]): NavModule[] {
@@ -441,6 +462,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
         path: "/board/search",
         icon: "scan-search",
         sortOrder: 1,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
       },
       {
         code: "board.minutes",
@@ -448,6 +470,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
         path: "/board/minutes",
         icon: "scroll-text",
         sortOrder: 2,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
       },
       {
         code: "board.resolutions",
@@ -455,6 +478,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
         path: "/board/resolutions",
         icon: "file-check",
         sortOrder: 3,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
       },
       {
         code: "board.reports",
@@ -462,6 +486,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
         path: "/board/reports",
         icon: "chart-column",
         sortOrder: 4,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
       },
       {
         code: "board.calendar",
@@ -469,6 +494,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
         path: "/board/calendar",
         icon: "calendar-days",
         sortOrder: 5,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
       },
       {
         code: "board.requests",
@@ -476,6 +502,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
         path: "/board/requests",
         icon: "file-text",
         sortOrder: 6,
+        sectionKey: BOARD_TOPICS_SECTION_KEY,
       },
       {
         code: "board.plans",
@@ -483,13 +510,23 @@ export const APP_NAV: NavModule[] = withManagementLast([
         path: "/board/plans",
         icon: "stamp",
         sortOrder: 7,
+        sectionKey: BOARD_TOPICS_SECTION_KEY,
+      },
+      {
+        code: "board.signatories",
+        nameKey: "menus.boardSignatories",
+        path: "/board/signatories",
+        icon: "pen-line",
+        sortOrder: 8,
+        sectionKey: BOARD_TOPICS_SECTION_KEY,
       },
       {
         code: "board.permissions",
         nameKey: "menus.boardPermissions",
         path: "/board/permissions",
         icon: "shield",
-        sortOrder: 8,
+        sortOrder: 9,
+        sectionKey: BOARD_TOPICS_SECTION_KEY,
       },
     ],
   },

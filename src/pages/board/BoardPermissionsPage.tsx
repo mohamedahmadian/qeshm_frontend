@@ -1,4 +1,4 @@
-import { Briefcase, Building2, Gavel, Scale, Shield, Stamp, Wallet, type LucideIcon } from 'lucide-react'
+import { BadgeCheck, Briefcase, Building2, Gavel, Scale, Shield, Wallet, type LucideIcon } from 'lucide-react'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -11,14 +11,14 @@ import { api, getApiErrorMessage } from '../../lib/api'
 import { isAdmin } from '../../lib/roles'
 import type { BoardStagePermission, OrganizationPosition, OrganizationUnit } from '../../types/app'
 
-const reviewStages = ['MANAGEMENT', 'LEGAL', 'BUDGET', 'SECRETARY'] as const
+const reviewStages = ['LEGAL', 'BUDGET', 'SECRETARY', 'CEO'] as const
 type ReviewStage = (typeof reviewStages)[number]
 
 const stageIcons: Record<ReviewStage, LucideIcon> = {
-  MANAGEMENT: Stamp,
   LEGAL: Scale,
   BUDGET: Wallet,
   SECRETARY: Gavel,
+  CEO: BadgeCheck,
 }
 
 export function BoardPermissionsPage() {
@@ -47,7 +47,7 @@ export function BoardPermissionsPage() {
     },
   })
   const [selected, setSelected] = useState<Record<string, { unitIds: string[]; positionIds: string[] }>>({})
-  const [tab, setTab] = useState<ReviewStage>('MANAGEMENT')
+  const [tab, setTab] = useState<ReviewStage>('LEGAL')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -98,6 +98,9 @@ export function BoardPermissionsPage() {
     <div className={formShellClassName}>
       <PageHeader icon={Shield} title={t('menus.boardPermissions')} subtitle={t('boardPermissions.subtitle')} />
       <FormCard icon={Shield} title={t('boardPermissions.title')} subtitle={editable ? undefined : t('boardPermissions.readOnly')}>
+        <p className="border-b border-line bg-cream-50/70 px-4 py-3 text-sm text-ink-600 sm:px-5">
+          {t('boardPermissions.managementHint')}
+        </p>
         <nav className="flex flex-wrap gap-2 border-b border-line bg-cream-50/60 px-4 py-3 sm:px-5">
           {reviewStages.map((stage) => {
             const Icon = stageIcons[stage]

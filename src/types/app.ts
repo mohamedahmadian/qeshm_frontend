@@ -116,6 +116,8 @@ export type NavMenu = {
   path: string;
   icon: string;
   sortOrder: number;
+  /** Optional heading that groups items inside the same sidebar module card. */
+  sectionKey?: string;
 };
 
 export type NavModule = {
@@ -1181,6 +1183,7 @@ export type ManagedUser = {
   nationalCardPhotoId: string | null;
   passportPhotoId: string | null;
   identityBookletPhotoId: string | null;
+  signaturePhotoId: string | null;
   createdAt: string;
   updatedAt: string;
   roles: RoleOption[];
@@ -3974,7 +3977,9 @@ export type OrganizationPosition = {
 
 export type OrganizationUnitKind = {
   id: string;
+  code?: string | null;
   name: string;
+  isSystem?: boolean;
   createdAt: string;
   updatedAt: string;
   _count?: { units: number };
@@ -3985,10 +3990,11 @@ export type OrganizationUnit = {
   name: string;
   code: string;
   kindId: string;
-  kind: Pick<OrganizationUnitKind, 'id' | 'name'>;
+  kind: Pick<OrganizationUnitKind, 'id' | 'name' | 'code'>;
   parentId: string | null;
-  parent: { id: string; name: string; kind?: Pick<OrganizationUnitKind, 'id' | 'name'> } | null;
+  parent: { id: string; name: string; kind?: Pick<OrganizationUnitKind, 'id' | 'name' | 'code'> } | null;
   pathLabel: string;
+  deputy?: { id: string; fullName: string } | null;
   phone: string | null;
   address: string | null;
   latitude: number | null;
@@ -4756,11 +4762,20 @@ export type VehicleReportsOverview = {
   byModel: VehicleReportNamedCount[];
 };
 
+export const boardRequestKinds = {
+  NORMAL: 'NORMAL',
+  MANAGEMENT: 'MANAGEMENT',
+} as const;
+
+export type BoardRequestKind =
+  (typeof boardRequestKinds)[keyof typeof boardRequestKinds];
+
 export const boardRequestStatuses = {
   PENDING_REVIEW: 'PENDING_REVIEW',
   PENDING_LEGAL: 'PENDING_LEGAL',
   PENDING_BUDGET: 'PENDING_BUDGET',
   PENDING_SECRETARY: 'PENDING_SECRETARY',
+  PENDING_CEO: 'PENDING_CEO',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
 } as const;
@@ -4774,6 +4789,7 @@ export const boardStages = {
   LEGAL: 'LEGAL',
   BUDGET: 'BUDGET',
   SECRETARY: 'SECRETARY',
+  CEO: 'CEO',
 } as const;
 
 export type BoardStage = (typeof boardStages)[keyof typeof boardStages];
@@ -4796,8 +4812,26 @@ export type BoardAttachment = {
   createdAt: string;
 };
 
+export function boardPipelineStages(kind?: BoardRequestKind | null): BoardStage[] {
+  if (kind === boardRequestKinds.MANAGEMENT) {
+    return [boardStages.REQUEST, boardStages.CEO]
+  }
+  return [
+    boardStages.REQUEST,
+    boardStages.MANAGEMENT,
+    boardStages.LEGAL,
+    boardStages.BUDGET,
+    boardStages.SECRETARY,
+    boardStages.CEO,
+  ]
+}
+
 export type BoardRequest = {
   id: string;
+  kind: BoardRequestKind;
+  trackingNo: string;
+  trackingYear: number;
+  trackingSeq: number;
   status: BoardRequestStatus;
   requestedAt: string;
   unitId: string;
@@ -4812,19 +4846,26 @@ export type BoardRequest = {
   managementComment: string | null;
   managementAt: string | null;
   managementBy: BoardPerson | null;
+  legalReferredAt: string | null;
   legalOrgMatch: boolean | null;
   legalRegulationsMatch: boolean | null;
   legalComment: string | null;
   legalAt: string | null;
   legalBy: BoardPerson | null;
+  budgetReferredAt: string | null;
   budgetProgramHistory: boolean | null;
   budgetCurrentYearFunding: boolean | null;
   budgetComment: string | null;
   budgetAt: string | null;
   budgetBy: BoardPerson | null;
+  secretaryReferredAt: string | null;
   secretaryComment: string | null;
   secretaryAt: string | null;
   secretaryBy: BoardPerson | null;
+  ceoReferredAt: string | null;
+  ceoComment: string | null;
+  ceoAt: string | null;
+  ceoBy: BoardPerson | null;
   rejectedStage: BoardStage | null;
   rejectedComment: string | null;
   rejectedAt: string | null;
@@ -4832,7 +4873,21 @@ export type BoardRequest = {
   attachments: BoardAttachment[];
   createdAt: string;
   updatedAt: string;
+  canReview?: boolean;
   _count?: { attachments: number };
+};
+
+export type BoardSignatory = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  title: string;
+  signatureImageId: string;
+  userId: string | null;
+  user: { id: string; fullName: string } | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type BoardAccess = {
@@ -4842,6 +4897,7 @@ export type BoardAccess = {
   canEditPermissions: boolean;
   canChangeStage: boolean;
   canManageMinutes: boolean;
+  canDeleteRequests: boolean;
   orgUnitId: string | null;
   positionName: string | null;
   stages: Record<BoardStage, boolean>;
@@ -4859,6 +4915,7 @@ export type BoardRequestStats = {
   pendingLegal: number;
   pendingBudget: number;
   pendingSecretary: number;
+  pendingCeo: number;
   approved: number;
   rejected: number;
 };

@@ -1,16 +1,23 @@
 import {
+  BadgeCheck,
   Briefcase,
   Building2,
+  CalendarClock,
   CalendarDays,
   Check,
   FileText,
+  Hash,
   Gavel,
   History,
   MessageSquare,
   Paperclip,
   Scale,
+  Printer,
   ScrollText,
+  Send,
   Stamp,
+  Trash2,
+  Timer,
   Wallet,
   X,
 } from 'lucide-react'
@@ -18,16 +25,15 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 're
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '../../auth/AuthProvider'
-import { canAccessBoardMinutes } from '../../lib/board-access'
+import { canAccessBoardMinutes, canDeleteBoardRequests, canEditBoardRequest } from '../../lib/board-access'
 import { DateText } from '../../components/ui/DateText'
 import {
   AppForm,
   Button,
   DetailActions,
-  EntityNameSubtitle,
   FormField,
   LoadingState,
   PageHeader,
@@ -45,10 +51,12 @@ import {
 import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { confirmToast } from '../../components/ui/confirmToast'
+import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { api, getApiErrorMessage } from '../../lib/api'
-import { todayIsoDate } from '../../lib/datetime'
+import { elapsedDurationParts, formatNumber, instantMs, isoHasClock, todayIsoDate } from '../../lib/datetime'
 import { isAdmin } from '../../lib/roles'
 import {
+  boardPipelineStages,
   boardRequestStatuses,
   boardStages,
   type BoardAccess,
@@ -57,14 +65,22 @@ import {
   type BoardRequestStatus,
   type BoardStage,
 } from '../../types/app'
+import { stageTimingOf } from './board-request-timing'
 import {
   BoardAttachmentsField,
   BoardExistingAttachments,
   emptyPendingBoardFiles,
   type PendingBoardFiles,
 } from './BoardAttachmentsField'
+import { BoardRequestHeaderBadges } from './BoardRequestHeaderBadges'
+import {
+  BoardSignatoriesPrintBlock,
+  BoardSignatoriesPrintModal,
+  useBoardRequestPrint,
+} from './BoardSignatoriesPrintBlock'
 import { BoardStagePipeline } from './BoardStagePipeline'
 import { BoardStatusBadge } from './BoardStatusBadge'
+import { BoardRequestPrintSheet } from './BoardRequestPrintSheet'
 import { boardMinutesListPath, boardPlansPath, boardRequestEditPath } from './board-paths'
 
 const detailTabs = [
@@ -73,6 +89,7 @@ const detailTabs = [
   { id: boardStages.LEGAL, icon: Scale },
   { id: boardStages.BUDGET, icon: Wallet },
   { id: boardStages.SECRETARY, icon: Gavel },
+  { id: boardStages.CEO, icon: BadgeCheck },
 ] as const
 
 function stageForStatus(status: BoardRequestStatus): BoardStage | null {
@@ -80,6 +97,7 @@ function stageForStatus(status: BoardRequestStatus): BoardStage | null {
   if (status === 'PENDING_LEGAL') return 'LEGAL'
   if (status === 'PENDING_BUDGET') return 'BUDGET'
   if (status === 'PENDING_SECRETARY') return 'SECRETARY'
+  if (status === 'PENDING_CEO') return 'CEO'
   return null
 }
 
@@ -88,10 +106,74 @@ function boolLabel(value: boolean | null, t: (key: string) => string) {
   return value ? t('board.has') : t('board.hasNot')
 }
 
+function formatStageElapsed(
+  fromIso: string,
+  toMs: number,
+  t: (key: string, options?: { count: string }) => string,
+  locale: string,
+) {
+  const parts = elapsedDurationParts(fromIso, toMs)
+  if (!parts) return '—'
+  const count = (value: number) => formatNumber(value, locale)
+  const bits: string[] = []
+  if (parts.days) bits.push(t('boardReview.elapsedDay', { count: count(parts.days) }))
+  if (parts.hours) bits.push(t('boardReview.elapsedHour', { count: count(parts.hours) }))
+  if (parts.minutes && bits.length < 2) {
+    bits.push(t('boardReview.elapsedMinute', { count: count(parts.minutes) }))
+  }
+  if (parts.seconds && bits.length < 2) {
+    bits.push(t('boardReview.elapsedSecond', { count: count(parts.seconds) }))
+  }
+  if (!bits.length) return t('boardReview.elapsedLessThanMinute')
+  return bits.join(t('boardReview.elapsedJoin'))
+}
+
+function TimingDate({ value }: { value: string | null }) {
+  if (!value) return '—'
+  return <DateText value={value} withTime={isoHasClock(value)} />
+}
+
+function StageTimingRow({ item, stage }: { item: BoardRequest; stage: BoardStage }) {
+  const { t, i18n } = useTranslation()
+  const timing = stageTimingOf(item, stage)
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!timing.live) return
+    const id = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(id)
+  }, [timing.live])
+
+  const toMs = timing.handledAt ? (instantMs(timing.handledAt) ?? now) : now
+  const elapsed = timing.referredAt
+    ? formatStageElapsed(timing.referredAt, toMs, t, i18n.language)
+    : '—'
+
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <FormFactTile
+        icon={Send}
+        label={t('boardReview.referredAt')}
+        value={<TimingDate value={timing.referredAt} />}
+        tone="teal"
+      />
+      <FormFactTile
+        icon={CalendarClock}
+        label={t('boardReview.handledAt')}
+        value={<TimingDate value={timing.handledAt} />}
+        tone="mint"
+      />
+      <FormFactTile icon={Timer} label={t('boardReview.elapsed')} value={elapsed} />
+    </div>
+  )
+}
+
 export function BoardRequestDetailPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { id } = useParams()
+  const navigate = useNavigate()
+  const { confirmDelete } = useConfirmDelete()
   const queryClient = useQueryClient()
   const accessQuery = useQuery({
     queryKey: ['board-access'],
@@ -111,11 +193,14 @@ export function BoardRequestDetailPage() {
   const item = query.data
   const access = accessQuery.data
   const currentStage = item ? stageForStatus(item.status) : null
-  const canEdit = item?.status === boardRequestStatuses.PENDING_REVIEW
-  const canReview = Boolean(currentStage && access?.stages[currentStage])
+  const canEdit = item ? canEditBoardRequest(item) : false
+  const canDelete = canDeleteBoardRequests(user) || Boolean(access?.canDeleteRequests)
+  const canReview = Boolean(item?.canReview ?? (currentStage && access?.stages[currentStage]))
   const admin = isAdmin(user)
   const [tab, setTab] = useState<BoardStage>(boardStages.REQUEST)
   const [statusModalOpen, setStatusModalOpen] = useState(false)
+  const [attachOpen, setAttachOpen] = useState(false)
+  const print = useBoardRequestPrint()
 
   useEffect(() => {
     if (!item) return
@@ -130,9 +215,27 @@ export function BoardRequestDetailPage() {
     setTab(boardStages.REQUEST)
   }, [currentStage, item?.id, item?.rejectedStage, item?.status])
 
+  useEffect(() => {
+    setAttachOpen(false)
+  }, [id, currentStage])
+
   if (!item || !id) return <LoadingState />
 
   const stageAttachments = (stage: BoardStage) => item.attachments.filter((row) => row.stage === stage)
+  const deleteRequest = canDelete
+    ? () =>
+        confirmDelete({
+          message: t('boardRequests.confirmDelete'),
+          successMessage: t('boardRequests.deleted'),
+          path: `/board/requests/${id}`,
+          queryKey: ['board-plans'],
+          onDeleted: () => {
+            void queryClient.invalidateQueries({ queryKey: ['board-plans-stats'] })
+            void queryClient.invalidateQueries({ queryKey: ['board-requests'] })
+            navigate(boardPlansPath())
+          },
+        })
+    : undefined
   const reviewOnDone = () => {
     void queryClient.invalidateQueries({ queryKey: ['board-request', id] })
     void queryClient.invalidateQueries({ queryKey: ['board-plans'] })
@@ -144,18 +247,35 @@ export function BoardRequestDetailPage() {
       <PageHeader
         icon={FileText}
         title={t('boardRequests.details')}
-        subtitle={<EntityNameSubtitle name={item.subject} icon={FileText} />}
+        chips={
+          <BoardRequestHeaderBadges
+            trackingNo={item.trackingNo}
+            unitName={item.unit.name}
+            subject={item.subject}
+          />
+        }
         backTo={boardPlansPath()}
+        className="mb-6 print:hidden"
       />
-      <BoardStagePipeline status={item.status} rejectedStage={item.rejectedStage} />
+      <div className="print:hidden">
+        <BoardStagePipeline kind={item.kind} status={item.status} rejectedStage={item.rejectedStage} />
+      </div>
       <FormCard
+        className="print:hidden"
         icon={FileText}
         title={item.subject}
-        chips={<BoardStatusBadge value={item.status} />}
+        chips={
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-800">
+              {t(`boardRequests.kinds.${item.kind}`)}
+            </span>
+            <BoardStatusBadge value={item.status} />
+          </div>
+        }
         editTo={canEdit ? boardRequestEditPath(id) : undefined}
       >
-        <nav className="flex flex-wrap gap-2 border-b border-line bg-cream-50/60 px-4 py-3 sm:px-5">
-          {detailTabs.map((itemTab) => {
+        <nav className="flex flex-wrap gap-2 border-b border-line bg-cream-50/60 px-4 py-3 sm:px-5 print:hidden">
+          {detailTabs.filter((itemTab) => boardPipelineStages(item.kind).includes(itemTab.id)).map((itemTab) => {
             const Icon = itemTab.icon
             const active = tab === itemTab.id
             return (
@@ -178,10 +298,19 @@ export function BoardRequestDetailPage() {
         <div className="space-y-6 p-5 sm:p-6">
           <div className={tab === 'REQUEST' ? 'space-y-6' : 'hidden'}>
             <FormSectionTitle icon={FileText}>{t('board.stages.REQUEST')}</FormSectionTitle>
-            <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <StageTimingRow item={item} stage="REQUEST" />
+            <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
               <FormFactTile icon={CalendarDays} label={t('boardRequests.requestedAt')} value={<DateText value={item.requestedAt} />} tone="teal" />
-              <FormFactTile icon={Building2} label={t('boardRequests.unit')} value={item.unit.name} tone="mint" />
+              <FormFactTile icon={Building2} label={t('boardRequests.requestingUnit')} value={item.unit.name} tone="mint" />
               <FormFactTile icon={Briefcase} label={t('boardRequests.orgPosition')} value={item.orgPositionText} />
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+              <FormFactTile
+                icon={Hash}
+                label={t('boardRequests.trackingNo')}
+                copyValue={item.trackingNo}
+                tone="teal"
+              />
               <FormFactTile icon={FileText} label={t('boardRequests.createdBy')} value={item.createdBy.fullName} />
             </div>
             <div className="grid gap-2 sm:gap-3">
@@ -193,7 +322,7 @@ export function BoardRequestDetailPage() {
             <BoardExistingAttachments items={stageAttachments('REQUEST')} />
           </div>
 
-          <div className={tab === 'MANAGEMENT' ? 'space-y-6' : 'hidden'}>
+          <div className={tab === 'MANAGEMENT' ? 'space-y-6 print:hidden' : 'hidden'}>
             <StageTabBody
               item={item}
               stage="MANAGEMENT"
@@ -212,11 +341,11 @@ export function BoardRequestDetailPage() {
                 ) : null
               }
               requestId={id}
-              onChangeStatus={admin ? () => setStatusModalOpen(true) : undefined}
+              attachOpen={attachOpen}
               onReviewDone={reviewOnDone}
             />
           </div>
-          <div className={tab === 'LEGAL' ? 'space-y-6' : 'hidden'}>
+          <div className={tab === 'LEGAL' ? 'space-y-6 print:hidden' : 'hidden'}>
             <StageTabBody
               item={item}
               stage="LEGAL"
@@ -239,11 +368,11 @@ export function BoardRequestDetailPage() {
                 ) : null
               }
               requestId={id}
-              onChangeStatus={admin ? () => setStatusModalOpen(true) : undefined}
+              attachOpen={attachOpen}
               onReviewDone={reviewOnDone}
             />
           </div>
-          <div className={tab === 'BUDGET' ? 'space-y-6' : 'hidden'}>
+          <div className={tab === 'BUDGET' ? 'space-y-6 print:hidden' : 'hidden'}>
             <StageTabBody
               item={item}
               stage="BUDGET"
@@ -269,11 +398,11 @@ export function BoardRequestDetailPage() {
                 ) : null
               }
               requestId={id}
-              onChangeStatus={admin ? () => setStatusModalOpen(true) : undefined}
+              attachOpen={attachOpen}
               onReviewDone={reviewOnDone}
             />
           </div>
-          <div className={tab === 'SECRETARY' ? 'space-y-6' : 'hidden'}>
+          <div className={tab === 'SECRETARY' ? 'space-y-6 print:hidden' : 'hidden'}>
             <StageTabBody
               item={item}
               stage="SECRETARY"
@@ -292,34 +421,95 @@ export function BoardRequestDetailPage() {
                 ) : null
               }
               requestId={id}
-              onChangeStatus={admin ? () => setStatusModalOpen(true) : undefined}
+              attachOpen={attachOpen}
+              onReviewDone={reviewOnDone}
+            />
+          </div>
+          <div className={tab === 'CEO' ? 'space-y-6 print:hidden' : 'hidden'}>
+            <StageTabBody
+              item={item}
+              stage="CEO"
+              currentStage={currentStage}
+              canReview={canReview}
+              attachments={stageAttachments('CEO')}
+              facts={
+                item.ceoAt || item.ceoComment ? (
+                  <StageFacts
+                    icon={BadgeCheck}
+                    title={t('board.stages.CEO')}
+                    date={item.ceoAt}
+                    comment={item.ceoComment}
+                    person={item.ceoBy?.fullName}
+                  />
+                ) : null
+              }
+              requestId={id}
+              attachOpen={attachOpen}
               onReviewDone={reviewOnDone}
             />
           </div>
 
-          {item.status === boardRequestStatuses.APPROVED &&
-          (access?.canManageMinutes || canAccessBoardMinutes(user)) ? (
-            <div className="mt-6 flex justify-end">
+          <div className="mt-6 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-teal-100 bg-gradient-to-b from-teal-50/70 to-white p-4 print:hidden sm:p-5">
+            {canReview ? (
+              <Button
+                type="button"
+                variant="soft"
+                className="me-auto shadow-[0_6px_14px_rgba(63,214,190,0.28)]"
+                onClick={() => {
+                  if (currentStage) setTab(currentStage)
+                  setAttachOpen(true)
+                }}
+              >
+                <Paperclip className="size-4" aria-hidden />
+                {t('board.addAttachments')}
+              </Button>
+            ) : null}
+            {admin ? (
+              <Button type="button" variant="ghost" onClick={() => setStatusModalOpen(true)}>
+                <Stamp className="size-4" aria-hidden />
+                {t('board.changeStatus')}
+              </Button>
+            ) : null}
+            <Button type="button" variant="soft" onClick={print.openModal}>
+              <Printer className="size-4" aria-hidden />
+              {t('boardSignatories.print')}
+            </Button>
+            {canDelete ? (
+              <Button type="button" variant="danger" onClick={deleteRequest}>
+                <Trash2 className="size-4" aria-hidden />
+                {t('boardRequests.delete')}
+              </Button>
+            ) : null}
+            {item.status === boardRequestStatuses.APPROVED &&
+            (access?.canManageMinutes || canAccessBoardMinutes(user)) ? (
               <Link to={boardMinutesListPath(id)}>
                 <Button type="button" variant="soft">
                   <ScrollText className="size-4" aria-hidden />
                   {t('boardMinutes.manage')}
                 </Button>
               </Link>
-            </div>
-          ) : null}
-          {canEdit ? (
-            <DetailActions editTo={boardRequestEditPath(id)} editLabel={t('common.edit')} />
-          ) : admin && !canReview ? (
-            <div className="flex justify-end">
-              <Button type="button" variant="ghost" onClick={() => setStatusModalOpen(true)}>
-                <Stamp className="size-4" aria-hidden />
-                {t('board.changeStatus')}
-              </Button>
-            </div>
+            ) : null}
+          </div>
+          {canEdit || canDelete ? (
+            <DetailActions
+              footer={false}
+              editTo={boardRequestEditPath(id)}
+              editLabel={t('common.edit')}
+              showEdit={canEdit}
+              deleteLabel={canDelete ? t('boardRequests.delete') : undefined}
+              onDelete={deleteRequest}
+            />
           ) : null}
         </div>
       </FormCard>
+
+      <BoardRequestPrintSheet item={item} />
+      <BoardSignatoriesPrintBlock showSignaturePhoto={print.showSignaturePhoto} />
+      <BoardSignatoriesPrintModal
+        open={print.modalOpen}
+        onClose={print.closeModal}
+        onPick={print.pick}
+      />
 
       {admin ? (
         <AdminStageModal
@@ -345,7 +535,7 @@ function StageTabBody({
   attachments,
   facts,
   requestId,
-  onChangeStatus,
+  attachOpen,
   onReviewDone,
 }: {
   item: BoardRequest
@@ -355,7 +545,7 @@ function StageTabBody({
   attachments: BoardAttachment[]
   facts: ReactNode
   requestId: string
-  onChangeStatus?: () => void
+  attachOpen: boolean
   onReviewDone: () => void
 }) {
   const { t } = useTranslation()
@@ -364,6 +554,7 @@ function StageTabBody({
   const showReview = isCurrent && canReview
   return (
     <>
+      <StageTimingRow item={item} stage={stage} />
       {facts}
       {rejectedHere ? (
         <StageFacts
@@ -389,7 +580,7 @@ function StageTabBody({
         <BoardReviewForm
           requestId={requestId}
           stage={stage}
-          onChangeStatus={onChangeStatus}
+          attachOpen={attachOpen}
           onDone={onReviewDone}
         />
       ) : null}
@@ -420,16 +611,21 @@ function StageFacts({
     <>
       <FormSectionTitle icon={Icon}>{title}</FormSectionTitle>
       <div className="space-y-2 sm:space-y-3">
-        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-          <FormFactTile icon={CalendarDays} label={t('boardReview.date')} value={date ? <DateText value={date} /> : '—'} tone="teal" />
-          <FormFactTile icon={Briefcase} label={t('boardReview.reviewedBy')} value={person || '—'} tone="mint" />
-        </div>
         {extras.length ? (
-          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+          <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
+            <FormFactTile icon={CalendarDays} label={t('boardReview.date')} value={date ? <DateText value={date} /> : '—'} tone="teal" />
             {extras.map((row) => (
               <FormFactTile key={row.label} icon={Check} label={row.label} value={row.value} />
             ))}
           </div>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <FormFactTile icon={CalendarDays} label={t('boardReview.date')} value={date ? <DateText value={date} /> : '—'} tone="teal" />
+            <FormFactTile icon={Briefcase} label={t('boardReview.reviewedBy')} value={person || '—'} tone="mint" />
+          </div>
+        )}
+        {extras.length ? (
+          <FormFactTile icon={Briefcase} label={t('boardReview.reviewedBy')} value={person || '—'} tone="mint" />
         ) : null}
         <FormFactTile icon={MessageSquare} label={t('boardReview.comment')} value={comment || '—'} />
       </div>
@@ -440,12 +636,12 @@ function StageFacts({
 function BoardReviewForm({
   requestId,
   stage,
-  onChangeStatus,
+  attachOpen,
   onDone,
 }: {
   requestId: string
   stage: BoardStage
-  onChangeStatus?: () => void
+  attachOpen: boolean
   onDone: () => void
 }) {
   const { t } = useTranslation()
@@ -457,7 +653,6 @@ function BoardReviewForm({
   const [budgetCurrentYearFunding, setBudgetCurrentYearFunding] = useState(false)
   const [files, setFiles] = useState<PendingBoardFiles>(emptyPendingBoardFiles)
   const [saving, setSaving] = useState(false)
-  const [attachOpen, setAttachOpen] = useState(false)
 
   const payload = useMemo(
     () => ({
@@ -499,7 +694,7 @@ function BoardReviewForm({
     event.preventDefault()
     confirmToast({
       title: t('board.confirmApprove', { stage: t(`board.stages.${stage}`) }),
-      confirmLabel: t('board.approve'),
+      confirmLabel: t(`board.approveStages.${stage}`),
       cancelLabel: t('common.cancel'),
       onConfirm: () => send('APPROVE'),
     })
@@ -507,11 +702,11 @@ function BoardReviewForm({
 
   return (
     <AppForm onSubmit={submit} className="space-y-4">
-        <FormField icon={CalendarDays} label={t('boardReview.date')}>
-          <PersianDateField value={occurredAt} onChange={(value) => setOccurredAt(value ?? '')} />
-        </FormField>
         {stage === 'LEGAL' ? (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+            <FormField icon={CalendarDays} label={t('boardReview.date')}>
+              <PersianDateField value={occurredAt} onChange={(value) => setOccurredAt(value ?? '')} />
+            </FormField>
             <FormField icon={Scale} label={t('boardReview.legalOrgMatch')}>
               <ToggleField
                 checked={legalOrgMatch}
@@ -529,9 +724,11 @@ function BoardReviewForm({
               />
             </FormField>
           </div>
-        ) : null}
-        {stage === 'BUDGET' ? (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        ) : stage === 'BUDGET' ? (
+          <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+            <FormField icon={CalendarDays} label={t('boardReview.date')}>
+              <PersianDateField value={occurredAt} onChange={(value) => setOccurredAt(value ?? '')} />
+            </FormField>
             <FormField icon={Wallet} label={t('boardReview.budgetProgramHistory')}>
               <ToggleField
                 checked={budgetProgramHistory}
@@ -549,7 +746,11 @@ function BoardReviewForm({
               />
             </FormField>
           </div>
-        ) : null}
+        ) : (
+          <FormField icon={CalendarDays} label={t('boardReview.date')}>
+            <PersianDateField value={occurredAt} onChange={(value) => setOccurredAt(value ?? '')} />
+          </FormField>
+        )}
         <FormField icon={MessageSquare} label={t('boardReview.comment')} htmlFor="boardReviewComment">
           <textarea
             id="boardReviewComment"
@@ -560,55 +761,33 @@ function BoardReviewForm({
         </FormField>
         <BoardAttachmentsField value={files} onChange={setFiles} showToggle={false} open={attachOpen} />
         <div className="mt-2 rounded-2xl border border-teal-100 bg-gradient-to-e from-mint-50/80 via-white to-teal-50/70 px-3 py-4 sm:px-4">
-          <div className="flex flex-col gap-3 sm:relative sm:min-h-14 sm:flex-row sm:items-center sm:justify-center">
-            <div className="self-start sm:absolute sm:start-0 sm:top-1/2 sm:self-auto sm:-translate-y-1/2">
-              <Button
-                type="button"
-                variant="soft"
-                disabled={saving}
-                className="shadow-[0_6px_14px_rgba(63,214,190,0.28)]"
-                onClick={() => setAttachOpen(true)}
-              >
-                <Paperclip className="size-4" aria-hidden />
-                {t('board.addAttachments')}
-              </Button>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <Button
-                type="submit"
-                disabled={saving}
-                className="min-w-[9.5rem] px-7 py-3.5 text-base font-semibold shadow-[0_10px_22px_rgba(46,189,182,0.32)]"
-              >
-                <Check className="size-5" aria-hidden />
-                {t('board.approve')}
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                disabled={saving}
-                className="min-w-[9.5rem] px-7 py-3.5 text-base font-semibold shadow-[0_10px_22px_rgba(220,38,38,0.28)]"
-                onClick={() =>
-                  confirmToast({
-                    title: t('board.confirmReject'),
-                    confirmLabel: t('board.reject'),
-                    cancelLabel: t('common.cancel'),
-                    confirmVariant: 'danger',
-                    onConfirm: () => send('REJECT'),
-                  })
-                }
-              >
-                <X className="size-5" aria-hidden />
-                {t('board.reject')}
-              </Button>
-            </div>
-            {onChangeStatus ? (
-              <div className="self-end sm:absolute sm:end-0 sm:top-1/2 sm:self-auto sm:-translate-y-1/2">
-                <Button type="button" variant="ghost" disabled={saving} onClick={onChangeStatus}>
-                  <Stamp className="size-4" aria-hidden />
-                  {t('board.changeStatus')}
-                </Button>
-              </div>
-            ) : null}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="min-w-[9.5rem] px-7 py-3.5 text-base font-semibold shadow-[0_10px_22px_rgba(46,189,182,0.32)]"
+            >
+              <Check className="size-5" aria-hidden />
+              {t(`board.approveStages.${stage}`)}
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={saving}
+              className="min-w-[9.5rem] px-7 py-3.5 text-base font-semibold shadow-[0_10px_22px_rgba(220,38,38,0.28)]"
+              onClick={() =>
+                confirmToast({
+                  title: t('board.confirmReject'),
+                  confirmLabel: t('board.reject'),
+                  cancelLabel: t('common.cancel'),
+                  confirmVariant: 'danger',
+                  onConfirm: () => send('REJECT'),
+                })
+              }
+            >
+              <X className="size-5" aria-hidden />
+              {t('board.reject')}
+            </Button>
           </div>
         </div>
       </AppForm>

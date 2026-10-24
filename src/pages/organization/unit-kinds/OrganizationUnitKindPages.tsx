@@ -1,4 +1,4 @@
-import { Building2, Plus, Tags, Type } from 'lucide-react'
+import { Building2, Hash, Plus, Tags, Type } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -87,6 +87,13 @@ export function OrganizationUnitKindListPage() {
                 onSort={onSort}
               />
               <SortableTh
+                column="code"
+                label={t('organizationUnitKinds.code')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
                 column="unitCount"
                 label={t('organizationUnitKinds.unitCount')}
                 sortBy={sortBy}
@@ -100,18 +107,22 @@ export function OrganizationUnitKindListPage() {
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3">{item.name}</td>
+                <td className="px-4 py-3">{item.code || '—'}</td>
                 <td className="px-4 py-3">{formatNumber(item._count?.units ?? 0, locale)}</td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
                     viewTo={organizationUnitKindPath(item.id)}
                     editTo={`${organizationUnitKindPath(item.id)}/edit`}
-                    onDelete={() =>
-                      confirmDelete({
-                        message: t('organizationUnitKinds.confirmDelete'),
-                        successMessage: t('organizationUnitKinds.deleted'),
-                        path: `/organization/unit-kinds/${item.id}`,
-                        queryKey: ['organization-unit-kinds'],
-                      })
+                    onDelete={
+                      item.isSystem
+                        ? undefined
+                        : () =>
+                            confirmDelete({
+                              message: t('organizationUnitKinds.confirmDelete'),
+                              successMessage: t('organizationUnitKinds.deleted'),
+                              path: `/organization/unit-kinds/${item.id}`,
+                              queryKey: ['organization-unit-kinds'],
+                            })
                     }
                   />
                 </td>
@@ -213,6 +224,7 @@ export function OrganizationUnitKindDetailPage() {
           <FormSectionTitle icon={Tags}>{t('organizationUnitKinds.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile icon={Type} label={t('organizationUnitKinds.name')} value={item.name} tone="teal" />
+            <FormFactTile icon={Hash} label={t('organizationUnitKinds.code')} value={item.code || '—'} tone="mint" />
             <FormFactTile
               icon={Building2}
               label={t('organizationUnitKinds.unitCount')}
@@ -223,15 +235,18 @@ export function OrganizationUnitKindDetailPage() {
           <DetailActions
             editTo={`${organizationUnitKindPath(id)}/edit`}
             editLabel={t('common.edit')}
-            deleteLabel={t('organizationUnitKinds.delete')}
-            onDelete={() =>
-              confirmDelete({
-                message: t('organizationUnitKinds.confirmDelete'),
-                successMessage: t('organizationUnitKinds.deleted'),
-                path: `/organization/unit-kinds/${id}`,
-                queryKey: ['organization-unit-kinds'],
-                onDeleted: () => navigate(organizationUnitKindsPath()),
-              })
+            deleteLabel={item.isSystem ? undefined : t('organizationUnitKinds.delete')}
+            onDelete={
+              item.isSystem
+                ? undefined
+                : () =>
+                    confirmDelete({
+                      message: t('organizationUnitKinds.confirmDelete'),
+                      successMessage: t('organizationUnitKinds.deleted'),
+                      path: `/organization/unit-kinds/${id}`,
+                      queryKey: ['organization-unit-kinds'],
+                      onDeleted: () => navigate(organizationUnitKindsPath()),
+                    })
             }
           />
         </div>

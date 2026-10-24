@@ -242,9 +242,23 @@ export function formatDateTime(value: string, locale: string) {
   return `${formatDateTimeDate(value, locale)} ${formatTime(value, locale)}`
 }
 
+export function isoHasClock(value: string) {
+  return /T\d{2}:/.test(value)
+}
+
+export function instantMs(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    const ms = new Date(year, month - 1, day).getTime()
+    return Number.isFinite(ms) ? ms : null
+  }
+  const ms = Date.parse(value)
+  return Number.isFinite(ms) ? ms : null
+}
+
 export function elapsedDurationParts(fromIso: string, nowMs = Date.now()) {
-  const start = Date.parse(fromIso)
-  if (!Number.isFinite(start)) return null
+  const start = instantMs(fromIso)
+  if (start == null) return null
   const totalSeconds = Math.max(0, Math.floor((nowMs - start) / 1000))
   return {
     days: Math.floor(totalSeconds / 86_400),

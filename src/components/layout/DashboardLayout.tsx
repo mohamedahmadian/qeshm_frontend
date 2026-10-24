@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthProvider'
 import { getNavIcon } from '../../lib/icons'
-import { APP_NAV } from '../../lib/nav'
+import { APP_NAV, groupNavMenusBySection } from '../../lib/nav'
 import { isSidebarMenuActive } from '../../lib/nav-path'
 import { filterNavByAccess } from '../../lib/roles'
 import type { NavMenu, NavModule } from '../../types/app'
@@ -142,7 +142,11 @@ function menuMatchesSearch(
   label: (key: string) => string,
 ) {
   if (item.label?.includes(needle)) return true
-  return label(item.nameKey).includes(needle) || label(mod.nameKey).includes(needle)
+  return (
+    label(item.nameKey).includes(needle) ||
+    label(mod.nameKey).includes(needle) ||
+    Boolean(item.sectionKey && label(item.sectionKey).includes(needle))
+  )
 }
 
 function SidebarModuleSection({
@@ -235,17 +239,15 @@ function SidebarModuleSection({
         inert={!moduleOpen}
       >
         <div className="sidebar-module-panel-inner">
-          <div className="space-y-1 p-1.5">
-            {mod.menus.map((item) => (
-              <SidebarMenuLink
-                key={item.code}
-                item={item}
-                allMenuPaths={allMenuPaths}
-                highlighted={highlightedCode === item.code}
-                onHighlight={() => onHighlight(item.code)}
-                onNavigate={onNavigate}
-              />
-            ))}
+          <div className="p-1.5">
+            <SidebarModuleMenus
+              menus={mod.menus}
+              rail={rail}
+              allMenuPaths={allMenuPaths}
+              highlightedCode={highlightedCode}
+              onHighlight={onHighlight}
+              onNavigate={onNavigate}
+            />
           </div>
         </div>
       </div>
@@ -462,8 +464,8 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
 
   return (
     <QuickToolsProvider>
-      <div className="h-svh w-full overflow-hidden bg-cream-50">
-        <div className="flex h-full w-full">
+      <div className="h-svh w-full overflow-hidden bg-cream-50 print:h-auto print:overflow-visible">
+        <div className="flex h-full w-full print:h-auto print:overflow-visible">
           {open ? (
             <button
               type="button"
@@ -473,7 +475,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
             />
           ) : null}
           <aside
-            className={`fixed inset-y-0 start-0 z-40 flex h-svh w-[308px] shrink-0 flex-col overflow-hidden border-e border-teal-100 bg-gradient-to-b from-white via-teal-50/70 to-cream-50 shadow-[8px_0_28px_rgba(46,189,182,0.08)] transition-[width,transform] duration-300 ease-out motion-reduce:transition-none lg:relative lg:h-full lg:translate-x-0 ${
+            className={`fixed inset-y-0 start-0 z-40 flex h-svh w-[308px] shrink-0 flex-col overflow-hidden border-e border-teal-100 bg-gradient-to-b from-white via-teal-50/70 to-cream-50 shadow-[8px_0_28px_rgba(46,189,182,0.08)] transition-[width,transform] duration-300 ease-out motion-reduce:transition-none print:hidden lg:relative lg:h-full lg:translate-x-0 ${
               rail ? 'lg:w-20' : ''
             } ${
               open
@@ -620,7 +622,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
 
           <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col">
             <ImpersonationBanner />
-            <header className="z-20 flex min-w-0 shrink-0 items-center gap-2 bg-cream-50/90 px-3 py-3 backdrop-blur sm:gap-3 sm:px-8 sm:py-4">
+            <header className="z-20 flex min-w-0 shrink-0 items-center gap-2 bg-cream-50/90 px-3 py-3 backdrop-blur print:hidden sm:gap-3 sm:px-8 sm:py-4">
               <button
                 type="button"
                 className="shrink-0 rounded-xl p-2 text-ink-700 lg:hidden"
@@ -638,7 +640,7 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
             </header>
             <main
               ref={mainRef}
-              className="min-h-0 min-w-0 w-full flex-1 overflow-x-hidden overflow-y-auto px-4 pb-8 sm:px-8"
+              className="min-h-0 min-w-0 w-full flex-1 overflow-x-hidden overflow-y-auto px-4 pb-8 print:h-auto print:overflow-visible sm:px-8"
             >
               <PageTransition>{children ?? <Outlet />}</PageTransition>
             </main>
@@ -647,6 +649,72 @@ export function DashboardLayout({ children }: { children?: ReactNode }) {
         </div>
       </div>
     </QuickToolsProvider>
+  )
+}
+
+function SidebarModuleMenus({
+  menus,
+  rail,
+  allMenuPaths,
+  highlightedCode,
+  onHighlight,
+  onNavigate,
+}: {
+  menus: SidebarNavMenu[]
+  rail: boolean
+  allMenuPaths: string[]
+  highlightedCode?: string
+  onHighlight: (code: string) => void
+  onNavigate: () => void
+}) {
+  const { t } = useTranslation()
+  const groups = groupNavMenusBySection(menus)
+  const showHeaders = groups.some((group) => group.sectionKey)
+
+  if (!showHeaders) {
+    return (
+      <div className="space-y-1">
+        {menus.map((item) => (
+          <SidebarMenuLink
+            key={item.code}
+            item={item}
+            allMenuPaths={allMenuPaths}
+            highlighted={highlightedCode === item.code}
+            onHighlight={() => onHighlight(item.code)}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {groups.map((group, index) => (
+        <div
+          key={group.sectionKey ?? `menu-group-${index}`}
+          className={index > 0 ? 'border-t border-teal-100/90 pt-2' : undefined}
+        >
+          {group.sectionKey && !rail ? (
+            <p className="px-2 pb-1 pt-0.5 text-[11px] font-semibold text-teal-700">
+              {t(group.sectionKey)}
+            </p>
+          ) : null}
+          <div className="space-y-1">
+            {group.items.map((item) => (
+              <SidebarMenuLink
+                key={item.code}
+                item={item}
+                allMenuPaths={allMenuPaths}
+                highlighted={highlightedCode === item.code}
+                onHighlight={() => onHighlight(item.code)}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 

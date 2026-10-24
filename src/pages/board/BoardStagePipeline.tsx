@@ -1,16 +1,14 @@
-import { Check, FileText, Gavel, Scale, Stamp, Wallet, X, type LucideIcon } from 'lucide-react'
+import { BadgeCheck, Check, FileText, Gavel, Scale, Stamp, Wallet, X, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cardClassName } from '../../components/ui/FormLayout'
 import { formatNumber } from '../../lib/datetime'
-import { boardStages, type BoardRequestStatus, type BoardStage } from '../../types/app'
-
-const pipelineStages = [
-  boardStages.REQUEST,
-  boardStages.MANAGEMENT,
-  boardStages.LEGAL,
-  boardStages.BUDGET,
-  boardStages.SECRETARY,
-] as const
+import {
+  boardPipelineStages,
+  boardStages,
+  type BoardRequestKind,
+  type BoardRequestStatus,
+  type BoardStage,
+} from '../../types/app'
 
 const stageIcons: Record<BoardStage, LucideIcon> = {
   REQUEST: FileText,
@@ -18,20 +16,25 @@ const stageIcons: Record<BoardStage, LucideIcon> = {
   LEGAL: Scale,
   BUDGET: Wallet,
   SECRETARY: Gavel,
+  CEO: BadgeCheck,
 }
 
 type StageMark = 'done' | 'current' | 'upcoming' | 'rejected'
 
-function currentIndexOf(status: BoardRequestStatus, rejectedStage: BoardStage | null) {
+function currentIndexOf(
+  status: BoardRequestStatus,
+  rejectedStage: BoardStage | null,
+  stages: BoardStage[],
+) {
   if (status === 'APPROVED') return -1
   if (status === 'REJECTED') {
-    const index = rejectedStage ? pipelineStages.indexOf(rejectedStage) : -1
-    return index
+    return rejectedStage ? stages.indexOf(rejectedStage) : -1
   }
-  if (status === 'PENDING_REVIEW') return 1
-  if (status === 'PENDING_LEGAL') return 2
-  if (status === 'PENDING_BUDGET') return 3
-  if (status === 'PENDING_SECRETARY') return 4
+  if (status === 'PENDING_REVIEW') return stages.indexOf(boardStages.MANAGEMENT)
+  if (status === 'PENDING_LEGAL') return stages.indexOf(boardStages.LEGAL)
+  if (status === 'PENDING_BUDGET') return stages.indexOf(boardStages.BUDGET)
+  if (status === 'PENDING_SECRETARY') return stages.indexOf(boardStages.SECRETARY)
+  if (status === 'PENDING_CEO') return stages.indexOf(boardStages.CEO)
   return -1
 }
 
@@ -53,15 +56,20 @@ export function BoardStagePipeline({
   status,
   rejectedStage = null,
   activeStage,
+  kind,
 }: {
   status?: BoardRequestStatus
   rejectedStage?: BoardStage | null
   activeStage?: BoardStage
+  kind?: BoardRequestKind | null
 }) {
   const { t, i18n } = useTranslation()
+  const pipelineStages = boardPipelineStages(kind)
   const resolvedStatus = status ?? 'PENDING_REVIEW'
   const currentIndex =
-    activeStage != null ? pipelineStages.indexOf(activeStage) : currentIndexOf(resolvedStatus, rejectedStage)
+    activeStage != null
+      ? pipelineStages.indexOf(activeStage)
+      : currentIndexOf(resolvedStatus, rejectedStage, pipelineStages)
 
   return (
     <nav aria-label={t('board.pipeline')} className={`${cardClassName} px-3 py-5 sm:px-6`}>

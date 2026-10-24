@@ -647,6 +647,18 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/board/permissions')) {
     return { titleKey: 'menus.boardPermissions', subtitleKey: 'boardPermissions.subtitle' }
   }
+  if (pathname === '/board/signatories/new') {
+    return { titleKey: 'boardSignatories.create', subtitleKey: 'boardSignatories.createSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/board/signatories/')) {
+    return { titleKey: 'boardSignatories.edit', subtitleKey: 'boardSignatories.editSubtitle' }
+  }
+  if (pathname.startsWith('/board/signatories/')) {
+    return { titleKey: 'boardSignatories.details', subtitleKey: 'boardSignatories.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/board/signatories')) {
+    return { titleKey: 'menus.boardSignatories', subtitleKey: 'boardSignatories.subtitle' }
+  }
   if (pathname.startsWith('/board/calendar')) {
     return { titleKey: 'menus.boardCalendar', subtitleKey: 'boardCalendar.subtitle' }
   }

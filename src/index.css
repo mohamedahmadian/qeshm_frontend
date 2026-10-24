@@ -2485,6 +2485,189 @@ th {
   );
 }
 
+.board-signatories-print-heading {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.board-signatories-print-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.board-signatories-print-row {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 1rem;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.board-signatory-print-card {
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 calc((100% - 2rem) / 3);
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+}
+
+.board-signatory-print-name {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: inherit;
+}
+
+.board-signatory-print-title {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #5b6b6a;
+}
+
+.board-signatory-print-mark,
+.board-signatory-print-box {
+  display: block;
+  height: 4rem;
+  width: 100%;
+  max-width: 9rem;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.board-signatory-print-mark {
+  object-fit: contain;
+}
+
+.board-signatory-print-box {
+  border: 1px solid #9ca3af;
+  border-radius: 0.375rem;
+}
+
+.board-request-print-sheet {
+  width: 100%;
+  color: #1f2933;
+}
+
+.board-request-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.board-request-print-table th,
+.board-request-print-table td {
+  border: 1px solid #1f2933;
+  padding: 8px 10px;
+  text-align: start;
+  vertical-align: top;
+}
+
+.board-request-print-table thead th {
+  width: 33.33%;
+  font-weight: 500;
+}
+
+.board-request-print-table thead th span,
+.board-request-print-date-line span {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.board-request-print-table thead th strong,
+.board-request-print-date-line strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.board-request-print-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.board-request-print-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.board-request-print-text.is-lines-2 {
+  min-height: calc(1.65em * 2);
+}
+
+.board-request-print-text.is-lines-3 {
+  min-height: calc(1.65em * 3);
+}
+
+.board-request-print-text.is-lines-7 {
+  min-height: calc(1.65em * 7);
+}
+
+.board-request-print-stage-head th {
+  background: #f3f4f6;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: start;
+}
+
+.board-request-print-stage,
+.board-request-print-stage-head {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.board-request-print-stage-name {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.board-request-print-date-line + .board-request-print-date-line {
+  margin-top: 8px;
+}
+
+.board-request-print-sign {
+  display: flex;
+  min-height: 4.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.board-request-print-signer {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.board-request-print-sign-box {
+  width: 100%;
+  min-height: 3.5rem;
+  border: 1px solid #1f2933;
+  background: #fff;
+}
+
 @keyframes board-stage-pulse {
   0% {
     transform: scale(1);
@@ -3074,6 +3257,42 @@ th {
   @page {
     size: A4 portrait;
     margin: 0;
+  }
+
+  .board-signatories-print-heading {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .board-signatories-print-row,
+  .board-signatory-print-card,
+  .board-signatory-print-mark,
+  .board-signatory-print-box,
+  .board-request-print-stage,
+  .board-request-print-stage-head,
+  .board-request-print-sign {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  main:has(.board-request-print-sheet) {
+    padding-inline: 0 !important;
+    padding-bottom: 0 !important;
+    background: #fff !important;
+  }
+
+  .board-request-print-sheet {
+    padding: 12mm 10mm 6mm;
+    background: #fff;
+  }
+
+  .board-signatories-print {
+    padding: 4mm 10mm 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
   }
 
   body.pilgrim-print-pocket *,

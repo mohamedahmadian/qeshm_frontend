@@ -10,8 +10,15 @@ import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useAuth } from '../../auth/AuthProvider'
 import { api, getApiErrorMessage } from '../../lib/api'
 import { canPickBoardRequestUnit } from '../../lib/board-access'
+import { isBoardRequestPosition } from '../../lib/org-assignment'
 import { todayIsoDate } from '../../lib/datetime'
-import type { BoardRequest, OrganizationPosition, OrganizationUnit } from '../../types/app'
+import {
+  boardRequestKinds,
+  type BoardRequest,
+  type BoardRequestKind,
+  type OrganizationPosition,
+  type OrganizationUnit,
+} from '../../types/app'
 import {
   BoardAttachmentsField,
   BoardExistingAttachments,
@@ -20,6 +27,7 @@ import {
 } from './BoardAttachmentsField'
 
 export type BoardRequestPayload = {
+  kind?: BoardRequestKind
   requestedAt: string
   unitId?: string
   orgPositionText: string
@@ -33,9 +41,11 @@ export type BoardRequestPayload = {
 
 export function BoardRequestForm({
   initial,
+  kind,
   onSubmit,
 }: {
   initial?: BoardRequest
+  kind?: BoardRequestKind
   onSubmit: (payload: BoardRequestPayload) => Promise<void>
 }) {
   const { t } = useTranslation()
@@ -109,6 +119,7 @@ export function BoardRequestForm({
     setSaving(true)
     try {
       await onSubmit({
+        kind: kind ?? initial?.kind ?? boardRequestKinds.NORMAL,
         requestedAt,
         unitId: canPickOrg ? unitId : undefined,
         orgPositionText: orgPositionText.trim(),
@@ -130,13 +141,12 @@ export function BoardRequestForm({
     <FormCard
       icon={FileText}
       title={initial ? initial.subject : t('boardRequests.create')}
-      subtitle={initial ? undefined : t('boardRequests.createSubtitle')}
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
-        <FormField icon={CalendarDays} label={t('boardRequests.requestedAt')}>
-          <PersianDateField value={requestedAt} onChange={(value) => setRequestedAt(value ?? '')} />
-        </FormField>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FormField icon={CalendarDays} label={t('boardRequests.requestedAt')}>
+            <PersianDateField value={requestedAt} onChange={(value) => setRequestedAt(value ?? '')} />
+          </FormField>
           <FormField icon={Building2} label={t('boardRequests.unit')} htmlFor="boardUnit">
             {canPickOrg ? (
               <SearchSelect
@@ -160,10 +170,12 @@ export function BoardRequestForm({
                 value={positionId}
                 onChange={setPositionId}
                 placeholder={t('boardRequests.selectPosition')}
-                options={(positions.data ?? []).map((item) => ({
-                  value: item.id,
-                  label: item.name,
-                }))}
+                options={(positions.data ?? [])
+                  .filter((item) => isBoardRequestPosition(item.code))
+                  .map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  }))}
               />
             ) : (
               <input id="boardPosition" className={fieldClassName} value={positionLabel} readOnly />

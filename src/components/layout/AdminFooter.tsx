@@ -14,7 +14,7 @@ export function AdminFooter() {
       id="admin-footer"
       data-admin-footer
       aria-label={versionLabel}
-      className="shrink-0 border-t border-line bg-white/90 backdrop-blur"
+      className="shrink-0 border-t border-line bg-white/90 backdrop-blur print:hidden"
     >
       <div className="px-4 py-2 sm:px-8">
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">

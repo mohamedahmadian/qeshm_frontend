@@ -8,6 +8,8 @@ export const BOARD_LEADERSHIP_POSITION_CODES = [
   'SECRETARY',
 ] as const
 
+export const BOARD_SECRETARY_POSITION_CODE = 'SECRETARY'
+
 export const BOARD_ADMIN_ROLE_CODE = 'BOARD_ADMIN'
 
 function isAdminUser(
@@ -35,12 +37,34 @@ export function canAccessBoardModule(
 }
 
 export function canPickBoardRequestUnit(
+  user: Pick<AuthUser, 'isAdmin' | 'roles' | 'position'> | null | undefined,
+) {
+  if (isAdminUser(user) || hasBoardAdminRole(user)) return true
+  return user?.position?.code === BOARD_SECRETARY_POSITION_CODE
+}
+
+export function canChooseBoardRequestKind(
+  user: Pick<AuthUser, 'isAdmin' | 'roles'> | null | undefined,
+) {
+  return canPickBoardRequestUnit(user)
+}
+
+export function canEditBoardRequest(item: {
+  kind: string
+  status: string
+  ceoAt?: string | null
+}) {
+  if (item.status === 'PENDING_REVIEW') return true
+  return item.kind === 'MANAGEMENT' && item.status === 'PENDING_CEO' && !item.ceoAt
+}
+
+export function canAccessBoardMinutes(
   user: Pick<AuthUser, 'isAdmin' | 'roles'> | null | undefined,
 ) {
   return isAdminUser(user) || hasBoardAdminRole(user)
 }
 
-export function canAccessBoardMinutes(
+export function canDeleteBoardRequests(
   user: Pick<AuthUser, 'isAdmin' | 'roles'> | null | undefined,
 ) {
   return isAdminUser(user) || hasBoardAdminRole(user)

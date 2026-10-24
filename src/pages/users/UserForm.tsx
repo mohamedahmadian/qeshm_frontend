@@ -19,6 +19,7 @@ import {
   MapPin,
   MapPinned,
   MessageCircle,
+  PenLine,
   Phone,
   Printer,
   Share2,
@@ -32,7 +33,7 @@ import {
   Zap,
 } from 'lucide-react'
 import axios from 'axios'
-import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -64,6 +65,10 @@ import {
   sanitizeUsername,
   USERNAME_ENGLISH_PATTERN,
 } from '../../lib/identity'
+import {
+  positionsForUnit,
+  unitsForPosition,
+} from '../../lib/org-assignment'
 import { CITIZEN_ROLE_CODE, CONTRACTOR_ROLE_CODE, EMPLOYEE_ROLE_CODE } from '../../lib/roles'
 import { optimizeImageFile } from '../../lib/optimize-image'
 import {
@@ -84,7 +89,7 @@ import {
 
 const allTabs = ['personal', 'account', 'location', 'documents', 'social', 'qeshmondi', 'other'] as const
 
-type PhotoField = 'photo' | 'nationalCard' | 'passport' | 'identityBooklet'
+type PhotoField = 'photo' | 'nationalCard' | 'passport' | 'identityBooklet' | 'signature'
 
 type IdentityCheckResponse = {
   taken: boolean
@@ -134,6 +139,7 @@ export type UserPayload = {
   nationalCardPhotoId: string | null
   passportPhotoId: string | null
   identityBookletPhotoId: string | null
+  signaturePhotoId: string | null
   orgUnitId: string | null
   positionId: string | null
   roleIds: string[]
@@ -240,6 +246,7 @@ export function UserForm({
   const [identityBookletPhotoId, setIdentityBookletPhotoId] = useState(
     initial?.identityBookletPhotoId ?? '',
   )
+  const [signaturePhotoId, setSignaturePhotoId] = useState(initial?.signaturePhotoId ?? '')
   const [orgUnitId, setOrgUnitId] = useState(initial?.orgUnitId ?? '')
   const [positionId, setPositionId] = useState(initial?.positionId ?? '')
   const [roleIds, setRoleIds] = useState<string[]>(initial?.roles?.map((role) => role.id) ?? [])
@@ -362,6 +369,16 @@ export function UserForm({
       return data
     },
   })
+  const selectedOrgUnit = (orgUnits.data ?? []).find((unit) => unit.id === orgUnitId)
+  const selectedPosition = (orgPositions.data ?? []).find((item) => item.id === positionId)
+  const assignableUnits = useMemo(
+    () => unitsForPosition(orgUnits.data ?? [], selectedPosition?.code, initial?.id),
+    [orgUnits.data, selectedPosition?.code, initial?.id],
+  )
+  const assignablePositions = useMemo(
+    () => positionsForUnit(orgPositions.data ?? [], selectedOrgUnit, initial?.id),
+    [orgPositions.data, selectedOrgUnit, initial?.id],
+  )
   const portalContractors = useQuery({
     queryKey: ['stakeholders', 'contractors', 'user-form'],
     enabled: !selfProfile && !qeshmondiMode,
@@ -428,6 +445,7 @@ export function UserForm({
       if (field === 'nationalCard') setNationalCardPhotoId(data.id)
       if (field === 'passport') setPassportPhotoId(data.id)
       if (field === 'identityBooklet') setIdentityBookletPhotoId(data.id)
+      if (field === 'signature') setSignaturePhotoId(data.id)
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
     } finally {
@@ -718,6 +736,7 @@ export function UserForm({
         nationalCardPhotoId: emptyToNull(nationalCardPhotoId),
         passportPhotoId: emptyToNull(passportPhotoId),
         identityBookletPhotoId: emptyToNull(identityBookletPhotoId),
+        signaturePhotoId: emptyToNull(signaturePhotoId),
         orgUnitId: emptyToNull(orgUnitId),
         positionId: emptyToNull(positionId),
         roleIds: submittedRoleIds,
@@ -964,11 +983,20 @@ export function UserForm({
                     <SearchSelect
                       id="orgUnitId"
                       value={orgUnitId}
-                      onChange={setOrgUnitId}
+                      onChange={(next) => {
+                        setOrgUnitId(next)
+                        const unit = (orgUnits.data ?? []).find((item) => item.id === next)
+                        const stillOk = positionsForUnit(
+                          orgPositions.data ?? [],
+                          unit,
+                          initial?.id,
+                        ).some((item) => item.id === positionId)
+                        if (positionId && !stillOk) setPositionId('')
+                      }}
                       placeholder={t('users.selectOrgUnit')}
                       options={[
                         { value: '', label: t('users.selectOrgUnit') },
-                        ...(orgUnits.data ?? []).map((unit) => ({
+                        ...assignableUnits.map((unit) => ({
                           value: unit.id,
                           label: unit.pathLabel || unit.name,
                         })),
@@ -988,11 +1016,20 @@ export function UserForm({
                     <SearchSelect
                       id="positionId"
                       value={positionId}
-                      onChange={setPositionId}
+                      onChange={(next) => {
+                        setPositionId(next)
+                        const position = (orgPositions.data ?? []).find((item) => item.id === next)
+                        const stillOk = unitsForPosition(
+                          orgUnits.data ?? [],
+                          position?.code,
+                          initial?.id,
+                        ).some((unit) => unit.id === orgUnitId)
+                        if (orgUnitId && !stillOk) setOrgUnitId('')
+                      }}
                       placeholder={t('users.selectPosition')}
                       options={[
                         { value: '', label: t('users.selectPosition') },
-                        ...(orgPositions.data ?? []).map((item) => ({ value: item.id, label: item.name })),
+                        ...assignablePositions.map((item) => ({ value: item.id, label: item.name })),
                       ]}
                     />
                   )}
@@ -1000,7 +1037,9 @@ export function UserForm({
               </div>
               {selfProfile ? (
                 <p className="text-xs text-ink-500">{t('users.orgAssignmentReadOnly')}</p>
-              ) : null}
+              ) : (
+                <p className="text-xs text-ink-500">{t('users.deputyHint')}</p>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField icon={Share2} label={t('users.religion')} htmlFor="religion">
                   <SearchSelect
@@ -1249,6 +1288,17 @@ export function UserForm({
                   uploading={uploading === 'identityBooklet'}
                   onFile={(file) => void uploadImage(file, 'identityBooklet')}
                   onClear={() => setIdentityBookletPhotoId('')}
+                />
+              </FormField>
+              <FormField icon={PenLine} label={t('users.signaturePhoto')} htmlFor="signaturePhoto">
+                <FileDropField
+                  id="signaturePhoto"
+                  accept="image/*"
+                  capture="environment"
+                  previewUrl={signaturePhotoId ? getImageUrl(signaturePhotoId) : undefined}
+                  uploading={uploading === 'signature'}
+                  onFile={(file) => void uploadImage(file, 'signature')}
+                  onClear={() => setSignaturePhotoId('')}
                 />
               </FormField>
             </div>

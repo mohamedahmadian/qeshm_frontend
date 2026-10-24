@@ -20,6 +20,7 @@ import {
   MapPin,
   MapPinned,
   MessageCircle,
+  PenLine,
   Phone,
   Printer,
   Handshake,
@@ -372,6 +373,12 @@ export function UserDetailPage() {
                   label={t('users.identityBookletPhoto')}
                   imageId={user.identityBookletPhotoId}
                   tone="teal"
+                />
+                <DocumentTile
+                  icon={PenLine}
+                  label={t('users.signaturePhoto')}
+                  imageId={user.signaturePhotoId}
+                  tone="mint"
                 />
               </div>
             </section>

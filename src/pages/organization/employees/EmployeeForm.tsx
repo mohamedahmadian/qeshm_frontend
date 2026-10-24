@@ -1,5 +1,5 @@
 import { Briefcase, Building2, KeyRound, Phone, UserRound } from 'lucide-react'
-import { type FormEvent, useRef, useState } from 'react'
+import { type FormEvent, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import { SearchSelect } from '../../../components/ui/SearchSelect'
 import { api, getApiErrorMessage } from '../../../lib/api'
 import { toLatinDigits } from '../../../lib/datetime'
 import { isPhoneReady } from '../../../lib/identity'
+import { positionsForUnit, unitsForPosition } from '../../../lib/org-assignment'
 import type { OrganizationPosition, OrganizationUnit } from '../../../types/app'
 
 export type EmployeeCreatePayload = {
@@ -50,6 +51,16 @@ export function EmployeeForm({
       return data
     },
   })
+  const selectedUnit = (units.data ?? []).find((unit) => unit.id === orgUnitId)
+  const selectedPosition = (positions.data ?? []).find((item) => item.id === positionId)
+  const assignableUnits = useMemo(
+    () => unitsForPosition(units.data ?? [], selectedPosition?.code),
+    [units.data, selectedPosition?.code],
+  )
+  const assignablePositions = useMemo(
+    () => positionsForUnit(positions.data ?? [], selectedUnit),
+    [positions.data, selectedUnit],
+  )
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -143,12 +154,19 @@ export function EmployeeForm({
               id="employeeUnit"
               value={orgUnitId}
               required
-              onChange={setOrgUnitId}
+              onChange={(next) => {
+                setOrgUnitId(next)
+                const unit = (units.data ?? []).find((item) => item.id === next)
+                const stillOk = positionsForUnit(positions.data ?? [], unit).some(
+                  (item) => item.id === positionId,
+                )
+                if (positionId && !stillOk) setPositionId('')
+              }}
               placeholder={t('users.selectOrgUnit')}
-              options={(units.data ?? []).map((unit) => ({
-              value: unit.id,
-              label: unit.pathLabel || unit.name,
-            }))}
+              options={assignableUnits.map((unit) => ({
+                value: unit.id,
+                label: unit.pathLabel || unit.name,
+              }))}
             />
           </FormField>
           <FormField icon={Briefcase} label={t('users.position')} htmlFor="employeePosition">
@@ -156,12 +174,20 @@ export function EmployeeForm({
               id="employeePosition"
               value={positionId}
               required
-              onChange={setPositionId}
+              onChange={(next) => {
+                setPositionId(next)
+                const position = (positions.data ?? []).find((item) => item.id === next)
+                const stillOk = unitsForPosition(units.data ?? [], position?.code).some(
+                  (unit) => unit.id === orgUnitId,
+                )
+                if (orgUnitId && !stillOk) setOrgUnitId('')
+              }}
               placeholder={t('users.selectPosition')}
-              options={(positions.data ?? []).map((item) => ({ value: item.id, label: item.name }))}
+              options={assignablePositions.map((item) => ({ value: item.id, label: item.name }))}
             />
           </FormField>
         </div>
+        <p className="text-xs text-ink-500">{t('users.deputyHint')}</p>
         <FormActions
           submitLabel={t('employees.save')}
           cancelLabel={t('employees.cancel')}

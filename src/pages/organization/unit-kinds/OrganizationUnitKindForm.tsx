@@ -1,4 +1,4 @@
-import { Tags, Type } from 'lucide-react'
+import { Hash, Tags, Type } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -11,18 +11,23 @@ export function OrganizationUnitKindForm({
   initial,
   onSubmit,
 }: {
-  initial?: Pick<OrganizationUnitKind, 'name'>
-  onSubmit: (payload: { name: string }) => Promise<void>
+  initial?: Pick<OrganizationUnitKind, 'name' | 'code' | 'isSystem'>
+  onSubmit: (payload: { name: string; code: string | null }) => Promise<void>
 }) {
   const { t } = useTranslation()
   const [name, setName] = useState(initial?.name ?? '')
+  const [code, setCode] = useState(initial?.code ?? '')
   const [saving, setSaving] = useState(false)
+  const systemLocked = Boolean(initial?.isSystem)
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     setSaving(true)
     try {
-      await onSubmit({ name: name.trim() })
+      await onSubmit({
+        name: name.trim(),
+        code: systemLocked ? (initial?.code ?? null) : code.trim() || null,
+      })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
     } finally {
@@ -46,6 +51,20 @@ export function OrganizationUnitKindForm({
             required
             minLength={2}
           />
+        </FormField>
+        <FormField icon={Hash} label={t('organizationUnitKinds.code')} htmlFor="unitKindCode">
+          <input
+            id="unitKindCode"
+            className={`${fieldClassName} latin-field ${systemLocked ? 'cursor-default bg-cream-50' : ''}`}
+            dir="ltr"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            readOnly={systemLocked}
+            maxLength={40}
+          />
+          <p className="text-xs text-ink-500">
+            {systemLocked ? t('organizationUnitKinds.systemLocked') : t('organizationUnitKinds.codeHint')}
+          </p>
         </FormField>
         <FormActions
           submitLabel={t('organizationUnitKinds.save')}
