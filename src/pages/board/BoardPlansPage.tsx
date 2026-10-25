@@ -24,6 +24,7 @@ import { canDeleteBoardRequests, canEditBoardRequest } from '../../lib/board-acc
 import { formatNumber, localizeDigits } from '../../lib/datetime'
 import {
   boardRequestKinds,
+  type BoardAccess,
   type BoardRequest,
   type BoardRequestStats,
   type OrganizationUnit,
@@ -37,7 +38,14 @@ export function BoardPlansPage() {
   const { user } = useAuth()
   const { confirmDelete } = useConfirmDelete()
   const queryClient = useQueryClient()
-  const canDelete = canDeleteBoardRequests(user)
+  const access = useQuery({
+    queryKey: ['board-access'],
+    queryFn: async () => {
+      const { data } = await api.get<BoardAccess>('/board/access')
+      return data
+    },
+  })
+  const canDelete = canDeleteBoardRequests(user) || Boolean(access.data?.canDeleteRequests)
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
@@ -145,11 +153,26 @@ export function BoardPlansPage() {
       <PageHeader icon={Stamp} title={t('menus.boardPlans')} subtitle={t('boardPlans.subtitle')} />
       {kpiTiles.length > 0 ? (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 sm:gap-3">
-          {kpiTiles.map((item) => (
-            <button key={item.status || 'total'} type="button" onClick={() => setStatusFilter(item.status)}>
-              <FormFactTile icon={item.icon} label={item.label} value={formatNumber(item.value, locale)} tone={item.tone} />
-            </button>
-          ))}
+          {kpiTiles.map((item) => {
+            const selected = item.status === status
+            return (
+              <button
+                key={item.status || 'total'}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setStatusFilter(item.status)}
+                className="w-full cursor-pointer text-start"
+              >
+                <FormFactTile
+                  icon={item.icon}
+                  label={item.label}
+                  value={formatNumber(item.value, locale)}
+                  tone={item.tone}
+                  className={selected ? 'border-teal-500 ring-2 ring-teal-500' : ''}
+                />
+              </button>
+            )
+          })}
         </div>
       ) : null}
       <SearchBar

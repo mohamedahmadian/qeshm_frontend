@@ -18,6 +18,7 @@ import {
   Stamp,
   Trash2,
   Timer,
+  Users,
   Wallet,
   X,
 } from 'lucide-react'
@@ -150,20 +151,49 @@ function StageTimingRow({ item, stage }: { item: BoardRequest; stage: BoardStage
     : '—'
 
   return (
-    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+    <div className="space-y-2 sm:space-y-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <FormFactTile
+          icon={Send}
+          label={t('boardReview.referredAt')}
+          value={<TimingDate value={timing.referredAt} />}
+          tone="teal"
+        />
+        <FormFactTile
+          icon={CalendarClock}
+          label={t('boardReview.handledAt')}
+          value={<TimingDate value={timing.handledAt} />}
+          tone="mint"
+        />
+        <FormFactTile icon={Timer} label={t('boardReview.elapsed')} value={elapsed} />
+      </div>
+      <StageResponsibleRow item={item} stage={stage} />
+    </div>
+  )
+}
+
+function StageResponsibleRow({ item, stage }: { item: BoardRequest; stage: BoardStage }) {
+  const { t } = useTranslation()
+  const row = item.stageResponsibles?.find((entry) => entry.stage === stage)
+  if (!row?.title) return null
+  const people = row.people
+    .map((person) => person.fullName)
+    .filter(Boolean)
+    .join(t('boardReview.peopleJoin'))
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:gap-3">
       <FormFactTile
-        icon={Send}
-        label={t('boardReview.referredAt')}
-        value={<TimingDate value={timing.referredAt} />}
+        icon={Briefcase}
+        label={t('boardReview.responsible')}
+        value={row.title}
         tone="teal"
       />
       <FormFactTile
-        icon={CalendarClock}
-        label={t('boardReview.handledAt')}
-        value={<TimingDate value={timing.handledAt} />}
+        icon={Users}
+        label={t('boardReview.responsibleBy')}
+        value={people || '—'}
         tone="mint"
       />
-      <FormFactTile icon={Timer} label={t('boardReview.elapsed')} value={elapsed} />
     </div>
   )
 }

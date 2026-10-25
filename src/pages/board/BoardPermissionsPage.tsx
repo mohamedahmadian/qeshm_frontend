@@ -8,7 +8,7 @@ import { CheckboxField } from '../../components/ui/CheckboxField'
 import { AppForm, FormActions, FormField, LoadingState, PageHeader, formShellClassName } from '../../components/ui/Form'
 import { FormCard, FormEmptyHint, formCardBodyClassName } from '../../components/ui/FormLayout'
 import { api, getApiErrorMessage } from '../../lib/api'
-import { isAdmin } from '../../lib/roles'
+import { canManageBoardSettings, isBoardAccessPosition } from '../../lib/board-access'
 import type { BoardStagePermission, OrganizationPosition, OrganizationUnit } from '../../types/app'
 
 const reviewStages = ['LEGAL', 'BUDGET', 'SECRETARY', 'CEO'] as const
@@ -24,7 +24,7 @@ const stageIcons: Record<ReviewStage, LucideIcon> = {
 export function BoardPermissionsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const editable = isAdmin(user)
+  const editable = canManageBoardSettings(user)
   const units = useQuery({
     queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
@@ -56,7 +56,9 @@ export function BoardPermissionsPage() {
     for (const row of query.data) {
       next[row.stage] = {
         unitIds: row.units.map((item) => item.id),
-        positionIds: row.positions.map((item) => item.id),
+        positionIds: row.positions
+          .filter((item) => isBoardAccessPosition(item.code))
+          .map((item) => item.id),
       }
     }
     setSelected(next)
@@ -91,6 +93,8 @@ export function BoardPermissionsPage() {
       setSaving(false)
     }
   }
+
+  const boardPositions = (positions.data ?? []).filter((item) => isBoardAccessPosition(item.code))
 
   if (query.isLoading || units.isLoading || positions.isLoading) return <LoadingState />
 
@@ -146,8 +150,8 @@ export function BoardPermissionsPage() {
                 </FormField>
                 <FormField icon={Briefcase} label={t('boardPermissions.positions')}>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {(positions.data ?? []).length ? (
-                      (positions.data ?? []).map((position) => (
+                    {boardPositions.length ? (
+                      boardPositions.map((position) => (
                         <CheckboxField
                           key={position.id}
                           label={position.name}

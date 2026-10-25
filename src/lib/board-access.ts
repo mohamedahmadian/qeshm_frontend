@@ -29,24 +29,21 @@ function hasBoardAdminRole(
 export function canAccessBoardModule(
   user: Pick<AuthUser, 'isAdmin' | 'roles' | 'position'> | null | undefined,
 ) {
-  if (isAdminUser(user) || hasBoardAdminRole(user)) return true
-  const code = user?.position?.code
-  return Boolean(
-    code && (BOARD_LEADERSHIP_POSITION_CODES as readonly string[]).includes(code),
-  )
+  if (isBoardModuleAdmin(user)) return true
+  return isBoardAccessPosition(user?.position?.code)
 }
 
 export function canPickBoardRequestUnit(
   user: Pick<AuthUser, 'isAdmin' | 'roles' | 'position'> | null | undefined,
 ) {
-  if (isAdminUser(user) || hasBoardAdminRole(user)) return true
+  if (isBoardModuleAdmin(user)) return true
   return user?.position?.code === BOARD_SECRETARY_POSITION_CODE
 }
 
 export function canChooseBoardRequestKind(
   user: Pick<AuthUser, 'isAdmin' | 'roles'> | null | undefined,
 ) {
-  return canPickBoardRequestUnit(user)
+  return isBoardModuleAdmin(user)
 }
 
 export function canEditBoardRequest(item: {
@@ -58,14 +55,32 @@ export function canEditBoardRequest(item: {
   return item.kind === 'MANAGEMENT' && item.status === 'PENDING_CEO' && !item.ceoAt
 }
 
-export function canAccessBoardMinutes(
+export function isBoardModuleAdmin(
   user: Pick<AuthUser, 'isAdmin' | 'roles'> | null | undefined,
 ) {
   return isAdminUser(user) || hasBoardAdminRole(user)
 }
 
+export function isBoardAccessPosition(code?: string | null) {
+  return Boolean(
+    code && (BOARD_LEADERSHIP_POSITION_CODES as readonly string[]).includes(code),
+  )
+}
+
+export function canAccessBoardMinutes(
+  user: Pick<AuthUser, 'isAdmin' | 'roles'> | null | undefined,
+) {
+  return isBoardModuleAdmin(user)
+}
+
+export function canManageBoardSettings(
+  user: Pick<AuthUser, 'isAdmin' | 'roles'> | null | undefined,
+) {
+  return isBoardModuleAdmin(user)
+}
+
 export function canDeleteBoardRequests(
   user: Pick<AuthUser, 'isAdmin' | 'roles'> | null | undefined,
 ) {
-  return isAdminUser(user) || hasBoardAdminRole(user)
+  return isBoardModuleAdmin(user)
 }

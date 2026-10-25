@@ -51,10 +51,90 @@ export const APP_NAV: NavModule[] = withManagementLast([
     ],
   },
   {
+    code: "board",
+    nameKey: "modules.board",
+    icon: "gavel",
+    sortOrder: 2,
+    menus: [
+      {
+        code: "board.search",
+        nameKey: "menus.boardSmartSearch",
+        path: "/board/search",
+        icon: "scan-search",
+        sortOrder: 1,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
+      },
+      {
+        code: "board.minutes",
+        nameKey: "menus.boardMinutes",
+        path: "/board/minutes",
+        icon: "scroll-text",
+        sortOrder: 2,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
+      },
+      {
+        code: "board.resolutions",
+        nameKey: "menus.boardResolutions",
+        path: "/board/resolutions",
+        icon: "file-check",
+        sortOrder: 3,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
+      },
+      {
+        code: "board.reports",
+        nameKey: "menus.boardReports",
+        path: "/board/reports",
+        icon: "chart-column",
+        sortOrder: 4,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
+      },
+      {
+        code: "board.calendar",
+        nameKey: "menus.boardCalendar",
+        path: "/board/calendar",
+        icon: "calendar-days",
+        sortOrder: 5,
+        sectionKey: BOARD_MEMORY_SECTION_KEY,
+      },
+      {
+        code: "board.requests",
+        nameKey: "menus.boardRequests",
+        path: "/board/requests",
+        icon: "file-text",
+        sortOrder: 6,
+        sectionKey: BOARD_TOPICS_SECTION_KEY,
+      },
+      {
+        code: "board.plans",
+        nameKey: "menus.boardPlans",
+        path: "/board/plans",
+        icon: "stamp",
+        sortOrder: 7,
+        sectionKey: BOARD_TOPICS_SECTION_KEY,
+      },
+      {
+        code: "board.signatories",
+        nameKey: "menus.boardSignatories",
+        path: "/board/signatories",
+        icon: "pen-line",
+        sortOrder: 8,
+        sectionKey: BOARD_TOPICS_SECTION_KEY,
+      },
+      {
+        code: "board.permissions",
+        nameKey: "menus.boardPermissions",
+        path: "/board/permissions",
+        icon: "shield",
+        sortOrder: 9,
+        sectionKey: BOARD_TOPICS_SECTION_KEY,
+      },
+    ],
+  },
+  {
     code: "singard",
     nameKey: "modules.singard",
     icon: "sparkles",
-    sortOrder: 2,
+    sortOrder: 3,
     menus: [
       {
         code: "singard.submit",
@@ -97,7 +177,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: "projects",
     nameKey: "modules.projects",
     icon: "folder-kanban",
-    sortOrder: 3,
+    sortOrder: 4,
     menus: [
       {
         code: "projects.list",
@@ -147,7 +227,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: "stakeholders",
     nameKey: "modules.stakeholders",
     icon: "heart-handshake",
-    sortOrder: 4,
+    sortOrder: 5,
     menus: [
       {
         code: "stakeholders.projects",
@@ -218,7 +298,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: "qeshmondi",
     nameKey: "modules.qeshmondi",
     icon: "user-round-check",
-    sortOrder: 5,
+    sortOrder: 6,
     menus: [
       {
         code: "qeshmondi.inquiry",
@@ -261,7 +341,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: "food-reservation",
     nameKey: "modules.foodReservation",
     icon: "cooking-pot",
-    sortOrder: 6,
+    sortOrder: 7,
     menus: [
       {
         code: "food-reservation.foods",
@@ -353,7 +433,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: "qeshm-organization",
     nameKey: "modules.qeshmOrganization",
     icon: "landmark",
-    sortOrder: 7,
+    sortOrder: 8,
     menus: [
       {
         code: "qeshm-organization.info",
@@ -396,7 +476,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: "light-assets",
     nameKey: "modules.lightAssets",
     icon: "car",
-    sortOrder: 8,
+    sortOrder: 9,
     menus: [
       {
         code: "light-assets.vehicles",
@@ -425,7 +505,7 @@ export const APP_NAV: NavModule[] = withManagementLast([
     code: "base-info",
     nameKey: "modules.baseInfo",
     icon: "globe",
-    sortOrder: 9,
+    sortOrder: 10,
     menus: [
       {
         code: "base-info.countries",
@@ -447,86 +527,6 @@ export const APP_NAV: NavModule[] = withManagementLast([
         path: "/base-info/cities",
         icon: "map-pin",
         sortOrder: 3,
-      },
-    ],
-  },
-  {
-    code: "board",
-    nameKey: "modules.board",
-    icon: "gavel",
-    sortOrder: 10,
-    menus: [
-      {
-        code: "board.search",
-        nameKey: "menus.boardSmartSearch",
-        path: "/board/search",
-        icon: "scan-search",
-        sortOrder: 1,
-        sectionKey: BOARD_MEMORY_SECTION_KEY,
-      },
-      {
-        code: "board.minutes",
-        nameKey: "menus.boardMinutes",
-        path: "/board/minutes",
-        icon: "scroll-text",
-        sortOrder: 2,
-        sectionKey: BOARD_MEMORY_SECTION_KEY,
-      },
-      {
-        code: "board.resolutions",
-        nameKey: "menus.boardResolutions",
-        path: "/board/resolutions",
-        icon: "file-check",
-        sortOrder: 3,
-        sectionKey: BOARD_MEMORY_SECTION_KEY,
-      },
-      {
-        code: "board.reports",
-        nameKey: "menus.boardReports",
-        path: "/board/reports",
-        icon: "chart-column",
-        sortOrder: 4,
-        sectionKey: BOARD_MEMORY_SECTION_KEY,
-      },
-      {
-        code: "board.calendar",
-        nameKey: "menus.boardCalendar",
-        path: "/board/calendar",
-        icon: "calendar-days",
-        sortOrder: 5,
-        sectionKey: BOARD_MEMORY_SECTION_KEY,
-      },
-      {
-        code: "board.requests",
-        nameKey: "menus.boardRequests",
-        path: "/board/requests",
-        icon: "file-text",
-        sortOrder: 6,
-        sectionKey: BOARD_TOPICS_SECTION_KEY,
-      },
-      {
-        code: "board.plans",
-        nameKey: "menus.boardPlans",
-        path: "/board/plans",
-        icon: "stamp",
-        sortOrder: 7,
-        sectionKey: BOARD_TOPICS_SECTION_KEY,
-      },
-      {
-        code: "board.signatories",
-        nameKey: "menus.boardSignatories",
-        path: "/board/signatories",
-        icon: "pen-line",
-        sortOrder: 8,
-        sectionKey: BOARD_TOPICS_SECTION_KEY,
-      },
-      {
-        code: "board.permissions",
-        nameKey: "menus.boardPermissions",
-        path: "/board/permissions",
-        icon: "shield",
-        sortOrder: 9,
-        sectionKey: BOARD_TOPICS_SECTION_KEY,
       },
     ],
   },

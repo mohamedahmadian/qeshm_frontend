@@ -1,6 +1,10 @@
 import { APP_NAV } from "./nav";
 import { menuPathMatches } from "./nav-path";
-import { canAccessBoardMinutes, canAccessBoardModule } from "./board-access";
+import {
+  canAccessBoardMinutes,
+  canAccessBoardModule,
+  canManageBoardSettings,
+} from "./board-access";
 import type { AuthUser, NavModule } from "../types/app";
 
 export const ADMIN_ROLE_CODE = "ADMIN";
@@ -155,6 +159,9 @@ export function hasMenuAccess(
     ) {
       return canAccessBoardMinutes(user);
     }
+    if (menuCode === "board.signatories" || menuCode === "board.permissions") {
+      return canManageBoardSettings(user);
+    }
     return canAccessBoardModule(user);
   }
   return hasPermission(user, menuCode) || hasPermission(user, moduleCode);
@@ -290,6 +297,18 @@ export function canAccessPath(
   }
   if (pathname === "/board/reports" || pathname.startsWith("/board/reports/")) {
     return canAccessBoardMinutes(user);
+  }
+  if (
+    pathname === "/board/signatories" ||
+    pathname.startsWith("/board/signatories/")
+  ) {
+    return canManageBoardSettings(user);
+  }
+  if (
+    pathname === "/board/permissions" ||
+    pathname.startsWith("/board/permissions/")
+  ) {
+    return canManageBoardSettings(user);
   }
 
   let best:

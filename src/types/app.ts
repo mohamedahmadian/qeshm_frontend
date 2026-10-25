@@ -4874,7 +4874,14 @@ export type BoardRequest = {
   createdAt: string;
   updatedAt: string;
   canReview?: boolean;
+  stageResponsibles?: BoardStageResponsible[];
   _count?: { attachments: number };
+};
+
+export type BoardStageResponsible = {
+  stage: BoardStage;
+  title: string;
+  people: BoardPerson[];
 };
 
 export type BoardSignatory = {
