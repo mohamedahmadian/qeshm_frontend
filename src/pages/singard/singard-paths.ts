@@ -20,6 +20,10 @@ export function singardActivitiesPath(feedbackId: string, activityId?: string) {
     : `/singard/inbox/${feedbackId}/activities`
 }
 
+export function singardKindsPath(id?: string) {
+  return id ? `/singard/kinds/${id}` : '/singard/kinds'
+}
+
 export function singardCategoriesPath(id?: string) {
   return id ? `/singard/categories/${id}` : '/singard/categories'
 }

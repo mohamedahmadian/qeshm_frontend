@@ -1,130 +1,284 @@
 import { useTranslation } from 'react-i18next'
+import { AppLogo } from '../../components/brand/AppLogo'
 import { DateText } from '../../components/ui/DateText'
-import { isoHasClock, localizeDigits } from '../../lib/datetime'
-import {
-  boardPipelineStages,
-  boardStages,
-  type BoardRequest,
-  type BoardStage,
-} from '../../types/app'
-import { stageTimingOf } from './board-request-timing'
-
-function approvalStagesOf(item: BoardRequest) {
-  return boardPipelineStages(item.kind).filter((stage) => stage !== boardStages.REQUEST)
-}
-
-function stageReviewerName(item: BoardRequest, stage: BoardStage) {
-  if (stage === 'MANAGEMENT') return item.managementBy?.fullName ?? null
-  if (stage === 'LEGAL') return item.legalBy?.fullName ?? null
-  if (stage === 'BUDGET') return item.budgetBy?.fullName ?? null
-  if (stage === 'SECRETARY') return item.secretaryBy?.fullName ?? null
-  if (stage === 'CEO') return item.ceoBy?.fullName ?? null
-  return null
-}
+import { localizeDigits } from '../../lib/datetime'
+import type { BoardRequest } from '../../types/app'
 
 function PrintDate({ value }: { value: string | null }) {
-  if (!value) return '—'
-  return <DateText value={value} withTime={isoHasClock(value)} />
+  if (!value) return null
+  return <DateText value={value} />
 }
 
-function PrintField({
+function PrintLine({
   label,
   value,
-  lines,
 }: {
   label: string
-  value: string | null
-  lines: number
+  value: string | null | undefined
 }) {
   return (
-    <tr>
-      <td colSpan={3}>
-        <p className="board-request-print-label">{label}</p>
-        <p className={`board-request-print-text is-lines-${lines}`}>{value || '\u00a0'}</p>
-      </td>
-    </tr>
+    <p className="board-request-print-line">
+      <span className="board-request-print-label">{label}:</span>
+      <span className="board-request-print-value">{value || '\u00a0'}</span>
+    </p>
+  )
+}
+
+function PrintYesNo({
+  value,
+  yes,
+  no,
+}: {
+  value: boolean | null
+  yes: string
+  no: string
+}) {
+  return (
+    <span className="board-request-print-yn">
+      <span className="board-request-print-yn-item">
+        <i className={value === true ? 'is-on' : undefined} aria-hidden />
+        {yes}
+      </span>
+      <span className="board-request-print-yn-item">
+        <i className={value === false ? 'is-on' : undefined} aria-hidden />
+        {no}
+      </span>
+    </span>
+  )
+}
+
+function SignBlock({
+  title,
+  name,
+  date,
+  dateLabel,
+  signLabel,
+}: {
+  title: string
+  name: string | null | undefined
+  date: string | null | undefined
+  dateLabel: string
+  signLabel: string
+}) {
+  return (
+    <div className="board-request-print-signblock">
+      <PrintLine label={title} value={name} />
+      <p className="board-request-print-line">
+        <span className="board-request-print-label">{dateLabel}:</span>
+        {date ? (
+          <span className="board-request-print-value">
+            <PrintDate value={date} />
+          </span>
+        ) : null}
+      </p>
+      <p className="board-request-print-line">
+        <span className="board-request-print-label">{signLabel}:</span>
+      </p>
+    </div>
   )
 }
 
 export function BoardRequestPrintSheet({ item }: { item: BoardRequest }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
-  const stages = approvalStagesOf(item)
+  const topicHistory = item.topicHistory?.trim() || ''
 
   return (
-    <section className="board-request-print-sheet hidden print:block">
+    <section className="board-request-print-sheet hidden print:flex">
       <table className="board-request-print-table">
         <thead>
-          <tr>
-            <th>
-              <span>{t('boardRequests.printTrackingNo')}</span>
-              <strong>{localizeDigits(item.trackingNo, locale)}</strong>
+          <tr className="board-request-print-head">
+            <th className="board-request-print-logo">
+              <AppLogo decorative className="board-request-print-emblem" />
             </th>
-            <th>
-              <span>{t('boardRequests.requestingUnit')}</span>
-              <strong>{item.unit.name}</strong>
+            <th className="board-request-print-title-cell">
+              <p className="board-request-print-title">{t('boardRequests.printFormTitle')}</p>
             </th>
-            <th>
-              <span>{t('boardRequests.requestedAt')}</span>
-              <strong>
-                <DateText value={item.requestedAt} />
-              </strong>
+            <th className="board-request-print-meta">
+              <p className="board-request-print-line">
+                <span className="board-request-print-label">{t('boardRequests.printNo')}:</span>
+                <span className="board-request-print-value">
+                  {localizeDigits(item.trackingNo, locale)}
+                </span>
+              </p>
+              <p className="board-request-print-line">
+                <span className="board-request-print-label">{t('boardRequests.printDate')}:</span>
+                <span className="board-request-print-value">
+                  <PrintDate value={item.requestedAt} />
+                </span>
+              </p>
             </th>
           </tr>
         </thead>
         <tbody>
-          <PrintField label={t('boardRequests.printSubject')} value={item.subject} lines={2} />
-          <PrintField
-            label={t('boardRequests.printJustification')}
-            value={item.justification}
-            lines={3}
-          />
-          <PrintField
-            label={t('boardRequests.printTopicHistory')}
-            value={item.topicHistory}
-            lines={2}
-          />
-          <PrintField
-            label={t('boardRequests.description')}
-            value={item.description}
-            lines={7}
-          />
-          <tr className="board-request-print-stage-head">
-            <th>{t('boardRequests.printStage')}</th>
-            <th>{t('boardRequests.printDates')}</th>
-            <th>{t('boardRequests.printSignature')}</th>
+          <tr>
+            <td colSpan={3}>
+              <PrintLine label={t('boardRequests.printRequester')} value={item.unit.name} />
+            </td>
           </tr>
-          {stages.map((stage) => {
-            const timing = stageTimingOf(item, stage)
-            const reviewer = stageReviewerName(item, stage)
-            return (
-              <tr key={stage} className="board-request-print-stage">
-                <td>
-                  <p className="board-request-print-stage-name">{t(`board.stages.${stage}`)}</p>
-                </td>
-                <td>
-                  <p className="board-request-print-date-line">
-                    <span>{t('boardRequests.printReferredAt')}</span>
-                    <strong>
-                      <PrintDate value={timing.referredAt} />
-                    </strong>
+          <tr>
+            <td colSpan={3}>
+              <PrintLine label={t('boardRequests.printOrgPosition')} value={item.orgPositionText} />
+            </td>
+          </tr>
+          <tr>
+            <td colSpan={3}>
+              <PrintLine label={t('boardRequests.printSubjectLine')} value={item.subject} />
+            </td>
+          </tr>
+          <tr className="board-request-print-justification">
+            <td colSpan={3}>
+              <PrintLine label={t('boardRequests.printJustificationLine')} value={item.justification} />
+            </td>
+          </tr>
+          {topicHistory ? (
+            <tr className="board-request-print-history">
+              <td colSpan={3}>
+                <PrintLine label={t('boardRequests.printTopicHistory')} value={topicHistory} />
+              </td>
+            </tr>
+          ) : null}
+          <tr className="board-request-print-description">
+            <td colSpan={3}>
+              <PrintLine label={t('boardRequests.printDescriptionLine')} value={item.description} />
+            </td>
+          </tr>
+          <tr className="board-request-print-pair">
+            <td colSpan={3}>
+              <table className="board-request-print-split">
+                <tbody>
+                  <tr>
+                    <td>
+                      <SignBlock
+                        title={t('boardRequests.printRequester')}
+                        name={item.createdBy.fullName}
+                        date={item.requestedAt}
+                        dateLabel={t('boardRequests.printDate')}
+                        signLabel={t('boardRequests.printSign')}
+                      />
+                    </td>
+                    <td>
+                      <SignBlock
+                        title={t('boardRequests.printApprover')}
+                        name={item.managementBy?.fullName}
+                        date={item.managementAt}
+                        dateLabel={t('boardRequests.printDate')}
+                        signLabel={t('boardRequests.printSign')}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          <tr className="board-request-print-review">
+            <td colSpan={3}>
+              <div className="board-request-print-review-grid">
+                <div>
+                  <p className="board-request-print-review-title">
+                    {t('boardRequests.printLegalReview')}:
                   </p>
-                  <p className="board-request-print-date-line">
-                    <span>{t('boardRequests.printHandledAt')}</span>
-                    <strong>
-                      <PrintDate value={timing.handledAt} />
-                    </strong>
+                  <p className="board-request-print-choice">
+                    <span className="board-request-print-label">
+                      {t('boardRequests.printLegalHistory')}:
+                    </span>
+                    <PrintYesNo
+                      value={item.legalOrgMatch}
+                      yes={t('board.has')}
+                      no={t('board.hasNot')}
+                    />
                   </p>
-                </td>
-                <td>
-                  <div className="board-request-print-sign">
-                    {reviewer ? <p className="board-request-print-signer">{reviewer}</p> : null}
-                    <div className="board-request-print-sign-box" />
-                  </div>
-                </td>
-              </tr>
-            )
-          })}
+                  <p className="board-request-print-choice">
+                    <span className="board-request-print-label">
+                      {t('boardRequests.printLegalRegs')}:
+                    </span>
+                    <PrintYesNo
+                      value={item.legalRegulationsMatch}
+                      yes={t('board.has')}
+                      no={t('board.hasNot')}
+                    />
+                  </p>
+                  {item.legalComment ? (
+                    <PrintLine label={t('boardReview.comment')} value={item.legalComment} />
+                  ) : null}
+                </div>
+                <p className="board-request-print-office-sign">
+                  <span>
+                    {t('boardRequests.printSign')}: {t('boardRequests.printLegalSign')}
+                  </span>
+                  {item.legalBy?.fullName ? <strong>{item.legalBy.fullName}</strong> : null}
+                </p>
+              </div>
+            </td>
+          </tr>
+          <tr className="board-request-print-review">
+            <td colSpan={3}>
+              <div className="board-request-print-review-grid">
+                <div>
+                  <p className="board-request-print-review-title">
+                    {t('boardRequests.printBudgetReview')}:
+                  </p>
+                  <p className="board-request-print-choice">
+                    <span className="board-request-print-label">
+                      {t('boardRequests.printBudgetHistory')}:
+                    </span>
+                    <PrintYesNo
+                      value={item.budgetProgramHistory}
+                      yes={t('board.has')}
+                      no={t('board.hasNot')}
+                    />
+                  </p>
+                  <p className="board-request-print-choice">
+                    <span className="board-request-print-label">
+                      {t('boardRequests.printBudgetFunding')}:
+                    </span>
+                    <PrintYesNo
+                      value={item.budgetCurrentYearFunding}
+                      yes={t('board.has')}
+                      no={t('board.hasNot')}
+                    />
+                  </p>
+                  <PrintLine
+                    label={t('boardRequests.printBudgetNotes')}
+                    value={item.budgetComment}
+                  />
+                </div>
+                <p className="board-request-print-office-sign">
+                  <span>
+                    {t('boardRequests.printSign')}: {t('boardRequests.printBudgetSign')}
+                  </span>
+                  {item.budgetBy?.fullName ? <strong>{item.budgetBy.fullName}</strong> : null}
+                </p>
+              </div>
+            </td>
+          </tr>
+          <tr className="board-request-print-footer-sign">
+            <td colSpan={3}>
+              <p className="board-request-print-office-sign is-center">
+                <span>
+                  {t('boardRequests.printSign')}: {t('boardRequests.printSecretarySign')}
+                </span>
+                {item.secretaryBy?.fullName ? <strong>{item.secretaryBy.fullName}</strong> : null}
+              </p>
+            </td>
+          </tr>
+          <tr className="board-request-print-ceo">
+            <td colSpan={3}>
+              <table className="board-request-print-split">
+                <tbody>
+                  <tr>
+                    <td>
+                      <p className="board-request-print-office-sign is-center">
+                        <span>{t('boardRequests.printCeoSign')}</span>
+                        {item.ceoBy?.fullName ? <strong>{item.ceoBy.fullName}</strong> : null}
+                      </p>
+                    </td>
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
         </tbody>
       </table>
     </section>

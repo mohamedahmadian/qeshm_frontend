@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { DateText } from '../../../components/ui/DateText'
 import { FormEmptyHint } from '../../../components/ui/FormLayout'
 import { HoverTooltip } from '../../../components/ui/HoverTooltip'
-import type { ResolutionCalendarItem } from '../../../lib/resolution-calendar'
+import { resolutionExecutorNames, type ResolutionCalendarItem } from '../../../lib/resolution-calendar'
 import { ProjectNameWithColor } from '../../projects/ProjectShared'
 import { DeadlineDaysBadge } from '../../projects/calendar/ProjectCalendarShared'
 import { boardMinuteResolutionPath } from '../board-paths'
@@ -56,7 +56,7 @@ export function ResolutionMinutesHoverCard({ item }: { item: ResolutionCalendarI
           <Building2 className="size-3.5 shrink-0 text-teal-600" aria-hidden />
           <span className="shrink-0">{t('boardResolutions.unit')}</span>
           <span className="min-w-0 truncate">
-            {item.unit?.name || t('boardResolutions.withoutUnit')}
+            {resolutionExecutorNames(item, t('boardResolutions.withoutUnit'))}
           </span>
         </p>
       </div>
@@ -111,7 +111,7 @@ export function DeadlineResolutionRow({
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-500">
           {item.endDate ? <DateText value={item.endDate} /> : '—'}
-          <span>{item.unit?.name || t('boardResolutions.withoutUnit')}</span>
+          <span>{resolutionExecutorNames(item, t('boardResolutions.withoutUnit'))}</span>
         </div>
       </div>
     </button>

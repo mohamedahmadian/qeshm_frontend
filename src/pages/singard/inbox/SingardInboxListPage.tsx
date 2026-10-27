@@ -20,11 +20,11 @@ import { useListSort } from '../../../hooks/useListSort'
 import { api } from '../../../lib/api'
 import { localizeDigits } from '../../../lib/datetime'
 import {
-  singardFeedbackKinds,
   singardFeedbackStatuses,
   type Paginated,
   type SingardCategory,
   type SingardFeedback,
+  type SingardKind,
 } from '../../../types/app'
 import { SingardKindBadge, SingardStatusBadge } from '../SingardBadges'
 import { singardInboxPath } from '../singard-paths'
@@ -35,11 +35,18 @@ export function SingardInboxListPage() {
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
-  const kind = searchParams.get('kind') ?? ''
+  const kindId = searchParams.get('kindId') ?? ''
   const status = searchParams.get('status') ?? ''
   const categoryId = searchParams.get('categoryId') ?? ''
-  const filtersActive = Boolean(kind || status || categoryId)
+  const filtersActive = Boolean(kindId || status || categoryId)
 
+  const kinds = useQuery({
+    queryKey: ['singard', 'kinds', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<SingardKind[]>('/singard/kinds')
+      return data
+    },
+  })
   const categories = useQuery({
     queryKey: ['singard', 'categories', 'lookup'],
     queryFn: async () => {
@@ -48,13 +55,13 @@ export function SingardInboxListPage() {
     },
   })
   const query = useQuery({
-    queryKey: ['singard', 'inbox', q, page, sortBy, sortDir, kind, status, categoryId],
+    queryKey: ['singard', 'inbox', q, page, sortBy, sortDir, kindId, status, categoryId],
     queryFn: async () => {
       const { data } = await api.get<Paginated<SingardFeedback>>('/singard/feedbacks', {
         params: {
           q: q || undefined,
           page,
-          kind: kind || undefined,
+          kindId: kindId || undefined,
           status: status || undefined,
           categoryId: categoryId || undefined,
           ...sortParams,
@@ -79,14 +86,14 @@ export function SingardInboxListPage() {
           <div className="grid gap-3 sm:grid-cols-3">
             <FormField icon={MessagesSquare} label={t('singard.kind')}>
               <SearchSelect
-                value={kind}
-                onChange={(value) => setParams({ kind: value || undefined }, { resetPage: true })}
+                value={kindId}
+                onChange={(value) => setParams({ kindId: value || undefined }, { resetPage: true })}
                 placeholder={t('common.all')}
                 options={[
                   { value: '', label: t('common.all') },
-                  ...Object.values(singardFeedbackKinds).map((value) => ({
-                    value,
-                    label: t(`singard.kinds.${value}`),
+                  ...(kinds.data ?? []).map((item) => ({
+                    value: item.id,
+                    label: item.title,
                   })),
                 ]}
               />

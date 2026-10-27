@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Anchor,
   Building2,
   Boxes,
@@ -15,6 +16,7 @@ import {
   FileSpreadsheet,
   FileText,
   Fence,
+  Flag,
   Fuel,
   Footprints,
   FolderKanban,
@@ -33,6 +35,7 @@ import {
   Landmark,
   Layers,
   LayoutDashboard,
+  Lightbulb,
   Megaphone,
   Map,
   MapPin,
@@ -92,6 +95,9 @@ const icons: Record<string, LucideIcon> = {
   'messages-square': MessagesSquare,
   inbox: Inbox,
   sparkles: Sparkles,
+  lightbulb: Lightbulb,
+  'alert-triangle': AlertTriangle,
+  flag: Flag,
   'folder-tree': FolderTree,
   settings: Settings,
   ship: Ship,
@@ -156,3 +162,31 @@ const icons: Record<string, LucideIcon> = {
 export function getNavIcon(name: string): LucideIcon {
   return icons[name] ?? LayoutDashboard
 }
+
+export const singardKindIconKeys = [
+  'lightbulb',
+  'alert-triangle',
+  'message-circle-heart',
+  'flag',
+  'megaphone',
+  'sparkles',
+  'heart-handshake',
+  'message-square',
+  'messages-square',
+  'inbox',
+  'clipboard-list',
+  'shield',
+  'map-pin',
+  'building-2',
+  'users',
+  'hand-heart',
+  'file-text',
+  'scale',
+  'gavel',
+  'stamp',
+] as const
+
+export type SingardKindIconKey = (typeof singardKindIconKeys)[number]
+
+export const inspectionKindIconKeys = singardKindIconKeys
+export type InspectionKindIconKey = SingardKindIconKey

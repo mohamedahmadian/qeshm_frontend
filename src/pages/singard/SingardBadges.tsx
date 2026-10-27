@@ -2,16 +2,9 @@ import { Archive, Check, Sparkles, Timer } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   singardFeedbackStatuses,
-  type SingardFeedbackKind,
   type SingardFeedbackStatus,
+  type SingardKind,
 } from '../../types/app'
-
-const kindClass: Record<SingardFeedbackKind, string> = {
-  SUGGESTION: 'bg-teal-50 text-teal-800',
-  COMPLAINT: 'bg-rose-50 text-rose-700',
-  CRITICISM: 'bg-amber-50 text-amber-800',
-  REPORT: 'bg-mint-50 text-mint-800',
-}
 
 const statusClass: Record<SingardFeedbackStatus, string> = {
   NEW: 'bg-sky-50 text-sky-800',
@@ -20,11 +13,10 @@ const statusClass: Record<SingardFeedbackStatus, string> = {
   CLOSED: 'bg-ink-100 text-ink-600',
 }
 
-export function SingardKindBadge({ kind }: { kind: SingardFeedbackKind }) {
-  const { t } = useTranslation()
+export function SingardKindBadge({ kind }: { kind: Pick<SingardKind, 'title'> }) {
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${kindClass[kind]}`}>
-      {t(`singard.kinds.${kind}`)}
+    <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-800">
+      {kind.title}
     </span>
   )
 }

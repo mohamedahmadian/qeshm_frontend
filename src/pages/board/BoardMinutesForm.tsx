@@ -3,9 +3,11 @@ import {
   CalendarDays,
   Check,
   FileText,
+  Hash,
   Paperclip,
   ScrollText,
   Search,
+  Stamp,
   Trash2,
   UserRound,
   Users,
@@ -27,13 +29,16 @@ import {
 import { FormCard, FormSectionTitle, formCardBodyClassName } from '../../components/ui/FormLayout'
 import { ActionsTh, actionsColClassName } from '../../components/ui/ListControls'
 import { PersianDateField } from '../../components/ui/PersianDateField'
+import { CheckboxField } from '../../components/ui/CheckboxField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { api, getApiErrorMessage } from '../../lib/api'
 import { localizeDigits, todayIsoDate } from '../../lib/datetime'
 import {
   boardMinutesAttendances,
+  boardMinutesStatuses,
   type BoardMinutes,
   type BoardMinutesAttendance,
+  type BoardMinutesStatus,
   type ManagedUser,
   type Paginated,
 } from '../../types/app'
@@ -57,13 +62,14 @@ export type BoardMinutesPayload = {
   heldAt: string
   subject: string
   body: string | null
-  requestId: string | null
+  status: BoardMinutesStatus
+  requestIds: string[]
   members: { userId: string; attendance: BoardMinutesAttendance }[]
   imageIds: string[]
   audioIds: string[]
 }
 
-type ApprovedRequest = { id: string; subject: string; requestedAt: string }
+type ApprovedRequest = { id: string; subject: string; requestedAt: string; trackingNo?: string }
 type MinutesMember = { userId: string; name: string; attendance: BoardMinutesAttendance }
 
 export function BoardMinutesForm({
@@ -77,11 +83,20 @@ export function BoardMinutesForm({
   onSubmit: (payload: BoardMinutesPayload) => Promise<void>
   onCancel: () => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
   const [heldAt, setHeldAt] = useState(initial?.heldAt ?? todayIsoDate())
   const [subject, setSubject] = useState(initial?.subject ?? '')
   const [body, setBody] = useState(initial?.body ?? '')
-  const [requestId, setRequestId] = useState(lockedRequestId ?? initial?.requestId ?? '')
+  const [status, setStatus] = useState<BoardMinutesStatus>(
+    initial?.status ?? boardMinutesStatuses.NOT_HELD,
+  )
+  const [requestIds, setRequestIds] = useState<string[]>(
+    () =>
+      initial?.requests?.map((row) => row.id) ??
+      (initial?.requestId ? [initial.requestId] : lockedRequestId ? [lockedRequestId] : []),
+  )
+  const requestsInitialized = useRef(Boolean(initial))
   const [members, setMembers] = useState<MinutesMember[]>(
     () =>
       initial?.members.map((row) => ({
@@ -101,20 +116,34 @@ export function BoardMinutesForm({
 
   const requests = useQuery({
     queryKey: ['board-minutes-approved-requests'],
-    enabled: !lockedRequestId,
     queryFn: async () => {
       const { data } = await api.get<ApprovedRequest[]>('/board/minutes/approved-requests')
       return data
     },
   })
 
-  const requestOptions = useMemo(
-    () => [
-      { value: '', label: t('boardMinutes.withoutRequest') },
-      ...(requests.data ?? []).map((item) => ({ value: item.id, label: item.subject })),
-    ],
-    [requests.data, t],
-  )
+  const requestChoices = useMemo(() => {
+    const items = [...(requests.data ?? [])]
+    const extra = (initial?.requests ?? []).filter((row) => !items.some((item) => item.id === row.id))
+    for (const row of extra) {
+      items.push({
+        id: row.id,
+        subject: row.subject,
+        requestedAt: '',
+        trackingNo: row.trackingNo,
+      })
+    }
+    if (lockedRequestId && !items.some((item) => item.id === lockedRequestId)) {
+      items.unshift({ id: lockedRequestId, subject: '', requestedAt: '' })
+    }
+    return items
+  }, [initial?.requests, lockedRequestId, requests.data])
+
+  useEffect(() => {
+    if (requestsInitialized.current || !requests.data) return
+    requestsInitialized.current = true
+    setRequestIds(requests.data.map((item) => item.id))
+  }, [requests.data])
 
   function addMember(user: ManagedUser) {
     if (members.some((row) => row.userId === user.id)) return
@@ -137,7 +166,8 @@ export function BoardMinutesForm({
         heldAt,
         subject,
         body: body.trim() || null,
-        requestId: lockedRequestId || requestId || null,
+        status,
+        requestIds,
         members: members.map((row) => ({ userId: row.userId, attendance: row.attendance })),
         imageIds: files.imageIds,
         audioIds: files.audioIds,
@@ -192,6 +222,13 @@ export function BoardMinutesForm({
         onSubmit={submit}
         className={`${formCardBodyClassName}${manage && tab !== 'info' ? ' hidden' : ''}`}
       >
+        {initial?.minutesNo ? (
+          <FormField icon={Hash} label={t('boardMinutes.number')}>
+            <p className="rounded-2xl border border-line bg-cream-50 px-3 py-2.5 text-sm text-ink-800">
+              {localizeDigits(initial.minutesNo, locale)}
+            </p>
+          </FormField>
+        ) : null}
         <FormField icon={CalendarDays} label={t('boardMinutes.heldAt')}>
           <PersianDateField value={heldAt} onChange={(value) => setHeldAt(value ?? '')} />
         </FormField>
@@ -204,16 +241,62 @@ export function BoardMinutesForm({
             onChange={(event) => setSubject(event.target.value)}
           />
         </FormField>
-        {lockedRequestId ? null : (
-          <FormField icon={Building2} label={t('boardMinutes.requestOptional')}>
-            <SearchSelect
-              value={requestId}
-              onChange={setRequestId}
-              options={requestOptions}
-              placeholder={t('boardMinutes.selectRequest')}
-            />
-          </FormField>
-        )}
+        <FormField icon={Stamp} label={t('boardMinutes.status')}>
+          <SearchSelect
+            value={status}
+            onChange={(next) => setStatus((next || boardMinutesStatuses.NOT_HELD) as BoardMinutesStatus)}
+            options={Object.values(boardMinutesStatuses).map((value) => ({
+              value,
+              label: t(`boardMinutes.statuses.${value}`),
+            }))}
+            placeholder={t('boardMinutes.status')}
+          />
+        </FormField>
+        <FormField icon={Building2} label={t('boardMinutes.requests')}>
+          <div className="space-y-3">
+            {requestChoices.length ? (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setRequestIds(requestChoices.map((item) => item.id))}
+                  >
+                    {t('boardMinutes.selectAllRequests')}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setRequestIds([])}>
+                    {t('boardMinutes.clearRequests')}
+                  </Button>
+                </div>
+                <div className="grid max-h-72 gap-2 overflow-y-auto pe-1">
+                  {requestChoices.map((item) => (
+                    <CheckboxField
+                      key={item.id}
+                      id={`minutes-request-${item.id}`}
+                      checked={requestIds.includes(item.id)}
+                      label={
+                        item.trackingNo
+                          ? `${localizeDigits(item.trackingNo, locale)} — ${item.subject}`
+                          : item.subject || t('boardMinutes.request')
+                      }
+                      onChange={(checked) =>
+                        setRequestIds((current) =>
+                          checked
+                            ? [...current, item.id]
+                            : current.filter((id) => id !== item.id),
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-ink-500">
+                {requests.isLoading ? t('common.loading') : t('boardMinutes.noApprovedRequests')}
+              </p>
+            )}
+          </div>
+        </FormField>
         <FormField icon={ScrollText} label={t('boardMinutes.body')} htmlFor="minutesBody">
           <div className="space-y-2">
             <div className="flex justify-end">

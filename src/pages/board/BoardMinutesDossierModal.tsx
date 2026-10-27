@@ -10,6 +10,7 @@ import {
   ScanSearch,
   ScrollText,
   Stamp,
+  UserRound,
   Users,
   Wallet,
   X,
@@ -29,13 +30,15 @@ import {
 } from '../../components/ui/FormLayout'
 import { api, getImageUrl } from '../../lib/api'
 import { formatNumber } from '../../lib/datetime'
+import { resolutionExecutorNames } from '../../lib/resolution-calendar'
 import {
   boardMinutesAttendances,
   type BoardMinutesDossier,
   type BoardRequest,
 } from '../../types/app'
 import { BoardExistingAttachments } from './BoardAttachmentsField'
-import { BoardStatusBadge } from './BoardStatusBadge'
+import { BoardMinutesStatusBadge, BoardResolutionStatusBadge, BoardStatusBadge } from './BoardStatusBadge'
+import { BoardResolutionDueValue, resolutionProposerLabel } from './BoardResolutionDisplay'
 import { boardMinutePath, boardMinuteResolutionPath } from './board-paths'
 
 function boolLabel(value: boolean | null, t: (key: string) => string) {
@@ -104,6 +107,7 @@ export function BoardMinutesDossierModal({
   const dossier = query.data
   const minutes = dossier?.minutes
   const request = dossier?.request ?? null
+  const requests = dossier?.requests?.length ? dossier.requests : request ? [request] : []
   const resolutions = dossier?.resolutions ?? []
   const images = minutes?.attachments.filter((row) => row.kind === 'IMAGE' && row.imageId) ?? []
   const audios = minutes?.attachments.filter((row) => row.kind === 'AUDIO' && row.fileId) ?? []
@@ -168,9 +172,24 @@ export function BoardMinutesDossierModal({
             <LoadingState />
           ) : (
             <>
-              {request ? (
+              {requests.length ? (
                 <section className="space-y-3">
                   <FormSectionTitle icon={FileText}>{t('boardSmartSearch.requestSection')}</FormSectionTitle>
+                  {requests.length > 1 ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {requests.map((row) => (
+                        <FormFactTile
+                          key={row.id}
+                          icon={FileText}
+                          label={row.trackingNo || t('boardMinutes.request')}
+                          value={row.subject}
+                          tone="mint"
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                  {request ? (
+                    <>
                   <div className="flex flex-wrap items-center gap-2">
                     <BoardStatusBadge value={request.status} />
                   </div>
@@ -265,17 +284,32 @@ export function BoardMinutesDossierModal({
                   ) : null}
                   <FormSectionTitle icon={Paperclip}>{t('board.attachments')}</FormSectionTitle>
                   <BoardExistingAttachments items={request.attachments} />
+                    </>
+                  ) : null}
                 </section>
               ) : null}
 
               <section className="space-y-3">
                 <FormSectionTitle icon={ScrollText}>{t('boardSmartSearch.minutesSection')}</FormSectionTitle>
                 <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+                  {minutes.minutesNo ? (
+                    <FormFactTile
+                      icon={FileText}
+                      label={t('boardMinutes.number')}
+                      value={minutes.minutesNo}
+                      tone="teal"
+                    />
+                  ) : null}
                   <FormFactTile
                     icon={CalendarDays}
                     label={t('boardMinutes.heldAt')}
                     value={<DateText value={minutes.heldAt} />}
-                    tone="teal"
+                    tone="mint"
+                  />
+                  <FormFactTile
+                    icon={Stamp}
+                    label={t('boardMinutes.status')}
+                    value={<BoardMinutesStatusBadge value={minutes.status} />}
                   />
                   <Link
                     to={boardMinutePath(minutes.id, minutes.requestId ?? undefined)}
@@ -381,16 +415,28 @@ export function BoardMinutesDossierModal({
                               tone="mint"
                             />
                             <FormFactTile
+                              icon={Stamp}
+                              label={t('boardResolutions.status')}
+                              value={<BoardResolutionStatusBadge value={item.status} />}
+                              compact
+                            />
+                            <FormFactTile
                               icon={Building2}
                               label={t('boardResolutions.unit')}
-                              value={item.unit?.name || t('boardResolutions.withoutUnit')}
+                              value={resolutionExecutorNames(item, t('boardResolutions.withoutUnit'))}
                               compact
                             />
                             <FormFactTile
                               icon={CalendarDays}
                               label={t('boardResolutions.dueDate')}
-                              value={item.dueDate ? <DateText value={item.dueDate} /> : '—'}
-                              empty={!item.dueDate}
+                              value={<BoardResolutionDueValue dueKind={item.dueKind} dueDate={item.dueDate} />}
+                              empty={item.dueKind !== 'ASAP' && !item.dueDate}
+                              compact
+                            />
+                            <FormFactTile
+                              icon={UserRound}
+                              label={t('boardResolutions.proposer')}
+                              value={resolutionProposerLabel(item)}
                               compact
                             />
                             <FormFactTile

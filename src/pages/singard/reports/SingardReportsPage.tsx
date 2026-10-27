@@ -8,12 +8,7 @@ import { formatNumber } from '../../../lib/datetime'
 import { ChartPanel, ReportBar, ReportDonut, reportColors } from '../../projects/ProjectReportCharts'
 import type { SingardReports } from '../../../types/app'
 
-const kindColors: Record<string, string> = {
-  SUGGESTION: reportColors.teal,
-  COMPLAINT: reportColors.tealDeep,
-  CRITICISM: reportColors.mint,
-  REPORT: reportColors.tealSoft,
-}
+const kindPalette = [reportColors.teal, reportColors.tealDeep, reportColors.mint, reportColors.tealSoft]
 
 const statusColors: Record<string, string> = {
   NEW: reportColors.tealSoft,
@@ -51,20 +46,27 @@ export function SingardReportsPage() {
                 <FormFactTile icon={Reply} label={t('singardReports.answered')} value={formatNumber(data.kpis.answered, locale)} />
                 <FormFactTile icon={ChartColumn} label={t('singardReports.closed')} value={formatNumber(data.kpis.closed, locale)} />
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 sm:gap-3">
-                <FormFactTile icon={MessageCircleHeart} label={t('singard.kinds.SUGGESTION')} value={formatNumber(data.kpis.suggestions, locale)} tone="teal" />
-                <FormFactTile icon={MessageCircleHeart} label={t('singard.kinds.COMPLAINT')} value={formatNumber(data.kpis.complaints, locale)} />
-                <FormFactTile icon={MessageCircleHeart} label={t('singard.kinds.CRITICISM')} value={formatNumber(data.kpis.criticisms, locale)} />
-                <FormFactTile icon={MessageCircleHeart} label={t('singard.kinds.REPORT')} value={formatNumber(data.kpis.reports, locale)} />
-              </div>
+              {data.byKind.length ? (
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 sm:gap-3">
+                  {data.byKind.map((row, index) => (
+                    <FormFactTile
+                      key={row.id}
+                      icon={MessageCircleHeart}
+                      label={row.title}
+                      value={formatNumber(row.count, locale)}
+                      tone={index === 0 ? 'teal' : index === 1 ? 'mint' : undefined}
+                    />
+                  ))}
+                </div>
+              ) : null}
               <div className="grid gap-4 lg:grid-cols-2">
                 <ChartPanel icon={MessageCircleHeart} title={t('singardReports.byKind')}>
                   <ReportDonut
                     locale={locale}
-                    data={data.byKind.map((row) => ({
-                      name: t(`singard.kinds.${row.key}`),
+                    data={data.byKind.map((row, index) => ({
+                      name: row.title,
                       value: row.count,
-                      color: kindColors[row.key],
+                      color: kindPalette[index % kindPalette.length],
                     }))}
                   />
                 </ChartPanel>

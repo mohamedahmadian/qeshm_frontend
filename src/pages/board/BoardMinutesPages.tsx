@@ -1,13 +1,16 @@
 import {
   CalendarRange,
   FileText,
+  Hash,
   Inbox,
   Link2,
+  MessageSquare,
   Plus,
   ScrollText,
   Stamp,
   Users,
 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -23,45 +26,67 @@ import {
   actionsColClassName,
 } from '../../components/ui/ListControls'
 import {
+  AppForm,
   Button,
   DetailActions,
   EntityNameSubtitle,
+  FormActions,
   FormField,
   LoadingState,
   PageHeader,
+  fieldClassName,
   formShellClassName,
   listShellClassName,
 } from '../../components/ui/Form'
 import { FileAudio } from '../../components/ui/FileMedia'
+import { confirmToast } from '../../components/ui/confirmToast'
 import {
   FormCard,
   FormEmptyHint,
   FormFactTile,
   FormSectionTitle,
+  formCardBodyClassName,
 } from '../../components/ui/FormLayout'
 import { PersianDateField } from '../../components/ui/PersianDateField'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
-import { api, getImageUrl } from '../../lib/api'
-import { formatNumber } from '../../lib/datetime'
+import { api, getApiErrorMessage, getImageUrl } from '../../lib/api'
+import { formatDate, formatNumber, localizeDigits } from '../../lib/datetime'
 import {
   boardMinutesAttendances,
+  boardMinutesStatuses,
   type BoardMinutes,
+  type BoardMinutesSmsResult,
   type BoardMinutesStats,
   type BoardRequest,
   type Paginated,
 } from '../../types/app'
 import { BoardMinutesForm } from './BoardMinutesForm'
+import { BoardMinutesStatusBadge } from './BoardStatusBadge'
 import {
   boardMinuteEditPath,
   boardMinutePath,
   boardMinuteResolutionsPath,
+  boardMinuteSmsPath,
   boardMinutesCreatePath,
   boardMinutesListPath,
   boardRequestPath,
 } from './board-paths'
+
+const SMS_BODY_MAX = 700
+
+function linkedRequests(item: BoardMinutes) {
+  if (item.requests?.length) return item.requests
+  return item.request ? [item.request] : []
+}
+
+function requestsLabel(item: BoardMinutes, fallback: string) {
+  const rows = linkedRequests(item)
+  if (!rows.length) return fallback
+  return rows.map((row) => row.subject).join('، ')
+}
 
 function useMinutesScope() {
   const { requestId, minutesId } = useParams()
@@ -93,9 +118,10 @@ export function BoardMinutesListPage() {
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const kind = searchParams.get('kind') ?? ''
+  const status = searchParams.get('status') ?? ''
   const from = searchParams.get('from') ?? ''
   const to = searchParams.get('to') ?? ''
-  const filtersActive = Boolean(kind || from || to)
+  const filtersActive = Boolean(kind || status || from || to)
   const { confirmDelete } = useConfirmDelete()
   const requestQuery = useQuery({
     queryKey: ['board-request', requestId],
@@ -114,7 +140,7 @@ export function BoardMinutesListPage() {
     },
   })
   const query = useQuery({
-    queryKey: ['board-minutes', requestId, q, page, sortBy, sortDir, kind, from, to],
+    queryKey: ['board-minutes', requestId, q, page, sortBy, sortDir, kind, status, from, to],
     queryFn: async () => {
       const { data } = await api.get<Paginated<BoardMinutes>>('/board/minutes', {
         params: {
@@ -122,6 +148,7 @@ export function BoardMinutesListPage() {
           ...(q ? { q } : {}),
           ...(requestId ? { requestId } : {}),
           ...(kind ? { kind } : {}),
+          ...(status ? { status } : {}),
           ...(from ? { from } : {}),
           ...(to ? { to } : {}),
           ...sortParams,
@@ -218,22 +245,38 @@ export function BoardMinutesListPage() {
                   placeholder={t('boardMinutes.filterKind')}
                 />
               </FormField>
+              <FormField icon={Stamp} label={t('boardMinutes.filterStatus')}>
+                <SearchSelect
+                  value={status}
+                  onChange={(next) => setParams({ status: next || undefined }, { resetPage: true })}
+                  options={[
+                    { value: '', label: t('common.all') },
+                    ...Object.values(boardMinutesStatuses).map((value) => ({
+                      value,
+                      label: t(`boardMinutes.statuses.${value}`),
+                    })),
+                  ]}
+                  placeholder={t('boardMinutes.filterStatus')}
+                />
+              </FormField>
             </>
           )
         }
       />
       <TableCard
         loading={query.isLoading}
-        empty={q || kind || from || to ? t('boardMinutes.noResults') : t('boardMinutes.empty')}
+        empty={q || kind || status || from || to ? t('boardMinutes.noResults') : t('boardMinutes.empty')}
         hasRows={rows.length > 0}
       >
         <table className="w-full text-sm">
           <thead className="bg-cream-50 text-ink-700">
             <tr>
+              <SortableTh column="minutesNo" label={t('boardMinutes.number')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="heldAt" label={t('boardMinutes.heldAt')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="subject" label={t('boardMinutes.subject')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              <SortableTh column="status" label={t('boardMinutes.status')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               {requestId ? null : (
-                <SortableTh column="request" label={t('boardMinutes.request')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                <SortableTh column="request" label={t('boardMinutes.requests')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               )}
               <SortableTh column="memberCount" label={t('boardMinutes.memberCount')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh
@@ -249,12 +292,16 @@ export function BoardMinutesListPage() {
           <tbody>
             {rows.map((item) => (
               <tr key={item.id} className="border-t border-line">
+                <td className="px-4 py-3">{localizeDigits(item.minutesNo, locale)}</td>
                 <td className="px-4 py-3">
                   <DateText value={item.heldAt} />
                 </td>
                 <td className="px-4 py-3">{item.subject}</td>
+                <td className="px-4 py-3">
+                  <BoardMinutesStatusBadge value={item.status} />
+                </td>
                 {requestId ? null : (
-                  <td className="px-4 py-3">{item.request?.subject || t('boardMinutes.regular')}</td>
+                  <td className="px-4 py-3">{requestsLabel(item, t('boardMinutes.regular'))}</td>
                 )}
                 <td className="px-4 py-3">{formatNumber(item._count?.members ?? item.members.length, locale)}</td>
                 <td className="px-4 py-3">{formatNumber(item._count?.resolutions ?? 0, locale)}</td>
@@ -263,12 +310,20 @@ export function BoardMinutesListPage() {
                     viewTo={boardMinutePath(item.id, requestId)}
                     showView={false}
                     extra={
-                      <Link to={boardMinuteResolutionsPath(item.id, requestId)}>
-                        <Button type="button" variant="soft">
-                          <FileText className="size-4" aria-hidden />
-                          {t('boardResolutions.title')}
-                        </Button>
-                      </Link>
+                      <>
+                        <Link to={boardMinuteSmsPath(item.id, requestId)}>
+                          <Button type="button" variant="soft">
+                            <MessageSquare className="size-4" aria-hidden />
+                            {t('boardMinutes.sms')}
+                          </Button>
+                        </Link>
+                        <Link to={boardMinuteResolutionsPath(item.id, requestId)}>
+                          <Button type="button" variant="soft">
+                            <FileText className="size-4" aria-hidden />
+                            {t('boardResolutions.title')}
+                          </Button>
+                        </Link>
+                      </>
                     }
                     editTo={boardMinuteEditPath(item.id, requestId)}
                     onDelete={() =>
@@ -405,12 +460,17 @@ export function BoardMinutesDetailPage() {
         <div className="space-y-6 p-5 sm:p-6">
           <FormSectionTitle icon={ScrollText}>{t('boardMinutes.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-            <FormFactTile icon={Stamp} label={t('boardMinutes.heldAt')} value={<DateText value={item.heldAt} />} tone="teal" />
             <FormFactTile
-              icon={FileText}
-              label={t('boardMinutes.request')}
-              value={item.request?.subject || t('boardMinutes.regular')}
-              tone="mint"
+              icon={Hash}
+              label={t('boardMinutes.number')}
+              value={localizeDigits(item.minutesNo, locale)}
+              tone="teal"
+            />
+            <FormFactTile icon={Stamp} label={t('boardMinutes.heldAt')} value={<DateText value={item.heldAt} />} tone="mint" />
+            <FormFactTile
+              icon={Stamp}
+              label={t('boardMinutes.status')}
+              value={<BoardMinutesStatusBadge value={item.status} />}
             />
             <FormFactTile icon={Users} label={t('boardMinutes.createdBy')} value={item.createdBy.fullName} />
             <FormFactTile
@@ -420,6 +480,22 @@ export function BoardMinutesDetailPage() {
               tone="teal"
             />
           </div>
+          <FormSectionTitle icon={FileText}>{t('boardMinutes.requests')}</FormSectionTitle>
+          {linkedRequests(item).length ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {linkedRequests(item).map((row) => (
+                <FormFactTile
+                  key={row.id}
+                  icon={FileText}
+                  label={row.trackingNo ? localizeDigits(row.trackingNo, locale) : t('boardMinutes.request')}
+                  value={row.subject}
+                  tone="mint"
+                />
+              ))}
+            </div>
+          ) : (
+            <FormEmptyHint>{t('boardMinutes.regular')}</FormEmptyHint>
+          )}
           {item.body ? (
             <p className="whitespace-pre-wrap rounded-2xl border border-line bg-cream-50/80 p-4 text-sm leading-7 text-ink-800">
               {item.body}
@@ -489,6 +565,11 @@ export function BoardMinutesDetailPage() {
             }
             extraItems={[
               {
+                to: boardMinuteSmsPath(minutesId, requestId),
+                icon: MessageSquare,
+                label: t('boardMinutes.sms'),
+              },
+              {
                 to: boardMinuteResolutionsPath(minutesId, requestId),
                 icon: FileText,
                 label: t('boardResolutions.manage'),
@@ -496,6 +577,159 @@ export function BoardMinutesDetailPage() {
             ]}
           />
         </div>
+      </FormCard>
+    </div>
+  )
+}
+
+export function BoardMinutesSmsPage() {
+  const { requestId, minutesId } = useMinutesScope()
+  const query = useQuery({
+    queryKey: ['board-minutes-item', minutesId],
+    enabled: Boolean(minutesId),
+    queryFn: async () => {
+      const { data } = await api.get<BoardMinutes>(`/board/minutes/${minutesId}`)
+      return data
+    },
+  })
+  if (!query.data || !minutesId) return <LoadingState />
+  return <BoardMinutesSmsForm item={query.data} minutesId={minutesId} requestId={requestId} />
+}
+
+function BoardMinutesSmsForm({
+  item,
+  minutesId,
+  requestId,
+}: {
+  item: BoardMinutes
+  minutesId: string
+  requestId?: string
+}) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const navigate = useNavigate()
+  const [sending, setSending] = useState(false)
+  const defaultBody = useMemo(
+    () =>
+      t('boardMinutes.smsDefault', {
+        number: localizeDigits(item.minutesNo, locale),
+        subject: item.subject,
+        date: formatDate(item.heldAt, locale),
+      }),
+    [item.heldAt, item.minutesNo, item.subject, locale, t],
+  )
+  const [body, setBody] = useState(defaultBody)
+  const recipients = item.members
+  const withPhone = recipients.filter((row) => row.user.phone?.trim())
+  const detailsPath = boardMinutePath(minutesId, requestId)
+
+  function submit() {
+    const text = body.trim()
+    if (!text) {
+      toast.error(t('boardMinutes.smsBody'))
+      return
+    }
+    if (!recipients.length) {
+      toast.error(t('boardMinutes.smsNoMembers'))
+      return
+    }
+    if (!withPhone.length) {
+      toast.error(t('boardMinutes.smsNoPhones'))
+      return
+    }
+    confirmToast({
+      title: t('boardMinutes.smsConfirm', { count: formatNumber(withPhone.length, locale) }),
+      confirmLabel: t('boardMinutes.smsSend'),
+      cancelLabel: t('common.cancel'),
+      onConfirm: async () => {
+        setSending(true)
+        try {
+          const { data } = await api.post<BoardMinutesSmsResult>(`/board/minutes/${minutesId}/sms`, {
+            body: text,
+          })
+          if (data.skippedNoPhoneCount) {
+            toast.success(
+              t('boardMinutes.smsSentPartial', {
+                sent: formatNumber(data.recipientCount, locale),
+                skipped: formatNumber(data.skippedNoPhoneCount, locale),
+              }),
+            )
+          } else {
+            toast.success(t('boardMinutes.smsSent', { count: formatNumber(data.recipientCount, locale) }))
+          }
+          if (data.providerSkipped) {
+            toast.info(data.providerMessage || t('boardMinutes.smsProviderPending'))
+          }
+          navigate(detailsPath)
+        } catch (error) {
+          toast.error(getApiErrorMessage(error, t('common.error')))
+        } finally {
+          setSending(false)
+        }
+      },
+    })
+  }
+
+  return (
+    <div className={formShellClassName}>
+      <PageHeader
+        icon={ScrollText}
+        title={t('boardMinutes.smsTitle')}
+        subtitle={<EntityNameSubtitle name={item.subject} icon={ScrollText} />}
+        backTo={detailsPath}
+      />
+      <FormCard icon={MessageSquare} title={t('boardMinutes.smsTitle')} subtitle={t('boardMinutes.smsSubtitle')}>
+        <AppForm onSubmit={submit} className={formCardBodyClassName}>
+          <FormSectionTitle icon={Users}>{t('boardMinutes.smsRecipients')}</FormSectionTitle>
+          {recipients.length ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {recipients.map((row) => {
+                const phone = row.user.phone?.trim() || ''
+                return (
+                  <FormFactTile
+                    key={row.id}
+                    icon={Users}
+                    label={row.user.fullName}
+                    copyValue={phone || undefined}
+                    value={phone ? undefined : t('boardMinutes.smsNoPhone')}
+                    tone={phone ? 'teal' : 'ink'}
+                  />
+                )
+              })}
+            </div>
+          ) : (
+            <FormEmptyHint>{t('boardMinutes.smsNoMembers')}</FormEmptyHint>
+          )}
+          <FormField icon={MessageSquare} label={t('boardMinutes.smsBody')} htmlFor="minutes-sms-body">
+            <div className="space-y-2">
+              <div className="flex justify-end">
+                <Button type="button" variant="ghost" onClick={() => setBody(defaultBody)}>
+                  <MessageSquare className="size-4" aria-hidden />
+                  {t('boardMinutes.smsResetDefault')}
+                </Button>
+              </div>
+              <textarea
+                id="minutes-sms-body"
+                required
+                maxLength={SMS_BODY_MAX}
+                className={`${fieldClassName} min-h-36`}
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                placeholder={t('boardMinutes.smsBodyPlaceholder')}
+              />
+              <p className="text-xs text-ink-500">
+                {t('boardMinutes.smsCharCount', { count: formatNumber(body.length, locale) })}
+              </p>
+            </div>
+          </FormField>
+          <FormActions
+            submitLabel={t('boardMinutes.smsSend')}
+            cancelLabel={t('common.cancel')}
+            submitting={sending}
+            onCancel={() => navigate(detailsPath)}
+            headerIcons
+          />
+        </AppForm>
       </FormCard>
     </div>
   )

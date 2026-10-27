@@ -1,8 +1,7 @@
-import { FileCheck, ScrollText } from 'lucide-react'
+import { FileCheck, ScrollText, Stamp } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { DateText } from '../../components/ui/DateText'
 import {
   ActionsTh,
   EntityRowActions,
@@ -12,13 +11,18 @@ import {
   TableCard,
   actionsColClassName,
 } from '../../components/ui/ListControls'
-import { Button, PageHeader, listShellClassName } from '../../components/ui/Form'
+import { Button, FormField, PageHeader, listShellClassName } from '../../components/ui/Form'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
+import { resolutionExecutorNames } from '../../lib/resolution-calendar'
 import type { BoardMinutesResolution, Paginated } from '../../types/app'
+import { boardResolutionStatuses } from '../../types/app'
 import { BoardMinutesDossierModal } from './BoardMinutesDossierModal'
+import { BoardResolutionDueValue } from './BoardResolutionDisplay'
+import { BoardResolutionStatusBadge } from './BoardStatusBadge'
 import { boardMinuteResolutionPath } from './board-paths'
 
 function relatedRequestId(item: BoardMinutesResolution) {
@@ -30,13 +34,15 @@ export function BoardResolutionsListPage() {
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } = useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
+  const status = searchParams.get('status') ?? ''
+  const filtersActive = Boolean(status)
   const { confirmDelete } = useConfirmDelete()
   const [dossier, setDossier] = useState<{ minutesId: string; resolutionId: string } | null>(null)
   const query = useQuery({
-    queryKey: ['board-resolutions', q, page, sortBy, sortDir],
+    queryKey: ['board-resolutions', q, page, sortBy, sortDir, status],
     queryFn: async () => {
       const { data } = await api.get<Paginated<BoardMinutesResolution>>('/board/resolutions', {
-        params: { page, ...(q ? { q } : {}), ...sortParams },
+        params: { page, ...(q ? { q } : {}), ...(status ? { status } : {}), ...sortParams },
       })
       return data
     },
@@ -55,10 +61,27 @@ export function BoardResolutionsListPage() {
         onSubmit={() => applySearch()}
         label={t('boardResolutions.search')}
         placeholder={t('boardResolutions.searchAllPlaceholder')}
+        filtersActive={filtersActive}
+        extra={
+          <FormField icon={Stamp} label={t('boardResolutions.filterStatus')}>
+            <SearchSelect
+              value={status}
+              onChange={(next) => setParams({ status: next || undefined }, { resetPage: true })}
+              options={[
+                { value: '', label: t('common.all') },
+                ...Object.values(boardResolutionStatuses).map((value) => ({
+                  value,
+                  label: t(`boardResolutions.statuses.${value}`),
+                })),
+              ]}
+              placeholder={t('boardResolutions.filterStatus')}
+            />
+          </FormField>
+        }
       />
       <TableCard
         loading={query.isLoading}
-        empty={q ? t('boardResolutions.noResults') : t('boardResolutions.empty')}
+        empty={q || status ? t('boardResolutions.noResults') : t('boardResolutions.empty')}
         hasRows={rows.length > 0}
       >
         <table className="w-full text-sm">
@@ -67,6 +90,13 @@ export function BoardResolutionsListPage() {
               <SortableTh
                 column="title"
                 label={t('boardResolutions.titleField')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
+                column="status"
+                label={t('boardResolutions.status')}
                 sortBy={sortBy}
                 sortDir={sortDir}
                 onSort={onSort}
@@ -109,10 +139,21 @@ export function BoardResolutionsListPage() {
               return (
                 <tr key={item.id} className="border-t border-line">
                   <td className="px-4 py-3">{item.title}</td>
-                  <td className="px-4 py-3">{item.unit?.name || t('boardResolutions.withoutUnit')}</td>
-                  <td className="px-4 py-3">{item.dueDate ? <DateText value={item.dueDate} /> : '—'}</td>
+                  <td className="px-4 py-3">
+                    <BoardResolutionStatusBadge value={item.status} />
+                  </td>
+                  <td className="px-4 py-3">
+                    {resolutionExecutorNames(item, t('boardResolutions.withoutUnit'))}
+                  </td>
+                  <td className="px-4 py-3">
+                    <BoardResolutionDueValue dueKind={item.dueKind} dueDate={item.dueDate} />
+                  </td>
                   <td className="px-4 py-3">{item.minutes?.subject || '—'}</td>
-                  <td className="px-4 py-3">{item.minutes?.request?.subject || t('boardResolutions.noRequest')}</td>
+                  <td className="px-4 py-3">
+                    {(item.minutes?.requests?.length
+                      ? item.minutes.requests.map((row) => row.subject).join('، ')
+                      : item.minutes?.request?.subject) || t('boardResolutions.noRequest')}
+                  </td>
                   <td className={actionsColClassName}>
                     <EntityRowActions
                       viewTo={base}

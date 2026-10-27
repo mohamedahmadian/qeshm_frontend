@@ -2555,117 +2555,312 @@ th {
 
 .board-request-print-sheet {
   width: 100%;
-  color: #1f2933;
+  color: #111827;
 }
 
 .board-request-print-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 12px;
-  line-height: 1.65;
+  font-size: 11.5px;
+  line-height: 1.7;
 }
 
 .board-request-print-table th,
 .board-request-print-table td {
-  border: 1px solid #1f2933;
-  padding: 8px 10px;
+  border: 1px solid #111827;
+  padding: 6px 8px;
   text-align: start;
   vertical-align: top;
+  font-weight: 400;
 }
 
-.board-request-print-table thead th {
-  width: 33.33%;
-  font-weight: 500;
+.board-request-print-logo {
+  width: 18%;
+  text-align: center;
+  vertical-align: middle;
 }
 
-.board-request-print-table thead th span,
-.board-request-print-date-line span {
-  display: block;
-  font-size: 11px;
-  font-weight: 500;
-  color: #4b5563;
+.board-request-print-emblem {
+  display: inline-block;
+  height: 16mm;
+  width: auto;
+  max-width: 22mm;
+  object-fit: contain;
 }
 
-.board-request-print-table thead th strong,
-.board-request-print-date-line strong {
-  display: block;
-  margin-top: 2px;
-  font-size: 13px;
+.board-request-print-title-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.board-request-print-title {
+  margin: 0;
+  font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  line-height: 1.6;
+}
+
+.board-request-print-meta {
+  width: 22%;
+  vertical-align: middle;
+}
+
+.board-request-print-line {
+  margin: 0;
+}
+
+.board-request-print-line + .board-request-print-line,
+.board-request-print-choice + .board-request-print-choice,
+.board-request-print-review-title + .board-request-print-choice {
+  margin-top: 4px;
 }
 
 .board-request-print-label {
-  margin: 0 0 6px;
-  font-size: 12px;
   font-weight: 700;
 }
 
-.board-request-print-text {
-  margin: 0;
+.board-request-print-value {
+  margin-inline-start: 0.35em;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.board-request-print-text.is-lines-2 {
-  min-height: calc(1.65em * 2);
+.board-request-print-justification .board-request-print-value {
+  display: block;
+  margin-top: 4px;
+  margin-inline-start: 0;
+  min-height: 3.2em;
 }
 
-.board-request-print-text.is-lines-3 {
-  min-height: calc(1.65em * 3);
+.board-request-print-history .board-request-print-value,
+.board-request-print-description .board-request-print-value {
+  display: block;
+  margin-top: 4px;
+  margin-inline-start: 0;
 }
 
-.board-request-print-text.is-lines-7 {
-  min-height: calc(1.65em * 7);
+.board-request-print-description .board-request-print-value {
+  min-height: 8em;
 }
 
-.board-request-print-stage-head th {
-  background: #f3f4f6;
-  font-size: 11px;
+.board-request-print-pair > td,
+.board-request-print-ceo > td {
+  padding: 0;
+}
+
+.board-request-print-split {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.board-request-print-split td {
+  width: 50%;
+  border: 0;
+  padding: 6px 8px;
+}
+
+.board-request-print-split td + td {
+  border-inline-start: 1px solid #111827;
+}
+
+.board-request-print-signblock {
+  min-height: 22mm;
+}
+
+.board-request-print-review-grid {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.board-request-print-review-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.board-request-print-choice {
+  margin: 0;
+}
+
+.board-request-print-yn {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-inline-start: 8px;
+}
+
+.board-request-print-yn-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.board-request-print-yn-item i {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 0.85em;
+  height: 0.85em;
+  border: 1px solid #111827;
+  background: #fff;
+}
+
+.board-request-print-yn-item i.is-on {
+  box-shadow: inset 0 0 0 2px #fff;
+  background: #111827;
+}
+
+.board-request-print-office-sign {
+  display: flex;
+  min-width: 28%;
+  margin: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.board-request-print-office-sign strong {
+  font-weight: 600;
+}
+
+.board-request-print-office-sign.is-center {
+  min-height: 16mm;
+  justify-content: center;
+}
+
+.board-request-print-budget .board-request-print-value,
+.board-request-print-review .board-request-print-value {
+  display: block;
+  margin-top: 4px;
+  margin-inline-start: 0;
+  min-height: 1.7em;
+}
+
+.board-resolution-print-sheet {
+  width: 100%;
+  color: #111827;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.board-resolution-print-head {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.board-resolution-print-office {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.board-resolution-print-minutes {
+  margin: 6px 0 10px;
+  font-size: 12px;
+}
+
+.board-resolution-print-clause {
+  display: inline-block;
+  margin: 0;
+  padding: 4px 28px;
+  border: 1px solid #111827;
+  border-radius: 8px;
+  background: #f4e4cc;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.board-resolution-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11.5px;
+  line-height: 1.7;
+}
+
+.board-resolution-print-label-col {
+  width: 22%;
+}
+
+.board-resolution-print-table th,
+.board-resolution-print-table td {
+  border: 1px solid #111827;
+  padding: 6px 8px;
+  text-align: start;
+  vertical-align: middle;
+  font-weight: 400;
+}
+
+.board-resolution-print-label {
+  background: #f4e4cc;
   font-weight: 700;
   text-align: start;
 }
 
-.board-request-print-stage,
-.board-request-print-stage-head {
-  break-inside: avoid;
-  page-break-inside: avoid;
+.board-resolution-print-value {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  vertical-align: top;
 }
 
-.board-request-print-stage-name {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
+.board-resolution-print-notes .board-resolution-print-value {
+  min-height: 18mm;
 }
 
-.board-request-print-date-line + .board-request-print-date-line {
-  margin-top: 8px;
+.board-resolution-print-body .board-resolution-print-value {
+  min-height: 28mm;
 }
 
-.board-request-print-sign {
-  display: flex;
-  min-height: 4.5rem;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  break-inside: avoid;
-  page-break-inside: avoid;
+.board-resolution-print-signs-cell {
+  padding: 0;
+  vertical-align: top;
 }
 
-.board-request-print-signer {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.board-request-print-sign-box {
+.board-resolution-print-sign-grid {
   width: 100%;
-  min-height: 3.5rem;
-  border: 1px solid #1f2933;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.board-resolution-print-sign-grid th,
+.board-resolution-print-sign-grid td {
+  border: 0;
+  border-inline-end: 1px solid #111827;
+}
+
+.board-resolution-print-sign-grid tr > :last-child {
+  border-inline-end: 0;
+}
+
+.board-resolution-print-signer {
+  background: #f4e4cc;
+  padding: 6px 8px;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.board-resolution-print-signer span {
+  display: block;
+}
+
+.board-resolution-print-mark {
+  min-height: 22mm;
+  height: 22mm;
   background: #fff;
+}
+
+.board-resolution-print-sign-grid tr + tr .board-resolution-print-signer {
+  border-top: 1px solid #111827;
+}
+
+.board-resolution-print-sign-grid .board-resolution-print-mark {
+  border-top: 1px solid #111827;
 }
 
 @keyframes board-stage-pulse {
@@ -3268,22 +3463,85 @@ th {
   .board-signatory-print-card,
   .board-signatory-print-mark,
   .board-signatory-print-box,
-  .board-request-print-stage,
-  .board-request-print-stage-head,
-  .board-request-print-sign {
+  .board-request-print-head,
+  .board-request-print-pair,
+  .board-request-print-footer-sign,
+  .board-request-print-ceo {
     break-inside: avoid-page;
     page-break-inside: avoid;
   }
 
-  main:has(.board-request-print-sheet) {
+  main:has(.board-request-print-sheet),
+  main:has(.board-resolution-print-sheet) {
     padding-inline: 0 !important;
     padding-bottom: 0 !important;
     background: #fff !important;
   }
 
   .board-request-print-sheet {
-    padding: 12mm 10mm 6mm;
+    box-sizing: border-box;
+    min-height: 297mm;
+    padding: 7mm 8mm;
     background: #fff;
+    flex-direction: column;
+  }
+
+  .board-request-print-table {
+    flex: 1 1 auto;
+    height: 100%;
+  }
+
+  .board-request-print-table tbody tr:not(.board-request-print-description) {
+    height: 0;
+  }
+
+  .board-request-print-description {
+    height: 100%;
+  }
+
+  .board-request-print-justification,
+  .board-request-print-history,
+  .board-request-print-description,
+  .board-request-print-review {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .board-resolution-print-sheet {
+    box-sizing: border-box;
+    min-height: 297mm;
+    padding: 10mm 10mm 12mm;
+    background: #fff;
+    flex-direction: column;
+  }
+
+  .board-resolution-print-table {
+    flex: 1 1 auto;
+    height: 100%;
+  }
+
+  .board-resolution-print-table tbody tr:not(.board-resolution-print-body):not(.board-resolution-print-notes) {
+    height: 0;
+  }
+
+  .board-resolution-print-notes {
+    height: auto;
+  }
+
+  .board-resolution-print-body {
+    height: 100%;
+  }
+
+  .board-resolution-print-head,
+  .board-resolution-print-signs {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  .board-resolution-print-notes,
+  .board-resolution-print-body {
+    break-inside: auto;
+    page-break-inside: auto;
   }
 
   .board-signatories-print {

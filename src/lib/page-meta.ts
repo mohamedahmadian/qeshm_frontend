@@ -593,6 +593,18 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/organization')) {
     return { titleKey: 'organization.details', subtitleKey: 'organization.detailsSubtitle' }
   }
+  if (pathname === '/singard/kinds/new') {
+    return { titleKey: 'singardKinds.create', subtitleKey: 'singardKinds.createSubtitle' }
+  }
+  if (/\/singard\/kinds\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'singardKinds.edit', subtitleKey: 'singardKinds.editSubtitle' }
+  }
+  if (/\/singard\/kinds\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'singardKinds.details', subtitleKey: 'singardKinds.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/singard/kinds')) {
+    return { titleKey: 'menus.singardKinds', subtitleKey: 'singardKinds.subtitle' }
+  }
   if (pathname === '/singard/categories/new') {
     return { titleKey: 'singardCategories.create', subtitleKey: 'singardCategories.createSubtitle' }
   }
@@ -641,6 +653,66 @@ export function getPageMeta(pathname: string): {
   if (pathname === '/singard') {
     return { titleKey: 'landing.singard', subtitleKey: 'singardWizard.subtitle' }
   }
+  if (pathname === '/inspection/kinds/new') {
+    return { titleKey: 'inspectionKinds.create', subtitleKey: 'inspectionKinds.createSubtitle' }
+  }
+  if (/\/inspection\/kinds\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'inspectionKinds.edit', subtitleKey: 'inspectionKinds.editSubtitle' }
+  }
+  if (/\/inspection\/kinds\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'inspectionKinds.details', subtitleKey: 'inspectionKinds.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/inspection/kinds')) {
+    return { titleKey: 'menus.inspectionKinds', subtitleKey: 'inspectionKinds.subtitle' }
+  }
+  if (pathname === '/inspection/categories/new') {
+    return { titleKey: 'inspectionCategories.create', subtitleKey: 'inspectionCategories.createSubtitle' }
+  }
+  if (/\/inspection\/categories\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'inspectionCategories.edit', subtitleKey: 'inspectionCategories.editSubtitle' }
+  }
+  if (/\/inspection\/categories\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'inspectionCategories.details', subtitleKey: 'inspectionCategories.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/inspection/categories')) {
+    return { titleKey: 'menus.inspectionCategories', subtitleKey: 'inspectionCategories.subtitle' }
+  }
+  if (/\/inspection\/inbox\/[^/]+\/activities\/new$/.test(pathname)) {
+    return { titleKey: 'inspectionActivities.create', subtitleKey: 'inspectionActivities.createSubtitle' }
+  }
+  if (/\/inspection\/inbox\/[^/]+\/activities\/[^/]+\/edit$/.test(pathname)) {
+    return { titleKey: 'inspectionActivities.edit', subtitleKey: 'inspectionActivities.editSubtitle' }
+  }
+  if (/\/inspection\/inbox\/[^/]+\/activities\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'inspectionActivities.details', subtitleKey: 'inspectionActivities.detailsSubtitle' }
+  }
+  if (/\/inspection\/inbox\/[^/]+\/activities$/.test(pathname)) {
+    return { titleKey: 'inspectionActivities.title', subtitleKey: 'inspectionActivities.subtitle' }
+  }
+  if (/\/inspection\/inbox\/[^/]+\/reply$/.test(pathname)) {
+    return { titleKey: 'inspection.writeReply', subtitleKey: 'inspection.replySubtitle' }
+  }
+  if (/\/inspection\/inbox\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'inspection.details', subtitleKey: 'inspection.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/inspection/inbox')) {
+    return { titleKey: 'menus.inspectionInbox', subtitleKey: 'inspection.subtitle' }
+  }
+  if (/\/inspection\/mine\/[^/]+$/.test(pathname)) {
+    return { titleKey: 'inspectionMine.details', subtitleKey: 'inspection.detailsSubtitle' }
+  }
+  if (pathname.startsWith('/inspection/mine')) {
+    return { titleKey: 'menus.inspectionMine', subtitleKey: 'inspectionMine.subtitle' }
+  }
+  if (pathname.startsWith('/inspection/submit')) {
+    return { titleKey: 'menus.inspectionSubmit', subtitleKey: 'inspectionWizard.subtitle' }
+  }
+  if (pathname.startsWith('/inspection/reports')) {
+    return { titleKey: 'menus.inspectionReports', subtitleKey: 'inspectionReports.subtitle' }
+  }
+  if (pathname === '/inspection') {
+    return { titleKey: 'landing.inspection', subtitleKey: 'inspectionWizard.subtitle' }
+  }
   if (pathname.startsWith('/board/search')) {
     return { titleKey: 'menus.boardSmartSearch', subtitleKey: 'boardSmartSearch.subtitle' }
   }
@@ -685,6 +757,9 @@ export function getPageMeta(pathname: string): {
   }
   if (pathname.endsWith('/minutes/new') || pathname === '/board/minutes/new') {
     return { titleKey: 'boardMinutes.create', subtitleKey: 'boardMinutes.createSubtitle' }
+  }
+  if (/\/minutes\/[^/]+\/sms$/.test(pathname)) {
+    return { titleKey: 'boardMinutes.smsTitle', subtitleKey: 'boardMinutes.smsSubtitle' }
   }
   if (/\/minutes\/[^/]+\/edit$/.test(pathname)) {
     return { titleKey: 'boardMinutes.edit', subtitleKey: 'boardMinutes.editSubtitle' }

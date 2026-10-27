@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Home, LogIn, Menu, Sparkles, X, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Home, LogIn, Menu, Shield, Sparkles, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
@@ -82,6 +82,9 @@ export function AuthGuestLayout({
             <PublicHeaderLink to="/singard" icon={Sparkles}>
               {t('landing.singard')}
             </PublicHeaderLink>
+            <PublicHeaderLink to="/inspection" icon={Shield}>
+              {t('landing.inspection')}
+            </PublicHeaderLink>
           </nav>
           <div className="ms-auto flex items-center gap-2">
             <LocaleSwitcher />
@@ -122,6 +125,9 @@ export function AuthGuestLayout({
                 </PublicHeaderLink>
                 <PublicHeaderLink to="/singard" icon={Sparkles} block>
                   {t('landing.singard')}
+                </PublicHeaderLink>
+                <PublicHeaderLink to="/inspection" icon={Shield} block>
+                  {t('landing.inspection')}
                 </PublicHeaderLink>
                 {showHeaderLogin ? (
                   <Link

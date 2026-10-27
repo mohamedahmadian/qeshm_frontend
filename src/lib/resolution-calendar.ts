@@ -9,10 +9,29 @@ export type ResolutionCalendarItem = BoardMinutesResolution & {
   minutes: NonNullable<BoardMinutesResolution['minutes']>
 }
 
+export function resolutionExecutors(item: {
+  units?: { id: string; name: string }[]
+  unit?: { id: string; name: string } | null
+}) {
+  if (item.units?.length) return item.units
+  return item.unit ? [item.unit] : []
+}
+
+export function resolutionExecutorNames(
+  item: {
+    units?: { id: string; name: string }[]
+    unit?: { id: string; name: string } | null
+  },
+  empty: string,
+) {
+  const names = resolutionExecutors(item).map((row) => row.name)
+  return names.length ? names.join('، ') : empty
+}
+
 export function toResolutionCalendarItem(item: BoardMinutesResolution): ResolutionCalendarItem {
   return {
     ...item,
-    color: swatchColorFromId(item.unitId ?? item.id),
+    color: swatchColorFromId(resolutionExecutors(item)[0]?.id ?? item.unitId ?? item.id),
     code: resolutionCalendarCode(item.title),
     endDate: item.dueDate,
     startDate: null,
@@ -22,6 +41,7 @@ export function toResolutionCalendarItem(item: BoardMinutesResolution): Resoluti
       heldAt: item.createdAt,
       requestId: null,
       request: null,
+      requests: [],
     },
   }
 }

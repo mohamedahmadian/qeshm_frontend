@@ -74,6 +74,10 @@ export function boardMinuteEditPath(id: string, requestId?: string) {
   return `${boardMinutePath(id, requestId)}/edit`
 }
 
+export function boardMinuteSmsPath(id: string, requestId?: string) {
+  return `${boardMinutePath(id, requestId)}/sms`
+}
+
 export function boardMinuteResolutionsPath(minutesId: string, requestId?: string) {
   return `${boardMinutePath(minutesId, requestId)}/resolutions`
 }

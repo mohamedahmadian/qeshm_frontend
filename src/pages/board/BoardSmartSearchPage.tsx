@@ -140,12 +140,19 @@ function MinutesHitCard({
             {t('boardMinutes.resolutionCount')} {formatNumber(item.resolutionCount, locale)}
           </span>
         </div>
-        {item.request ? (
-          <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-teal-700">
-            <FileText className="size-3.5" aria-hidden />
-            <HighlightText text={item.request.subject} q={q} />
+        {item.minutesNo || item.status ? (
+          <p className="mt-2 text-xs text-ink-500">
+            {[item.minutesNo, item.status ? t(`boardMinutes.statuses.${item.status}`) : null]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
         ) : null}
+        {(item.requests?.length ? item.requests : item.request ? [item.request] : []).map((row) => (
+          <p key={row.id} className="mt-2 inline-flex items-center gap-1.5 text-xs text-teal-700">
+            <FileText className="size-3.5" aria-hidden />
+            <HighlightText text={row.subject} q={q} />
+          </p>
+        ))}
         {item.snippet ? (
           <p className="mt-3 rounded-2xl bg-cream-50 px-3 py-2 text-sm leading-6 text-ink-700">
             <HighlightText text={item.snippet} q={q} />

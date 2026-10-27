@@ -252,11 +252,37 @@ import {
   SingardActivityEditPage,
   SingardActivityListPage,
 } from './pages/singard/inbox/SingardActivityPages'
+import { SingardKindsListPage } from './pages/singard/kinds/SingardKindsListPage'
+import { SingardKindCreatePage } from './pages/singard/kinds/SingardKindCreatePage'
+import { SingardKindDetailPage } from './pages/singard/kinds/SingardKindDetailPage'
+import { SingardKindEditPage } from './pages/singard/kinds/SingardKindEditPage'
 import { SingardCategoriesListPage } from './pages/singard/categories/SingardCategoriesListPage'
 import { SingardCategoryCreatePage } from './pages/singard/categories/SingardCategoryCreatePage'
 import { SingardCategoryDetailPage } from './pages/singard/categories/SingardCategoryDetailPage'
 import { SingardCategoryEditPage } from './pages/singard/categories/SingardCategoryEditPage'
 import { SingardReportsPage } from './pages/singard/reports/SingardReportsPage'
+import { PublicInspectionPage } from './pages/inspection/public/PublicInspectionPage'
+import { InspectionSubmitPage } from './pages/inspection/submit/InspectionSubmitPage'
+import { InspectionMineListPage } from './pages/inspection/mine/InspectionMineListPage'
+import { InspectionMineDetailPage } from './pages/inspection/mine/InspectionMineDetailPage'
+import { InspectionInboxListPage } from './pages/inspection/inbox/InspectionInboxListPage'
+import { InspectionInboxDetailPage } from './pages/inspection/inbox/InspectionInboxDetailPage'
+import { InspectionReplyPage } from './pages/inspection/inbox/InspectionReplyPage'
+import {
+  InspectionActivityCreatePage,
+  InspectionActivityDetailPage,
+  InspectionActivityEditPage,
+  InspectionActivityListPage,
+} from './pages/inspection/inbox/InspectionActivityPages'
+import { InspectionKindsListPage } from './pages/inspection/kinds/InspectionKindsListPage'
+import { InspectionKindCreatePage } from './pages/inspection/kinds/InspectionKindCreatePage'
+import { InspectionKindDetailPage } from './pages/inspection/kinds/InspectionKindDetailPage'
+import { InspectionKindEditPage } from './pages/inspection/kinds/InspectionKindEditPage'
+import { InspectionCategoriesListPage } from './pages/inspection/categories/InspectionCategoriesListPage'
+import { InspectionCategoryCreatePage } from './pages/inspection/categories/InspectionCategoryCreatePage'
+import { InspectionCategoryDetailPage } from './pages/inspection/categories/InspectionCategoryDetailPage'
+import { InspectionCategoryEditPage } from './pages/inspection/categories/InspectionCategoryEditPage'
+import { InspectionReportsPage } from './pages/inspection/reports/InspectionReportsPage'
 import { BoardRequestCreatePage, BoardRequestEditPage } from './pages/board/BoardRequestPages'
 import { BoardRequestDetailPage } from './pages/board/BoardRequestDetailPage'
 import { BoardPlansPage } from './pages/board/BoardPlansPage'
@@ -272,6 +298,7 @@ import {
   BoardMinutesDetailPage,
   BoardMinutesEditPage,
   BoardMinutesListPage,
+  BoardMinutesSmsPage,
 } from './pages/board/BoardMinutesPages'
 import {
   BoardMinutesResolutionCreatePage,
@@ -299,6 +326,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<PublicHomePage />} />
               <Route path="/singard" element={<PublicSingardPage />} />
+              <Route path="/inspection" element={<PublicInspectionPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/impersonate" element={<ImpersonateEntryPage />} />
@@ -510,14 +538,38 @@ export default function App() {
                   <Route path="/singard/inbox/:id/activities/:activityId/edit" element={<SingardActivityEditPage />} />
                   <Route path="/singard/inbox/:id/activities/:activityId" element={<SingardActivityDetailPage />} />
                   <Route path="/singard/inbox/:id" element={<SingardInboxDetailPage />} />
+                  <Route path="/singard/kinds" element={<SingardKindsListPage />} />
+                  <Route path="/singard/kinds/new" element={<SingardKindCreatePage />} />
+                  <Route path="/singard/kinds/:id/edit" element={<SingardKindEditPage />} />
+                  <Route path="/singard/kinds/:id" element={<SingardKindDetailPage />} />
                   <Route path="/singard/categories" element={<SingardCategoriesListPage />} />
                   <Route path="/singard/categories/new" element={<SingardCategoryCreatePage />} />
                   <Route path="/singard/categories/:id/edit" element={<SingardCategoryEditPage />} />
                   <Route path="/singard/categories/:id" element={<SingardCategoryDetailPage />} />
                   <Route path="/singard/reports" element={<SingardReportsPage />} />
+                  <Route path="/inspection/submit" element={<InspectionSubmitPage />} />
+                  <Route path="/inspection/mine" element={<InspectionMineListPage />} />
+                  <Route path="/inspection/mine/:id" element={<InspectionMineDetailPage />} />
+                  <Route path="/inspection/inbox" element={<InspectionInboxListPage />} />
+                  <Route path="/inspection/inbox/:id/reply" element={<InspectionReplyPage />} />
+                  <Route path="/inspection/inbox/:id/activities" element={<InspectionActivityListPage />} />
+                  <Route path="/inspection/inbox/:id/activities/new" element={<InspectionActivityCreatePage />} />
+                  <Route path="/inspection/inbox/:id/activities/:activityId/edit" element={<InspectionActivityEditPage />} />
+                  <Route path="/inspection/inbox/:id/activities/:activityId" element={<InspectionActivityDetailPage />} />
+                  <Route path="/inspection/inbox/:id" element={<InspectionInboxDetailPage />} />
+                  <Route path="/inspection/kinds" element={<InspectionKindsListPage />} />
+                  <Route path="/inspection/kinds/new" element={<InspectionKindCreatePage />} />
+                  <Route path="/inspection/kinds/:id/edit" element={<InspectionKindEditPage />} />
+                  <Route path="/inspection/kinds/:id" element={<InspectionKindDetailPage />} />
+                  <Route path="/inspection/categories" element={<InspectionCategoriesListPage />} />
+                  <Route path="/inspection/categories/new" element={<InspectionCategoryCreatePage />} />
+                  <Route path="/inspection/categories/:id/edit" element={<InspectionCategoryEditPage />} />
+                  <Route path="/inspection/categories/:id" element={<InspectionCategoryDetailPage />} />
+                  <Route path="/inspection/reports" element={<InspectionReportsPage />} />
                   <Route path="/board/requests" element={<Navigate to="/board/requests/new" replace />} />
                   <Route path="/board/requests/new" element={<BoardRequestCreatePage />} />
                   <Route path="/board/requests/:requestId/minutes/new" element={<BoardMinutesCreatePage />} />
+                  <Route path="/board/requests/:requestId/minutes/:minutesId/sms" element={<BoardMinutesSmsPage />} />
                   <Route path="/board/requests/:requestId/minutes/:minutesId/edit" element={<BoardMinutesEditPage />} />
                   <Route
                     path="/board/requests/:requestId/minutes/:minutesId/resolutions/new"
@@ -550,6 +602,7 @@ export default function App() {
                   <Route path="/board/resolutions" element={<BoardResolutionsListPage />} />
                   <Route path="/board/minutes" element={<BoardMinutesListPage />} />
                   <Route path="/board/minutes/new" element={<BoardMinutesCreatePage />} />
+                  <Route path="/board/minutes/:minutesId/sms" element={<BoardMinutesSmsPage />} />
                   <Route path="/board/minutes/:minutesId/edit" element={<BoardMinutesEditPage />} />
                   <Route path="/board/minutes/:minutesId/resolutions/new" element={<BoardMinutesResolutionCreatePage />} />
                   <Route

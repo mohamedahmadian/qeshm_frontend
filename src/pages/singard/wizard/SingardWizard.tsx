@@ -1,12 +1,9 @@
 import {
-  AlertTriangle,
   Check,
   ChevronLeft,
   ChevronRight,
-  Flag,
   HeartHandshake,
   ImagePlus,
-  Lightbulb,
   MapPin,
   MessageCircleHeart,
   Mic,
@@ -29,7 +26,8 @@ import { formatNumber, localizeDigits } from '../../../lib/datetime'
 import { QESHM_MAP_BOUNDS, QESHM_MAP_CENTER } from '../../../lib/geo'
 import { geoErrorI18nKey } from '../../../lib/geolocation'
 import { optimizeImageFile } from '../../../lib/optimize-image'
-import type { SingardCategory, SingardFeedback, SingardFeedbackKind } from '../../../types/app'
+import { getNavIcon } from '../../../lib/icons'
+import type { SingardCategory, SingardFeedback, SingardKind } from '../../../types/app'
 import { singardMinePath } from '../singard-paths'
 import { SingardVoiceRecorder } from './SingardVoiceRecorder'
 
@@ -49,48 +47,20 @@ function toOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-const kinds: {
-  value: SingardFeedbackKind
-  icon: typeof Lightbulb
-  titleKey: string
-  hintKey: string
-  tone: string
-}[] = [
-  {
-    value: 'SUGGESTION',
-    icon: Lightbulb,
-    titleKey: 'singardWizard.kindSuggestionTitle',
-    hintKey: 'singardWizard.kindSuggestionHint',
-    tone: 'from-teal-50 to-white border-teal-200',
-  },
-  {
-    value: 'COMPLAINT',
-    icon: AlertTriangle,
-    titleKey: 'singardWizard.kindComplaintTitle',
-    hintKey: 'singardWizard.kindComplaintHint',
-    tone: 'from-rose-50 to-white border-rose-200',
-  },
-  {
-    value: 'CRITICISM',
-    icon: MessageCircleHeart,
-    titleKey: 'singardWizard.kindCriticismTitle',
-    hintKey: 'singardWizard.kindCriticismHint',
-    tone: 'from-amber-50 to-white border-amber-200',
-  },
-  {
-    value: 'REPORT',
-    icon: Flag,
-    titleKey: 'singardWizard.kindReportTitle',
-    hintKey: 'singardWizard.kindReportHint',
-    tone: 'from-mint-50 to-white border-mint-200',
-  },
+const kindTones = [
+  'from-teal-50 to-white border-teal-200',
+  'from-rose-50 to-white border-rose-200',
+  'from-amber-50 to-white border-amber-200',
+  'from-mint-50 to-white border-mint-200',
 ]
 
 export function SingardWizard({
   categories,
+  kinds,
   variant = 'public',
 }: {
   categories: SingardCategory[]
+  kinds: SingardKind[]
   variant?: 'public' | 'panel'
 }) {
   const { t, i18n } = useTranslation()
@@ -98,7 +68,7 @@ export function SingardWizard({
   const { user } = useAuth()
   const loggedIn = Boolean(user)
 
-  const [kind, setKind] = useState<SingardFeedbackKind>()
+  const [kindId, setKindId] = useState<string>()
   const [identity, setIdentity] = useState<IdentityMode>(loggedIn ? 'introduce' : null)
   const [identityReady, setIdentityReady] = useState(loggedIn)
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
@@ -145,17 +115,17 @@ export function SingardWizard({
   }, [identity, loggedIn, t])
 
   const furthestIndex = useMemo(() => {
-    if (!kind) return 0
+    if (!kindId) return 0
     if (!loggedIn) {
       if (!identity) return steps.indexOf('identity')
       if (identity === 'introduce' && !identityReady) return steps.indexOf('identity-form')
     }
     if (!category) return steps.indexOf('category')
     return steps.indexOf('content')
-  }, [category, identity, identityReady, kind, loggedIn, steps])
+  }, [category, identity, identityReady, kindId, loggedIn, steps])
 
   function canAdvance() {
-    if (step === 'kind') return Boolean(kind)
+    if (step === 'kind') return Boolean(kindId)
     if (step === 'identity') return Boolean(identity)
     if (step === 'identity-form') return identityFormValid
     if (step === 'category') return Boolean(category)
@@ -227,7 +197,7 @@ export function SingardWizard({
   }
 
   async function submit() {
-    if (!kind || !category) return
+    if (!kindId || !category) return
     if (!body.trim() && !imageIds.length && !audioId && !videoId) {
       toast.error(t('singardWizard.needContent'))
       return
@@ -236,7 +206,7 @@ export function SingardWizard({
     try {
       const path = loggedIn ? '/singard/mine' : '/public/singard/feedbacks'
       const { data } = await api.post<SingardFeedback>(path, {
-        kind,
+        kindId,
         categoryId: category.id,
         introduce: !loggedIn && identity === 'introduce',
         firstName: identity === 'introduce' ? firstName.trim() : undefined,
@@ -260,7 +230,7 @@ export function SingardWizard({
 
   function reset() {
     setResult(undefined)
-    setKind(undefined)
+    setKindId(undefined)
     setIdentity(loggedIn ? 'introduce' : null)
     setIdentityReady(loggedIn)
     setTrail([])
@@ -304,23 +274,29 @@ export function SingardWizard({
             title={t('singardWizard.stepKind')}
             hint={t('singardWizard.stepKindHint')}
             onNext={goNext}
-            nextDisabled={!kind}
+            nextDisabled={!kindId}
           >
-            <div className="grid gap-3 sm:grid-cols-2">
-              {kinds.map((item) => (
-                <ChoiceCard
-                  key={item.value}
-                  icon={item.icon}
-                  title={t(item.titleKey)}
-                  hint={t(item.hintKey)}
-                  className={item.tone}
-                  onClick={() => {
-                    setKind(item.value)
-                    setWizardIndex(1)
-                  }}
-                />
-              ))}
-            </div>
+            {kinds.length ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {kinds.map((item, index) => (
+                  <ChoiceCard
+                    key={item.id}
+                    icon={getNavIcon(item.icon)}
+                    title={item.title}
+                    hint={item.description || ''}
+                    className={kindTones[index % kindTones.length]}
+                    onClick={() => {
+                      setKindId(item.id)
+                      setWizardIndex(1)
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-dashed border-teal-200 bg-teal-50/60 px-4 py-8 text-center text-sm text-ink-500">
+                {t('singardWizard.noKinds')}
+              </p>
+            )}
           </StepFrame>
         ) : null}
 

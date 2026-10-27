@@ -4603,16 +4603,6 @@ export type VehicleReportKeyCount = {
   count: number;
 };
 
-export const singardFeedbackKinds = {
-  SUGGESTION: 'SUGGESTION',
-  COMPLAINT: 'COMPLAINT',
-  CRITICISM: 'CRITICISM',
-  REPORT: 'REPORT',
-} as const;
-
-export type SingardFeedbackKind =
-  (typeof singardFeedbackKinds)[keyof typeof singardFeedbackKinds];
-
 export const singardFeedbackStatuses = {
   NEW: 'NEW',
   IN_PROGRESS: 'IN_PROGRESS',
@@ -4639,6 +4629,18 @@ export const singardAttachmentKinds = {
 
 export type SingardAttachmentKind =
   (typeof singardAttachmentKinds)[keyof typeof singardAttachmentKinds];
+
+export type SingardKind = {
+  id: string;
+  title: string;
+  description: string | null;
+  icon: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count: { feedbacks: number };
+};
 
 export type SingardCategory = {
   id: string;
@@ -4687,7 +4689,8 @@ export type SingardActivity = {
 export type SingardFeedback = {
   id: string;
   trackingCode: string;
-  kind: SingardFeedbackKind;
+  kindId: string;
+  kind: Pick<SingardKind, 'id' | 'title' | 'description' | 'icon' | 'sortOrder' | 'isActive'>;
   status: SingardFeedbackStatus;
   categoryId: string;
   category: Pick<SingardCategory, 'id' | 'name' | 'parentId'> & {
@@ -4721,15 +4724,24 @@ export type SingardReports = {
     pending: number;
     answered: number;
     closed: number;
-    suggestions: number;
-    complaints: number;
-    criticisms: number;
-    reports: number;
   };
-  byKind: { key: string; count: number }[];
+  byKind: { id: string; title: string; icon: string; count: number }[];
   byStatus: { key: string; count: number }[];
   byCategory: { id: string; name: string; count: number }[];
 };
+
+export const inspectionFeedbackStatuses = singardFeedbackStatuses;
+export type InspectionFeedbackStatus = SingardFeedbackStatus;
+export const inspectionActivityKinds = singardActivityKinds;
+export type InspectionActivityKind = SingardActivityKind;
+export const inspectionAttachmentKinds = singardAttachmentKinds;
+export type InspectionAttachmentKind = SingardAttachmentKind;
+export type InspectionKind = SingardKind;
+export type InspectionCategory = SingardCategory;
+export type InspectionAttachment = SingardAttachment;
+export type InspectionActivity = SingardActivity;
+export type InspectionFeedback = SingardFeedback;
+export type InspectionReports = SingardReports;
 
 export type VehicleReportsOverview = {
   kpis: {
@@ -4935,11 +4947,35 @@ export const boardMinutesAttendances = {
 export type BoardMinutesAttendance =
   (typeof boardMinutesAttendances)[keyof typeof boardMinutesAttendances];
 
+export const boardMinutesStatuses = {
+  NOT_HELD: 'NOT_HELD',
+  HELD: 'HELD',
+  NOTIFIED: 'NOTIFIED',
+} as const;
+
+export type BoardMinutesStatus =
+  (typeof boardMinutesStatuses)[keyof typeof boardMinutesStatuses];
+
+export type BoardMinutesLinkedRequest = {
+  id: string;
+  subject: string;
+  status: BoardRequestStatus;
+  trackingNo?: string;
+};
+
 export type BoardMinutesMember = {
   id: string;
   userId: string;
   attendance: BoardMinutesAttendance;
-  user: BoardPerson;
+  user: BoardPerson & { phone?: string | null };
+};
+
+export type BoardMinutesSmsResult = {
+  recipientCount: number;
+  skippedNoPhoneCount: number;
+  skippedNames: string[];
+  providerSkipped: boolean;
+  providerMessage?: string;
 };
 
 export type BoardMinutesAttachment = {
@@ -4955,8 +4991,14 @@ export type BoardMinutesAttachment = {
 
 export type BoardMinutes = {
   id: string;
+  minutesNo: string;
+  minutesYear?: number;
+  minutesSeq?: number;
+  status: BoardMinutesStatus;
   requestId: string | null;
-  request: { id: string; subject: string; status: BoardRequestStatus } | null;
+  request: BoardMinutesLinkedRequest | null;
+  requestIds?: string[];
+  requests: BoardMinutesLinkedRequest[];
   heldAt: string;
   subject: string;
   body: string | null;
@@ -4966,7 +5008,7 @@ export type BoardMinutes = {
   attachments: BoardMinutesAttachment[];
   createdAt: string;
   updatedAt: string;
-  _count?: { members: number; resolutions: number; attachments: number };
+  _count?: { members: number; resolutions: number; attachments: number; requests?: number };
 };
 
 export type BoardMinutesStats = {
@@ -5026,23 +5068,72 @@ export type BoardReportsOverview = {
   byRequestUnit: { id: string; name: string; count: number }[];
 };
 
+export const boardResolutionStatuses = {
+  NOT_NOTIFIED: 'NOT_NOTIFIED',
+  NOTIFIED: 'NOTIFIED',
+} as const;
+
+export type BoardResolutionStatus =
+  (typeof boardResolutionStatuses)[keyof typeof boardResolutionStatuses];
+
+export const boardResolutionDueKinds = {
+  DATE: 'DATE',
+  ASAP: 'ASAP',
+} as const
+
+export type BoardResolutionDueKind =
+  (typeof boardResolutionDueKinds)[keyof typeof boardResolutionDueKinds]
+
+export const boardResolutionProposerKinds = {
+  TEXT: 'TEXT',
+  UNIT: 'UNIT',
+} as const
+
+export type BoardResolutionProposerKind =
+  (typeof boardResolutionProposerKinds)[keyof typeof boardResolutionProposerKinds]
+
+export type BoardResolutionSignatory = {
+  id: string
+  sourceSignatoryId: string | null
+  firstName: string
+  lastName: string
+  title: string
+  signatureImageId: string
+  signedAt: string | null
+  sortOrder: number
+}
+
 export type BoardMinutesResolution = {
   id: string;
   minutesId: string;
   title: string;
   description: string | null;
+  status: BoardResolutionStatus;
   unitId: string | null;
   unit: { id: string; name: string } | null;
+  unitIds?: string[];
+  units?: { id: string; name: string }[];
+  dueKind: BoardResolutionDueKind;
   dueDate: string | null;
+  hasTopicHistory: boolean;
+  legalBasis: string | null;
+  proposerKind: BoardResolutionProposerKind;
+  proposerText: string | null;
+  proposerUnitId: string | null;
+  proposerUnit: { id: string; name: string } | null;
   notes: string | null;
+  signatories: BoardResolutionSignatory[];
   createdAt: string;
   updatedAt: string;
   minutes?: {
     id: string;
     subject: string;
     heldAt: string;
+    minutesNo?: string;
+    status?: BoardMinutesStatus;
     requestId: string | null;
-    request: { id: string; subject: string; status: BoardRequestStatus } | null;
+    request: BoardMinutesLinkedRequest | null;
+    requests?: BoardMinutesLinkedRequest[];
   };
 };
 
@@ -5059,10 +5150,13 @@ export type BoardSmartSearchResult = Paginated<BoardSmartSearchHit> & {
 export type BoardSmartSearchMinutesHit = {
   kind: 'minutes'
   id: string
+  minutesNo?: string
+  status?: BoardMinutesStatus
   subject: string
   heldAt: string
   body: string | null
-  request: { id: string; subject: string; status: BoardRequestStatus } | null
+  request: BoardMinutesLinkedRequest | null
+  requests?: BoardMinutesLinkedRequest[]
   resolutionCount: number
   matchIn: BoardSmartSearchMatchKind[]
   snippet: string | null
@@ -5086,6 +5180,7 @@ export type BoardSmartSearchHit = BoardSmartSearchMinutesHit | BoardSmartSearchR
 export type BoardMinutesDossier = {
   minutes: BoardMinutes
   request: BoardRequest | null
+  requests?: BoardRequest[]
   resolutions: BoardMinutesResolution[]
 }
 

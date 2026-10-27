@@ -74,11 +74,6 @@ import {
   type PendingBoardFiles,
 } from './BoardAttachmentsField'
 import { BoardRequestHeaderBadges } from './BoardRequestHeaderBadges'
-import {
-  BoardSignatoriesPrintBlock,
-  BoardSignatoriesPrintModal,
-  useBoardRequestPrint,
-} from './BoardSignatoriesPrintBlock'
 import { BoardStagePipeline } from './BoardStagePipeline'
 import { BoardStatusBadge } from './BoardStatusBadge'
 import { BoardRequestPrintSheet } from './BoardRequestPrintSheet'
@@ -230,7 +225,6 @@ export function BoardRequestDetailPage() {
   const [tab, setTab] = useState<BoardStage>(boardStages.REQUEST)
   const [statusModalOpen, setStatusModalOpen] = useState(false)
   const [attachOpen, setAttachOpen] = useState(false)
-  const print = useBoardRequestPrint()
 
   useEffect(() => {
     if (!item) return
@@ -500,9 +494,9 @@ export function BoardRequestDetailPage() {
                 {t('board.changeStatus')}
               </Button>
             ) : null}
-            <Button type="button" variant="soft" onClick={print.openModal}>
+            <Button type="button" variant="soft" onClick={() => window.print()}>
               <Printer className="size-4" aria-hidden />
-              {t('boardSignatories.print')}
+              {t('boardRequests.print')}
             </Button>
             {canDelete ? (
               <Button type="button" variant="danger" onClick={deleteRequest}>
@@ -534,12 +528,6 @@ export function BoardRequestDetailPage() {
       </FormCard>
 
       <BoardRequestPrintSheet item={item} />
-      <BoardSignatoriesPrintBlock showSignaturePhoto={print.showSignaturePhoto} />
-      <BoardSignatoriesPrintModal
-        open={print.modalOpen}
-        onClose={print.closeModal}
-        onPick={print.pick}
-      />
 
       {admin ? (
         <AdminStageModal

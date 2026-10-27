@@ -1,10 +1,11 @@
-import { Building2, CalendarDays, FileText, ScrollText, X } from 'lucide-react'
+import { Building2, CalendarDays, FileText, ScrollText, Stamp, X } from 'lucide-react'
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { DateText } from '../../../components/ui/DateText'
 import { FormEmptyHint, FormFactTile } from '../../../components/ui/FormLayout'
-import type { ResolutionCalendarItem } from '../../../lib/resolution-calendar'
+import { resolutionExecutorNames, type ResolutionCalendarItem } from '../../../lib/resolution-calendar'
+import { BoardResolutionDueValue } from '../BoardResolutionDisplay'
+import { BoardResolutionStatusBadge } from '../BoardStatusBadge'
 import { ProjectNameWithColor } from '../../projects/ProjectShared'
 import { DeadlineDaysBadge } from '../../projects/calendar/ProjectCalendarShared'
 import type { OpenResolutionDossier } from './ResolutionCalendarShared'
@@ -108,7 +109,7 @@ export function CalendarResolutionsModal({
                     <ProjectNameWithColor name={item.title} color={item.color} />
                   </p>
                   <p className="mt-1 text-xs font-medium text-teal-700">
-                    {item.unit?.name || t('boardResolutions.withoutUnit')}
+                    {resolutionExecutorNames(item, t('boardResolutions.withoutUnit'))}
                   </p>
                 </div>
                 <DeadlineDaysBadge endDate={item.endDate} locale={locale} />
@@ -122,16 +123,22 @@ export function CalendarResolutionsModal({
                   tone="mint"
                 />
                 <FormFactTile
+                  icon={Stamp}
+                  label={t('boardResolutions.status')}
+                  value={<BoardResolutionStatusBadge value={item.status} />}
+                  compact
+                />
+                <FormFactTile
                   icon={CalendarDays}
                   label={t('boardResolutions.dueDate')}
-                  value={item.endDate ? <DateText value={item.endDate} /> : '—'}
-                  empty={!item.endDate}
+                  value={<BoardResolutionDueValue dueKind={item.dueKind} dueDate={item.dueDate} />}
+                  empty={item.dueKind !== 'ASAP' && !item.dueDate}
                   compact
                 />
                 <FormFactTile
                   icon={Building2}
                   label={t('boardResolutions.unit')}
-                  value={item.unit?.name || t('boardResolutions.withoutUnit')}
+                  value={resolutionExecutorNames(item, t('boardResolutions.withoutUnit'))}
                   compact
                 />
                 <FormFactTile

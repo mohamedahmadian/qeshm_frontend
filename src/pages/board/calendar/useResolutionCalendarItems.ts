@@ -12,7 +12,9 @@ export function useResolutionCalendarItems() {
         { params: { sortBy: 'dueDate', sortDir: 'asc' } },
       )
       const items = Array.isArray(data) ? data : data.items
-      return items.map(toResolutionCalendarItem)
+      return items
+        .filter((item) => item.dueKind !== 'ASAP' && Boolean(item.dueDate))
+        .map(toResolutionCalendarItem)
     },
   })
 }
