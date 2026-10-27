@@ -69,6 +69,7 @@ import {
   organizationEmployeesPath,
 } from '../organization/organization-paths'
 import { isQeshmondiPath, qeshmondiCitizenPath, qeshmondiPath } from '../qeshmondi/qeshmondi-paths'
+import { useUserAccountActions } from './UserAccountActions'
 
 const tabs = ['personal', 'account', 'location', 'documents', 'social', 'qeshmondi', 'other'] as const
 type UserDetailTab = (typeof tabs)[number]
@@ -108,6 +109,9 @@ export function UserDetailPage() {
       return data
     },
   })
+  const accountActions = useUserAccountActions(
+    query.data ? { id: query.data.id, phone: query.data.phone } : null,
+  )
 
   const user = query.data
   if (!user) {
@@ -265,6 +269,7 @@ export function UserDetailPage() {
                   className="sm:col-span-2"
                 />
               </div>
+              <div className="mt-4">{accountActions.buttons}</div>
             </section>
           ) : null}
 
@@ -593,6 +598,7 @@ export function UserDetailPage() {
               })
             }
             extraItems={[
+              ...accountActions.extraItems,
               {
                 to: `/users/${user.id}/location`,
                 icon: MapPin,
@@ -608,6 +614,7 @@ export function UserDetailPage() {
           />
         </div>
       </FormCard>
+      {accountActions.dialogs}
     </div>
   )
 }

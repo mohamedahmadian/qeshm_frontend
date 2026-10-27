@@ -38,6 +38,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { OpenUserPanelButton } from '../../components/auth/OpenUserPanelButton'
+import { useUserAccountActions } from './UserAccountActions'
 import { CheckboxField } from '../../components/ui/CheckboxField'
 import { FileDropField } from '../../components/ui/FileDropField'
 import { PersianDateField } from '../../components/ui/PersianDateField'
@@ -224,6 +225,9 @@ export function UserForm({
   const [gender, setGender] = useState(initial?.gender ?? '')
   const [nationalId, setNationalId] = useState(initial?.nationalId ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
+  const accountActions = useUserAccountActions(
+    initial?.id && !selfProfile ? { id: initial.id, phone: phone || initial.phone } : null,
+  )
   const [email, setEmail] = useState(initial?.email ?? '')
   const [address, setAddress] = useState(initial?.address ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
@@ -1111,7 +1115,7 @@ export function UserForm({
                   }))}
                 />
               </FormField>
-              {hidePassword ? null : (
+              {hidePassword || Boolean(initial?.id) ? null : (
                 <FormField icon={KeyRound} label={t('users.password')} htmlFor="password" error={fieldErrors.password}>
                   <input
                     id="password"
@@ -1132,6 +1136,7 @@ export function UserForm({
                 </FormField>
               )}
             </div>
+            {accountActions.buttons}
             {selfProfile || qeshmondiMode ? null : (
               <FormField icon={Shield} label={t('users.roles')} htmlFor="roleIds" error={fieldErrors.roleIds}>
                 <div id="roleIds" className="grid gap-2">
@@ -1633,9 +1638,11 @@ export function UserForm({
             cancelLabel={t('users.cancel')}
             submitting={saving}
             onCancel={onCancel}
+            extraItems={accountActions.extraItems}
           />
         </AppForm>
       </div>
+      {accountActions.dialogs}
     </FormCard>
   )
 }

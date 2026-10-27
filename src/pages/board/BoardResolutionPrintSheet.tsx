@@ -1,7 +1,10 @@
-import type { ReactNode } from 'react'
+import { Printer } from 'lucide-react'
+import { type ReactNode, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
-import { api } from '../../lib/api'
+import { Trans, useTranslation } from 'react-i18next'
+import { Button } from '../../components/ui/Form'
+import { api, getImageUrl } from '../../lib/api'
 import { formatDate, formatNumber, localizeDigits } from '../../lib/datetime'
 import { resolutionExecutorNames } from '../../lib/resolution-calendar'
 import type { BoardMinutes, BoardMinutesResolution, BoardSignatory } from '../../types/app'
@@ -12,9 +15,65 @@ type PrintSigner = {
   firstName: string
   lastName: string
   title: string
+  signatureImageId?: string | null
 }
 
 const EMPTY_SIGNER_COUNT = 5
+
+export type ResolutionPrintMinutes = Pick<BoardMinutes, 'id' | 'heldAt'> & {
+  minutesNo?: string | null
+}
+
+export function resolutionPrintMinutes(
+  item: BoardMinutesResolution,
+  minutes?: ResolutionPrintMinutes | null,
+): ResolutionPrintMinutes | null {
+  if (minutes) {
+    return { id: minutes.id, heldAt: minutes.heldAt, minutesNo: minutes.minutesNo }
+  }
+  if (item.minutes) {
+    return { id: item.minutes.id, heldAt: item.minutes.heldAt, minutesNo: item.minutes.minutesNo }
+  }
+  return null
+}
+
+export function BoardResolutionPrintButton({
+  item,
+  minutes,
+  variant = 'icon',
+}: {
+  item: BoardMinutesResolution
+  minutes?: ResolutionPrintMinutes | null
+  variant?: 'icon' | 'button'
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const source = resolutionPrintMinutes(item, minutes)
+  if (!source) return null
+  return (
+    <>
+      <Button
+        type="button"
+        variant={variant === 'icon' ? 'ghost' : 'soft'}
+        icon={variant === 'icon'}
+        aria-label={t('boardResolutions.print')}
+        title={t('boardResolutions.print')}
+        onClick={() => setOpen(true)}
+      >
+        <Printer className="size-4" aria-hidden />
+        {variant === 'button' ? t('boardResolutions.print') : null}
+      </Button>
+      {open ? (
+        <BoardResolutionPrintSheet
+          item={item}
+          minutes={source}
+          autoPrint
+          onPrinted={() => setOpen(false)}
+        />
+      ) : null}
+    </>
+  )
+}
 
 function clauseName(index: number, t: (key: string) => string, locale: string) {
   const key = `boardResolutions.printClauseNames.${index}`
@@ -23,10 +82,9 @@ function clauseName(index: number, t: (key: string) => string, locale: string) {
 }
 
 function signerRows(items: PrintSigner[]) {
-  if (items.length <= 3) return [items]
-  const rows = [items.slice(0, 3)]
-  for (let i = 3; i < items.length; i += 2) {
-    rows.push(items.slice(i, i + 2))
+  const rows: PrintSigner[][] = []
+  for (let i = 0; i < items.length; i += 3) {
+    rows.push(items.slice(i, i + 3))
   }
   return rows
 }
@@ -51,9 +109,13 @@ function FieldRow({
 export function BoardResolutionPrintSheet({
   item,
   minutes,
+  autoPrint,
+  onPrinted,
 }: {
   item: BoardMinutesResolution
-  minutes: BoardMinutes
+  minutes: ResolutionPrintMinutes
+  autoPrint?: boolean
+  onPrinted?: () => void
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
@@ -72,18 +134,35 @@ export function BoardResolutionPrintSheet({
       return data
     },
   })
+  const needsCatalog = !item.signatories?.length
+  const ready =
+    (clauseQuery.isSuccess || clauseQuery.isError) &&
+    (!needsCatalog || catalogQuery.isSuccess || catalogQuery.isError)
+
+  useEffect(() => {
+    if (!autoPrint || !ready) return
+    const finish = () => onPrinted?.()
+    window.addEventListener('afterprint', finish)
+    const id = window.setTimeout(() => window.print(), 80)
+    return () => {
+      window.removeEventListener('afterprint', finish)
+      window.clearTimeout(id)
+    }
+  }, [autoPrint, onPrinted, ready])
 
   const attached = (item.signatories ?? []).map((row) => ({
     id: row.id,
     firstName: row.firstName,
     lastName: row.lastName,
     title: row.title,
+    signatureImageId: row.signatureImageId,
   }))
   const catalog = (catalogQuery.data ?? []).map((row) => ({
     id: row.id,
     firstName: row.firstName,
     lastName: row.lastName,
     title: row.title,
+    signatureImageId: row.signatureImageId,
   }))
   const signers =
     attached.length > 0
@@ -103,12 +182,16 @@ export function BoardResolutionPrintSheet({
     : t('boardResolutions.printBlank')
   const heldAt = minutes.heldAt ? formatDate(minutes.heldAt, locale) : t('boardResolutions.printBlank')
 
-  return (
+  return createPortal(
     <section className="board-resolution-print-sheet hidden print:flex">
       <header className="board-resolution-print-head">
         <p className="board-resolution-print-office">{t('boardResolutions.printSecretariat')}</p>
         <p className="board-resolution-print-minutes">
-          {t('boardResolutions.printMinutesLine', { number: minutesNo, date: heldAt })}
+          <Trans
+            i18nKey="boardResolutions.printMinutesLine"
+            values={{ number: minutesNo, date: heldAt }}
+            components={{ bold: <strong /> }}
+          />
         </p>
         <p className="board-resolution-print-clause">
           {t('boardResolutions.printClause', { name: clauseName(clauseIndex, t, locale) })}
@@ -156,39 +239,41 @@ export function BoardResolutionPrintSheet({
           <tr className="board-resolution-print-signs">
             <th className="board-resolution-print-label">{t('boardResolutions.printSignPlace')}</th>
             <td className="board-resolution-print-signs-cell">
-              <table className="board-resolution-print-sign-grid">
-                <tbody>
-                  {rows.map((row) => (
-                    <SignRow key={row.map((signer) => signer.id).join('-')} items={row} />
-                  ))}
-                </tbody>
-              </table>
+              <div className="board-resolution-print-sign-grid">
+                {rows.map((row) => (
+                  <SignRow key={row.map((signer) => signer.id).join('-')} items={row} />
+                ))}
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
-    </section>
+    </section>,
+    document.body,
   )
 }
 
 function SignRow({ items }: { items: PrintSigner[] }) {
   return (
-    <>
-      <tr>
-        {items.map((signer) => (
-          <th key={`${signer.id}-name`} className="board-resolution-print-signer">
+    <div
+      className="board-resolution-print-sign-row"
+      style={{ gridTemplateColumns: `repeat(${Math.max(items.length, 1)}, minmax(0, 1fr))` }}
+    >
+      {items.map((signer) => (
+        <div key={signer.id} className="board-resolution-print-sign-card">
+          <div className="board-resolution-print-signer">
             <span>{resolutionSignatoryName(signer) || '\u00a0'}</span>
             <span>{signer.title || '\u00a0'}</span>
-          </th>
-        ))}
-      </tr>
-      <tr>
-        {items.map((signer) => (
-          <td key={`${signer.id}-mark`} className="board-resolution-print-mark">
-            {'\u00a0'}
-          </td>
-        ))}
-      </tr>
-    </>
+          </div>
+          <div className="board-resolution-print-mark">
+            {signer.signatureImageId ? (
+              <img src={getImageUrl(signer.signatureImageId)} alt="" />
+            ) : (
+              '\u00a0'
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

@@ -4,7 +4,9 @@ import {
   Check,
   FileText,
   Hash,
+  MessageSquare,
   Paperclip,
+  Plus,
   ScrollText,
   Search,
   Stamp,
@@ -17,6 +19,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   AppForm,
@@ -39,9 +42,11 @@ import {
   type BoardMinutes,
   type BoardMinutesAttendance,
   type BoardMinutesStatus,
+  type BoardSignatory,
   type ManagedUser,
   type Paginated,
 } from '../../types/app'
+import { boardMinuteSmsPath, boardSignatoryFullName } from './board-paths'
 import {
   BoardMinutesAttachmentsField,
   emptyPendingMinutesFiles,
@@ -96,7 +101,8 @@ export function BoardMinutesForm({
       initial?.requests?.map((row) => row.id) ??
       (initial?.requestId ? [initial.requestId] : lockedRequestId ? [lockedRequestId] : []),
   )
-  const requestsInitialized = useRef(Boolean(initial))
+  const requestsInitialized = useRef(false)
+  const membersSeeded = useRef(false)
   const [members, setMembers] = useState<MinutesMember[]>(
     () =>
       initial?.members.map((row) => ({
@@ -121,6 +127,13 @@ export function BoardMinutesForm({
       return data
     },
   })
+  const signatories = useQuery({
+    queryKey: ['board-signatories', 'lookup'],
+    queryFn: async () => {
+      const { data } = await api.get<BoardSignatory[]>('/board/signatories')
+      return data
+    },
+  })
 
   const requestChoices = useMemo(() => {
     const items = [...(requests.data ?? [])]
@@ -142,8 +155,29 @@ export function BoardMinutesForm({
   useEffect(() => {
     if (requestsInitialized.current || !requests.data) return
     requestsInitialized.current = true
-    setRequestIds(requests.data.map((item) => item.id))
-  }, [requests.data])
+    setRequestIds(requestChoices.map((item) => item.id))
+  }, [requestChoices, requests.data])
+
+  useEffect(() => {
+    if (membersSeeded.current || !signatories.data) return
+    membersSeeded.current = true
+    const extras = signatories.data.flatMap((row) => {
+      if (!row.userId) return []
+      return [
+        {
+          userId: row.userId,
+          name: row.user?.fullName || boardSignatoryFullName(row),
+          attendance: boardMinutesAttendances.PRESENT,
+        } satisfies MinutesMember,
+      ]
+    })
+    if (!extras.length) return
+    setMembers((current) => {
+      const seen = new Set(current.map((row) => row.userId))
+      const next = extras.filter((row) => !seen.has(row.userId))
+      return next.length ? [...current, ...next] : current
+    })
+  }, [signatories.data])
 
   function addMember(user: ManagedUser) {
     if (members.some((row) => row.userId === user.id)) return
@@ -222,16 +256,29 @@ export function BoardMinutesForm({
         onSubmit={submit}
         className={`${formCardBodyClassName}${manage && tab !== 'info' ? ' hidden' : ''}`}
       >
-        {initial?.minutesNo ? (
-          <FormField icon={Hash} label={t('boardMinutes.number')}>
-            <p className="rounded-2xl border border-line bg-cream-50 px-3 py-2.5 text-sm text-ink-800">
-              {localizeDigits(initial.minutesNo, locale)}
-            </p>
+        <div className={`grid gap-4 ${initial?.minutesNo ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+          {initial?.minutesNo ? (
+            <FormField icon={Hash} label={t('boardMinutes.number')}>
+              <p className="rounded-2xl border border-line bg-cream-50 px-3 py-2.5 text-sm text-ink-800">
+                {localizeDigits(initial.minutesNo, locale)}
+              </p>
+            </FormField>
+          ) : null}
+          <FormField icon={CalendarDays} label={t('boardMinutes.heldAt')}>
+            <PersianDateField value={heldAt} onChange={(value) => setHeldAt(value ?? '')} />
           </FormField>
-        ) : null}
-        <FormField icon={CalendarDays} label={t('boardMinutes.heldAt')}>
-          <PersianDateField value={heldAt} onChange={(value) => setHeldAt(value ?? '')} />
-        </FormField>
+          <FormField icon={Stamp} label={t('boardMinutes.status')}>
+            <SearchSelect
+              value={status}
+              onChange={(next) => setStatus((next || boardMinutesStatuses.NOT_HELD) as BoardMinutesStatus)}
+              options={Object.values(boardMinutesStatuses).map((value) => ({
+                value,
+                label: t(`boardMinutes.statuses.${value}`),
+              }))}
+              placeholder={t('boardMinutes.status')}
+            />
+          </FormField>
+        </div>
         <FormField icon={FileText} label={t('boardMinutes.subject')} htmlFor="minutesSubject">
           <input
             id="minutesSubject"
@@ -241,22 +288,11 @@ export function BoardMinutesForm({
             onChange={(event) => setSubject(event.target.value)}
           />
         </FormField>
-        <FormField icon={Stamp} label={t('boardMinutes.status')}>
-          <SearchSelect
-            value={status}
-            onChange={(next) => setStatus((next || boardMinutesStatuses.NOT_HELD) as BoardMinutesStatus)}
-            options={Object.values(boardMinutesStatuses).map((value) => ({
-              value,
-              label: t(`boardMinutes.statuses.${value}`),
-            }))}
-            placeholder={t('boardMinutes.status')}
-          />
-        </FormField>
         <FormField icon={Building2} label={t('boardMinutes.requests')}>
           <div className="space-y-3">
             {requestChoices.length ? (
               <>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
                   <Button
                     type="button"
                     variant="ghost"
@@ -264,9 +300,11 @@ export function BoardMinutesForm({
                   >
                     {t('boardMinutes.selectAllRequests')}
                   </Button>
-                  <Button type="button" variant="ghost" onClick={() => setRequestIds([])}>
-                    {t('boardMinutes.clearRequests')}
-                  </Button>
+                  {requestIds.length ? (
+                    <Button type="button" variant="ghost" onClick={() => setRequestIds([])}>
+                      {t('boardMinutes.clearRequests')}
+                    </Button>
+                  ) : null}
                 </div>
                 <div className="grid max-h-72 gap-2 overflow-y-auto pe-1">
                   {requestChoices.map((item) => (
@@ -317,10 +355,20 @@ export function BoardMinutesForm({
               <FormSectionTitle icon={Users} className="mb-0">
                 {t('boardMinutes.members')}
               </FormSectionTitle>
-              <Button type="button" variant="soft" onClick={() => setMembersModalOpen(true)}>
-                <Users className="size-4" aria-hidden />
-                {t('boardMinutes.manageMembers')}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                {initial ? (
+                  <Link to={boardMinuteSmsPath(initial.id, lockedRequestId)}>
+                    <Button type="button" variant="soft">
+                      <MessageSquare className="size-4" aria-hidden />
+                      {t('boardMinutes.sms')}
+                    </Button>
+                  </Link>
+                ) : null}
+                <Button type="button" variant="soft" onClick={() => setMembersModalOpen(true)}>
+                  <Plus className="size-4" aria-hidden />
+                  {t('boardMinutes.manageMembers')}
+                </Button>
+              </div>
             </div>
             {members.length ? (
               <div className="overflow-x-auto rounded-2xl border border-line">
@@ -505,7 +553,7 @@ function MinutesMembersPickerModal({
                 <Users className="size-5" aria-hidden />
               </span>
               <h2 id="minutes-members-modal-title" className="text-sm font-semibold text-ink-900">
-                {t('boardMinutes.manageMembers')}
+                {t('boardMinutes.addMember')}
               </h2>
             </div>
             <button

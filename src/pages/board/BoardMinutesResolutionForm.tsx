@@ -10,7 +10,7 @@ import {
   Trash2,
   UserRound,
 } from 'lucide-react'
-import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -71,6 +71,18 @@ function emptyToNull(value: string) {
   return trimmed.length ? trimmed : null
 }
 
+function draftFromCatalog(source: BoardSignatory): SignatoryDraft {
+  return {
+    key: source.id,
+    sourceSignatoryId: source.id,
+    firstName: source.firstName,
+    lastName: source.lastName,
+    title: source.title,
+    signatureImageId: source.signatureImageId,
+    signedAt: null,
+  }
+}
+
 function draftsFromInitial(initial?: BoardMinutesResolution): SignatoryDraft[] {
   return (initial?.signatories ?? []).map((row) => ({
     key: row.sourceSignatoryId || row.id,
@@ -114,7 +126,7 @@ export function BoardMinutesResolutionForm({
   const [hasTopicHistory, setHasTopicHistory] = useState(initial?.hasTopicHistory ?? false)
   const [legalBasis, setLegalBasis] = useState(initial?.legalBasis ?? '')
   const [proposerKind, setProposerKind] = useState<BoardResolutionProposerKind>(
-    initial?.proposerKind ?? 'TEXT',
+    initial?.proposerKind ?? 'UNIT',
   )
   const [proposerText, setProposerText] = useState(initial?.proposerText ?? '')
   const [proposerUnitId, setProposerUnitId] = useState(initial?.proposerUnitId ?? '')
@@ -122,6 +134,7 @@ export function BoardMinutesResolutionForm({
   const [signatories, setSignatories] = useState<SignatoryDraft[]>(() => draftsFromInitial(initial))
   const [addSignatoryId, setAddSignatoryId] = useState('')
   const [saving, setSaving] = useState(false)
+  const seededDefaults = useRef(Boolean(initial))
   const units = useQuery({
     queryKey: ['organization-units', 'lookup'],
     queryFn: async () => {
@@ -142,22 +155,17 @@ export function BoardMinutesResolutionForm({
   )
   const availableSignatories = (catalog.data ?? []).filter((item) => !addedIds.has(item.id))
 
+  useEffect(() => {
+    if (seededDefaults.current || !catalog.data) return
+    seededDefaults.current = true
+    setSignatories(catalog.data.map(draftFromCatalog))
+  }, [catalog.data])
+
   function addSignatory(id: string) {
     setAddSignatoryId('')
     const source = (catalog.data ?? []).find((item) => item.id === id)
     if (!source || addedIds.has(source.id)) return
-    setSignatories((current) => [
-      ...current,
-      {
-        key: source.id,
-        sourceSignatoryId: source.id,
-        firstName: source.firstName,
-        lastName: source.lastName,
-        title: source.title,
-        signatureImageId: source.signatureImageId,
-        signedAt: null,
-      },
-    ])
+    setSignatories((current) => [...current, draftFromCatalog(source)])
   }
 
   function patchSignatory(key: string, patch: Partial<SignatoryDraft>) {
@@ -226,16 +234,6 @@ export function BoardMinutesResolutionForm({
             onChange={(event) => setTitle(event.target.value)}
           />
         </FormField>
-        <FormField icon={Stamp} label={t('boardResolutions.status')}>
-          <ToggleField
-            checked={status === boardResolutionStatuses.NOTIFIED}
-            onChange={(checked) =>
-              setStatus(checked ? boardResolutionStatuses.NOTIFIED : boardResolutionStatuses.NOT_NOTIFIED)
-            }
-            onLabel={t('boardResolutions.statuses.NOTIFIED')}
-            offLabel={t('boardResolutions.statuses.NOT_NOTIFIED')}
-          />
-        </FormField>
         <FormField icon={ScrollText} label={t('boardResolutions.description')} htmlFor="resolutionDescription">
           <div className="space-y-2">
             <div className="flex justify-end">
@@ -249,74 +247,74 @@ export function BoardMinutesResolutionForm({
             />
           </div>
         </FormField>
-        <FormField icon={UserRound} label={t('boardResolutions.proposerKind')}>
-          <SearchSelect
-            value={proposerKind}
-            onChange={(value) => setProposerKind(value === 'UNIT' ? 'UNIT' : 'TEXT')}
-            placeholder={t('boardResolutions.selectProposerKind')}
-            options={[
-              { value: 'TEXT', label: t('boardResolutions.proposerAsText') },
-              { value: 'UNIT', label: t('boardResolutions.proposerAsUnit') },
-            ]}
-          />
-        </FormField>
-        {proposerKind === 'UNIT' ? (
-          <FormField icon={Building2} label={t('boardResolutions.proposerUnit')}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField icon={UserRound} label={t('boardResolutions.proposerKind')}>
             <SearchSelect
-              value={proposerUnitId}
-              onChange={setProposerUnitId}
-              placeholder={t('boardResolutions.selectProposerUnit')}
-              options={(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name }))}
+              value={proposerKind}
+              onChange={(value) => setProposerKind(value === 'UNIT' ? 'UNIT' : 'TEXT')}
+              placeholder={t('boardResolutions.selectProposerKind')}
+              options={[
+                { value: 'UNIT', label: t('boardResolutions.proposerAsUnit') },
+                { value: 'TEXT', label: t('boardResolutions.proposerAsText') },
+              ]}
             />
           </FormField>
-        ) : (
-          <FormField icon={UserRound} label={t('boardResolutions.proposerText')} htmlFor="resolutionProposer">
-            <input
-              id="resolutionProposer"
-              required
-              className={fieldClassName}
-              value={proposerText}
-              onChange={(event) => setProposerText(event.target.value)}
+          {proposerKind === 'UNIT' ? (
+            <FormField icon={Building2} label={t('boardResolutions.proposerUnit')}>
+              <SearchSelect
+                value={proposerUnitId}
+                onChange={setProposerUnitId}
+                placeholder={t('boardResolutions.selectProposerUnit')}
+                options={(units.data ?? []).map((unit) => ({ value: unit.id, label: unit.name }))}
+              />
+            </FormField>
+          ) : (
+            <FormField icon={UserRound} label={t('boardResolutions.proposerText')} htmlFor="resolutionProposer">
+              <input
+                id="resolutionProposer"
+                required
+                className={fieldClassName}
+                value={proposerText}
+                onChange={(event) => setProposerText(event.target.value)}
+              />
+            </FormField>
+          )}
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FormField icon={CalendarRange} label={t('boardResolutions.dueKind')}>
+            <SearchSelect
+              value={dueKind}
+              onChange={(value) => {
+                const next = value === 'ASAP' ? 'ASAP' : 'DATE'
+                setDueKind(next)
+                if (next === 'ASAP') setDueDate('')
+              }}
+              placeholder={t('boardResolutions.selectDueKind')}
+              options={[
+                { value: 'DATE', label: t('boardResolutions.dueDated') },
+                { value: 'ASAP', label: t('boardResolutions.dueAsap') },
+              ]}
             />
           </FormField>
-        )}
-        <FormField icon={Building2} label={t('boardResolutions.unit')} htmlFor="resolutionExecutors-search">
-          <OrgUnitTreeSelect
-            id="resolutionExecutors"
-            value={unitIds}
-            onChange={setUnitIds}
-            units={units.data ?? []}
-            loading={units.isLoading}
-          />
-        </FormField>
-        <FormField icon={CalendarRange} label={t('boardResolutions.dueKind')}>
-          <SearchSelect
-            value={dueKind}
-            onChange={(value) => {
-              const next = value === 'ASAP' ? 'ASAP' : 'DATE'
-              setDueKind(next)
-              if (next === 'ASAP') setDueDate('')
-            }}
-            placeholder={t('boardResolutions.selectDueKind')}
-            options={[
-              { value: 'DATE', label: t('boardResolutions.dueDated') },
-              { value: 'ASAP', label: t('boardResolutions.dueAsap') },
-            ]}
-          />
-        </FormField>
-        {dueKind === 'DATE' ? (
           <FormField icon={CalendarRange} label={t('boardResolutions.dueDate')}>
-            <PersianDateField value={dueDate} onChange={(value) => setDueDate(value ?? '')} />
+            <PersianDateField
+              value={dueDate}
+              onChange={(value) => {
+                const next = value ?? ''
+                setDueDate(next)
+                if (next) setDueKind('DATE')
+              }}
+            />
           </FormField>
-        ) : null}
-        <FormField icon={History} label={t('boardResolutions.hasTopicHistory')}>
-          <ToggleField
-            checked={hasTopicHistory}
-            onChange={setHasTopicHistory}
-            onLabel={t('boardResolutions.topicHistoryYes')}
-            offLabel={t('boardResolutions.topicHistoryNo')}
-          />
-        </FormField>
+          <FormField icon={History} label={t('boardResolutions.hasTopicHistory')}>
+            <ToggleField
+              checked={hasTopicHistory}
+              onChange={setHasTopicHistory}
+              onLabel={t('boardResolutions.topicHistoryYes')}
+              offLabel={t('boardResolutions.topicHistoryNo')}
+            />
+          </FormField>
+        </div>
         <FormField icon={Scale} label={t('boardResolutions.legalBasis')} htmlFor="resolutionLegalBasis">
           <textarea
             id="resolutionLegalBasis"
@@ -412,6 +410,25 @@ export function BoardMinutesResolutionForm({
         ) : (
           <FormEmptyHint>{t('boardResolutions.noSignatories')}</FormEmptyHint>
         )}
+        <FormField icon={Building2} label={t('boardResolutions.unit')} htmlFor="resolutionExecutors-search">
+          <OrgUnitTreeSelect
+            id="resolutionExecutors"
+            value={unitIds}
+            onChange={setUnitIds}
+            units={units.data ?? []}
+            loading={units.isLoading}
+          />
+        </FormField>
+        <FormField icon={Stamp} label={t('boardResolutions.status')}>
+          <ToggleField
+            checked={status === boardResolutionStatuses.NOTIFIED}
+            onChange={(checked) =>
+              setStatus(checked ? boardResolutionStatuses.NOTIFIED : boardResolutionStatuses.NOT_NOTIFIED)
+            }
+            onLabel={t('boardResolutions.statuses.NOTIFIED')}
+            offLabel={t('boardResolutions.statuses.NOT_NOTIFIED')}
+          />
+        </FormField>
         <FormActions
           submitLabel={initial ? t('boardResolutions.save') : t('boardResolutions.create')}
           cancelLabel={t('common.cancel')}

@@ -38,6 +38,7 @@ import {
   formShellClassName,
   listShellClassName,
 } from '../../components/ui/Form'
+import { CheckboxField } from '../../components/ui/CheckboxField'
 import { FileAudio } from '../../components/ui/FileMedia'
 import { confirmToast } from '../../components/ui/confirmToast'
 import {
@@ -80,12 +81,6 @@ const SMS_BODY_MAX = 700
 function linkedRequests(item: BoardMinutes) {
   if (item.requests?.length) return item.requests
   return item.request ? [item.request] : []
-}
-
-function requestsLabel(item: BoardMinutes, fallback: string) {
-  const rows = linkedRequests(item)
-  if (!rows.length) return fallback
-  return rows.map((row) => row.subject).join('، ')
 }
 
 function useMinutesScope() {
@@ -275,9 +270,6 @@ export function BoardMinutesListPage() {
               <SortableTh column="heldAt" label={t('boardMinutes.heldAt')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="subject" label={t('boardMinutes.subject')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="status" label={t('boardMinutes.status')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              {requestId ? null : (
-                <SortableTh column="request" label={t('boardMinutes.requests')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              )}
               <SortableTh column="memberCount" label={t('boardMinutes.memberCount')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh
                 column="resolutionCount"
@@ -300,9 +292,6 @@ export function BoardMinutesListPage() {
                 <td className="px-4 py-3">
                   <BoardMinutesStatusBadge value={item.status} />
                 </td>
-                {requestId ? null : (
-                  <td className="px-4 py-3">{requestsLabel(item, t('boardMinutes.regular'))}</td>
-                )}
                 <td className="px-4 py-3">{formatNumber(item._count?.members ?? item.members.length, locale)}</td>
                 <td className="px-4 py-3">{formatNumber(item._count?.resolutions ?? 0, locale)}</td>
                 <td className={actionsColClassName}>
@@ -310,20 +299,12 @@ export function BoardMinutesListPage() {
                     viewTo={boardMinutePath(item.id, requestId)}
                     showView={false}
                     extra={
-                      <>
-                        <Link to={boardMinuteSmsPath(item.id, requestId)}>
-                          <Button type="button" variant="soft">
-                            <MessageSquare className="size-4" aria-hidden />
-                            {t('boardMinutes.sms')}
-                          </Button>
-                        </Link>
-                        <Link to={boardMinuteResolutionsPath(item.id, requestId)}>
-                          <Button type="button" variant="soft">
-                            <FileText className="size-4" aria-hidden />
-                            {t('boardResolutions.title')}
-                          </Button>
-                        </Link>
-                      </>
+                      <Link to={boardMinuteResolutionsPath(item.id, requestId)}>
+                        <Button type="button" variant="soft">
+                          <FileText className="size-4" aria-hidden />
+                          {t('boardResolutions.title')}
+                        </Button>
+                      </Link>
                     }
                     editTo={boardMinuteEditPath(item.id, requestId)}
                     onDelete={() =>
@@ -503,7 +484,17 @@ export function BoardMinutesDetailPage() {
           ) : (
             <FormEmptyHint>{t('boardMinutes.bodyPlaceholder')}</FormEmptyHint>
           )}
-          <FormSectionTitle icon={Users}>{t('boardMinutes.members')}</FormSectionTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <FormSectionTitle icon={Users} className="mb-0">
+              {t('boardMinutes.members')}
+            </FormSectionTitle>
+            <Link to={boardMinuteSmsPath(minutesId, requestId)}>
+              <Button type="button" variant="soft">
+                <MessageSquare className="size-4" aria-hidden />
+                {t('boardMinutes.sms')}
+              </Button>
+            </Link>
+          </div>
           {item.members.length ? (
             <div className="grid gap-2 sm:grid-cols-2">
               {item.members.map((row) => (
@@ -565,11 +556,6 @@ export function BoardMinutesDetailPage() {
             }
             extraItems={[
               {
-                to: boardMinuteSmsPath(minutesId, requestId),
-                icon: MessageSquare,
-                label: t('boardMinutes.sms'),
-              },
-              {
                 to: boardMinuteResolutionsPath(minutesId, requestId),
                 icon: FileText,
                 label: t('boardResolutions.manage'),
@@ -620,7 +606,10 @@ function BoardMinutesSmsForm({
   )
   const [body, setBody] = useState(defaultBody)
   const recipients = item.members
-  const withPhone = recipients.filter((row) => row.user.phone?.trim())
+  const selectable = recipients.filter((row) => row.user.phone?.trim())
+  const [selectedIds, setSelectedIds] = useState(() => selectable.map((row) => row.id))
+  const selected = recipients.filter((row) => selectedIds.includes(row.id))
+  const withPhone = selected.filter((row) => row.user.phone?.trim())
   const detailsPath = boardMinutePath(minutesId, requestId)
 
   function submit() {
@@ -631,6 +620,10 @@ function BoardMinutesSmsForm({
     }
     if (!recipients.length) {
       toast.error(t('boardMinutes.smsNoMembers'))
+      return
+    }
+    if (!selected.length) {
+      toast.error(t('boardMinutes.smsNoneSelected'))
       return
     }
     if (!withPhone.length) {
@@ -646,6 +639,7 @@ function BoardMinutesSmsForm({
         try {
           const { data } = await api.post<BoardMinutesSmsResult>(`/board/minutes/${minutesId}/sms`, {
             body: text,
+            memberIds: selectedIds,
           })
           if (data.skippedNoPhoneCount) {
             toast.success(
@@ -680,19 +674,48 @@ function BoardMinutesSmsForm({
       />
       <FormCard icon={MessageSquare} title={t('boardMinutes.smsTitle')} subtitle={t('boardMinutes.smsSubtitle')}>
         <AppForm onSubmit={submit} className={formCardBodyClassName}>
-          <FormSectionTitle icon={Users}>{t('boardMinutes.smsRecipients')}</FormSectionTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <FormSectionTitle icon={Users} className="mb-0">
+              {t('boardMinutes.smsRecipients')}
+            </FormSectionTitle>
+            {selectable.length ? (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSelectedIds(selectable.map((row) => row.id))}
+                >
+                  {t('boardMinutes.smsSelectAll')}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setSelectedIds([])}>
+                  {t('boardMinutes.smsClear')}
+                </Button>
+              </div>
+            ) : null}
+          </div>
           {recipients.length ? (
             <div className="grid gap-2 sm:grid-cols-2">
               {recipients.map((row) => {
                 const phone = row.user.phone?.trim() || ''
                 return (
-                  <FormFactTile
+                  <CheckboxField
                     key={row.id}
-                    icon={Users}
-                    label={row.user.fullName}
-                    copyValue={phone || undefined}
-                    value={phone ? undefined : t('boardMinutes.smsNoPhone')}
-                    tone={phone ? 'teal' : 'ink'}
+                    id={`minutes-sms-member-${row.id}`}
+                    checked={selectedIds.includes(row.id)}
+                    disabled={!phone}
+                    label={
+                      <span className="flex min-w-0 flex-col">
+                        <span>{row.user.fullName}</span>
+                        <span className="text-xs text-ink-500">
+                          {phone ? localizeDigits(phone, locale) : t('boardMinutes.smsNoPhone')}
+                        </span>
+                      </span>
+                    }
+                    onChange={(checked) =>
+                      setSelectedIds((current) =>
+                        checked ? [...current, row.id] : current.filter((id) => id !== row.id),
+                      )
+                    }
                   />
                 )
               })}

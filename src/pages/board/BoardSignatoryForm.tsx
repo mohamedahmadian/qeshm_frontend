@@ -40,9 +40,11 @@ export function BoardSignatoryForm({
   const [saving, setSaving] = useState(false)
 
   const users = useQuery({
-    queryKey: ['users', 'lookup', 'board-signatories'],
+    queryKey: ['users', 'employees', 'lookup', 'board-signatories'],
     queryFn: async () => {
-      const { data } = await api.get<ManagedUser[]>('/users', { params: { status: 'ACTIVE' } })
+      const { data } = await api.get<ManagedUser[]>('/users', {
+        params: { status: 'ACTIVE', employeesOnly: true },
+      })
       return data
     },
   })

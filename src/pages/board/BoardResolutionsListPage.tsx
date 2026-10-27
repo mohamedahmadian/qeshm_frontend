@@ -21,6 +21,7 @@ import { resolutionExecutorNames } from '../../lib/resolution-calendar'
 import type { BoardMinutesResolution, Paginated } from '../../types/app'
 import { boardResolutionStatuses } from '../../types/app'
 import { BoardMinutesDossierModal } from './BoardMinutesDossierModal'
+import { BoardResolutionPrintButton } from './BoardResolutionPrintSheet'
 import { BoardResolutionDueValue } from './BoardResolutionDisplay'
 import { BoardResolutionStatusBadge } from './BoardStatusBadge'
 import { boardMinuteResolutionPath } from './board-paths'
@@ -159,14 +160,17 @@ export function BoardResolutionsListPage() {
                       viewTo={base}
                       showView={false}
                       extra={
-                        <Button
-                          type="button"
-                          variant="soft"
-                          onClick={() => setDossier({ minutesId: item.minutesId, resolutionId: item.id })}
-                        >
-                          <ScrollText className="size-4" aria-hidden />
-                          {t('boardResolutions.viewMinutes')}
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            variant="soft"
+                            onClick={() => setDossier({ minutesId: item.minutesId, resolutionId: item.id })}
+                          >
+                            <ScrollText className="size-4" aria-hidden />
+                            {t('boardResolutions.viewMinutes')}
+                          </Button>
+                          <BoardResolutionPrintButton item={item} />
+                        </>
                       }
                       editTo={`${base}/edit`}
                       onDelete={() =>

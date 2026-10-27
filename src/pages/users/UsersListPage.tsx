@@ -1,5 +1,6 @@
-import { Plus, Users } from 'lucide-react'
+import { KeyRound, MessageSquare, Plus, Users } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import {
@@ -18,19 +19,23 @@ import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
 import { localizeDigits } from '../../lib/datetime'
-import { useGeoName } from '../../lib/geo'
 import { RoleBadges } from '../../components/ui/RoleBadges'
 import { userStatuses, type AppRole, type ManagedUser, type Paginated } from '../../types/app'
-import { GeoStatus } from '../geo/GeoShared'
+import {
+  UserChangePasswordModal,
+  UserSendSmsModal,
+  type UserAccountTarget,
+} from './UserAccountActions'
 
 export function UsersListPage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
-  const geoName = useGeoName()
   const { q, page, term, setTerm, applySearch, setPage, searchParams, setParams } =
     useListParams()
   const { sortBy, sortDir, sortParams, onSort } = useListSort(searchParams, setParams)
   const { confirmDelete } = useConfirmDelete()
+  const [passwordUser, setPasswordUser] = useState<UserAccountTarget | null>(null)
+  const [smsUser, setSmsUser] = useState<UserAccountTarget | null>(null)
   const status = searchParams.get('status') ?? ''
   const roleId = searchParams.get('roleId') ?? ''
 
@@ -122,8 +127,6 @@ export function UsersListPage() {
               <SortableTh column="username" label={t('users.username')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="nationalId" label={t('users.nationalId')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <SortableTh column="phone" label={t('users.phone')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="city" label={t('geo.city')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="status" label={t('users.status')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               <th className="px-4 py-3 text-start font-medium">{t('users.roles')}</th>
               <ActionsTh />
             </tr>
@@ -139,16 +142,36 @@ export function UsersListPage() {
                 <td className="px-4 py-3">
                   {item.phone ? localizeDigits(item.phone, locale) : '—'}
                 </td>
-                <td className="px-4 py-3">{item.city ? geoName(item.city) : '—'}</td>
-                <td className="px-4 py-3">
-                  <GeoStatus active={item.status === userStatuses.ACTIVE} />
-                </td>
                 <td className="px-4 py-3">
                   {item.roles?.length ? <RoleBadges roles={item.roles} /> : '—'}
                 </td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
                     viewTo={`/users/${item.id}`}
+                    extra={
+                      <>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          icon
+                          aria-label={t('users.changePassword')}
+                          title={t('users.changePassword')}
+                          onClick={() => setPasswordUser({ id: item.id, phone: item.phone })}
+                        >
+                          <KeyRound className="size-4" aria-hidden />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          icon
+                          aria-label={t('users.sendSms')}
+                          title={t('users.sendSms')}
+                          onClick={() => setSmsUser({ id: item.id, phone: item.phone })}
+                        >
+                          <MessageSquare className="size-4" aria-hidden />
+                        </Button>
+                      </>
+                    }
                     editTo={`/users/${item.id}/edit`}
                     onDelete={() =>
                       confirmDelete({
@@ -172,6 +195,16 @@ export function UsersListPage() {
           total={query.data.total}
           onPageChange={setPage}
         />
+      ) : null}
+      {passwordUser ? (
+        <UserChangePasswordModal
+          open
+          user={passwordUser}
+          onClose={() => setPasswordUser(null)}
+        />
+      ) : null}
+      {smsUser ? (
+        <UserSendSmsModal open user={smsUser} onClose={() => setSmsUser(null)} />
       ) : null}
     </div>
   )

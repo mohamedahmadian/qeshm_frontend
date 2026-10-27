@@ -50,7 +50,7 @@ import { boardResolutionStatuses } from '../../types/app'
 import { BoardResolutionStatusBadge } from './BoardStatusBadge'
 import { BoardMinutesDossierModal } from './BoardMinutesDossierModal'
 import { BoardMinutesResolutionForm, type BoardResolutionPayload } from './BoardMinutesResolutionForm'
-import { BoardResolutionPrintSheet } from './BoardResolutionPrintSheet'
+import { BoardResolutionPrintButton, BoardResolutionPrintSheet } from './BoardResolutionPrintSheet'
 import {
   boardMinuteEditPath,
   boardMinutePath,
@@ -189,13 +189,13 @@ export function BoardMinutesResolutionListPage({ embedded = false }: { embedded?
   const createAction = embedded ? (
     <Button type="button" onClick={() => setCreateOpen(true)}>
       <Plus className="size-4" aria-hidden />
-      {t('boardResolutions.create')}
+      {t('boardResolutions.createNew')}
     </Button>
   ) : (
     <Link to={`${base}/new`}>
       <Button>
         <Plus className="size-4" aria-hidden />
-        {t('boardResolutions.create')}
+        {t('boardResolutions.createNew')}
       </Button>
     </Link>
   )
@@ -276,12 +276,15 @@ export function BoardMinutesResolutionListPage({ embedded = false }: { embedded?
                     viewTo={`${base}/${item.id}`}
                     showView={embedded}
                     extra={
-                      embedded ? undefined : (
-                        <Button type="button" variant="soft" onClick={() => setDossierResolutionId(item.id)}>
-                          <ScrollText className="size-4" aria-hidden />
-                          {t('boardResolutions.viewMinutes')}
-                        </Button>
-                      )
+                      <>
+                        {embedded ? null : (
+                          <Button type="button" variant="soft" onClick={() => setDossierResolutionId(item.id)}>
+                            <ScrollText className="size-4" aria-hidden />
+                            {t('boardResolutions.viewMinutes')}
+                          </Button>
+                        )}
+                        <BoardResolutionPrintButton item={item} minutes={minutes} />
+                      </>
                     }
                     editTo={`${base}/${item.id}/edit`}
                     onDelete={() =>
@@ -402,6 +405,12 @@ export function BoardMinutesResolutionEditPage() {
       <BoardMinutesResolutionForm
         initial={query.data}
         minutesTitle={minutes.subject}
+        headerAction={
+          <Button type="button" variant="soft" onClick={() => window.print()}>
+            <Printer className="size-4" aria-hidden />
+            {t('boardResolutions.print')}
+          </Button>
+        }
         onCancel={() => navigate(listPath)}
         onSubmit={async (payload) => {
           await api.patch(`/board/minutes/${minutesId}/resolutions/${resolutionId}`, payload)
@@ -409,6 +418,7 @@ export function BoardMinutesResolutionEditPage() {
           navigate(listPath)
         }}
       />
+      <BoardResolutionPrintSheet item={query.data} minutes={minutes} />
     </div>
   )
 }
@@ -439,7 +449,18 @@ export function BoardMinutesResolutionDetailPage() {
         subtitle={<EntityNameSubtitle name={item.title} icon={FileText} />}
         className="mb-6 print:hidden"
       />
-      <FormCard className="print:hidden" icon={FileText} title={item.title} subtitle={minutes.subject}>
+      <FormCard
+        className="print:hidden"
+        icon={FileText}
+        title={item.title}
+        subtitle={minutes.subject}
+        action={
+          <Button type="button" variant="soft" onClick={() => window.print()}>
+            <Printer className="size-4" aria-hidden />
+            {t('boardResolutions.print')}
+          </Button>
+        }
+      >
         <div className="space-y-6 p-5 sm:p-6">
           <FormSectionTitle icon={FileText}>{t('boardResolutions.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">

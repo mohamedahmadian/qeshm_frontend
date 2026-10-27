@@ -2764,6 +2764,10 @@ th {
   font-size: 12px;
 }
 
+.board-resolution-print-minutes strong {
+  font-weight: 700;
+}
+
 .board-resolution-print-clause {
   display: inline-block;
   margin: 0;
@@ -2823,21 +2827,27 @@ th {
 
 .board-resolution-print-sign-grid {
   width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
 }
 
-.board-resolution-print-sign-grid th,
-.board-resolution-print-sign-grid td {
-  border: 0;
+.board-resolution-print-sign-row {
+  display: grid;
+  width: 100%;
+}
+
+.board-resolution-print-sign-row + .board-resolution-print-sign-row {
+  border-top: 1px solid #111827;
+}
+
+.board-resolution-print-sign-card {
+  min-width: 0;
   border-inline-end: 1px solid #111827;
 }
 
-.board-resolution-print-sign-grid tr > :last-child {
+.board-resolution-print-sign-row > :last-child {
   border-inline-end: 0;
 }
 
-.board-resolution-print-signer {
+.board-resolution-print-table .board-resolution-print-signer {
   background: #f4e4cc;
   padding: 6px 8px;
   text-align: center;
@@ -2847,19 +2857,27 @@ th {
 
 .board-resolution-print-signer span {
   display: block;
+  width: 100%;
+  text-align: center;
 }
 
-.board-resolution-print-mark {
+.board-resolution-print-table .board-resolution-print-mark {
   min-height: 22mm;
   height: 22mm;
   background: #fff;
+  text-align: center;
+  vertical-align: middle;
 }
 
-.board-resolution-print-sign-grid tr + tr .board-resolution-print-signer {
-  border-top: 1px solid #111827;
+.board-resolution-print-mark img {
+  display: block;
+  margin-inline: auto;
+  max-height: 20mm;
+  max-width: 90%;
+  object-fit: contain;
 }
 
-.board-resolution-print-sign-grid .board-resolution-print-mark {
+.board-resolution-print-sign-card .board-resolution-print-mark {
   border-top: 1px solid #111827;
 }
 
@@ -3476,6 +3494,10 @@ th {
     padding-inline: 0 !important;
     padding-bottom: 0 !important;
     background: #fff !important;
+  }
+
+  body:has(> .board-resolution-print-sheet) > :not(.board-resolution-print-sheet) {
+    display: none !important;
   }
 
   .board-request-print-sheet {
