@@ -133,7 +133,6 @@ export function UserChangePasswordModal({
 }) {
   const { t } = useTranslation()
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [sendSms, setSendSms] = useState(false)
   const [saving, setSaving] = useState(false)
   const hasPhone = Boolean(user.phone?.trim())
@@ -141,7 +140,6 @@ export function UserChangePasswordModal({
   useEffect(() => {
     if (!open) return
     setPassword('')
-    setConfirmPassword('')
     setSendSms(false)
     setSaving(false)
   }, [open])
@@ -150,10 +148,6 @@ export function UserChangePasswordModal({
     event.preventDefault()
     if (password.length < 8) {
       toast.error(t('users.passwordMin'))
-      return
-    }
-    if (password !== confirmPassword) {
-      toast.error(t('auth.passwordMismatch'))
       return
     }
     if (sendSms && !hasPhone) {
@@ -190,18 +184,6 @@ export function UserChangePasswordModal({
             className={fieldClassName}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-        </FormField>
-        <FormField icon={KeyRound} label={t('auth.confirmPassword')} htmlFor="user-confirm-password">
-          <input
-            id="user-confirm-password"
-            type="password"
-            className={fieldClassName}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
             required
             minLength={8}
             autoComplete="new-password"
