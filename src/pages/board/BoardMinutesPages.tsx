@@ -73,6 +73,8 @@ import {
   boardMinuteSmsPath,
   boardMinutesCreatePath,
   boardMinutesListPath,
+  boardMinutesMemberKind,
+  boardMinutesMemberName,
   boardRequestPath,
 } from './board-paths'
 
@@ -501,12 +503,16 @@ export function BoardMinutesDetailPage() {
                 <FormFactTile
                   key={row.id}
                   icon={Users}
-                  label={row.user.fullName}
-                  value={
+                  label={boardMinutesMemberName(row)}
+                  value={[
+                    row.title,
+                    t(`boardMinutes.memberKinds.${boardMinutesMemberKind(row)}`),
                     row.attendance === boardMinutesAttendances.PRESENT
                       ? t('boardMinutes.present')
-                      : t('boardMinutes.absent')
-                  }
+                      : t('boardMinutes.absent'),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                   tone={row.attendance === boardMinutesAttendances.PRESENT ? 'teal' : undefined}
                 />
               ))}
@@ -606,10 +612,10 @@ function BoardMinutesSmsForm({
   )
   const [body, setBody] = useState(defaultBody)
   const recipients = item.members
-  const selectable = recipients.filter((row) => row.user.phone?.trim())
+  const selectable = recipients.filter((row) => row.user?.phone?.trim())
   const [selectedIds, setSelectedIds] = useState(() => selectable.map((row) => row.id))
   const selected = recipients.filter((row) => selectedIds.includes(row.id))
-  const withPhone = selected.filter((row) => row.user.phone?.trim())
+  const withPhone = selected.filter((row) => row.user?.phone?.trim())
   const detailsPath = boardMinutePath(minutesId, requestId)
 
   function submit() {
@@ -696,7 +702,7 @@ function BoardMinutesSmsForm({
           {recipients.length ? (
             <div className="grid gap-2 sm:grid-cols-2">
               {recipients.map((row) => {
-                const phone = row.user.phone?.trim() || ''
+                const phone = row.user?.phone?.trim() || ''
                 return (
                   <CheckboxField
                     key={row.id}
@@ -705,7 +711,7 @@ function BoardMinutesSmsForm({
                     disabled={!phone}
                     label={
                       <span className="flex min-w-0 flex-col">
-                        <span>{row.user.fullName}</span>
+                        <span>{boardMinutesMemberName(row)}</span>
                         <span className="text-xs text-ink-500">
                           {phone ? localizeDigits(phone, locale) : t('boardMinutes.smsNoPhone')}
                         </span>

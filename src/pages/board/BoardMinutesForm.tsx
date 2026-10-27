@@ -1,4 +1,5 @@
 import {
+  Briefcase,
   Building2,
   CalendarDays,
   Check,
@@ -6,11 +7,13 @@ import {
   Hash,
   MessageSquare,
   Paperclip,
+  PenLine,
   Plus,
   ScrollText,
   Search,
   Stamp,
   Trash2,
+  UserPlus,
   UserRound,
   Users,
   X,
@@ -38,15 +41,17 @@ import { api, getApiErrorMessage } from '../../lib/api'
 import { localizeDigits, todayIsoDate } from '../../lib/datetime'
 import {
   boardMinutesAttendances,
+  boardMinutesMemberKinds,
   boardMinutesStatuses,
   type BoardMinutes,
   type BoardMinutesAttendance,
+  type BoardMinutesMemberKind,
   type BoardMinutesStatus,
   type BoardSignatory,
   type ManagedUser,
   type Paginated,
 } from '../../types/app'
-import { boardMinuteSmsPath, boardSignatoryFullName } from './board-paths'
+import { boardMinuteSmsPath, boardMinutesMemberName, boardSignatoryFullName } from './board-paths'
 import {
   BoardMinutesAttachmentsField,
   emptyPendingMinutesFiles,
@@ -69,13 +74,75 @@ export type BoardMinutesPayload = {
   body: string | null
   status: BoardMinutesStatus
   requestIds: string[]
-  members: { userId: string; attendance: BoardMinutesAttendance }[]
+  members: {
+    kind: BoardMinutesMemberKind
+    userId: string | null
+    signatoryId: string | null
+    firstName: string
+    lastName: string
+    title: string | null
+    attendance: BoardMinutesAttendance
+  }[]
   imageIds: string[]
   audioIds: string[]
 }
 
 type ApprovedRequest = { id: string; subject: string; requestedAt: string; trackingNo?: string }
-type MinutesMember = { userId: string; name: string; attendance: BoardMinutesAttendance }
+type MinutesMember = {
+  key: string
+  kind: BoardMinutesMemberKind
+  userId: string | null
+  signatoryId: string | null
+  firstName: string
+  lastName: string
+  title: string
+  attendance: BoardMinutesAttendance
+}
+
+function memberKey() {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `member-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function draftFromSaved(row: BoardMinutes['members'][number]): MinutesMember {
+  return {
+    key: row.id,
+    kind: row.kind ?? (row.signatoryId ? boardMinutesMemberKinds.SIGNATORY : boardMinutesMemberKinds.USER),
+    userId: row.userId,
+    signatoryId: row.signatoryId,
+    firstName: row.firstName || '',
+    lastName: row.lastName || '',
+    title: row.title || '',
+    attendance: row.attendance,
+  }
+}
+
+function draftFromSignatory(row: BoardSignatory): MinutesMember {
+  return {
+    key: row.id,
+    kind: boardMinutesMemberKinds.SIGNATORY,
+    userId: row.userId,
+    signatoryId: row.id,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    title: row.title,
+    attendance: boardMinutesAttendances.PRESENT,
+  }
+}
+
+function draftFromUser(user: ManagedUser): MinutesMember {
+  return {
+    key: user.id,
+    kind: boardMinutesMemberKinds.USER,
+    userId: user.id,
+    signatoryId: null,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    title: user.position?.name ?? '',
+    attendance: boardMinutesAttendances.PRESENT,
+  }
+}
 
 export function BoardMinutesForm({
   initial,
@@ -104,12 +171,7 @@ export function BoardMinutesForm({
   const requestsInitialized = useRef(false)
   const membersSeeded = useRef(false)
   const [members, setMembers] = useState<MinutesMember[]>(
-    () =>
-      initial?.members.map((row) => ({
-        userId: row.userId,
-        name: row.user.fullName,
-        attendance: row.attendance,
-      })) ?? [],
+    () => initial?.members.map(draftFromSaved) ?? [],
   )
   const [files, setFiles] = useState(() =>
     initial ? pendingFilesFromAttachments(initial.attachments) : emptyPendingMinutesFiles(),
@@ -159,31 +221,60 @@ export function BoardMinutesForm({
   }, [requestChoices, requests.data])
 
   useEffect(() => {
+    if (initial) {
+      membersSeeded.current = true
+      return
+    }
     if (membersSeeded.current || !signatories.data) return
     membersSeeded.current = true
-    const extras = signatories.data.flatMap((row) => {
-      if (!row.userId) return []
-      return [
-        {
-          userId: row.userId,
-          name: row.user?.fullName || boardSignatoryFullName(row),
-          attendance: boardMinutesAttendances.PRESENT,
-        } satisfies MinutesMember,
-      ]
-    })
+    const extras = signatories.data.map(draftFromSignatory)
     if (!extras.length) return
     setMembers((current) => {
-      const seen = new Set(current.map((row) => row.userId))
-      const next = extras.filter((row) => !seen.has(row.userId))
+      const seenUsers = new Set(current.map((row) => row.userId).filter(Boolean))
+      const seenSignatories = new Set(current.map((row) => row.signatoryId).filter(Boolean))
+      const next = extras.filter((row) => {
+        if (row.signatoryId && seenSignatories.has(row.signatoryId)) return false
+        if (row.userId && seenUsers.has(row.userId)) return false
+        return true
+      })
       return next.length ? [...current, ...next] : current
     })
-  }, [signatories.data])
+  }, [initial, signatories.data])
+
+  function memberAlreadyAdded(next: Pick<MinutesMember, 'userId' | 'signatoryId'>) {
+    return members.some(
+      (row) =>
+        (next.signatoryId && row.signatoryId === next.signatoryId) ||
+        (next.userId && row.userId === next.userId),
+    )
+  }
 
   function addMember(user: ManagedUser) {
-    if (members.some((row) => row.userId === user.id)) return
+    if (memberAlreadyAdded({ userId: user.id, signatoryId: null })) return
+    setMembers((current) => [...current, draftFromUser(user)])
+    setMembersModalOpen(false)
+  }
+
+  function addSignatory(row: BoardSignatory) {
+    const draft = draftFromSignatory(row)
+    if (memberAlreadyAdded(draft)) return
+    setMembers((current) => [...current, draft])
+    setMembersModalOpen(false)
+  }
+
+  function addGuest(guest: { firstName: string; lastName: string; title: string }) {
     setMembers((current) => [
       ...current,
-      { userId: user.id, name: user.fullName, attendance: boardMinutesAttendances.PRESENT },
+      {
+        key: memberKey(),
+        kind: boardMinutesMemberKinds.GUEST,
+        userId: null,
+        signatoryId: null,
+        firstName: guest.firstName,
+        lastName: guest.lastName,
+        title: guest.title,
+        attendance: boardMinutesAttendances.PRESENT,
+      },
     ])
     setMembersModalOpen(false)
   }
@@ -194,15 +285,28 @@ export function BoardMinutesForm({
       toast.error(t('boardMinutes.dateRequired'))
       return
     }
+    if (subject.trim().length < 2) {
+      toast.error(t('boardMinutes.subjectRequired'))
+      document.getElementById('minutesSubject')?.focus()
+      return
+    }
     setSaving(true)
     try {
       await onSubmit({
         heldAt,
-        subject,
+        subject: subject.trim(),
         body: body.trim() || null,
         status,
         requestIds,
-        members: members.map((row) => ({ userId: row.userId, attendance: row.attendance })),
+        members: members.map((row) => ({
+          kind: row.kind,
+          userId: row.userId,
+          signatoryId: row.signatoryId,
+          firstName: row.firstName,
+          lastName: row.lastName,
+          title: row.title.trim() || null,
+          attendance: row.attendance,
+        })),
         imageIds: files.imageIds,
         audioIds: files.audioIds,
       })
@@ -253,6 +357,7 @@ export function BoardMinutesForm({
         </div>
       ) : null}
       <AppForm
+        noValidate
         onSubmit={submit}
         className={`${formCardBodyClassName}${manage && tab !== 'info' ? ' hidden' : ''}`}
       >
@@ -382,15 +487,22 @@ export function BoardMinutesForm({
                   </thead>
                   <tbody>
                     {members.map((row) => (
-                      <tr key={row.userId} className="border-b border-line last:border-b-0">
-                        <td className="px-4 py-3 font-medium text-ink-800">{row.name}</td>
+                      <tr key={row.key} className="border-b border-line last:border-b-0">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-ink-800">{boardMinutesMemberName(row)}</p>
+                          <p className="text-xs text-ink-400">
+                            {[row.title, t(`boardMinutes.memberKinds.${row.kind}`)]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        </td>
                         <td className="px-4 py-3">
                           <ToggleField
                             checked={row.attendance === boardMinutesAttendances.PRESENT}
                             onChange={(checked) =>
                               setMembers((current) =>
                                 current.map((item) =>
-                                  item.userId === row.userId
+                                  item.key === row.key
                                     ? {
                                         ...item,
                                         attendance: checked
@@ -412,7 +524,7 @@ export function BoardMinutesForm({
                             icon
                             aria-label={t('boardMinutes.removeMember')}
                             title={t('boardMinutes.removeMember')}
-                            onClick={() => setMembers((current) => current.filter((item) => item.userId !== row.userId))}
+                            onClick={() => setMembers((current) => current.filter((item) => item.key !== row.key))}
                           >
                             <Trash2 className="size-4" aria-hidden />
                           </Button>
@@ -456,37 +568,57 @@ export function BoardMinutesForm({
       </AppForm>
       <MinutesMembersPickerModal
         open={membersModalOpen}
-        selectedIds={members.map((row) => row.userId)}
+        selectedUserIds={members.map((row) => row.userId).filter((id): id is string => Boolean(id))}
+        selectedSignatoryIds={members
+          .map((row) => row.signatoryId)
+          .filter((id): id is string => Boolean(id))}
+        signatories={signatories.data ?? []}
         onClose={() => setMembersModalOpen(false)}
-        onPick={addMember}
+        onPickUser={addMember}
+        onPickSignatory={addSignatory}
+        onAddGuest={addGuest}
       />
     </FormCard>
   )
 }
 
 const MEMBER_SEARCH_MIN_CHARS = 3
+const pickerTabs = ['employee', 'signatory', 'guest'] as const
+type PickerTab = (typeof pickerTabs)[number]
 
 function MinutesMembersPickerModal({
   open,
-  selectedIds,
+  selectedUserIds,
+  selectedSignatoryIds,
+  signatories,
   onClose,
-  onPick,
+  onPickUser,
+  onPickSignatory,
+  onAddGuest,
 }: {
   open: boolean
-  selectedIds: string[]
+  selectedUserIds: string[]
+  selectedSignatoryIds: string[]
+  signatories: BoardSignatory[]
   onClose: () => void
-  onPick: (user: ManagedUser) => void
+  onPickUser: (user: ManagedUser) => void
+  onPickSignatory: (row: BoardSignatory) => void
+  onAddGuest: (guest: { firstName: string; lastName: string; title: string }) => void
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
+  const [tab, setTab] = useState<PickerTab>('employee')
   const [term, setTerm] = useState('')
+  const [guestFirstName, setGuestFirstName] = useState('')
+  const [guestLastName, setGuestLastName] = useState('')
+  const [guestTitle, setGuestTitle] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const needle = term.trim()
   const canSearch = needle.length >= MEMBER_SEARCH_MIN_CHARS
 
   const query = useQuery({
     queryKey: ['users', 'employees', 'minutes-member-search', needle],
-    enabled: open && canSearch,
+    enabled: open && tab === 'employee' && canSearch,
     queryFn: async () => {
       const { data } = await api.get<Paginated<ManagedUser>>('/users', {
         params: {
@@ -505,14 +637,27 @@ function MinutesMembersPickerModal({
   const items = useMemo(
     () =>
       canSearch
-        ? (query.data?.items ?? []).filter((user) => !selectedIds.includes(user.id))
+        ? (query.data?.items ?? []).filter((user) => !selectedUserIds.includes(user.id))
         : [],
-    [canSearch, query.data?.items, selectedIds],
+    [canSearch, query.data?.items, selectedUserIds],
+  )
+  const leftoverSignatories = useMemo(
+    () =>
+      signatories.filter(
+        (row) =>
+          !selectedSignatoryIds.includes(row.id) &&
+          !(row.userId && selectedUserIds.includes(row.userId)),
+      ),
+    [selectedSignatoryIds, selectedUserIds, signatories],
   )
 
   useEffect(() => {
     if (!open) return
     setTerm('')
+    setGuestFirstName('')
+    setGuestLastName('')
+    setGuestTitle('')
+    setTab('employee')
     const timer = window.setTimeout(() => inputRef.current?.focus(), 30)
     return () => window.clearTimeout(timer)
   }, [open])
@@ -529,7 +674,24 @@ function MinutesMembersPickerModal({
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, open])
 
+  function submitGuest(event: FormEvent) {
+    event.preventDefault()
+    const firstName = guestFirstName.trim()
+    const lastName = guestLastName.trim()
+    if (!firstName || !lastName) {
+      toast.error(t('boardMinutes.guestNameRequired'))
+      return
+    }
+    onAddGuest({ firstName, lastName, title: guestTitle.trim() })
+  }
+
   if (!open) return null
+
+  const tabIcons = {
+    employee: Users,
+    signatory: PenLine,
+    guest: UserPlus,
+  } as const
 
   return createPortal(
     <div
@@ -543,7 +705,7 @@ function MinutesMembersPickerModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="minutes-members-modal-title"
-        className="relative z-10 flex max-h-[min(88vh,36rem)] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-xl"
+        className="relative z-10 flex max-h-[min(88vh,40rem)] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-xl"
       >
         <header className="relative shrink-0 overflow-hidden bg-gradient-to-e from-mint-50 via-white to-teal-50 px-5 py-4">
           <div className="pointer-events-none absolute -start-8 -top-10 size-32 rounded-full bg-teal-200/30" aria-hidden />
@@ -566,58 +728,151 @@ function MinutesMembersPickerModal({
             </button>
           </div>
         </header>
-        <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
-          <div className="relative">
-            <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-teal-600" aria-hidden />
-            <input
-              id="minutes-member-search"
-              ref={inputRef}
-              value={term}
-              onChange={(event) => setTerm(event.target.value)}
-              className={`${fieldClassName} ps-10`}
-              placeholder={t('boardMinutes.searchMembersPlaceholder')}
-              aria-label={t('boardMinutes.searchMembers')}
-              autoComplete="off"
-            />
-          </div>
-          <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center gap-3 rounded-2xl px-3 py-2.5 hover:bg-cream-50"
+        <nav className="flex flex-wrap gap-2 border-b border-line bg-cream-50/60 px-4 py-3" role="tablist">
+          {pickerTabs.map((item) => {
+            const Icon = tabIcons[item]
+            const active = tab === item
+            return (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(item)}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 ${
+                  active
+                    ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
+                    : 'bg-white text-ink-700 ring-1 ring-line hover:bg-cream-50'
+                }`}
               >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700">
-                  <UserRound className="size-4" aria-hidden />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-ink-900">{item.fullName}</span>
-                  <span className="block truncate text-xs text-ink-400">
-                    {[
-                      item.position?.name,
-                      item.orgUnit?.name,
-                      item.nationalId ? localizeDigits(item.nationalId, locale) : null,
-                      item.phone ? localizeDigits(item.phone, locale) : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
+                <Icon className={`size-3.5 ${active ? 'text-white' : 'text-teal-600'}`} aria-hidden />
+                {t(`boardMinutes.pickerTabs.${item}`)}
+              </button>
+            )
+          })}
+        </nav>
+        <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
+          {tab === 'employee' ? (
+            <>
+              <div className="relative">
+                <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-teal-600" aria-hidden />
+                <input
+                  id="minutes-member-search"
+                  ref={inputRef}
+                  value={term}
+                  onChange={(event) => setTerm(event.target.value)}
+                  className={`${fieldClassName} ps-10`}
+                  placeholder={t('boardMinutes.searchMembersPlaceholder')}
+                  aria-label={t('boardMinutes.searchMembers')}
+                  autoComplete="off"
+                />
+              </div>
+              <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+                {items.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center gap-3 rounded-2xl px-3 py-2.5 hover:bg-cream-50"
+                  >
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700">
+                      <UserRound className="size-4" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-ink-900">{item.fullName}</span>
+                      <span className="block truncate text-xs text-ink-400">
+                        {[
+                          item.position?.name,
+                          item.orgUnit?.name,
+                          item.nationalId ? localizeDigits(item.nationalId, locale) : null,
+                          item.phone ? localizeDigits(item.phone, locale) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
+                    <Button type="button" variant="soft" onClick={() => onPickUser(item)}>
+                      <Check className="size-4" aria-hidden />
+                      {t('boardMinutes.pickMember')}
+                    </Button>
+                  </li>
+                ))}
+                {!items.length ? (
+                  <li className="px-3 py-6 text-center text-sm text-ink-400">
+                    {!canSearch
+                      ? t('boardMinutes.searchMembersHint')
+                      : query.isFetching
+                        ? t('common.loading')
+                        : t('users.noResults')}
+                  </li>
+                ) : null}
+              </ul>
+            </>
+          ) : null}
+          {tab === 'signatory' ? (
+            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+              {leftoverSignatories.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 hover:bg-cream-50"
+                >
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700">
+                    <PenLine className="size-4" aria-hidden />
                   </span>
-                </span>
-                <Button type="button" variant="soft" onClick={() => onPick(item)}>
-                  <Check className="size-4" aria-hidden />
-                  {t('boardMinutes.pickMember')}
-                </Button>
-              </li>
-            ))}
-            {!items.length ? (
-              <li className="px-3 py-6 text-center text-sm text-ink-400">
-                {!canSearch
-                  ? t('boardMinutes.searchMembersHint')
-                  : query.isFetching
-                    ? t('common.loading')
-                    : t('users.noResults')}
-              </li>
-            ) : null}
-          </ul>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-ink-900">
+                      {boardSignatoryFullName(item)}
+                    </span>
+                    <span className="block truncate text-xs text-ink-400">{item.title}</span>
+                  </span>
+                  <Button type="button" variant="soft" onClick={() => onPickSignatory(item)}>
+                    <Check className="size-4" aria-hidden />
+                    {t('boardMinutes.pickMember')}
+                  </Button>
+                </li>
+              ))}
+              {!leftoverSignatories.length ? (
+                <li className="px-3 py-6 text-center text-sm text-ink-400">
+                  {t('boardMinutes.allSignatoriesAdded')}
+                </li>
+              ) : null}
+            </ul>
+          ) : null}
+          {tab === 'guest' ? (
+            <AppForm onSubmit={submitGuest} autoFocusFirst className="space-y-4">
+              <FormField icon={UserRound} label={t('boardMinutes.guestFirstName')} htmlFor="minutes-guest-first">
+                <input
+                  id="minutes-guest-first"
+                  required
+                  className={fieldClassName}
+                  value={guestFirstName}
+                  onChange={(event) => setGuestFirstName(event.target.value)}
+                />
+              </FormField>
+              <FormField icon={UserRound} label={t('boardMinutes.guestLastName')} htmlFor="minutes-guest-last">
+                <input
+                  id="minutes-guest-last"
+                  required
+                  className={fieldClassName}
+                  value={guestLastName}
+                  onChange={(event) => setGuestLastName(event.target.value)}
+                />
+              </FormField>
+              <FormField icon={Briefcase} label={t('boardMinutes.guestTitle')} htmlFor="minutes-guest-title">
+                <input
+                  id="minutes-guest-title"
+                  className={fieldClassName}
+                  value={guestTitle}
+                  onChange={(event) => setGuestTitle(event.target.value)}
+                  placeholder={t('boardMinutes.guestTitlePlaceholder')}
+                />
+              </FormField>
+              <FormActions
+                submitLabel={t('boardMinutes.addGuest')}
+                cancelLabel={t('common.cancel')}
+                onCancel={onClose}
+                headerIcons={false}
+              />
+            </AppForm>
+          ) : null}
         </div>
       </section>
     </div>,

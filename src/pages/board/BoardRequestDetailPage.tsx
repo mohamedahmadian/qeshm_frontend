@@ -218,7 +218,7 @@ export function BoardRequestDetailPage() {
   const item = query.data
   const access = accessQuery.data
   const currentStage = item ? stageForStatus(item.status) : null
-  const canEdit = item ? canEditBoardRequest(item) : false
+  const canEdit = item ? canEditBoardRequest(item, user) : false
   const canDelete = canDeleteBoardRequests(user) || Boolean(access?.canDeleteRequests)
   const canReview = Boolean(item?.canReview ?? (currentStage && access?.stages[currentStage]))
   const admin = isAdmin(user)

@@ -30,6 +30,7 @@ import {
   type OrganizationUnit,
   type Paginated,
 } from '../../types/app'
+import { BoardRequestPrintButton } from './BoardRequestPrintSheet'
 import { BoardStatusBadge, boardStatusOptions } from './BoardStatusBadge'
 import { boardRequestEditPath, boardRequestPath } from './board-paths'
 
@@ -288,7 +289,8 @@ export function BoardPlansPage() {
                     viewTo={boardRequestPath(item.id)}
                     showView={false}
                     rowOpensView
-                    editTo={canEditBoardRequest(item) ? boardRequestEditPath(item.id) : undefined}
+                    extra={<BoardRequestPrintButton item={item} />}
+                    editTo={canEditBoardRequest(item, user) ? boardRequestEditPath(item.id) : undefined}
                     onDelete={
                       canDelete
                         ? () =>

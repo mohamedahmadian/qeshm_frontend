@@ -47,10 +47,14 @@ import { api, getImageUrl } from '../../lib/api'
 import { resolutionExecutorNames } from '../../lib/resolution-calendar'
 import type { BoardMinutes, BoardMinutesResolution, Paginated } from '../../types/app'
 import { boardResolutionStatuses } from '../../types/app'
-import { BoardResolutionStatusBadge } from './BoardStatusBadge'
+import { BoardResolutionStatusBadge, BoardSignatorySignedBadge } from './BoardStatusBadge'
 import { BoardMinutesDossierModal } from './BoardMinutesDossierModal'
 import { BoardMinutesResolutionForm, type BoardResolutionPayload } from './BoardMinutesResolutionForm'
-import { BoardResolutionPrintButton, BoardResolutionPrintSheet } from './BoardResolutionPrintSheet'
+import {
+  BoardResolutionPrintButton,
+  BoardResolutionPrintSheet,
+  BoardResolutionsPrintAllButton,
+} from './BoardResolutionPrintSheet'
 import {
   boardMinuteEditPath,
   boardMinutePath,
@@ -186,6 +190,7 @@ export function BoardMinutesResolutionListPage({ embedded = false }: { embedded?
   if (!minutesId || (!embedded && !minutes)) return <LoadingState />
   const base = boardMinuteResolutionsPath(minutesId, requestId)
   const rows = query.data?.items ?? []
+  const printAllAction = minutes ? <BoardResolutionsPrintAllButton minutes={minutes} /> : null
   const createAction = embedded ? (
     <Button type="button" onClick={() => setCreateOpen(true)}>
       <Plus className="size-4" aria-hidden />
@@ -198,6 +203,12 @@ export function BoardMinutesResolutionListPage({ embedded = false }: { embedded?
         {t('boardResolutions.createNew')}
       </Button>
     </Link>
+  )
+  const headerActions = (
+    <>
+      {printAllAction}
+      {createAction}
+    </>
   )
   const createModal = embedded ? (
     <ResolutionCreateModal
@@ -324,7 +335,7 @@ export function BoardMinutesResolutionListPage({ embedded = false }: { embedded?
   if (embedded) {
     return (
       <div className="space-y-4">
-        <div className="flex justify-end">{createAction}</div>
+        <div className="flex flex-wrap items-center justify-end gap-2">{headerActions}</div>
         {list}
         {createModal}
       </div>
@@ -346,7 +357,7 @@ export function BoardMinutesResolutionListPage({ embedded = false }: { embedded?
           />
         }
         backTo={boardMinutePath(minutesId, requestId)}
-        action={createAction}
+        action={headerActions}
       />
       {list}
     </div>
@@ -382,6 +393,7 @@ export function BoardMinutesResolutionCreatePage() {
 export function BoardMinutesResolutionEditPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { requestId, minutesId, resolutionId, minutes } = useMinutesContext()
   const query = useQuery({
     queryKey: ['board-minutes-resolution', minutesId, resolutionId],
@@ -412,6 +424,12 @@ export function BoardMinutesResolutionEditPage() {
           </Button>
         }
         onCancel={() => navigate(listPath)}
+        onSaveSignatories={async (signatories) => {
+          await api.patch(`/board/minutes/${minutesId}/resolutions/${resolutionId}`, { signatories })
+          toast.success(t('boardResolutions.signedSaved'))
+          await queryClient.invalidateQueries({ queryKey: ['board-minutes-resolution', minutesId, resolutionId] })
+          await queryClient.invalidateQueries({ queryKey: ['board-minutes-resolutions'] })
+        }}
         onSubmit={async (payload) => {
           await api.patch(`/board/minutes/${minutesId}/resolutions/${resolutionId}`, payload)
           toast.success(t('boardResolutions.updated'))
@@ -501,6 +519,7 @@ export function BoardMinutesResolutionDetailPage() {
                   label={row.title}
                   value={
                     <span className="flex flex-col gap-1">
+                      <BoardSignatorySignedBadge signed={Boolean(row.signedAt)} />
                       <span>{resolutionSignatoryName(row)}</span>
                       <span className="text-xs text-ink-500">
                         {row.signedAt ? <DateText value={row.signedAt} /> : '—'}

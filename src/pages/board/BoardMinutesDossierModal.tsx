@@ -39,7 +39,7 @@ import {
 import { BoardExistingAttachments } from './BoardAttachmentsField'
 import { BoardMinutesStatusBadge, BoardResolutionStatusBadge, BoardStatusBadge } from './BoardStatusBadge'
 import { BoardResolutionDueValue, resolutionProposerLabel } from './BoardResolutionDisplay'
-import { boardMinutePath, boardMinuteResolutionPath } from './board-paths'
+import { boardMinutePath, boardMinuteResolutionPath, boardMinutesMemberKind, boardMinutesMemberName } from './board-paths'
 
 function boolLabel(value: boolean | null, t: (key: string) => string) {
   if (value == null) return '—'
@@ -340,12 +340,16 @@ export function BoardMinutesDossierModal({
                       <FormFactTile
                         key={row.id}
                         icon={Users}
-                        label={row.user.fullName}
-                        value={
+                        label={boardMinutesMemberName(row)}
+                        value={[
+                          row.title,
+                          t(`boardMinutes.memberKinds.${boardMinutesMemberKind(row)}`),
                           row.attendance === boardMinutesAttendances.PRESENT
                             ? t('boardMinutes.present')
-                            : t('boardMinutes.absent')
-                        }
+                            : t('boardMinutes.absent'),
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                         tone={row.attendance === boardMinutesAttendances.PRESENT ? 'teal' : undefined}
                       />
                     ))}

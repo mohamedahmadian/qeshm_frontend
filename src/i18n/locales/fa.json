@@ -131,7 +131,7 @@
     "stakeholders": "درگاه یکپارچه ذی‌نفعان"
   },
   "menuSections": {
-    "boardMemory": "حافظه سازمانی",
+    "boardMemory": "جلسات",
     "boardTopics": "طرح موضوع"
   },
   "menus": {
@@ -182,11 +182,11 @@
     "boardRequests": "درخواست طرح موضوع",
     "boardPlans": "مدیریت طرح‌خواست‌ها",
     "boardSignatories": "دارندگان حق امضا",
-    "boardMinutes": "صورت‌جلسه‌ها",
+    "boardMinutes": "صورت جلسات",
     "boardSmartSearch": "جستجوی هوشمند حافظه سازمانی",
     "boardResolutions": "مدیریت مصوبات ( بندها )",
     "boardCalendar": "تقویم مصوبات",
-    "boardReports": "گزارش صورت‌جلسه‌ها",
+    "boardReports": "گزارشات صورت جلسات",
     "boardPermissions": "مدیریت مجوزها",
     "qeshmondiInquiry": "قشموندی",
     "qeshmondiCitizens": "قشموندان",
@@ -463,7 +463,7 @@
     "smsNoPhone": "شماره همراه برای این کاربر ثبت نشده است",
     "smsPhoneHint": "پیامک به شماره همراه کاربر ارسال می‌شود",
     "smsCharCount": "{{count}} نویسه",
-    "smsProviderPending": "سرویس پیامک هنوز فعال نشده است؛ ارسال ثبت شد",
+    "smsProviderPending": "تنظیمات سامانه پیامک کامل نیست؛ ارسال ثبت شد",
     "usernameTaken": "این نام کاربری قبلاً ثبت شده است",
     "save": "ذخیره",
     "cancel": "انصراف",
@@ -3309,7 +3309,7 @@
     "emptyPositions": "سمتی انتخاب نشده است"
   },
   "boardMinutes": {
-    "title": "صورت‌جلسه‌ها",
+    "title": "صورت جلسات",
     "subtitle": "ثبت صورت‌جلسه هیئت مدیره و جستجو در پایگاه دانش",
     "create": "ثبت صورت‌جلسه",
     "createSubtitle": "تاریخ، موضوع، متن جلسه، اعضا و پیوست‌ها را وارد کنید",
@@ -3356,14 +3356,31 @@
     "linked": "مرتبط با درخواست",
     "kind": "نوع جلسه",
     "members": "حاضرین در جلسه",
-    "addMember": "افزودن عضو",
+    "addMember": "افزودن حاضر",
     "manageMembers": "افزودن",
     "searchMembers": "جستجوی کارمند",
     "searchMembersPlaceholder": "حداقل سه حرف از نام، کد ملی یا تلفن",
     "searchMembersHint": "برای نمایش افراد، حداقل سه حرف وارد کنید",
     "pickMember": "انتخاب",
-    "removeMember": "حذف عضو",
+    "removeMember": "حذف حاضر",
     "selectEmployee": "کارمند را انتخاب کنید",
+    "memberKinds": {
+      "USER": "کارمند",
+      "SIGNATORY": "دارنده حق امضا",
+      "GUEST": "مهمان"
+    },
+    "pickerTabs": {
+      "employee": "کارمند",
+      "signatory": "حق امضا",
+      "guest": "مهمان"
+    },
+    "allSignatoriesAdded": "همه دارندگان حق امضا اضافه شده‌اند",
+    "addGuest": "افزودن مهمان",
+    "guestFirstName": "نام",
+    "guestLastName": "نام خانوادگی",
+    "guestTitle": "سمت",
+    "guestTitlePlaceholder": "اختیاری",
+    "guestNameRequired": "نام و نام خانوادگی مهمان را وارد کنید",
     "present": "حضور",
     "absent": "عدم حضور",
     "noMembers": "هنوز عضوی اضافه نشده است",
@@ -3383,6 +3400,7 @@
     "confirmDelete": "این صورت‌جلسه حذف شود؟",
     "delete": "حذف صورت‌جلسه",
     "dateRequired": "تاریخ جلسه را وارد کنید",
+    "subjectRequired": "موضوع جلسه را وارد کنید",
     "filterStatus": "وضعیت جلسه",
     "filterKind": "نوع جلسه",
     "fromDate": "از تاریخ جلسه",
@@ -3407,7 +3425,7 @@
     "smsRecipients": "گیرندگان",
     "smsNoPhone": "بدون شماره",
     "smsCharCount": "{{count}} نویسه",
-    "smsProviderPending": "سرویس پیامک هنوز فعال نشده است؛ ارسال ثبت شد"
+    "smsProviderPending": "تنظیمات سامانه پیامک کامل نیست؛ ارسال ثبت شد"
   },
   "boardSmartSearch": {
     "title": "جستجوی هوشمند",
@@ -3483,11 +3501,20 @@
     "proposerUnit": "واحد پیشنهاد دهنده",
     "selectProposerUnit": "واحد پیشنهاد دهنده را انتخاب کنید",
     "notes": "خلاصه مذاکرات و توضیحات تکمیلی",
+    "tabs": {
+      "signatories": "دارندگان حق امضا",
+      "executors": "مجریان"
+    },
+    "signatoryTab": "امضاکننده {{n}}",
     "signatories": "دارندگان حق امضا",
     "addSignatory": "افزودن دارنده حق امضا",
     "selectSignatory": "دارنده حق امضا را انتخاب کنید",
     "signedAt": "تاریخ امضا",
-    "removeSignatory": "حذف از این مصوبه",
+    "signAction": "امضا",
+    "signed": "امضا شده",
+    "unsigned": "امضا نشده",
+    "signedSaved": "امضا ذخیره شد",
+    "removeSignatory": "حذف",
     "noSignatories": "هنوز دارنده‌ای برای این مصوبه انتخاب نشده است",
     "allSignatoriesAdded": "همه دارندگان حق امضا اضافه شده‌اند",
     "signatoryTitle": "سمت",
@@ -3498,6 +3525,8 @@
     "delete": "حذف مصوبه",
     "save": "ذخیره",
     "print": "پرینت",
+    "printAll": "چاپ کلیه مصوبات",
+    "printAllEmpty": "مصوبه‌ای برای چاپ وجود ندارد",
     "printSecretariat": "دبیرخانه هیأت مدیره",
     "printMinutesLine": "«صورتجلسه شماره <bold>{{number}}</bold> مورخ <bold>{{date}}</bold> هیأت مدیره»",
     "printBlank": "…………",

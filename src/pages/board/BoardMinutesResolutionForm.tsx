@@ -10,7 +10,7 @@ import {
   Trash2,
   UserRound,
 } from 'lucide-react'
-import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type FormEvent, type LucideIcon, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -22,11 +22,12 @@ import {
   ToggleField,
   fieldClassName,
 } from '../../components/ui/Form'
-import { FormCard, FormEmptyHint, FormSectionTitle, formCardBodyClassName } from '../../components/ui/FormLayout'
+import { FormCard, FormEmptyHint, formCardBodyClassName } from '../../components/ui/FormLayout'
 import { PersianDateField } from '../../components/ui/PersianDateField'
 import { OrgUnitTreeSelect } from '../../components/ui/OrgUnitTreeSelect'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { api, getApiErrorMessage, getImageUrl } from '../../lib/api'
+import { todayIsoDate } from '../../lib/datetime'
 import {
   boardResolutionStatuses,
   type BoardMinutesResolution,
@@ -37,6 +38,7 @@ import {
   type OrganizationUnit,
 } from '../../types/app'
 import { MinutesDictation } from './MinutesDictation'
+import { BoardSignatorySignedBadge } from './BoardStatusBadge'
 import { boardSignatoryFullName } from './board-paths'
 
 export type BoardResolutionSignatoryPayload = {
@@ -65,6 +67,14 @@ export type BoardResolutionPayload = {
 }
 
 type SignatoryDraft = BoardResolutionSignatoryPayload & { key: string }
+
+const resolutionPeopleTabs = ['signatories', 'executors'] as const
+type ResolutionPeopleTab = (typeof resolutionPeopleTabs)[number]
+
+const peopleTabIcons: Record<ResolutionPeopleTab, LucideIcon> = {
+  signatories: PenLine,
+  executors: Building2,
+}
 
 function emptyToNull(value: string) {
   const trimmed = value.trim()
@@ -95,10 +105,51 @@ function draftsFromInitial(initial?: BoardMinutesResolution): SignatoryDraft[] {
   }))
 }
 
+function PeopleTabButton({
+  active,
+  icon: Icon,
+  children,
+  onClick,
+}: {
+  active: boolean
+  icon?: LucideIcon
+  children: ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 ${
+        active
+          ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
+          : 'bg-white text-ink-700 ring-1 ring-line hover:bg-cream-50'
+      }`}
+    >
+      {Icon ? <Icon className={`size-3.5 ${active ? 'text-white' : 'text-teal-600'}`} aria-hidden /> : null}
+      {children}
+    </button>
+  )
+}
+
+function toSignatoryPayloads(rows: SignatoryDraft[]): BoardResolutionSignatoryPayload[] {
+  return rows.map((row) => ({
+    sourceSignatoryId: row.sourceSignatoryId,
+    firstName: row.firstName.trim(),
+    lastName: row.lastName.trim(),
+    title: row.title.trim(),
+    signatureImageId: row.signatureImageId,
+    signedAt: row.signedAt || null,
+  }))
+}
+
 export function BoardMinutesResolutionForm({
   initial,
   minutesTitle,
   onSubmit,
+  onSaveSignatories,
   onCancel,
   headerAction,
   headerIcons,
@@ -107,6 +158,7 @@ export function BoardMinutesResolutionForm({
   initial?: BoardMinutesResolution
   minutesTitle: string
   onSubmit: (payload: BoardResolutionPayload) => Promise<void>
+  onSaveSignatories?: (signatories: BoardResolutionSignatoryPayload[]) => Promise<void>
   onCancel: () => void
   headerAction?: ReactNode
   headerIcons?: boolean
@@ -132,6 +184,10 @@ export function BoardMinutesResolutionForm({
   const [proposerUnitId, setProposerUnitId] = useState(initial?.proposerUnitId ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [signatories, setSignatories] = useState<SignatoryDraft[]>(() => draftsFromInitial(initial))
+  const [peopleTab, setPeopleTab] = useState<ResolutionPeopleTab>('signatories')
+  const [activeSignatoryKey, setActiveSignatoryKey] = useState(
+    () => draftsFromInitial(initial)[0]?.key ?? '',
+  )
   const [addSignatoryId, setAddSignatoryId] = useState('')
   const [saving, setSaving] = useState(false)
   const seededDefaults = useRef(Boolean(initial))
@@ -161,15 +217,44 @@ export function BoardMinutesResolutionForm({
     setSignatories(catalog.data.map(draftFromCatalog))
   }, [catalog.data])
 
+  useEffect(() => {
+    if (signatories.some((row) => row.key === activeSignatoryKey)) return
+    setActiveSignatoryKey(signatories[0]?.key ?? '')
+  }, [signatories, activeSignatoryKey])
+
   function addSignatory(id: string) {
     setAddSignatoryId('')
     const source = (catalog.data ?? []).find((item) => item.id === id)
     if (!source || addedIds.has(source.id)) return
-    setSignatories((current) => [...current, draftFromCatalog(source)])
+    const draft = draftFromCatalog(source)
+    setSignatories((current) => [...current, draft])
+    setActiveSignatoryKey(draft.key)
+    setPeopleTab('signatories')
+  }
+
+  function signatoryTabLabel(row: SignatoryDraft, index: number) {
+    return boardSignatoryFullName(row) || row.title.trim() || t('boardResolutions.signatoryTab', { n: index + 1 })
   }
 
   function patchSignatory(key: string, patch: Partial<SignatoryDraft>) {
     setSignatories((current) => current.map((row) => (row.key === key ? { ...row, ...patch } : row)))
+  }
+
+  async function signSignatory(key: string) {
+    if (saving) return
+    const previous = signatories
+    const next = signatories.map((row) => (row.key === key ? { ...row, signedAt: todayIsoDate() } : row))
+    setSignatories(next)
+    if (!onSaveSignatories) return
+    setSaving(true)
+    try {
+      await onSaveSignatories(toSignatoryPayloads(next))
+    } catch (error) {
+      setSignatories(previous)
+      toast.error(getApiErrorMessage(error, t('common.error')))
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function submit(event: FormEvent) {
@@ -201,14 +286,7 @@ export function BoardMinutesResolutionForm({
         proposerText: proposerKind === 'TEXT' ? emptyToNull(proposerText) : null,
         proposerUnitId: proposerKind === 'UNIT' ? proposerUnitId || null : null,
         notes: emptyToNull(notes),
-        signatories: signatories.map((row) => ({
-          sourceSignatoryId: row.sourceSignatoryId,
-          firstName: row.firstName.trim(),
-          lastName: row.lastName.trim(),
-          title: row.title.trim(),
-          signatureImageId: row.signatureImageId,
-          signedAt: row.signedAt || null,
-        })),
+        signatories: toSignatoryPayloads(signatories),
       })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
@@ -224,7 +302,19 @@ export function BoardMinutesResolutionForm({
       subtitle={initial ? minutesTitle : t('boardResolutions.createSubtitle')}
       action={headerAction}
     >
-      <AppForm onSubmit={submit} className={formCardBodyClassName} autoFocusFirst={autoFocusFirst}>
+      <AppForm
+        onSubmit={submit}
+        onInvalidCapture={(event) => {
+          const target = event.target
+          if (!(target instanceof HTMLElement)) return
+          const match = /^signatory(?:First|Last|Title)-(.+)$/.exec(target.id)
+          if (!match) return
+          setPeopleTab('signatories')
+          setActiveSignatoryKey(match[1])
+        }}
+        className={formCardBodyClassName}
+        autoFocusFirst={autoFocusFirst}
+      >
         <FormField icon={FileText} label={t('boardResolutions.titleField')} htmlFor="resolutionTitle">
           <input
             id="resolutionTitle"
@@ -331,94 +421,138 @@ export function BoardMinutesResolutionForm({
             onChange={(event) => setNotes(event.target.value)}
           />
         </FormField>
-        <FormSectionTitle icon={PenLine}>{t('boardResolutions.signatories')}</FormSectionTitle>
-        <FormField icon={PenLine} label={t('boardResolutions.addSignatory')}>
-          <SearchSelect
-            value={addSignatoryId}
-            onChange={addSignatory}
-            placeholder={
-              availableSignatories.length
-                ? t('boardResolutions.selectSignatory')
-                : t('boardResolutions.allSignatoriesAdded')
-            }
-            options={availableSignatories.map((item) => ({
-              value: item.id,
-              label: `${boardSignatoryFullName(item)} — ${item.title}`,
-            }))}
-          />
-        </FormField>
-        {signatories.length ? (
-          <div className="space-y-3">
-            {signatories.map((row) => (
-              <div
-                key={row.key}
-                className="grid gap-3 rounded-2xl border border-teal-100 bg-cream-50/70 p-3 sm:grid-cols-2"
-              >
-                <FormField icon={UserRound} label={t('boardSignatories.firstName')} htmlFor={`signatoryFirst-${row.key}`}>
-                  <input
-                    id={`signatoryFirst-${row.key}`}
-                    required
-                    className={fieldClassName}
-                    value={row.firstName}
-                    onChange={(event) => patchSignatory(row.key, { firstName: event.target.value })}
-                  />
-                </FormField>
-                <FormField icon={UserRound} label={t('boardSignatories.lastName')} htmlFor={`signatoryLast-${row.key}`}>
-                  <input
-                    id={`signatoryLast-${row.key}`}
-                    required
-                    className={fieldClassName}
-                    value={row.lastName}
-                    onChange={(event) => patchSignatory(row.key, { lastName: event.target.value })}
-                  />
-                </FormField>
-                <FormField icon={PenLine} label={t('boardResolutions.signatoryTitle')} htmlFor={`signatoryTitle-${row.key}`}>
-                  <input
-                    id={`signatoryTitle-${row.key}`}
-                    required
-                    className={fieldClassName}
-                    value={row.title}
-                    onChange={(event) => patchSignatory(row.key, { title: event.target.value })}
-                  />
-                </FormField>
-                <FormField icon={CalendarRange} label={t('boardResolutions.signedAt')}>
-                  <PersianDateField
-                    value={row.signedAt ?? ''}
-                    onChange={(value) => patchSignatory(row.key, { signedAt: value ?? null })}
-                  />
-                </FormField>
-                <div className="flex items-end justify-between gap-3 sm:col-span-2">
-                  {row.signatureImageId ? (
-                    <img
-                      src={getImageUrl(row.signatureImageId)}
-                      alt={boardSignatoryFullName(row)}
-                      className="h-14 max-w-40 rounded-xl border border-line bg-white object-contain p-1"
-                    />
-                  ) : null}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setSignatories((current) => current.filter((item) => item.key !== row.key))}
+        <nav className="flex flex-wrap gap-2" role="tablist" aria-label={t('boardResolutions.section')}>
+          {resolutionPeopleTabs.map((item) => (
+            <PeopleTabButton
+              key={item}
+              active={peopleTab === item}
+              icon={peopleTabIcons[item]}
+              onClick={() => setPeopleTab(item)}
+            >
+              {t(`boardResolutions.tabs.${item}`)}
+            </PeopleTabButton>
+          ))}
+        </nav>
+        <div className={`space-y-4 ${peopleTab === 'signatories' ? '' : 'hidden'}`}>
+          <FormField icon={PenLine} label={t('boardResolutions.addSignatory')}>
+            <SearchSelect
+              value={addSignatoryId}
+              onChange={addSignatory}
+              placeholder={
+                availableSignatories.length
+                  ? t('boardResolutions.selectSignatory')
+                  : t('boardResolutions.allSignatoriesAdded')
+              }
+              options={availableSignatories.map((item) => ({
+                value: item.id,
+                label: `${boardSignatoryFullName(item)} — ${item.title}`,
+              }))}
+            />
+          </FormField>
+          {signatories.length ? (
+            <div className="space-y-3">
+              <nav className="flex flex-wrap gap-2" role="tablist" aria-label={t('boardResolutions.signatories')}>
+                {signatories.map((row, index) => (
+                  <PeopleTabButton
+                    key={row.key}
+                    active={activeSignatoryKey === row.key}
+                    icon={UserRound}
+                    onClick={() => setActiveSignatoryKey(row.key)}
                   >
-                    <Trash2 className="size-4" aria-hidden />
-                    {t('boardResolutions.removeSignatory')}
-                  </Button>
+                    {signatoryTabLabel(row, index)}
+                    <BoardSignatorySignedBadge signed={Boolean(row.signedAt)} />
+                  </PeopleTabButton>
+                ))}
+              </nav>
+              {signatories.map((row) => (
+                <div
+                  key={row.key}
+                  className={`grid gap-3 rounded-2xl border border-teal-100 bg-cream-50/70 p-3 sm:grid-cols-2 ${
+                    activeSignatoryKey === row.key ? '' : 'hidden'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 sm:col-span-2">
+                    <BoardSignatorySignedBadge signed={Boolean(row.signedAt)} />
+                    {!row.signedAt ? (
+                      <Button
+                        type="button"
+                        variant="soft"
+                        disabled={saving}
+                        onClick={() => void signSignatory(row.key)}
+                      >
+                        <PenLine className="size-4" aria-hidden />
+                        {t('boardResolutions.signAction')}
+                      </Button>
+                    ) : null}
+                  </div>
+                  <FormField icon={UserRound} label={t('boardSignatories.firstName')} htmlFor={`signatoryFirst-${row.key}`}>
+                    <input
+                      id={`signatoryFirst-${row.key}`}
+                      required
+                      className={fieldClassName}
+                      value={row.firstName}
+                      onChange={(event) => patchSignatory(row.key, { firstName: event.target.value })}
+                    />
+                  </FormField>
+                  <FormField icon={UserRound} label={t('boardSignatories.lastName')} htmlFor={`signatoryLast-${row.key}`}>
+                    <input
+                      id={`signatoryLast-${row.key}`}
+                      required
+                      className={fieldClassName}
+                      value={row.lastName}
+                      onChange={(event) => patchSignatory(row.key, { lastName: event.target.value })}
+                    />
+                  </FormField>
+                  <FormField icon={PenLine} label={t('boardResolutions.signatoryTitle')} htmlFor={`signatoryTitle-${row.key}`}>
+                    <input
+                      id={`signatoryTitle-${row.key}`}
+                      required
+                      className={fieldClassName}
+                      value={row.title}
+                      onChange={(event) => patchSignatory(row.key, { title: event.target.value })}
+                    />
+                  </FormField>
+                  <FormField icon={CalendarRange} label={t('boardResolutions.signedAt')}>
+                    <PersianDateField
+                      value={row.signedAt ?? ''}
+                      onChange={(value) => patchSignatory(row.key, { signedAt: value ?? null })}
+                    />
+                  </FormField>
+                  <div className="flex items-end justify-between gap-3 sm:col-span-2">
+                    {row.signatureImageId ? (
+                      <img
+                        src={getImageUrl(row.signatureImageId)}
+                        alt={boardSignatoryFullName(row)}
+                        className="h-14 max-w-40 rounded-xl border border-line bg-white object-contain p-1"
+                      />
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setSignatories((current) => current.filter((item) => item.key !== row.key))}
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                      {t('boardResolutions.removeSignatory')}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <FormEmptyHint>{t('boardResolutions.noSignatories')}</FormEmptyHint>
-        )}
-        <FormField icon={Building2} label={t('boardResolutions.unit')} htmlFor="resolutionExecutors-search">
-          <OrgUnitTreeSelect
-            id="resolutionExecutors"
-            value={unitIds}
-            onChange={setUnitIds}
-            units={units.data ?? []}
-            loading={units.isLoading}
-          />
-        </FormField>
+              ))}
+            </div>
+          ) : (
+            <FormEmptyHint>{t('boardResolutions.noSignatories')}</FormEmptyHint>
+          )}
+        </div>
+        <div className={peopleTab === 'executors' ? '' : 'hidden'}>
+          <FormField icon={Building2} label={t('boardResolutions.unit')} htmlFor="resolutionExecutors-search">
+            <OrgUnitTreeSelect
+              id="resolutionExecutors"
+              value={unitIds}
+              onChange={setUnitIds}
+              units={units.data ?? []}
+              loading={units.isLoading}
+            />
+          </FormField>
+        </div>
         <FormField icon={Stamp} label={t('boardResolutions.status')}>
           <ToggleField
             checked={status === boardResolutionStatuses.NOTIFIED}

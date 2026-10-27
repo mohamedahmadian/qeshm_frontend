@@ -4947,6 +4947,15 @@ export const boardMinutesAttendances = {
 export type BoardMinutesAttendance =
   (typeof boardMinutesAttendances)[keyof typeof boardMinutesAttendances];
 
+export const boardMinutesMemberKinds = {
+  USER: 'USER',
+  SIGNATORY: 'SIGNATORY',
+  GUEST: 'GUEST',
+} as const;
+
+export type BoardMinutesMemberKind =
+  (typeof boardMinutesMemberKinds)[keyof typeof boardMinutesMemberKinds];
+
 export const boardMinutesStatuses = {
   NOT_HELD: 'NOT_HELD',
   HELD: 'HELD',
@@ -4965,9 +4974,14 @@ export type BoardMinutesLinkedRequest = {
 
 export type BoardMinutesMember = {
   id: string;
-  userId: string;
+  kind: BoardMinutesMemberKind;
+  userId: string | null;
+  signatoryId: string | null;
+  firstName: string;
+  lastName: string;
+  title: string | null;
   attendance: BoardMinutesAttendance;
-  user: BoardPerson & { phone?: string | null };
+  user: (BoardPerson & { phone?: string | null }) | null;
 };
 
 export type BoardMinutesSmsResult = {

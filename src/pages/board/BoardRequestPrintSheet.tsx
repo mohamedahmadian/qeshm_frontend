@@ -1,8 +1,41 @@
+import { Printer } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { AppLogo } from '../../components/brand/AppLogo'
+import { Button } from '../../components/ui/Form'
 import { DateText } from '../../components/ui/DateText'
 import { localizeDigits } from '../../lib/datetime'
 import type { BoardRequest } from '../../types/app'
+
+export function BoardRequestPrintButton({
+  item,
+  variant = 'icon',
+}: {
+  item: BoardRequest
+  variant?: 'icon' | 'button'
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button
+        type="button"
+        variant={variant === 'icon' ? 'ghost' : 'soft'}
+        icon={variant === 'icon'}
+        aria-label={t('boardRequests.print')}
+        title={t('boardRequests.print')}
+        onClick={() => setOpen(true)}
+      >
+        <Printer className="size-4" aria-hidden />
+        {variant === 'button' ? t('boardRequests.print') : null}
+      </Button>
+      {open ? (
+        <BoardRequestPrintSheet item={item} autoPrint onPrinted={() => setOpen(false)} />
+      ) : null}
+    </>
+  )
+}
 
 function PrintDate({ value }: { value: string | null }) {
   if (!value) return null
@@ -78,15 +111,34 @@ function SignBlock({
   )
 }
 
-export function BoardRequestPrintSheet({ item }: { item: BoardRequest }) {
+export function BoardRequestPrintSheet({
+  item,
+  autoPrint,
+  onPrinted,
+}: {
+  item: BoardRequest
+  autoPrint?: boolean
+  onPrinted?: () => void
+}) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const topicHistory = item.topicHistory?.trim() || ''
 
-  return (
+  useEffect(() => {
+    if (!autoPrint) return
+    const finish = () => onPrinted?.()
+    window.addEventListener('afterprint', finish)
+    const id = window.setTimeout(() => window.print(), 80)
+    return () => {
+      window.removeEventListener('afterprint', finish)
+      window.clearTimeout(id)
+    }
+  }, [autoPrint, onPrinted])
+
+  return createPortal(
     <section className="board-request-print-sheet hidden print:flex">
       <table className="board-request-print-table">
-        <thead>
+        <tbody>
           <tr className="board-request-print-head">
             <th className="board-request-print-logo">
               <AppLogo decorative className="board-request-print-emblem" />
@@ -109,8 +161,6 @@ export function BoardRequestPrintSheet({ item }: { item: BoardRequest }) {
               </p>
             </th>
           </tr>
-        </thead>
-        <tbody>
           <tr>
             <td colSpan={3}>
               <PrintLine label={t('boardRequests.printRequester')} value={item.unit.name} />
@@ -264,23 +314,17 @@ export function BoardRequestPrintSheet({ item }: { item: BoardRequest }) {
           </tr>
           <tr className="board-request-print-ceo">
             <td colSpan={3}>
-              <table className="board-request-print-split">
-                <tbody>
-                  <tr>
-                    <td>
-                      <p className="board-request-print-office-sign is-center">
-                        <span>{t('boardRequests.printCeoSign')}</span>
-                        {item.ceoBy?.fullName ? <strong>{item.ceoBy.fullName}</strong> : null}
-                      </p>
-                    </td>
-                    <td />
-                  </tr>
-                </tbody>
-              </table>
+              <p className="board-request-print-office-sign is-center">
+                <span>
+                  {t('boardRequests.printSign')}: {t('boardRequests.printCeoSign')}
+                </span>
+                {item.ceoBy?.fullName ? <strong>{item.ceoBy.fullName}</strong> : null}
+              </p>
             </td>
           </tr>
         </tbody>
       </table>
-    </section>
+    </section>,
+    document.body,
   )
 }

@@ -66,6 +66,7 @@ export function BoardRequestCreatePage() {
 
 export function BoardRequestEditPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { id } = useParams()
   const navigate = useNavigate()
   const query = useQuery({
@@ -77,7 +78,7 @@ export function BoardRequestEditPage() {
     },
   })
   if (!query.data || !id) return <LoadingState />
-  if (!canEditBoardRequest(query.data)) {
+  if (!canEditBoardRequest(query.data, user)) {
     return (
       <div className={formShellClassName}>
         <PageHeader

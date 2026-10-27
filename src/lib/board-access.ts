@@ -46,11 +46,15 @@ export function canChooseBoardRequestKind(
   return isBoardModuleAdmin(user)
 }
 
-export function canEditBoardRequest(item: {
-  kind: string
-  status: string
-  ceoAt?: string | null
-}) {
+export function canEditBoardRequest(
+  item: {
+    kind: string
+    status: string
+    ceoAt?: string | null
+  },
+  user?: Pick<AuthUser, 'isAdmin' | 'roles'> | null,
+) {
+  if (isBoardModuleAdmin(user)) return true
   if (item.status === 'PENDING_REVIEW') return true
   return item.kind === 'MANAGEMENT' && item.status === 'PENDING_CEO' && !item.ceoAt
 }

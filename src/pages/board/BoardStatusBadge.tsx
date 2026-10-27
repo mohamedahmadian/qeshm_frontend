@@ -67,3 +67,18 @@ export function BoardResolutionStatusBadge({ value }: { value: BoardResolutionSt
 }
 
 export const boardResolutionStatusOptions = Object.values(boardResolutionStatuses)
+
+export function BoardSignatorySignedBadge({ signed }: { signed: boolean }) {
+  const { t } = useTranslation()
+  return (
+    <span
+      className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+        signed
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+          : 'border-amber-200 bg-amber-50 text-amber-900'
+      }`}
+    >
+      {t(signed ? 'boardResolutions.signed' : 'boardResolutions.unsigned')}
+    </span>
+  )
+}

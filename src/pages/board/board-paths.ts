@@ -38,6 +38,26 @@ export function boardSignatoryFullName(item: { firstName: string; lastName: stri
   return `${item.firstName} ${item.lastName}`.trim()
 }
 
+export function boardMinutesMemberName(item: {
+  firstName?: string | null
+  lastName?: string | null
+  user?: { fullName?: string | null } | null
+}) {
+  const name = `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim()
+  return name || item.user?.fullName?.trim() || ''
+}
+
+export function boardMinutesMemberKind(item: {
+  kind?: string | null
+  signatoryId?: string | null
+  userId?: string | null
+}) {
+  if (item.kind === 'SIGNATORY' || item.kind === 'GUEST' || item.kind === 'USER') return item.kind
+  if (item.signatoryId) return 'SIGNATORY'
+  if (item.userId) return 'USER'
+  return 'GUEST'
+}
+
 export function boardPermissionsPath() {
   return '/board/permissions'
 }
