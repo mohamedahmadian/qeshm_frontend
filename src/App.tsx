@@ -305,6 +305,7 @@ import {
   BoardMinutesResolutionDetailPage,
   BoardMinutesResolutionEditPage,
   BoardMinutesResolutionListPage,
+  BoardMinutesResolutionSmsPage,
 } from './pages/board/BoardMinutesResolutionPages'
 import { BoardResolutionsListPage } from './pages/board/BoardResolutionsListPage'
 import { BoardSmartSearchPage } from './pages/board/BoardSmartSearchPage'
@@ -576,6 +577,10 @@ export default function App() {
                     element={<BoardMinutesResolutionCreatePage />}
                   />
                   <Route
+                    path="/board/requests/:requestId/minutes/:minutesId/resolutions/:resolutionId/sms"
+                    element={<BoardMinutesResolutionSmsPage />}
+                  />
+                  <Route
                     path="/board/requests/:requestId/minutes/:minutesId/resolutions/:resolutionId/edit"
                     element={<BoardMinutesResolutionEditPage />}
                   />
@@ -605,6 +610,10 @@ export default function App() {
                   <Route path="/board/minutes/:minutesId/sms" element={<BoardMinutesSmsPage />} />
                   <Route path="/board/minutes/:minutesId/edit" element={<BoardMinutesEditPage />} />
                   <Route path="/board/minutes/:minutesId/resolutions/new" element={<BoardMinutesResolutionCreatePage />} />
+                  <Route
+                    path="/board/minutes/:minutesId/resolutions/:resolutionId/sms"
+                    element={<BoardMinutesResolutionSmsPage />}
+                  />
                   <Route
                     path="/board/minutes/:minutesId/resolutions/:resolutionId/edit"
                     element={<BoardMinutesResolutionEditPage />}

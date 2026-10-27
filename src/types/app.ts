@@ -4992,6 +4992,14 @@ export type BoardMinutesSmsResult = {
   providerMessage?: string;
 };
 
+export type BoardResolutionSmsResult = BoardMinutesSmsResult;
+
+export type BoardResolutionUnit = {
+  id: string;
+  name: string;
+  phone?: string | null;
+};
+
 export type BoardMinutesAttachment = {
   id: string;
   kind: 'IMAGE' | 'AUDIO';
@@ -5117,6 +5125,23 @@ export type BoardResolutionSignatory = {
   sortOrder: number
 }
 
+export type BoardResolutionProgressReport = {
+  id: string
+  resolutionId: string
+  reportedAt: string
+  title: string
+  category: string | null
+  body: string | null
+  progressAmount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type BoardResolutionProgressList = {
+  items: BoardResolutionProgressReport[]
+  totalProgress: number
+}
+
 export type BoardMinutesResolution = {
   id: string;
   minutesId: string;
@@ -5124,9 +5149,9 @@ export type BoardMinutesResolution = {
   description: string | null;
   status: BoardResolutionStatus;
   unitId: string | null;
-  unit: { id: string; name: string } | null;
+  unit: BoardResolutionUnit | null;
   unitIds?: string[];
-  units?: { id: string; name: string }[];
+  units?: BoardResolutionUnit[];
   dueKind: BoardResolutionDueKind;
   dueDate: string | null;
   hasTopicHistory: boolean;
@@ -5134,7 +5159,7 @@ export type BoardMinutesResolution = {
   proposerKind: BoardResolutionProposerKind;
   proposerText: string | null;
   proposerUnitId: string | null;
-  proposerUnit: { id: string; name: string } | null;
+  proposerUnit: BoardResolutionUnit | null;
   notes: string | null;
   signatories: BoardResolutionSignatory[];
   createdAt: string;

@@ -109,3 +109,11 @@ export function boardMinuteResolutionPath(
 ) {
   return `${boardMinuteResolutionsPath(minutesId, requestId)}/${resolutionId}`
 }
+
+export function boardMinuteResolutionSmsPath(
+  minutesId: string,
+  resolutionId: string,
+  requestId?: string,
+) {
+  return `${boardMinuteResolutionPath(minutesId, resolutionId, requestId)}/sms`
+}

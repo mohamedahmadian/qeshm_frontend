@@ -749,6 +749,9 @@ export function getPageMeta(pathname: string): {
   if (/\/minutes\/[^/]+\/resolutions\/[^/]+\/edit$/.test(pathname)) {
     return { titleKey: 'boardResolutions.edit', subtitleKey: 'boardResolutions.editSubtitle' }
   }
+  if (/\/minutes\/[^/]+\/resolutions\/[^/]+\/sms$/.test(pathname)) {
+    return { titleKey: 'boardResolutions.smsTitle', subtitleKey: 'boardResolutions.smsSubtitle' }
+  }
   if (/\/minutes\/[^/]+\/resolutions\/[^/]+$/.test(pathname)) {
     return { titleKey: 'boardResolutions.details', subtitleKey: 'boardResolutions.detailsSubtitle' }
   }

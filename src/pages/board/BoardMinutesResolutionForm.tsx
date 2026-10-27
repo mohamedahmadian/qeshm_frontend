@@ -1,8 +1,10 @@
 import {
   Building2,
   CalendarRange,
+  ClipboardList,
   FileText,
   History,
+  MessageSquare,
   PenLine,
   Scale,
   ScrollText,
@@ -13,6 +15,7 @@ import {
 import { type FormEvent, type LucideIcon, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   AppForm,
@@ -38,6 +41,7 @@ import {
   type OrganizationUnit,
 } from '../../types/app'
 import { MinutesDictation } from './MinutesDictation'
+import { BoardResolutionProgressTab } from './BoardResolutionProgressTab'
 import { BoardSignatorySignedBadge } from './BoardStatusBadge'
 import { boardSignatoryFullName } from './board-paths'
 
@@ -68,8 +72,16 @@ export type BoardResolutionPayload = {
 
 type SignatoryDraft = BoardResolutionSignatoryPayload & { key: string }
 
+const resolutionMainTabs = ['info', 'progress'] as const
+type ResolutionMainTab = (typeof resolutionMainTabs)[number]
+
 const resolutionPeopleTabs = ['signatories', 'executors'] as const
 type ResolutionPeopleTab = (typeof resolutionPeopleTabs)[number]
+
+const mainTabIcons: Record<ResolutionMainTab, LucideIcon> = {
+  info: FileText,
+  progress: ClipboardList,
+}
 
 const peopleTabIcons: Record<ResolutionPeopleTab, LucideIcon> = {
   signatories: PenLine,
@@ -154,6 +166,7 @@ export function BoardMinutesResolutionForm({
   headerAction,
   headerIcons,
   autoFocusFirst,
+  smsTo,
 }: {
   initial?: BoardMinutesResolution
   minutesTitle: string
@@ -163,6 +176,7 @@ export function BoardMinutesResolutionForm({
   headerAction?: ReactNode
   headerIcons?: boolean
   autoFocusFirst?: boolean
+  smsTo?: string
 }) {
   const { t } = useTranslation()
   const [title, setTitle] = useState(initial?.title ?? '')
@@ -184,6 +198,7 @@ export function BoardMinutesResolutionForm({
   const [proposerUnitId, setProposerUnitId] = useState(initial?.proposerUnitId ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [signatories, setSignatories] = useState<SignatoryDraft[]>(() => draftsFromInitial(initial))
+  const [mainTab, setMainTab] = useState<ResolutionMainTab>('info')
   const [peopleTab, setPeopleTab] = useState<ResolutionPeopleTab>('signatories')
   const [activeSignatoryKey, setActiveSignatoryKey] = useState(
     () => draftsFromInitial(initial)[0]?.key ?? '',
@@ -302,17 +317,34 @@ export function BoardMinutesResolutionForm({
       subtitle={initial ? minutesTitle : t('boardResolutions.createSubtitle')}
       action={headerAction}
     >
+      {initial ? (
+        <div className="flex flex-wrap items-center gap-2 px-5 pt-5 sm:px-6">
+          <nav className="flex flex-wrap gap-2" role="tablist" aria-label={t('boardResolutions.edit')}>
+            {resolutionMainTabs.map((item) => (
+              <PeopleTabButton
+                key={item}
+                active={mainTab === item}
+                icon={mainTabIcons[item]}
+                onClick={() => setMainTab(item)}
+              >
+                {t(`boardResolutions.mainTabs.${item}`)}
+              </PeopleTabButton>
+            ))}
+          </nav>
+        </div>
+      ) : null}
       <AppForm
         onSubmit={submit}
         onInvalidCapture={(event) => {
           const target = event.target
           if (!(target instanceof HTMLElement)) return
+          setMainTab('info')
           const match = /^signatory(?:First|Last|Title)-(.+)$/.exec(target.id)
           if (!match) return
           setPeopleTab('signatories')
           setActiveSignatoryKey(match[1])
         }}
-        className={formCardBodyClassName}
+        className={`${formCardBodyClassName} ${initial && mainTab !== 'info' ? 'hidden' : ''}`}
         autoFocusFirst={autoFocusFirst}
       >
         <FormField icon={FileText} label={t('boardResolutions.titleField')} htmlFor="resolutionTitle">
@@ -421,18 +453,28 @@ export function BoardMinutesResolutionForm({
             onChange={(event) => setNotes(event.target.value)}
           />
         </FormField>
-        <nav className="flex flex-wrap gap-2" role="tablist" aria-label={t('boardResolutions.section')}>
-          {resolutionPeopleTabs.map((item) => (
-            <PeopleTabButton
-              key={item}
-              active={peopleTab === item}
-              icon={peopleTabIcons[item]}
-              onClick={() => setPeopleTab(item)}
-            >
-              {t(`boardResolutions.tabs.${item}`)}
-            </PeopleTabButton>
-          ))}
-        </nav>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <nav className="flex flex-wrap gap-2" role="tablist" aria-label={t('boardResolutions.section')}>
+            {resolutionPeopleTabs.map((item) => (
+              <PeopleTabButton
+                key={item}
+                active={peopleTab === item}
+                icon={peopleTabIcons[item]}
+                onClick={() => setPeopleTab(item)}
+              >
+                {t(`boardResolutions.tabs.${item}`)}
+              </PeopleTabButton>
+            ))}
+          </nav>
+          {smsTo ? (
+            <Link to={smsTo}>
+              <Button type="button" variant="soft">
+                <MessageSquare className="size-4" aria-hidden />
+                {t('boardResolutions.sms')}
+              </Button>
+            </Link>
+          ) : null}
+        </div>
         <div className={`space-y-4 ${peopleTab === 'signatories' ? '' : 'hidden'}`}>
           <FormField icon={PenLine} label={t('boardResolutions.addSignatory')}>
             <SearchSelect
@@ -569,8 +611,18 @@ export function BoardMinutesResolutionForm({
           onCancel={onCancel}
           submitting={saving}
           headerIcons={headerIcons}
+          extraItems={
+            smsTo
+              ? [{ to: smsTo, icon: MessageSquare, label: t('boardResolutions.sms') }]
+              : undefined
+          }
         />
       </AppForm>
+      {initial ? (
+        <div className={mainTab === 'progress' ? '' : 'hidden'}>
+          <BoardResolutionProgressTab minutesId={initial.minutesId} resolutionId={initial.id} />
+        </div>
+      ) : null}
     </FormCard>
   )
 }
