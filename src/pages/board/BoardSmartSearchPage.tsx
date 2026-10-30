@@ -1,11 +1,32 @@
-import { Building2, CalendarDays, FileCheck, FileText, ScanSearch, ScrollText } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import {
+  Building2,
+  CalendarDays,
+  Eye,
+  FileBadge2,
+  FileCheck,
+  FileText,
+  Handshake,
+  Hash,
+  ScanSearch,
+  ScanText,
+  ScrollText,
+  Stamp,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
+import { useState, type MouseEvent, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DateText } from '../../components/ui/DateText'
-import { PageHeader, listShellClassName } from '../../components/ui/Form'
-import { FormEmptyHint, FormFactTile } from '../../components/ui/FormLayout'
+import { Button, PageHeader, listShellClassName } from '../../components/ui/Form'
+import {
+  FormCard,
+  FormEmptyHint,
+  FormFactTile,
+  FormSectionTitle,
+  formCardBodyClassName,
+} from '../../components/ui/FormLayout'
 import { PaginationBar, SearchBar } from '../../components/ui/ListControls'
 import { LoadingState } from '../../components/ui/LoadingState'
 import { useListParams } from '../../hooks/useListParams'
@@ -21,13 +42,25 @@ import type {
 } from '../../types/app'
 import { BoardMinutesDossierModal } from './BoardMinutesDossierModal'
 import { BoardReportsOverviewCard } from './BoardReportsOverviewCard'
-import { BoardStatusBadge } from './BoardStatusBadge'
+import { BoardMinutesStatusBadge, BoardStatusBadge } from './BoardStatusBadge'
 import { boardRequestPath } from './board-paths'
 
 const matchLabelKey: Record<BoardSmartSearchMatchKind, string> = {
   minutes: 'boardSmartSearch.matchMinutes',
   request: 'boardSmartSearch.matchRequest',
   resolution: 'boardSmartSearch.matchResolution',
+  contract: 'boardSmartSearch.matchContract',
+}
+
+const matchIcon: Record<BoardSmartSearchMatchKind, LucideIcon> = {
+  minutes: ScrollText,
+  request: FileText,
+  resolution: FileCheck,
+  contract: FileBadge2,
+}
+
+function stopCardClick(event: MouseEvent) {
+  event.stopPropagation()
 }
 
 function HighlightText({ text, q }: { text: string; q: string }) {
@@ -47,17 +80,25 @@ function MatchChips({ kinds }: { kinds: BoardSmartSearchMatchKind[] }) {
   const { t } = useTranslation()
   if (!kinds.length) return null
   return (
-    <div className="mt-3 flex flex-wrap gap-1.5">
-      {kinds.map((kind) => (
-        <span
-          key={kind}
-          className="rounded-full bg-mint-50 px-2.5 py-0.5 text-[11px] font-medium text-teal-800 ring-1 ring-mint-100"
-        >
-          {t(matchLabelKey[kind])}
-        </span>
-      ))}
-    </div>
+    <>
+      {kinds.map((kind) => {
+        const Icon = matchIcon[kind]
+        return (
+          <span
+            key={kind}
+            className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-teal-800 shadow-[0_4px_10px_rgba(20,40,40,0.05)] ring-1 ring-teal-100"
+          >
+            <Icon className="size-3 text-teal-600" aria-hidden />
+            {t(matchLabelKey[kind])}
+          </span>
+        )
+      })}
+    </>
   )
+}
+
+function SearchFactGrid({ children }: { children: ReactNode }) {
+  return <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">{children}</div>
 }
 
 function RequestHitCard({
@@ -73,38 +114,81 @@ function RequestHitCard({
 }) {
   const { t } = useTranslation()
   return (
-    <article className="rounded-[22px] border border-white bg-white p-4 shadow-[0_10px_30px_rgba(20,40,40,0.05)] sm:p-5">
-      <button type="button" onClick={onOpen} className="w-full cursor-pointer text-start">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink-900">
-              <HighlightText text={item.subject} q={q} />
-            </p>
-            <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-ink-500">
-              <CalendarDays className="size-3.5 text-teal-600" aria-hidden />
-              <DateText value={item.requestedAt} />
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
+    <div className="cursor-pointer" onClick={onOpen}>
+      <FormCard
+        icon={FileText}
+        title={<HighlightText text={item.subject} q={q} />}
+        subtitle={t('boardSmartSearch.matchRequest')}
+        chips={<MatchChips kinds={item.matchIn} />}
+        action={
+          <div className="flex flex-wrap items-center justify-end gap-2" onClick={stopCardClick}>
             <BoardStatusBadge value={item.status} />
-            <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-medium text-teal-800">
-              <ScrollText className="size-3" aria-hidden />
-              {t('boardSmartSearch.linkedMinutes')} {formatNumber(item.minutesCount, locale)}
-            </span>
+            <Button type="button" variant="ghost" onClick={onOpen}>
+              <Eye className="size-4" aria-hidden />
+              {t('common.view')}
+            </Button>
           </div>
+        }
+        onDoubleClick={onOpen}
+      >
+        <div className={formCardBodyClassName}>
+          <SearchFactGrid>
+            <FormFactTile
+              icon={FileText}
+              label={t('boardRequests.subject')}
+              value={<HighlightText text={item.subject} q={q} />}
+              tone="teal"
+            />
+            {item.trackingNo ? (
+              <FormFactTile
+                icon={Hash}
+                label={t('boardRequests.trackingNo')}
+                value={<HighlightText text={item.trackingNo} q={q} />}
+                tone="mint"
+              />
+            ) : null}
+            <FormFactTile
+              icon={CalendarDays}
+              label={t('boardRequests.requestedAt')}
+              value={<DateText value={item.requestedAt} />}
+              tone="mint"
+            />
+            <FormFactTile
+              icon={Stamp}
+              label={t('boardRequests.status')}
+              value={<BoardStatusBadge value={item.status} />}
+            />
+            <FormFactTile
+              icon={Building2}
+              label={t('boardRequests.unit')}
+              value={<HighlightText text={item.unit.name} q={q} />}
+              tone="teal"
+            />
+            {item.createdBy ? (
+              <FormFactTile
+                icon={Users}
+                label={t('boardRequests.createdBy')}
+                value={<HighlightText text={item.createdBy.fullName} q={q} />}
+              />
+            ) : null}
+            <FormFactTile
+              icon={ScrollText}
+              label={t('boardSmartSearch.linkedMinutes')}
+              value={formatNumber(item.minutesCount, locale)}
+              tone="mint"
+            />
+          </SearchFactGrid>
+          {item.snippet ? (
+            <FormFactTile
+              icon={ScanText}
+              label={t('boardSmartSearch.snippet')}
+              value={<HighlightText text={item.snippet} q={q} />}
+              tone="teal"
+            />
+          ) : null}
         </div>
-        <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-teal-700">
-          <Building2 className="size-3.5" aria-hidden />
-          <HighlightText text={item.unit.name} q={q} />
-        </p>
-        {item.snippet ? (
-          <p className="mt-3 rounded-2xl bg-cream-50 px-3 py-2 text-sm leading-6 text-ink-700">
-            <HighlightText text={item.snippet} q={q} />
-          </p>
-        ) : null}
-        <MatchChips kinds={item.matchIn} />
-      </button>
-    </article>
+      </FormCard>
+    </div>
   )
 }
 
@@ -114,72 +198,187 @@ function MinutesHitCard({
   locale,
   onOpen,
   onOpenResolution,
+  onOpenContracts,
 }: {
   item: BoardSmartSearchMinutesHit
   q: string
   locale: string
   onOpen: () => void
   onOpenResolution: (resolutionId: string) => void
+  onOpenContracts: () => void
 }) {
   const { t } = useTranslation()
+  const linkedRequests = item.requests?.length ? item.requests : item.request ? [item.request] : []
   return (
-    <article className="rounded-[22px] border border-white bg-white p-4 shadow-[0_10px_30px_rgba(20,40,40,0.05)] sm:p-5">
-      <button type="button" onClick={onOpen} className="w-full cursor-pointer text-start">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink-900">
-              <HighlightText text={item.subject} q={q} />
-            </p>
-            <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-ink-500">
-              <CalendarDays className="size-3.5 text-teal-600" aria-hidden />
-              <DateText value={item.heldAt} />
-            </p>
+    <div className="cursor-pointer" onClick={onOpen}>
+      <FormCard
+        icon={ScrollText}
+        title={<HighlightText text={item.subject} q={q} />}
+        subtitle={t('boardSmartSearch.matchMinutes')}
+        chips={<MatchChips kinds={item.matchIn} />}
+        action={
+          <div className="flex flex-wrap items-center justify-end gap-2" onClick={stopCardClick}>
+            {item.status ? <BoardMinutesStatusBadge value={item.status} /> : null}
+            <Button type="button" variant="ghost" onClick={onOpen}>
+              <Eye className="size-4" aria-hidden />
+              {t('common.view')}
+            </Button>
           </div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-medium text-teal-800">
-            <ScrollText className="size-3" aria-hidden />
-            {t('boardMinutes.resolutionCount')} {formatNumber(item.resolutionCount, locale)}
-          </span>
+        }
+        onDoubleClick={onOpen}
+      >
+        <div className={formCardBodyClassName}>
+          <SearchFactGrid>
+            <FormFactTile
+              icon={FileText}
+              label={t('boardMinutes.subject')}
+              value={<HighlightText text={item.subject} q={q} />}
+              tone="teal"
+            />
+            {item.minutesNo ? (
+              <FormFactTile
+                icon={Hash}
+                label={t('boardMinutes.number')}
+                value={<HighlightText text={item.minutesNo} q={q} />}
+                tone="mint"
+              />
+            ) : null}
+            <FormFactTile
+              icon={CalendarDays}
+              label={t('boardMinutes.heldAt')}
+              value={<DateText value={item.heldAt} />}
+              tone="mint"
+            />
+            {item.status ? (
+              <FormFactTile
+                icon={Stamp}
+                label={t('boardMinutes.status')}
+                value={<BoardMinutesStatusBadge value={item.status} />}
+              />
+            ) : null}
+            <FormFactTile
+              icon={FileCheck}
+              label={t('boardMinutes.resolutionCount')}
+              value={formatNumber(item.resolutionCount, locale)}
+              tone="teal"
+            />
+            {item.createdBy ? (
+              <FormFactTile
+                icon={Users}
+                label={t('boardMinutes.createdBy')}
+                value={<HighlightText text={item.createdBy.fullName} q={q} />}
+              />
+            ) : null}
+          </SearchFactGrid>
+          {item.snippet ? (
+            <FormFactTile
+              icon={ScanText}
+              label={t('boardSmartSearch.snippet')}
+              value={<HighlightText text={item.snippet} q={q} />}
+              tone="teal"
+            />
+          ) : null}
+          {linkedRequests.length ? (
+            <div className="space-y-2.5">
+              <FormSectionTitle icon={FileText}>{t('boardMinutes.requests')}</FormSectionTitle>
+              <SearchFactGrid>
+                {linkedRequests.map((row) => (
+                  <FormFactTile
+                    key={row.id}
+                    icon={FileText}
+                    label={row.trackingNo || t('boardMinutes.request')}
+                    value={<HighlightText text={row.subject} q={q} />}
+                    extra={row.status ? <div className="mt-1.5"><BoardStatusBadge value={row.status} /></div> : undefined}
+                    tone="mint"
+                  />
+                ))}
+              </SearchFactGrid>
+            </div>
+          ) : null}
+          {item.matchedResolutions.length ? (
+            <div className="space-y-2.5">
+              <FormSectionTitle icon={FileCheck}>{t('boardSmartSearch.matchedResolutions')}</FormSectionTitle>
+              <SearchFactGrid>
+                {item.matchedResolutions.map((row) => (
+                  <div
+                    key={row.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(event) => {
+                      stopCardClick(event)
+                      onOpenResolution(row.id)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.stopPropagation()
+                        onOpenResolution(row.id)
+                      }
+                    }}
+                    className="cursor-pointer text-start"
+                  >
+                    <FormFactTile
+                      icon={FileCheck}
+                      label={t('boardResolutions.titleField')}
+                      value={<HighlightText text={row.title} q={q} />}
+                      tone="mint"
+                    />
+                  </div>
+                ))}
+              </SearchFactGrid>
+            </div>
+          ) : null}
+          {item.matchedContracts?.length ? (
+            <div className="space-y-2.5">
+              <FormSectionTitle icon={FileBadge2}>{t('boardSmartSearch.matchedContracts')}</FormSectionTitle>
+              <div className="space-y-2">
+                {item.matchedContracts.map((row) => (
+                  <div
+                    key={row.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(event) => {
+                      stopCardClick(event)
+                      onOpenContracts()
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.stopPropagation()
+                        onOpenContracts()
+                      }
+                    }}
+                    className="w-full cursor-pointer text-start"
+                  >
+                    <div className="grid gap-2 rounded-2xl border border-teal-50 bg-gradient-to-b from-mint-50/40 to-white p-2 sm:grid-cols-3 sm:gap-3 sm:p-2.5">
+                      <FormFactTile
+                        icon={FileBadge2}
+                        label={t('boardResolutions.contractTitleField')}
+                        value={<HighlightText text={row.title} q={q} />}
+                        tone="teal"
+                      />
+                      {row.contractNo ? (
+                        <FormFactTile
+                          icon={Hash}
+                          label={t('boardResolutions.contractNo')}
+                          value={<HighlightText text={row.contractNo} q={q} />}
+                          tone="mint"
+                        />
+                      ) : null}
+                      {row.contractorName ? (
+                        <FormFactTile
+                          icon={Handshake}
+                          label={t('boardResolutions.contractContractor')}
+                          value={<HighlightText text={row.contractorName} q={q} />}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
-        {item.minutesNo || item.status ? (
-          <p className="mt-2 text-xs text-ink-500">
-            {[item.minutesNo, item.status ? t(`boardMinutes.statuses.${item.status}`) : null]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        ) : null}
-        {(item.requests?.length ? item.requests : item.request ? [item.request] : []).map((row) => (
-          <p key={row.id} className="mt-2 inline-flex items-center gap-1.5 text-xs text-teal-700">
-            <FileText className="size-3.5" aria-hidden />
-            <HighlightText text={row.subject} q={q} />
-          </p>
-        ))}
-        {item.snippet ? (
-          <p className="mt-3 rounded-2xl bg-cream-50 px-3 py-2 text-sm leading-6 text-ink-700">
-            <HighlightText text={item.snippet} q={q} />
-          </p>
-        ) : null}
-        <MatchChips kinds={item.matchIn} />
-      </button>
-      {item.matchedResolutions.length ? (
-        <div className="mt-3 border-t border-teal-50 pt-3">
-          <p className="mb-2 text-[11px] font-semibold text-ink-500">
-            {t('boardSmartSearch.matchedResolutions')}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {item.matchedResolutions.map((row) => (
-              <button
-                key={row.id}
-                type="button"
-                onClick={() => onOpenResolution(row.id)}
-                className="cursor-pointer rounded-2xl bg-white px-3 py-1.5 text-xs font-medium text-teal-800 ring-1 ring-teal-200 hover:bg-teal-50"
-              >
-                <HighlightText text={row.title} q={q} />
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </article>
+      </FormCard>
+    </div>
   )
 }
 
@@ -188,7 +387,11 @@ export function BoardSmartSearchPage() {
   const locale = i18n.language.split('-')[0] ?? 'fa'
   const navigate = useNavigate()
   const { q, page, term, setTerm, applySearch, setPage } = useListParams()
-  const [selected, setSelected] = useState<{ minutesId: string; resolutionId?: string } | null>(null)
+  const [selected, setSelected] = useState<{
+    minutesId: string
+    resolutionId?: string
+    tab?: 'resolutions' | 'contracts' | 'progress'
+  } | null>(null)
   const query = useQuery({
     queryKey: ['board-smart-search', q, page],
     enabled: Boolean(q),
@@ -217,7 +420,7 @@ export function BoardSmartSearchPage() {
     results = <FormEmptyHint>{t('boardSmartSearch.noResults')}</FormEmptyHint>
   } else {
     results = (
-      <ul className="space-y-3">
+      <ul className="space-y-4">
         {rows.map((item: BoardSmartSearchHit) => (
           <li key={`${item.kind}-${item.id}`}>
             {item.kind === 'request' ? (
@@ -234,6 +437,7 @@ export function BoardSmartSearchPage() {
                 locale={locale}
                 onOpen={() => setSelected({ minutesId: item.id })}
                 onOpenResolution={(resolutionId) => setSelected({ minutesId: item.id, resolutionId })}
+                onOpenContracts={() => setSelected({ minutesId: item.id, tab: 'contracts' })}
               />
             )}
           </li>
@@ -266,7 +470,7 @@ export function BoardSmartSearchPage() {
         placeholder={t('boardSmartSearch.searchPlaceholder')}
       />
       {q && query.data ? (
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <FormFactTile
             icon={FileText}
             label={t('boardSmartSearch.foundRequests')}
@@ -284,6 +488,12 @@ export function BoardSmartSearchPage() {
             label={t('boardSmartSearch.foundResolutions')}
             value={formatNumber(query.data.resolutionCount, locale)}
           />
+          <FormFactTile
+            icon={FileBadge2}
+            label={t('boardSmartSearch.foundContracts')}
+            value={formatNumber(query.data.contractCount ?? 0, locale)}
+            tone="teal"
+          />
         </div>
       ) : null}
       {results}
@@ -298,6 +508,7 @@ export function BoardSmartSearchPage() {
       <BoardMinutesDossierModal
         minutesId={selected?.minutesId ?? null}
         focusResolutionId={selected?.resolutionId}
+        initialTab={selected?.tab}
         locale={locale}
         onClose={() => setSelected(null)}
       />

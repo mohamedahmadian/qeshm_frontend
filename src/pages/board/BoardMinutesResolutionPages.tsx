@@ -1,7 +1,10 @@
 import {
   Building2,
   CalendarRange,
+  ClipboardList,
+  FileBadge2,
   FileText,
+  Hash,
   History,
   MessageSquare,
   PenLine,
@@ -64,6 +67,8 @@ import type {
 import { boardResolutionStatuses } from '../../types/app'
 import { BoardResolutionStatusBadge, BoardSignatorySignedBadge } from './BoardStatusBadge'
 import { BoardMinutesDossierModal } from './BoardMinutesDossierModal'
+import { BoardResolutionContractsTab } from './BoardResolutionContractsTab'
+import { BoardResolutionProgressTab } from './BoardResolutionProgressTab'
 import { BoardMinutesResolutionForm, type BoardResolutionPayload } from './BoardMinutesResolutionForm'
 import {
   BoardResolutionPrintButton,
@@ -106,12 +111,16 @@ function ResolutionCreateModal({
   open,
   minutesId,
   minutesTitle,
+  requests,
+  defaultRequestId,
   onClose,
   onCreated,
 }: {
   open: boolean
   minutesId: string
   minutesTitle: string
+  requests?: BoardMinutes['requests']
+  defaultRequestId?: string
   onClose: () => void
   onCreated: () => void
 }) {
@@ -157,6 +166,8 @@ function ResolutionCreateModal({
       >
         <BoardMinutesResolutionForm
           minutesTitle={minutesTitle}
+          requests={requests}
+          defaultRequestId={defaultRequestId}
           headerIcons={false}
           autoFocusFirst
           headerAction={
@@ -254,6 +265,8 @@ export function BoardMinutesResolutionListPage({ embedded = false }: { embedded?
       open={createOpen}
       minutesId={minutesId}
       minutesTitle={minutes?.subject ?? ''}
+      requests={minutes?.requests}
+      defaultRequestId={requestId}
       onClose={() => setCreateOpen(false)}
       onCreated={() => {
         const pageSize = query.data?.pageSize ?? 10
@@ -328,7 +341,7 @@ export function BoardMinutesResolutionListPage({ embedded = false }: { embedded?
                     extra={
                       <>
                         {embedded ? null : (
-                          <Button type="button" variant="soft" onClick={() => setDossierResolutionId(item.id)}>
+                          <Button type="button" variant="ghost" onClick={() => setDossierResolutionId(item.id)}>
                             <ScrollText className="size-4" aria-hidden />
                             {t('boardResolutions.viewMinutes')}
                           </Button>
@@ -418,6 +431,8 @@ export function BoardMinutesResolutionCreatePage() {
       />
       <BoardMinutesResolutionForm
         minutesTitle={minutes.subject}
+        requests={minutes.requests}
+        defaultRequestId={requestId}
         onCancel={() => navigate(listPath)}
         onSubmit={async (payload) => {
           await api.post(`/board/minutes/${minutesId}/resolutions`, payload)
@@ -456,6 +471,8 @@ export function BoardMinutesResolutionEditPage() {
       <BoardMinutesResolutionForm
         initial={query.data}
         minutesTitle={minutes.subject}
+        requests={minutes.requests}
+        defaultRequestId={requestId}
         smsTo={boardMinuteResolutionSmsPath(minutesId, resolutionId, requestId)}
         headerAction={
           <Button type="button" variant="soft" onClick={() => window.print()}>
@@ -498,6 +515,7 @@ export function BoardMinutesResolutionDetailPage() {
     },
   })
   const item = query.data
+  const [detailTab, setDetailTab] = useState<'info' | 'progress' | 'contracts'>('info')
   if (!minutes || !item || !minutesId || !resolutionId) return <LoadingState />
   const listPath = boardMinuteResolutionsPath(minutesId, requestId)
   const smsPath = boardMinuteResolutionSmsPath(minutesId, resolutionId, requestId)
@@ -522,10 +540,47 @@ export function BoardMinutesResolutionDetailPage() {
           </Button>
         }
       >
-        <div className="space-y-6 p-5 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 px-5 pt-5 sm:px-6 print:hidden">
+          <nav className="flex flex-wrap gap-2" role="tablist" aria-label={t('boardResolutions.details')}>
+            {(
+              [
+                { id: 'info' as const, icon: FileText },
+                { id: 'progress' as const, icon: ClipboardList },
+                { id: 'contracts' as const, icon: FileBadge2 },
+              ]
+            ).map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                role="tab"
+                aria-selected={detailTab === entry.id}
+                onClick={() => setDetailTab(entry.id)}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 ${
+                  detailTab === entry.id
+                    ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
+                    : 'bg-white text-ink-700 ring-1 ring-line hover:bg-cream-50'
+                }`}
+              >
+                <entry.icon className="size-4" aria-hidden />
+                {t(`boardResolutions.mainTabs.${entry.id}`)}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <div className={`space-y-6 p-5 sm:p-6 ${detailTab === 'info' ? '' : 'hidden'}`}>
           <FormSectionTitle icon={FileText}>{t('boardResolutions.section')}</FormSectionTitle>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <FormFactTile icon={FileText} label={t('boardResolutions.titleField')} value={item.title} tone="teal" />
+            <FormFactTile
+              icon={Hash}
+              label={t('boardResolutions.requestNo')}
+              value={
+                item.request?.trackingNo
+                  ? localizeDigits(item.request.trackingNo, locale)
+                  : t('boardResolutions.noRequest')
+              }
+              tone="mint"
+            />
             <FormFactTile
               icon={Stamp}
               label={t('boardResolutions.status')}
@@ -662,6 +717,12 @@ export function BoardMinutesResolutionDetailPage() {
                 : []),
             ]}
           />
+        </div>
+        <div className={detailTab === 'progress' ? '' : 'hidden'}>
+          <BoardResolutionProgressTab minutesId={minutesId} resolutionId={resolutionId} readOnly />
+        </div>
+        <div className={detailTab === 'contracts' ? '' : 'hidden'}>
+          <BoardResolutionContractsTab minutesId={minutesId} resolutionId={resolutionId} readOnly />
         </div>
       </FormCard>
       <BoardResolutionPrintSheet item={item} minutes={minutes} />

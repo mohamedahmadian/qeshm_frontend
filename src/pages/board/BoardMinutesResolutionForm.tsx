@@ -2,7 +2,9 @@ import {
   Building2,
   CalendarRange,
   ClipboardList,
+  FileBadge2,
   FileText,
+  Hash,
   History,
   MessageSquare,
   PenLine,
@@ -30,9 +32,10 @@ import { PersianDateField } from '../../components/ui/PersianDateField'
 import { OrgUnitTreeSelect } from '../../components/ui/OrgUnitTreeSelect'
 import { SearchSelect } from '../../components/ui/SearchSelect'
 import { api, getApiErrorMessage, getImageUrl } from '../../lib/api'
-import { todayIsoDate } from '../../lib/datetime'
+import { localizeDigits, todayIsoDate } from '../../lib/datetime'
 import {
   boardResolutionStatuses,
+  type BoardMinutesLinkedRequest,
   type BoardMinutesResolution,
   type BoardResolutionDueKind,
   type BoardResolutionProposerKind,
@@ -41,6 +44,7 @@ import {
   type OrganizationUnit,
 } from '../../types/app'
 import { MinutesDictation } from './MinutesDictation'
+import { BoardResolutionContractsTab } from './BoardResolutionContractsTab'
 import { BoardResolutionProgressTab } from './BoardResolutionProgressTab'
 import { BoardSignatorySignedBadge } from './BoardStatusBadge'
 import { boardSignatoryFullName } from './board-paths'
@@ -57,6 +61,7 @@ export type BoardResolutionSignatoryPayload = {
 export type BoardResolutionPayload = {
   title: string
   description: string | null
+  requestId: string | null
   status: BoardResolutionStatus
   unitIds: string[]
   dueKind: BoardResolutionDueKind
@@ -72,7 +77,7 @@ export type BoardResolutionPayload = {
 
 type SignatoryDraft = BoardResolutionSignatoryPayload & { key: string }
 
-const resolutionMainTabs = ['info', 'progress'] as const
+const resolutionMainTabs = ['info', 'progress', 'contracts'] as const
 type ResolutionMainTab = (typeof resolutionMainTabs)[number]
 
 const resolutionPeopleTabs = ['signatories', 'executors'] as const
@@ -81,6 +86,7 @@ type ResolutionPeopleTab = (typeof resolutionPeopleTabs)[number]
 const mainTabIcons: Record<ResolutionMainTab, LucideIcon> = {
   info: FileText,
   progress: ClipboardList,
+  contracts: FileBadge2,
 }
 
 const peopleTabIcons: Record<ResolutionPeopleTab, LucideIcon> = {
@@ -160,6 +166,8 @@ function toSignatoryPayloads(rows: SignatoryDraft[]): BoardResolutionSignatoryPa
 export function BoardMinutesResolutionForm({
   initial,
   minutesTitle,
+  requests = [],
+  defaultRequestId,
   onSubmit,
   onSaveSignatories,
   onCancel,
@@ -170,6 +178,8 @@ export function BoardMinutesResolutionForm({
 }: {
   initial?: BoardMinutesResolution
   minutesTitle: string
+  requests?: BoardMinutesLinkedRequest[]
+  defaultRequestId?: string
   onSubmit: (payload: BoardResolutionPayload) => Promise<void>
   onSaveSignatories?: (signatories: BoardResolutionSignatoryPayload[]) => Promise<void>
   onCancel: () => void
@@ -178,8 +188,19 @@ export function BoardMinutesResolutionForm({
   autoFocusFirst?: boolean
   smsTo?: string
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.split('-')[0] ?? 'fa'
+  const linkedRequests = requests.length
+    ? requests
+    : initial?.request
+      ? [initial.request]
+      : initial?.minutes?.requests?.length
+        ? initial.minutes.requests
+        : []
   const [title, setTitle] = useState(initial?.title ?? '')
+  const [requestId, setRequestId] = useState(
+    initial ? (initial.requestId ?? initial.request?.id ?? '') : (defaultRequestId ?? ''),
+  )
   const [description, setDescription] = useState(initial?.description ?? '')
   const [status, setStatus] = useState<BoardResolutionStatus>(
     initial?.status ?? boardResolutionStatuses.NOT_NOTIFIED,
@@ -290,6 +311,7 @@ export function BoardMinutesResolutionForm({
     try {
       await onSubmit({
         title,
+        requestId: requestId || null,
         description: emptyToNull(description),
         status,
         unitIds,
@@ -356,6 +378,25 @@ export function BoardMinutesResolutionForm({
             onChange={(event) => setTitle(event.target.value)}
           />
         </FormField>
+        {linkedRequests.length ? (
+          <FormField icon={Hash} label={t('boardResolutions.relatedRequest')}>
+            <SearchSelect
+              value={requestId}
+              onChange={setRequestId}
+              allowClear
+              placeholder={t('boardResolutions.selectRelatedRequest')}
+              options={[
+                { value: '', label: t('boardResolutions.noRequest') },
+                ...linkedRequests.map((row) => ({
+                  value: row.id,
+                  label: row.trackingNo
+                    ? `${localizeDigits(row.trackingNo, locale)} — ${row.subject}`
+                    : row.subject,
+                })),
+              ]}
+            />
+          </FormField>
+        ) : null}
         <FormField icon={ScrollText} label={t('boardResolutions.description')} htmlFor="resolutionDescription">
           <div className="space-y-2">
             <div className="flex justify-end">
@@ -621,6 +662,11 @@ export function BoardMinutesResolutionForm({
       {initial ? (
         <div className={mainTab === 'progress' ? '' : 'hidden'}>
           <BoardResolutionProgressTab minutesId={initial.minutesId} resolutionId={initial.id} />
+        </div>
+      ) : null}
+      {initial ? (
+        <div className={mainTab === 'contracts' ? '' : 'hidden'}>
+          <BoardResolutionContractsTab minutesId={initial.minutesId} resolutionId={initial.id} />
         </div>
       ) : null}
     </FormCard>

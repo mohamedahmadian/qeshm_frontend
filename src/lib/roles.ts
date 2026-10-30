@@ -232,6 +232,9 @@ export function orgStakeholderRedirect(
   ) {
     return "/projects";
   }
+  if (pathname === "/stakeholders/progress/new") return "/stakeholders/reports/new";
+  const progressEdit = pathname.match(/^\/stakeholders\/progress\/([^/]+)\/edit$/);
+  if (progressEdit) return `/stakeholders/reports/${progressEdit[1]}/edit`;
   const progressItem = pathname.match(/^\/stakeholders\/progress\/([^/]+)/);
   if (progressItem && progressItem[1] !== "new")
     return `/stakeholders/reports/${progressItem[1]}`;

@@ -203,36 +203,40 @@ export function BoardReportsPage() {
         <div className="space-y-5">
           <BoardReportsOverviewCard kpis={kpis} />
 
-          <FormCard icon={ChartColumn} title={t('boardReports.distributions')}>
-            <div className={`${formCardBodyClassName} grid gap-4 lg:grid-cols-2`}>
-              <ChartPanel
-                icon={TriangleAlert}
-                title={t('boardReports.byDueStatus')}
-                empty={dueSlices.every((item) => item.value === 0)}
-                emptyLabel={emptyLabel}
+          <FormCard icon={Building2} title={t('boardReports.unitTable')}>
+            <div className={formCardBodyClassName}>
+              <FormSectionTitle icon={Building2}>{t('boardReports.byUnit')}</FormSectionTitle>
+              <TableCard
+                loading={false}
+                empty={emptyLabel}
+                hasRows={report.byUnit.some((item) => item.count > 0)}
+                rowClick={false}
               >
-                <ReportDonut data={dueSlices} locale={locale} />
-              </ChartPanel>
-              <ChartPanel
-                icon={FileCheck}
-                title={t('boardReports.byCoverage')}
-                empty={coverageSlices.every((item) => item.value === 0)}
-                emptyLabel={emptyLabel}
-              >
-                <ReportDonut data={coverageSlices} locale={locale} />
-              </ChartPanel>
-              <ChartPanel
-                icon={Users}
-                title={t('boardReports.attendanceRate')}
-                empty={kpis.presentCount + kpis.absentCount === 0}
-                emptyLabel={emptyLabel}
-              >
-                <ReportRadialScore
-                  value={kpis.attendanceRate}
-                  locale={locale}
-                  label={t('boardReports.attendanceRate')}
-                />
-              </ChartPanel>
+                <table className="w-full text-sm">
+                  <thead className="bg-cream-50 text-ink-700">
+                    <tr>
+                      <th className="px-4 py-3 text-start">{t('boardReports.unitName')}</th>
+                      <th className="px-4 py-3 text-start">{t('boardReports.totalResolutions')}</th>
+                      <th className="px-4 py-3 text-start">{t('boardReports.dueStatus.overdue')}</th>
+                      <th className="px-4 py-3 text-start">{t('boardReports.dueStatus.soon')}</th>
+                      <th className="px-4 py-3 text-start">{t('boardReports.dueStatus.upcoming')}</th>
+                      <th className="px-4 py-3 text-start">{t('boardReports.dueStatus.noDue')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.byUnit.map((item) => (
+                      <tr key={item.id ?? 'none'} className="border-t border-line">
+                        <td className="px-4 py-3">{unitName(item)}</td>
+                        <td className="px-4 py-3">{count(item.count, locale)}</td>
+                        <td className="px-4 py-3">{count(item.overdue, locale)}</td>
+                        <td className="px-4 py-3">{count(item.soon, locale)}</td>
+                        <td className="px-4 py-3">{count(item.upcoming, locale)}</td>
+                        <td className="px-4 py-3">{count(item.noDue, locale)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableCard>
             </div>
           </FormCard>
 
@@ -297,40 +301,36 @@ export function BoardReportsPage() {
             </div>
           </FormCard>
 
-          <FormCard icon={Building2} title={t('boardReports.unitTable')}>
-            <div className={formCardBodyClassName}>
-              <FormSectionTitle icon={Building2}>{t('boardReports.byUnit')}</FormSectionTitle>
-              <TableCard
-                loading={false}
-                empty={emptyLabel}
-                hasRows={report.byUnit.some((item) => item.count > 0)}
-                rowClick={false}
+          <FormCard icon={ChartColumn} title={t('boardReports.distributions')}>
+            <div className={`${formCardBodyClassName} grid gap-4 lg:grid-cols-2`}>
+              <ChartPanel
+                icon={TriangleAlert}
+                title={t('boardReports.byDueStatus')}
+                empty={dueSlices.every((item) => item.value === 0)}
+                emptyLabel={emptyLabel}
               >
-                <table className="w-full text-sm">
-                  <thead className="bg-cream-50 text-ink-700">
-                    <tr>
-                      <th className="px-4 py-3 text-start">{t('boardReports.unitName')}</th>
-                      <th className="px-4 py-3 text-start">{t('boardReports.totalResolutions')}</th>
-                      <th className="px-4 py-3 text-start">{t('boardReports.dueStatus.overdue')}</th>
-                      <th className="px-4 py-3 text-start">{t('boardReports.dueStatus.soon')}</th>
-                      <th className="px-4 py-3 text-start">{t('boardReports.dueStatus.upcoming')}</th>
-                      <th className="px-4 py-3 text-start">{t('boardReports.dueStatus.noDue')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.byUnit.map((item) => (
-                      <tr key={item.id ?? 'none'} className="border-t border-line">
-                        <td className="px-4 py-3">{unitName(item)}</td>
-                        <td className="px-4 py-3">{count(item.count, locale)}</td>
-                        <td className="px-4 py-3">{count(item.overdue, locale)}</td>
-                        <td className="px-4 py-3">{count(item.soon, locale)}</td>
-                        <td className="px-4 py-3">{count(item.upcoming, locale)}</td>
-                        <td className="px-4 py-3">{count(item.noDue, locale)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </TableCard>
+                <ReportDonut data={dueSlices} locale={locale} />
+              </ChartPanel>
+              <ChartPanel
+                icon={FileCheck}
+                title={t('boardReports.byCoverage')}
+                empty={coverageSlices.every((item) => item.value === 0)}
+                emptyLabel={emptyLabel}
+              >
+                <ReportDonut data={coverageSlices} locale={locale} />
+              </ChartPanel>
+              <ChartPanel
+                icon={Users}
+                title={t('boardReports.attendanceRate')}
+                empty={kpis.presentCount + kpis.absentCount === 0}
+                emptyLabel={emptyLabel}
+              >
+                <ReportRadialScore
+                  value={kpis.attendanceRate}
+                  locale={locale}
+                  label={t('boardReports.attendanceRate')}
+                />
+              </ChartPanel>
             </div>
           </FormCard>
         </div>

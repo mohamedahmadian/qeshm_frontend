@@ -2,7 +2,11 @@ import {
   Briefcase,
   Building2,
   CalendarDays,
+  ClipboardList,
+  FileBadge2,
   FileText,
+  Handshake,
+  Hash,
   History,
   MessageSquare,
   Paperclip,
@@ -10,14 +14,15 @@ import {
   ScanSearch,
   ScrollText,
   Stamp,
+  Tags,
   UserRound,
   Users,
   Wallet,
   X,
 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, type LucideIcon, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { DateText } from '../../components/ui/DateText'
@@ -28,22 +33,72 @@ import {
   FormFactTile,
   FormSectionTitle,
 } from '../../components/ui/FormLayout'
+import { FileName } from '../../components/ui/FileName'
 import { api, getImageUrl } from '../../lib/api'
-import { formatNumber } from '../../lib/datetime'
+import { formatGroupedNumber, formatNumber } from '../../lib/datetime'
 import { resolutionExecutorNames } from '../../lib/resolution-calendar'
 import {
   boardMinutesAttendances,
+  boardResolutionContractKinds,
   type BoardMinutesDossier,
   type BoardRequest,
+  type BoardResolutionContract,
 } from '../../types/app'
 import { BoardExistingAttachments } from './BoardAttachmentsField'
 import { BoardMinutesStatusBadge, BoardResolutionStatusBadge, BoardStatusBadge } from './BoardStatusBadge'
 import { BoardResolutionDueValue, resolutionProposerLabel } from './BoardResolutionDisplay'
+import { BoardResolutionContractFormModal } from './BoardResolutionContractFormModal'
 import { boardMinutePath, boardMinuteResolutionPath, boardMinutesMemberKind, boardMinutesMemberName } from './board-paths'
 
 function boolLabel(value: boolean | null, t: (key: string) => string) {
   if (value == null) return '—'
   return value ? t('board.has') : t('board.hasNot')
+}
+
+const dossierTabs = ['resolutions', 'contracts', 'progress'] as const
+type DossierTab = (typeof dossierTabs)[number]
+
+const dossierTabIcons: Record<DossierTab, LucideIcon> = {
+  resolutions: FileText,
+  contracts: FileBadge2,
+  progress: ClipboardList,
+}
+
+function DossierTabButton({
+  active,
+  icon: Icon,
+  children,
+  onClick,
+}: {
+  active: boolean
+  icon: LucideIcon
+  children: ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 ${
+        active
+          ? 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]'
+          : 'bg-white text-ink-700 ring-1 ring-line hover:bg-cream-50'
+      }`}
+    >
+      <Icon className="size-4" aria-hidden />
+      {children}
+    </button>
+  )
+}
+
+function contractKindLabel(row: BoardResolutionContract, t: (key: string) => string) {
+  if (!row.kind) return null
+  if (row.kind === boardResolutionContractKinds.OTHER) {
+    return row.kindOther || t('boardResolutions.contractKinds.OTHER')
+  }
+  return t(`boardResolutions.contractKinds.${row.kind}`)
 }
 
 function hasReview(item: BoardRequest) {
@@ -65,16 +120,23 @@ function hasReview(item: BoardRequest) {
 export function BoardMinutesDossierModal({
   minutesId,
   focusResolutionId,
+  initialTab,
   locale,
   onClose,
 }: {
   minutesId: string | null
   focusResolutionId?: string | null
+  initialTab?: DossierTab
   locale: string
   onClose: () => void
 }) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const open = Boolean(minutesId)
+  const [tab, setTab] = useState<DossierTab>(initialTab ?? 'resolutions')
+  const [editingContract, setEditingContract] = useState<
+    (BoardResolutionContract & { resolution: { id: string; title: string } }) | null
+  >(null)
   const query = useQuery({
     queryKey: ['board-minutes-dossier', minutesId],
     enabled: Boolean(minutesId),
@@ -88,19 +150,27 @@ export function BoardMinutesDossierModal({
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onClose()
-      }
+      if (event.key !== 'Escape' || event.repeat) return
+      if (document.querySelector('[data-confirm-toast], [role="listbox"], [role="menu"], .rmdp-wrapper')) return
+      const dialogs = document.querySelectorAll('[data-nested-dialog]')
+      if (dialogs.length > 1) return
+      event.preventDefault()
+      onClose()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, open])
 
   useEffect(() => {
-    if (!open || !query.data || !focusResolutionId) return
+    if (!open) return
+    setTab(initialTab ?? 'resolutions')
+    setEditingContract(null)
+  }, [focusResolutionId, initialTab, minutesId, open])
+
+  useEffect(() => {
+    if (!open || !query.data || !focusResolutionId || tab !== 'resolutions') return
     focusRef.current?.scrollIntoView({ block: 'nearest' })
-  }, [focusResolutionId, open, query.data])
+  }, [focusResolutionId, open, query.data, tab])
 
   if (!open) return null
 
@@ -109,6 +179,8 @@ export function BoardMinutesDossierModal({
   const request = dossier?.request ?? null
   const requests = dossier?.requests?.length ? dossier.requests : request ? [request] : []
   const resolutions = dossier?.resolutions ?? []
+  const contracts = dossier?.contracts ?? []
+  const progressReports = dossier?.progressReports ?? []
   const images = minutes?.attachments.filter((row) => row.kind === 'IMAGE' && row.imageId) ?? []
   const audios = minutes?.attachments.filter((row) => row.kind === 'AUDIO' && row.fileId) ?? []
 
@@ -387,7 +459,20 @@ export function BoardMinutesDossierModal({
               </section>
 
               <section className="space-y-3">
-                <FormSectionTitle icon={FileText}>{t('boardSmartSearch.resolutionsSection')}</FormSectionTitle>
+                <nav className="flex flex-wrap gap-2" role="tablist" aria-label={t('boardSmartSearch.dossierTitle')}>
+                  {dossierTabs.map((item) => (
+                    <DossierTabButton
+                      key={item}
+                      active={tab === item}
+                      icon={dossierTabIcons[item]}
+                      onClick={() => setTab(item)}
+                    >
+                      {t(`boardSmartSearch.dossierTabs.${item}`)}
+                    </DossierTabButton>
+                  ))}
+                </nav>
+                {tab === 'resolutions' ? (
+                <>
                 {resolutions.length ? (
                   <ol className="space-y-3">
                     {resolutions.map((item, index) => {
@@ -465,6 +550,183 @@ export function BoardMinutesDossierModal({
                 ) : (
                   <FormEmptyHint>{t('boardSmartSearch.noResolutions')}</FormEmptyHint>
                 )}
+                </>
+                ) : null}
+                {tab === 'contracts' ? (
+                  contracts.length ? (
+                    <div className="grid gap-3">
+                      {contracts.map((row) => {
+                        const kind = contractKindLabel(row, t)
+                        return (
+                          <button
+                            key={row.id}
+                            type="button"
+                            onClick={() => setEditingContract(row)}
+                            className="block w-full cursor-pointer space-y-3 rounded-2xl border border-teal-100 bg-white p-3 text-start shadow-[0_4px_14px_rgba(20,40,40,0.04)] transition-colors hover:border-teal-400 hover:bg-cream-50 sm:p-4"
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]">
+                                <FileBadge2 className="size-5" aria-hidden />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-ink-900">{row.title}</p>
+                                <p className="mt-0.5 truncate text-xs text-ink-500">{row.resolution.title}</p>
+                              </div>
+                              {row.status ? (
+                                <span className="shrink-0 rounded-xl bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800 ring-1 ring-teal-100">
+                                  {t(`boardResolutions.contractStatuses.${row.status}`)}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {row.contractNo ? (
+                                <FormFactTile
+                                  icon={Hash}
+                                  label={t('boardResolutions.contractNo')}
+                                  value={row.contractNo}
+                                  compact
+                                  tone="teal"
+                                />
+                              ) : null}
+                              {row.contractor?.name ? (
+                                <FormFactTile
+                                  icon={Handshake}
+                                  label={t('boardResolutions.contractContractor')}
+                                  value={row.contractor.name}
+                                  compact
+                                  tone="mint"
+                                />
+                              ) : null}
+                              {kind ? (
+                                <FormFactTile
+                                  icon={Tags}
+                                  label={t('boardResolutions.contractKind')}
+                                  value={kind}
+                                  compact
+                                />
+                              ) : null}
+                              {row.amount != null ? (
+                                <FormFactTile
+                                  icon={Wallet}
+                                  label={t('boardResolutions.contractAmount')}
+                                  value={formatGroupedNumber(row.amount, locale)}
+                                  compact
+                                  tone="teal"
+                                />
+                              ) : null}
+                              {row.paidAmount != null ? (
+                                <FormFactTile
+                                  icon={Wallet}
+                                  label={t('boardResolutions.contractPaidAmount')}
+                                  value={formatGroupedNumber(row.paidAmount, locale)}
+                                  compact
+                                  tone="mint"
+                                />
+                              ) : null}
+                              {row.signedAt ? (
+                                <FormFactTile
+                                  icon={CalendarDays}
+                                  label={t('boardResolutions.contractSignedAt')}
+                                  value={<DateText value={row.signedAt} />}
+                                  compact
+                                />
+                              ) : null}
+                              {row.startDate || row.endDate ? (
+                                <FormFactTile
+                                  icon={CalendarDays}
+                                  label={t('boardResolutions.contractPeriod')}
+                                  value={
+                                    <>
+                                      {row.startDate ? <DateText value={row.startDate} /> : '—'}
+                                      {' — '}
+                                      {row.endDate ? <DateText value={row.endDate} /> : '—'}
+                                    </>
+                                  }
+                                  compact
+                                />
+                              ) : null}
+                              {row.supervisor ? (
+                                <FormFactTile
+                                  icon={UserRound}
+                                  label={t('boardResolutions.contractSupervisor')}
+                                  value={row.supervisor}
+                                  compact
+                                />
+                              ) : null}
+                              {row.file ? (
+                                <FormFactTile
+                                  icon={Paperclip}
+                                  label={t('boardResolutions.contractFile')}
+                                  value={
+                                    <FileName>
+                                      {row.file.originalName || t('boardResolutions.contractFile')}
+                                    </FileName>
+                                  }
+                                  compact
+                                  tone="mint"
+                                />
+                              ) : null}
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <FormEmptyHint>{t('boardSmartSearch.noContracts')}</FormEmptyHint>
+                  )
+                ) : null}
+                {tab === 'progress' ? (
+                  progressReports.length ? (
+                    <div className="grid gap-2">
+                      {progressReports.map((row) => (
+                        <article key={row.id} className="rounded-2xl border border-teal-100 bg-cream-50/70 p-3 sm:p-4">
+                          <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-ink-900">{row.title}</p>
+                              <p className="mt-0.5 text-xs text-ink-500">
+                                {row.resolution.title}
+                                {' · '}
+                                <DateText value={row.reportedAt} />
+                                {row.contract?.title ? ` · ${row.contract.title}` : ''}
+                              </p>
+                              <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-600">
+                                {row.contractor?.name ? (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Handshake className="size-3.5" aria-hidden />
+                                    {row.contractor.name}
+                                  </span>
+                                ) : null}
+                                {row.createdBy?.fullName ? (
+                                  <span className="inline-flex items-center gap-1">
+                                    <UserRound className="size-3.5" aria-hidden />
+                                    {t('stakeholders.author')}: {row.createdBy.fullName}
+                                  </span>
+                                ) : null}
+                              </p>
+                            </div>
+                            <span className="rounded-xl bg-white px-2.5 py-1 text-sm font-semibold text-teal-700 ring-1 ring-teal-100">
+                              {formatNumber(row.progressAmount, locale)}٪
+                            </span>
+                          </div>
+                          {row.actionsDone ? (
+                            <p className="text-sm leading-6 text-ink-700">
+                              <span className="font-medium text-ink-800">{t('stakeholders.actionsDone')}: </span>
+                              {row.actionsDone}
+                            </p>
+                          ) : null}
+                          {row.nextPlan ? (
+                            <p className="mt-1 text-sm leading-6 text-ink-700">
+                              <span className="font-medium text-ink-800">{t('stakeholders.nextPlan')}: </span>
+                              {row.nextPlan}
+                            </p>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <FormEmptyHint>{t('boardSmartSearch.noProgress')}</FormEmptyHint>
+                  )
+                ) : null}
               </section>
             </>
           )}
@@ -476,6 +738,19 @@ export function BoardMinutesDossierModal({
           </Button>
         </footer>
       </section>
+      {minutes && editingContract ? (
+        <BoardResolutionContractFormModal
+          open
+          minutesId={minutes.id}
+          resolutionId={editingContract.resolution.id}
+          initial={editingContract}
+          overlayClassName="z-[90]"
+          onClose={() => setEditingContract(null)}
+          onSaved={() => {
+            void queryClient.invalidateQueries({ queryKey: ['board-minutes-dossier', minutesId] })
+          }}
+        />
+      ) : null}
     </div>,
     document.body,
   )

@@ -1,8 +1,8 @@
-import { ClipboardList, Filter, FolderKanban, Gauge, Handshake, ListChecks, Percent, Plus, ScrollText } from 'lucide-react'
+import { ClipboardList, FileBadge2, FileText, Filter, FolderKanban, Gauge, Handshake, ListChecks, Percent, Plus, ScrollText } from 'lucide-react'
 import { type CSSProperties, type FormEvent, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthProvider'
 import { isAdmin, isContractor } from '../../lib/roles'
 import { toast } from 'sonner'
@@ -45,7 +45,23 @@ import {
   pendingFromAttachments,
   type PendingStakeholderFiles,
 } from './attachments'
-import type { StakeholderParty, StakeholderProgressListItem } from './types'
+import type { StakeholderParty, StakeholderProgressListItem, StakeholderResolutionContract } from './types'
+
+type ProgressScope = 'project' | 'resolution'
+
+function progressScopeOf(search: URLSearchParams): ProgressScope {
+  return search.get('scope') === 'resolution' ? 'resolution' : 'project'
+}
+
+function progressApiBase(scope: ProgressScope, mode: 'contractor' | 'org' = 'contractor') {
+  if (scope === 'resolution') return '/stakeholders/resolution-progress'
+  return mode === 'org' ? '/stakeholders/reports' : '/stakeholders/progress'
+}
+
+function progressListPath(scope: ProgressScope, mode: 'contractor' | 'org' = 'contractor') {
+  const base = mode === 'org' ? '/stakeholders/reports' : '/stakeholders/progress'
+  return scope === 'resolution' ? `${base}?scope=resolution` : base
+}
 
 function percentText(value: number | null | undefined, locale: string) {
   return value == null ? '—' : `${formatNumber(value, locale)}٪`
@@ -101,9 +117,13 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
   const { confirmDelete } = useConfirmDelete()
   const projectId = searchParams.get('projectId') ?? ''
   const contractorId = searchParams.get('contractorId') ?? ''
-  const base = mode === 'org' ? '/stakeholders/reports' : '/stakeholders/progress'
+  const scope = progressScopeOf(searchParams)
+  const apiBase = progressApiBase(scope, mode)
+  const pageBase = mode === 'org' ? '/stakeholders/reports' : '/stakeholders/progress'
+  const scopeQuery = scope === 'resolution' ? '?scope=resolution' : ''
   const projects = useQuery({
     queryKey: ['stakeholders', 'project-filter', mode],
+    enabled: scope === 'project',
     queryFn: async () => {
       if (mode === 'org') {
         const { data } = await api.get<Project[] | Paginated<Project>>('/projects')
@@ -122,13 +142,13 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
     },
   })
   const query = useQuery({
-    queryKey: ['stakeholders', mode, 'progress', q, page, projectId, contractorId, sortBy, sortDir],
+    queryKey: ['stakeholders', mode, 'progress', scope, q, page, projectId, contractorId, sortBy, sortDir],
     queryFn: async () => {
-      const { data } = await api.get<Paginated<StakeholderProgressListItem> & { avgProgressPercent: number | null }>(base, {
+      const { data } = await api.get<Paginated<StakeholderProgressListItem> & { avgProgressPercent: number | null }>(apiBase, {
         params: {
           q: q || undefined,
           page,
-          projectId: projectId || undefined,
+          projectId: scope === 'project' ? projectId || undefined : undefined,
           contractorId: mode === 'org' ? contractorId || undefined : undefined,
           ...sortParams,
         },
@@ -137,9 +157,9 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
     },
   })
   const rows = query.data?.items ?? []
-  const filtersActive = Boolean(projectId || contractorId)
+  const filtersActive = Boolean((scope === 'project' && projectId) || contractorId)
   if (mode === 'org' && isContractor(user) && !isAdmin(user)) {
-    return <Navigate to="/stakeholders/progress" replace />
+    return <Navigate to={progressListPath(scope, 'contractor')} replace />
   }
 
   return (
@@ -147,69 +167,93 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
       <PageHeader
         icon={ClipboardList}
         title={
-          mode === 'contractor' || projectId || contractorId ? (
-            <span className="inline-flex flex-wrap items-center gap-3">
-              {t(mode === 'contractor' ? 'menus.stakeholderProgress' : 'menus.stakeholderReports')}
-              <ProgressTotalRing value={query.data?.avgProgressPercent ?? null} />
-              {mode === 'org' && (projectId || contractorId) ? (
-                <RelatedReportCount count={query.data?.total ?? null} />
-              ) : null}
-            </span>
-          ) : (
-            t('menus.stakeholderReports')
-          )
+          <span className="inline-flex flex-wrap items-center gap-3">
+            {t(mode === 'contractor' ? 'menus.stakeholderProgress' : 'menus.stakeholderReports')}
+            <ProgressTotalRing value={query.data?.avgProgressPercent ?? null} />
+            {mode === 'org' && (projectId || contractorId) ? (
+              <RelatedReportCount count={query.data?.total ?? null} />
+            ) : null}
+          </span>
         }
-        subtitle={t(mode === 'org' ? 'stakeholders.reportsSubtitle' : 'stakeholders.progressSubtitle')}
+        subtitle={t(
+          scope === 'resolution'
+            ? 'stakeholders.resolutionProgressSubtitle'
+            : mode === 'org'
+              ? 'stakeholders.reportsSubtitle'
+              : 'stakeholders.progressSubtitle',
+        )}
         action={
-          mode === 'contractor' ? (
-            <Link to="/stakeholders/progress/new">
-              <Button>
-                <Plus className="size-4" />
-                {t('stakeholders.progressCreate')}
-              </Button>
-            </Link>
-          ) : undefined
+          <Link to={`${pageBase}/new${scopeQuery}`}>
+            <Button>
+              <Plus className="size-4" />
+              {t(scope === 'resolution' ? 'stakeholders.progressCreateResolution' : 'stakeholders.progressCreateProject')}
+            </Button>
+          </Link>
         }
       />
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant={scope === 'project' ? 'primary' : 'ghost'}
+          onClick={() => setParams({ scope: undefined, projectId: projectId || undefined }, { resetPage: true })}
+        >
+          {t('stakeholders.progressScopeProject')}
+        </Button>
+        <Button
+          type="button"
+          variant={scope === 'resolution' ? 'primary' : 'ghost'}
+          onClick={() => setParams({ scope: 'resolution', projectId: undefined }, { resetPage: true })}
+        >
+          {t('stakeholders.progressScopeResolution')}
+        </Button>
+      </div>
       <SearchBar
         term={term}
         onTermChange={setTerm}
         onSubmit={() => applySearch()}
         label={t('stakeholders.searchProgress')}
-        placeholder={t('stakeholders.searchProgressPlaceholder')}
+        placeholder={t(
+          scope === 'resolution'
+            ? 'stakeholders.searchResolutionProgressPlaceholder'
+            : 'stakeholders.searchProgressPlaceholder',
+        )}
         filtersActive={filtersActive}
         extra={
-          <>
-            <FormField icon={Filter} label={t('stakeholders.project')} htmlFor="progress-project-filter">
-              <SearchSelect
-                id="progress-project-filter"
-                value={projectId}
-                onChange={(value) => setParams({ projectId: value || undefined }, { resetPage: true })}
-                placeholder={t('common.all')}
-                options={[
-                  { value: '', label: t('common.all') },
-                  ...(projects.data ?? []).map((project) => ({
-                    value: project.id,
-                    label: 'systemName' in project ? project.systemName : '',
-                  })),
-                ]}
-              />
-            </FormField>
-            {mode === 'org' ? (
-              <FormField icon={Handshake} label={t('stakeholders.contractor')} htmlFor="progress-contractor-filter">
-                <SearchSelect
-                  id="progress-contractor-filter"
-                  value={contractorId}
-                  onChange={(value) => setParams({ contractorId: value || undefined }, { resetPage: true })}
-                  placeholder={t('stakeholders.allContractors')}
-                  options={[
-                    { value: '', label: t('stakeholders.allContractors') },
-                    ...(contractors.data ?? []).map((item) => ({ value: item.id, label: item.name })),
-                  ]}
-                />
-              </FormField>
-            ) : null}
-          </>
+          scope === 'resolution' && mode !== 'org' ? undefined : (
+            <>
+              {scope === 'project' ? (
+                <FormField icon={Filter} label={t('stakeholders.project')} htmlFor="progress-project-filter">
+                  <SearchSelect
+                    id="progress-project-filter"
+                    value={projectId}
+                    onChange={(value) => setParams({ projectId: value || undefined }, { resetPage: true })}
+                    placeholder={t('common.all')}
+                    options={[
+                      { value: '', label: t('common.all') },
+                      ...(projects.data ?? []).map((project) => ({
+                        value: project.id,
+                        label: 'systemName' in project ? project.systemName : '',
+                      })),
+                    ]}
+                  />
+                </FormField>
+              ) : null}
+              {mode === 'org' ? (
+                <FormField icon={Handshake} label={t('stakeholders.contractor')} htmlFor="progress-contractor-filter">
+                  <SearchSelect
+                    id="progress-contractor-filter"
+                    value={contractorId}
+                    onChange={(value) => setParams({ contractorId: value || undefined }, { resetPage: true })}
+                    placeholder={t('stakeholders.allContractors')}
+                    options={[
+                      { value: '', label: t('stakeholders.allContractors') },
+                      ...(contractors.data ?? []).map((item) => ({ value: item.id, label: item.name })),
+                    ]}
+                  />
+                </FormField>
+              ) : null}
+            </>
+          )
         }
       />
       <TableCard
@@ -221,7 +265,15 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
           <thead className="bg-cream-50 text-ink-700">
             <tr>
               <SortableTh column="occurredAt" label={t('stakeholders.occurredAt')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
-              <SortableTh column="project" label={t('stakeholders.project')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              {scope === 'resolution' ? (
+                <>
+                  <SortableTh column="title" label={t('stakeholders.progressTitleField')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                  <SortableTh column="contract" label={t('stakeholders.resolutionContract')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                  <SortableTh column="project" label={t('stakeholders.resolution')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+                </>
+              ) : (
+                <SortableTh column="project" label={t('stakeholders.project')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
+              )}
               {mode === 'org' ? (
                 <SortableTh column="contractor" label={t('stakeholders.contractor')} sortBy={sortBy} sortDir={sortDir} onSort={onSort} />
               ) : null}
@@ -231,24 +283,34 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
             </tr>
           </thead>
           <tbody>
-            {rows.map((item) => (
+            {rows.map((item) => {
+              const ownReport = item.createdBy?.id === user?.id
+              return (
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3"><DateText value={item.occurredAt} /></td>
-                <td className="px-4 py-3">{item.project?.systemName}</td>
+                {scope === 'resolution' ? (
+                  <>
+                    <td className="px-4 py-3">{item.title || '—'}</td>
+                    <td className="px-4 py-3">{item.contract?.title || '—'}</td>
+                    <td className="px-4 py-3">{item.resolution?.title || item.project?.systemName || '—'}</td>
+                  </>
+                ) : (
+                  <td className="px-4 py-3">{item.project?.systemName}</td>
+                )}
                 {mode === 'org' ? <td className="px-4 py-3">{item.contractor?.name}</td> : null}
                 <td className="px-4 py-3">{percentText(item.progressPercent, locale)}</td>
                 <td className="px-4 py-3">{item.createdBy?.fullName}</td>
                 <td className={actionsColClassName}>
                   <EntityRowActions
-                    viewTo={`${base}/${item.id}`}
-                    editTo={mode === 'contractor' ? `/stakeholders/progress/${item.id}/edit` : undefined}
+                    viewTo={`${pageBase}/${item.id}${scopeQuery}`}
+                    editTo={ownReport ? `${pageBase}/${item.id}/edit${scopeQuery}` : undefined}
                     onDelete={
-                      mode === 'contractor'
+                      ownReport
                         ? () =>
                             confirmDelete({
                               message: t('stakeholders.confirmDeleteProgress'),
                               successMessage: t('stakeholders.deleted'),
-                              path: `/stakeholders/progress/${item.id}`,
+                              path: `${apiBase}/${item.id}`,
                               queryKey: ['stakeholders'],
                             })
                         : undefined
@@ -256,7 +318,8 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
                   />
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </TableCard>
@@ -269,14 +332,23 @@ export function StakeholderProgressListPage({ mode }: { mode: 'contractor' | 'or
 
 function ProgressForm({
   initial,
+  scope,
+  mode,
   onSubmit,
 }: {
   initial?: StakeholderProgressListItem
+  scope: ProgressScope
+  mode: 'contractor' | 'org'
   onSubmit: (payload: Record<string, unknown>) => Promise<void>
 }) {
+  const { user } = useAuth()
   const { t, i18n } = useTranslation()
   const locale = i18n.language.split('-')[0] ?? 'fa'
+  const onBehalf = mode === 'org' || !isContractor(user)
+  const [contractorId, setContractorId] = useState(initial?.contractor?.id ?? '')
   const [projectId, setProjectId] = useState(initial?.project?.id ?? '')
+  const [contractId, setContractId] = useState(initial?.contract?.id ?? '')
+  const [title, setTitle] = useState(initial?.title ?? '')
   const [occurredAt, setOccurredAt] = useState(initial?.occurredAt || todayIsoDate())
   const [progressPercent, setProgressPercent] = useState<number | null>(initial?.progressPercent ?? null)
   const [actionsDone, setActionsDone] = useState(initial?.actionsDone ?? '')
@@ -288,37 +360,95 @@ function ProgressForm({
   )
   const [saving, setSaving] = useState(false)
   const navigate = useNavigate()
-  const projects = useQuery({
-    queryKey: ['stakeholders', 'project-options'],
+  const contractors = useQuery({
+    queryKey: ['stakeholders', 'contractors'],
+    enabled: onBehalf,
     queryFn: async () => {
-      const { data } = await api.get<{ id: string; systemName: string }[]>('/stakeholders/projects/options')
+      const { data } = await api.get<StakeholderParty[]>('/stakeholders/contractors')
+      return data
+    },
+  })
+  const projects = useQuery({
+    queryKey: ['stakeholders', 'project-options', contractorId],
+    enabled: scope === 'project' && (!onBehalf || Boolean(contractorId)),
+    queryFn: async () => {
+      const { data } = await api.get<{ id: string; systemName: string }[]>('/stakeholders/projects/options', {
+        params: onBehalf && contractorId ? { contractorId } : undefined,
+      })
+      return data
+    },
+  })
+  const contracts = useQuery({
+    queryKey: ['stakeholders', 'resolution-contracts', contractorId],
+    enabled: scope === 'resolution' && (!onBehalf || Boolean(contractorId)),
+    queryFn: async () => {
+      const { data } = await api.get<StakeholderResolutionContract[]>('/stakeholders/resolution-contracts', {
+        params: onBehalf && contractorId ? { contractorId } : undefined,
+      })
       return data
     },
   })
 
+  function changeContractor(value: string) {
+    setContractorId(value)
+    setProjectId('')
+    setContractId('')
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (!projectId || !occurredAt) {
+    if (onBehalf && !contractorId) {
+      toast.error(t('stakeholders.contractorRequired'))
+      return
+    }
+    if (scope === 'resolution') {
+      if (!contractId || !occurredAt || !title.trim()) {
+        toast.error(t('stakeholders.contractDateRequired'))
+        return
+      }
+    } else if (!projectId || !occurredAt) {
       toast.error(t('stakeholders.projectDateRequired'))
       return
     }
-    if (!actionsDone.trim() && !nextPlan.trim() && !blockers.trim() && !needs.trim() && progressPercent == null && files.labels.length === 0) {
+    if (
+      scope === 'project' &&
+      !actionsDone.trim() &&
+      !nextPlan.trim() &&
+      !blockers.trim() &&
+      !needs.trim() &&
+      progressPercent == null &&
+      files.labels.length === 0
+    ) {
       toast.error(t('stakeholders.contentRequired'))
       return
     }
     setSaving(true)
     try {
-      await onSubmit({
-        projectId,
-        occurredAt,
-        progressPercent,
-        actionsDone: actionsDone.trim() || null,
-        nextPlan: nextPlan.trim() || null,
-        blockers: blockers.trim() || null,
-        needs: needs.trim() || null,
-        imageIds: files.imageIds,
-        fileIds: files.fileIds,
-      })
+      if (scope === 'resolution') {
+        await onSubmit({
+          contractId,
+          occurredAt,
+          title: title.trim(),
+          progressPercent,
+          actionsDone: actionsDone.trim() || null,
+          nextPlan: nextPlan.trim() || null,
+          blockers: blockers.trim() || null,
+          needs: needs.trim() || null,
+        })
+      } else {
+        await onSubmit({
+          ...(onBehalf ? { contractorId } : {}),
+          projectId,
+          occurredAt,
+          progressPercent,
+          actionsDone: actionsDone.trim() || null,
+          nextPlan: nextPlan.trim() || null,
+          blockers: blockers.trim() || null,
+          needs: needs.trim() || null,
+          imageIds: files.imageIds,
+          fileIds: files.fileIds,
+        })
+      }
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('common.error')))
     } finally {
@@ -329,26 +459,82 @@ function ProgressForm({
   return (
     <FormCard
       icon={ClipboardList}
-      title={initial ? t('stakeholders.progressEdit') : t('stakeholders.progressCreate')}
-      subtitle={initial ? undefined : t('stakeholders.progressCreateSubtitle')}
+      title={
+        initial
+          ? t('stakeholders.progressEdit')
+          : t(scope === 'resolution' ? 'stakeholders.progressCreateResolution' : 'stakeholders.progressCreateProject')
+      }
+      subtitle={
+        initial
+          ? undefined
+          : t(scope === 'resolution' ? 'stakeholders.resolutionProgressCreateSubtitle' : 'stakeholders.progressCreateSubtitle')
+      }
     >
       <AppForm onSubmit={submit} className={formCardBodyClassName}>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="sm:col-span-2">
-            <FormField icon={FolderKanban} label={t('stakeholders.project')} htmlFor="progress-project">
+        {onBehalf ? (
+          <FormField icon={Handshake} label={t('stakeholders.contractor')} htmlFor="progress-contractor">
+            <SearchSelect
+              id="progress-contractor"
+              value={contractorId}
+              onChange={changeContractor}
+              placeholder={t('stakeholders.selectContractor')}
+              options={(contractors.data ?? []).map((item) => ({ value: item.id, label: item.name }))}
+            />
+          </FormField>
+        ) : null}
+        {scope === 'resolution' ? (
+          <>
+            <FormField icon={FileBadge2} label={t('stakeholders.resolutionContract')} htmlFor="progress-contract">
               <SearchSelect
-                id="progress-project"
-                value={projectId}
-                onChange={setProjectId}
-                placeholder={t('stakeholders.selectProject')}
-                options={(projects.data ?? []).map((item) => ({ value: item.id, label: item.systemName }))}
+                id="progress-contract"
+                value={contractId}
+                onChange={setContractId}
+                placeholder={t('stakeholders.selectContract')}
+                options={(contracts.data ?? []).map((item) => ({
+                  value: item.id,
+                  label: `${item.title} · ${item.resolution.title}`,
+                }))}
+              />
+              {contracts.isSuccess && contracts.data.length === 0 ? (
+                <p className="mt-1.5 text-xs text-ink-500">{t('stakeholders.emptyResolutionContracts')}</p>
+              ) : null}
+            </FormField>
+            <FormField icon={FileText} label={t('stakeholders.progressTitleField')} htmlFor="progress-title">
+              <input
+                id="progress-title"
+                required
+                className={fieldClassName}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
               />
             </FormField>
+          </>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="sm:col-span-2">
+              <FormField icon={FolderKanban} label={t('stakeholders.project')} htmlFor="progress-project">
+                <SearchSelect
+                  id="progress-project"
+                  value={projectId}
+                  onChange={setProjectId}
+                  placeholder={t('stakeholders.selectProject')}
+                  options={(projects.data ?? []).map((item) => ({ value: item.id, label: item.systemName }))}
+                />
+                {onBehalf && projects.isSuccess && projects.data.length === 0 ? (
+                  <p className="mt-1.5 text-xs text-ink-500">{t('stakeholders.emptyContractorProjects')}</p>
+                ) : null}
+              </FormField>
+            </div>
+            <FormField icon={ClipboardList} label={t('stakeholders.occurredAt')} htmlFor="progress-date">
+              <PersianDateField id="progress-date" value={occurredAt} onChange={(value) => setOccurredAt(value ?? '')} />
+            </FormField>
           </div>
+        )}
+        {scope === 'resolution' ? (
           <FormField icon={ClipboardList} label={t('stakeholders.occurredAt')} htmlFor="progress-date">
             <PersianDateField id="progress-date" value={occurredAt} onChange={(value) => setOccurredAt(value ?? '')} />
           </FormField>
-        </div>
+        ) : null}
         <FormField icon={Percent} label={t('stakeholders.proposedPercent')} htmlFor="progress-percent">
           <div className="space-y-1.5">
             <input
@@ -380,63 +566,80 @@ function ProgressForm({
         <FormField icon={ScrollText} label={t('stakeholders.needs')} htmlFor="progress-needs">
           <textarea id="progress-needs" className={fieldClassName} rows={3} value={needs} onChange={(event) => setNeeds(event.target.value)} />
         </FormField>
-        <FormField icon={ScrollText} label={t('stakeholders.attachments')} htmlFor="progress-files">
-          <StakeholderAttachmentsField value={files} onChange={setFiles} />
-        </FormField>
+        {scope === 'project' ? (
+          <FormField icon={ScrollText} label={t('stakeholders.attachments')} htmlFor="progress-files">
+            <StakeholderAttachmentsField value={files} onChange={setFiles} />
+          </FormField>
+        ) : null}
         <FormActions
           submitLabel={t('stakeholders.save')}
           cancelLabel={t('common.cancel')}
           submitting={saving}
-          onCancel={() => navigate('/stakeholders/progress')}
+          onCancel={() => navigate(progressListPath(scope, mode))}
         />
       </AppForm>
     </FormCard>
   )
 }
 
-export function StakeholderProgressCreatePage() {
+export function StakeholderProgressCreatePage({ mode = 'contractor' }: { mode?: 'contractor' | 'org' }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const scope = progressScopeOf(searchParams)
   return (
     <div className={formShellClassName}>
-      <PageHeader icon={ClipboardList} title={t('stakeholders.progressCreate')} subtitle={t('stakeholders.progressCreateSubtitle')} />
+      <PageHeader
+        icon={ClipboardList}
+        title={t(scope === 'resolution' ? 'stakeholders.progressCreateResolution' : 'stakeholders.progressCreateProject')}
+        subtitle={t(scope === 'resolution' ? 'stakeholders.resolutionProgressCreateSubtitle' : 'stakeholders.progressCreateSubtitle')}
+      />
       <ProgressForm
+        scope={scope}
+        mode={mode}
         onSubmit={async (payload) => {
-          await api.post('/stakeholders/progress', payload)
+          await api.post(progressApiBase(scope, mode), payload)
           toast.success(t('stakeholders.created'))
-          navigate('/stakeholders/progress')
+          navigate(progressListPath(scope, mode))
         }}
       />
     </div>
   )
 }
 
-export function StakeholderProgressEditPage() {
+export function StakeholderProgressEditPage({ mode = 'contractor' }: { mode?: 'contractor' | 'org' }) {
   const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const scope = progressScopeOf(searchParams)
   const query = useQuery({
-    queryKey: ['stakeholders', 'progress', id],
+    queryKey: ['stakeholders', 'progress', scope, id],
     enabled: Boolean(id),
     queryFn: async () => {
-      const { data } = await api.get<StakeholderProgressListItem>(`/stakeholders/progress/${id}`)
+      const { data } = await api.get<StakeholderProgressListItem>(`${progressApiBase(scope, mode)}/${id}`)
       return data
     },
   })
   if (!query.data || !id) return <LoadingState />
+  const name = scope === 'resolution'
+    ? query.data.title || query.data.contract?.title || t('stakeholders.progressEdit')
+    : query.data.project?.systemName || t('stakeholders.progressEdit')
   return (
     <div className={formShellClassName}>
       <PageHeader
         icon={ClipboardList}
         title={t('stakeholders.progressEdit')}
-        subtitle={<EntityNameSubtitle name={query.data.project?.systemName || t('stakeholders.progressEdit')} icon={FolderKanban} />}
+        subtitle={<EntityNameSubtitle name={name} icon={scope === 'resolution' ? FileBadge2 : FolderKanban} />}
       />
       <ProgressForm
         initial={query.data}
+        scope={scope}
+        mode={mode}
         onSubmit={async (payload) => {
-          await api.patch(`/stakeholders/progress/${id}`, payload)
+          await api.patch(`${progressApiBase(scope, mode)}/${id}`, payload)
           toast.success(t('stakeholders.updated'))
-          navigate('/stakeholders/progress')
+          navigate(progressListPath(scope, mode))
         }}
       />
     </div>
@@ -450,33 +653,52 @@ export function StakeholderProgressDetailPage({ mode }: { mode: 'contractor' | '
   const { id } = useParams()
   const navigate = useNavigate()
   const { confirmDelete } = useConfirmDelete()
-  const base = mode === 'org' ? '/stakeholders/reports' : '/stakeholders/progress'
+  const [searchParams] = useSearchParams()
+  const scope = progressScopeOf(searchParams)
+  const apiBase = progressApiBase(scope, mode)
   const query = useQuery({
-    queryKey: ['stakeholders', 'progress', id],
+    queryKey: ['stakeholders', 'progress', scope, id],
     enabled: Boolean(id),
     queryFn: async () => {
-      const { data } = await api.get<StakeholderProgressListItem>(`${base}/${id}`)
+      const { data } = await api.get<StakeholderProgressListItem>(`${apiBase}/${id}`)
       return data
     },
   })
   if (mode === 'org' && id && isContractor(user) && !isAdmin(user)) {
-    return <Navigate to={`/stakeholders/progress/${id}`} replace />
+    return (
+      <Navigate
+        to={`/stakeholders/progress/${id}${scope === 'resolution' ? '?scope=resolution' : ''}`}
+        replace
+      />
+    )
   }
   if (!query.data || !id) return <LoadingState />
   const item = query.data
-  const title = item.project?.systemName || t('stakeholders.progressDetails')
+  const ownReport = item.createdBy?.id === user?.id
+  const title =
+    scope === 'resolution'
+      ? item.title || item.contract?.title || t('stakeholders.progressDetails')
+      : item.project?.systemName || t('stakeholders.progressDetails')
 
   return (
     <div className={formShellClassName}>
       <PageHeader
         icon={ClipboardList}
         title={t(mode === 'org' ? 'stakeholders.reportDetails' : 'stakeholders.progressDetails')}
-        subtitle={<EntityNameSubtitle name={title} icon={FolderKanban} />}
+        subtitle={<EntityNameSubtitle name={title} icon={scope === 'resolution' ? FileBadge2 : FolderKanban} />}
+        backTo={progressListPath(scope, mode)}
       />
       <FormCard icon={ClipboardList} title={title}>
         <div className="space-y-6 p-5 sm:p-6">
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-            <FormFactTile icon={FolderKanban} label={t('stakeholders.project')} value={item.project?.systemName || '—'} tone="teal" />
+            {scope === 'resolution' ? (
+              <>
+                <FormFactTile icon={FileBadge2} label={t('stakeholders.resolutionContract')} value={item.contract?.title || '—'} tone="teal" />
+                <FormFactTile icon={FolderKanban} label={t('stakeholders.resolution')} value={item.resolution?.title || item.project?.systemName || '—'} tone="mint" />
+              </>
+            ) : (
+              <FormFactTile icon={FolderKanban} label={t('stakeholders.project')} value={item.project?.systemName || '—'} tone="teal" />
+            )}
             {mode === 'org' ? (
               <FormFactTile icon={Handshake} label={t('stakeholders.contractor')} value={item.contractor?.name || '—'} tone="mint" />
             ) : null}
@@ -487,20 +709,24 @@ export function StakeholderProgressDetailPage({ mode }: { mode: 'contractor' | '
             <FormFactTile icon={ScrollText} label={t('stakeholders.blockers')} value={item.blockers || '—'} tone="ink" />
             <FormFactTile icon={ScrollText} label={t('stakeholders.needs')} value={item.needs || '—'} tone="teal" />
           </div>
-          <FormSectionTitle icon={ScrollText}>{t('stakeholders.attachments')}</FormSectionTitle>
-          <AttachmentList items={item.attachments} />
-          {mode === 'contractor' ? (
+          {scope === 'project' ? (
+            <>
+              <FormSectionTitle icon={ScrollText}>{t('stakeholders.attachments')}</FormSectionTitle>
+              <AttachmentList items={item.attachments} />
+            </>
+          ) : null}
+          {ownReport ? (
             <DetailActions
-              editTo={`/stakeholders/progress/${id}/edit`}
+              editTo={`${mode === 'org' ? '/stakeholders/reports' : '/stakeholders/progress'}/${id}/edit${scope === 'resolution' ? '?scope=resolution' : ''}`}
               editLabel={t('common.edit')}
               deleteLabel={t('common.delete')}
               onDelete={() =>
                 confirmDelete({
                   message: t('stakeholders.confirmDeleteProgress'),
                   successMessage: t('stakeholders.deleted'),
-                  path: `/stakeholders/progress/${id}`,
+                  path: `${apiBase}/${id}`,
                   queryKey: ['stakeholders'],
-                  onDeleted: () => navigate('/stakeholders/progress'),
+                  onDeleted: () => navigate(progressListPath(scope, mode)),
                 })
               }
             />

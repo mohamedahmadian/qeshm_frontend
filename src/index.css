@@ -279,7 +279,7 @@ th {
 
 .rmdp-wrapper {
   font-family: var(--font-sans);
-  z-index: 80;
+  z-index: 100;
 }
 
 .rmdp-wrapper.eskan-triple-cal {
@@ -2149,7 +2149,7 @@ th {
 }
 
 .rmdp-ep-arrow {
-  z-index: 81;
+  z-index: 101;
 }
 
 .rmdp-wrapper.teal {
@@ -2758,6 +2758,7 @@ th {
 }
 
 .board-resolution-print-head {
+  flex: 0 0 auto;
   margin-bottom: 10px;
   text-align: center;
 }
@@ -2789,56 +2790,37 @@ th {
 }
 
 .board-resolution-print-table {
-  --print-label-col: 22%;
   width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
   border: 1px solid #111827;
   font-size: 11.5px;
   line-height: 1.7;
 }
 
-.board-resolution-print-row {
-  display: block;
-  overflow: visible;
-  background: linear-gradient(
-    to inline-end,
-    #f4e4cc 0,
-    #f4e4cc var(--print-label-col),
-    #fff var(--print-label-col),
-    #fff 100%
-  );
-  border-bottom: 1px solid #111827;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
+.board-resolution-print-label-col {
+  width: 22%;
 }
 
-.board-resolution-print-row:last-child {
-  border-bottom: 0;
-}
-
-.board-resolution-print-row::after {
-  content: '';
-  display: block;
-  clear: both;
+.board-resolution-print-table th,
+.board-resolution-print-table td {
+  border: 1px solid #111827;
+  padding: 6px 8px;
+  text-align: start;
+  vertical-align: top;
+  font-weight: 400;
 }
 
 .board-resolution-print-label {
-  float: inline-start;
-  box-sizing: border-box;
-  width: var(--print-label-col);
-  padding: 6px 8px;
+  width: 22%;
+  background: #f4e4cc;
   font-weight: 700;
   text-align: start;
 }
 
-.board-resolution-print-value,
-.board-resolution-print-signs-cell {
-  box-sizing: border-box;
-  margin-inline-start: var(--print-label-col);
-  padding: 6px 8px;
-  border-inline-start: 1px solid #111827;
+.board-resolution-print-value {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  overflow: visible;
 }
 
 .board-resolution-print-notes .board-resolution-print-value {
@@ -2852,7 +2834,6 @@ th {
 .board-resolution-print-signs-cell {
   padding: 0;
   min-width: 0;
-  white-space: normal;
 }
 
 .board-resolution-print-sign-grid {
@@ -2862,6 +2843,8 @@ th {
 .board-resolution-print-sign-row {
   display: grid;
   width: 100%;
+  column-gap: 1px;
+  background: #111827;
 }
 
 .board-resolution-print-sign-row + .board-resolution-print-sign-row {
@@ -2870,11 +2853,7 @@ th {
 
 .board-resolution-print-sign-card {
   min-width: 0;
-  border-inline-end: 1px solid #111827;
-}
-
-.board-resolution-print-sign-row > :last-child {
-  border-inline-end: 0;
+  background: #fff;
 }
 
 .board-resolution-print-table .board-resolution-print-signer {
@@ -3555,10 +3534,32 @@ th {
 
   .board-resolution-print-sheet {
     box-sizing: border-box;
+    min-height: 297mm;
     height: auto;
     overflow: visible;
     padding: 10mm 10mm 12mm;
     background: #fff;
+    flex-direction: column;
+  }
+
+  .board-resolution-print-table {
+    flex: 1 1 auto;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .board-resolution-print-table tbody tr:not(.board-resolution-print-body) {
+    height: 0;
+  }
+
+  .board-resolution-print-body,
+  .board-resolution-print-body .board-resolution-print-value {
+    height: 100%;
+  }
+
+  .board-resolution-print-notes,
+  .board-resolution-print-body {
+    overflow: visible;
   }
 
   .board-resolution-print-batch .board-resolution-print-sheet + .board-resolution-print-sheet {
@@ -3566,14 +3567,17 @@ th {
     page-break-before: always;
   }
 
+  .board-resolution-print-table,
+  .board-resolution-print-table tbody,
   .board-resolution-print-row,
+  .board-resolution-print-label,
   .board-resolution-print-value {
     break-inside: auto;
     page-break-inside: auto;
   }
 
   .board-resolution-print-head,
-  .board-resolution-print-row.board-resolution-print-signs {
+  .board-resolution-print-signs {
     break-inside: avoid-page;
     page-break-inside: avoid;
   }

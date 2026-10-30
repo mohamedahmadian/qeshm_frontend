@@ -17,6 +17,7 @@ import { useConfirmDelete } from '../../hooks/useConfirmDelete'
 import { useListParams } from '../../hooks/useListParams'
 import { useListSort } from '../../hooks/useListSort'
 import { api } from '../../lib/api'
+import { localizeDigits } from '../../lib/datetime'
 import { resolutionExecutorNames } from '../../lib/resolution-calendar'
 import type { BoardMinutesResolution, Paginated } from '../../types/app'
 import { boardResolutionStatuses } from '../../types/app'
@@ -27,7 +28,11 @@ import { BoardResolutionStatusBadge } from './BoardStatusBadge'
 import { boardMinuteResolutionPath } from './board-paths'
 
 function relatedRequestId(item: BoardMinutesResolution) {
-  return item.minutes?.requestId || item.minutes?.request?.id || undefined
+  return item.requestId || item.request?.id || item.minutes?.requestId || item.minutes?.request?.id || undefined
+}
+
+function relatedRequestNo(item: BoardMinutesResolution) {
+  return item.request?.trackingNo || item.minutes?.request?.trackingNo || null
 }
 
 export function BoardResolutionsListPage() {
@@ -89,6 +94,20 @@ export function BoardResolutionsListPage() {
           <thead className="bg-cream-50 text-ink-700">
             <tr>
               <SortableTh
+                column="minutesNo"
+                label={t('boardMinutes.number')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
+                column="request"
+                label={t('boardResolutions.requestNo')}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+              <SortableTh
                 column="title"
                 label={t('boardResolutions.titleField')}
                 sortBy={sortBy}
@@ -116,29 +135,24 @@ export function BoardResolutionsListPage() {
                 sortDir={sortDir}
                 onSort={onSort}
               />
-              <SortableTh
-                column="minutes"
-                label={t('boardResolutions.minutes')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
-              <SortableTh
-                column="request"
-                label={t('boardMinutes.request')}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={onSort}
-              />
               <ActionsTh />
             </tr>
           </thead>
           <tbody>
             {rows.map((item) => {
               const requestId = relatedRequestId(item)
+              const requestNo = relatedRequestNo(item)
               const base = boardMinuteResolutionPath(item.minutesId, item.id, requestId)
               return (
                 <tr key={item.id} className="border-t border-line">
+                  <td className="px-4 py-3">
+                    {item.minutes?.minutesNo
+                      ? localizeDigits(item.minutes.minutesNo, locale)
+                      : '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    {requestNo ? localizeDigits(requestNo, locale) : t('boardResolutions.noRequest')}
+                  </td>
                   <td className="px-4 py-3">{item.title}</td>
                   <td className="px-4 py-3">
                     <BoardResolutionStatusBadge value={item.status} />
@@ -149,12 +163,6 @@ export function BoardResolutionsListPage() {
                   <td className="px-4 py-3">
                     <BoardResolutionDueValue dueKind={item.dueKind} dueDate={item.dueDate} />
                   </td>
-                  <td className="px-4 py-3">{item.minutes?.subject || '—'}</td>
-                  <td className="px-4 py-3">
-                    {(item.minutes?.requests?.length
-                      ? item.minutes.requests.map((row) => row.subject).join('، ')
-                      : item.minutes?.request?.subject) || t('boardResolutions.noRequest')}
-                  </td>
                   <td className={actionsColClassName}>
                     <EntityRowActions
                       viewTo={base}
@@ -163,7 +171,7 @@ export function BoardResolutionsListPage() {
                         <>
                           <Button
                             type="button"
-                            variant="soft"
+                            variant="ghost"
                             onClick={() => setDossier({ minutesId: item.minutesId, resolutionId: item.id })}
                           >
                             <ScrollText className="size-4" aria-hidden />

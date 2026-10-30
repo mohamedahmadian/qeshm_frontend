@@ -436,9 +436,9 @@ export default function App() {
                   <Route path="/stakeholders/projects" element={<StakeholderProjectsPage />} />
                   <Route path="/stakeholders/projects/:id" element={<StakeholderProjectDetailPage />} />
                   <Route path="/stakeholders/progress" element={<StakeholderProgressListPage mode="contractor" />} />
-                  <Route path="/stakeholders/progress/new" element={<StakeholderProgressCreatePage />} />
+                  <Route path="/stakeholders/progress/new" element={<StakeholderProgressCreatePage mode="contractor" />} />
                   <Route path="/stakeholders/progress/:id" element={<StakeholderProgressDetailPage mode="contractor" />} />
-                  <Route path="/stakeholders/progress/:id/edit" element={<StakeholderProgressEditPage />} />
+                  <Route path="/stakeholders/progress/:id/edit" element={<StakeholderProgressEditPage mode="contractor" />} />
                   <Route path="/stakeholders/correspondence" element={<StakeholderCorrespondenceListPage mode="contractor" />} />
                   <Route path="/stakeholders/correspondence/new" element={<StakeholderCorrespondenceCreatePage />} />
                   <Route path="/stakeholders/correspondence/:id" element={<StakeholderCorrespondenceDetailPage mode="contractor" />} />
@@ -446,6 +446,8 @@ export default function App() {
                   <Route path="/stakeholders/inbox" element={<StakeholderCorrespondenceListPage mode="org" />} />
                   <Route path="/stakeholders/inbox/:id" element={<StakeholderCorrespondenceDetailPage mode="org" />} />
                   <Route path="/stakeholders/reports" element={<StakeholderProgressListPage mode="org" />} />
+                  <Route path="/stakeholders/reports/new" element={<StakeholderProgressCreatePage mode="org" />} />
+                  <Route path="/stakeholders/reports/:id/edit" element={<StakeholderProgressEditPage mode="org" />} />
                   <Route path="/stakeholders/reports/:id" element={<StakeholderProgressDetailPage mode="org" />} />
                   <Route path="/ports" element={<PortListPage />} />
                   <Route path="/ports/new" element={<PortCreatePage />} />

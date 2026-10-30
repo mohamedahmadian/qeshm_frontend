@@ -5125,6 +5125,16 @@ export type BoardResolutionSignatory = {
   sortOrder: number
 }
 
+export type BoardResolutionPerson = {
+  id: string
+  fullName: string
+}
+
+export type BoardResolutionContractorRef = {
+  id: string
+  name: string
+}
+
 export type BoardResolutionProgressReport = {
   id: string
   resolutionId: string
@@ -5132,7 +5142,17 @@ export type BoardResolutionProgressReport = {
   title: string
   category: string | null
   body: string | null
+  actionsDone: string | null
+  nextPlan: string | null
+  blockers: string | null
+  needs: string | null
   progressAmount: number
+  createdById: string | null
+  contractorId: string | null
+  contractId: string | null
+  createdBy: BoardResolutionPerson | null
+  contractor: BoardResolutionContractorRef | null
+  contract: { id: string; title: string } | null
   createdAt: string
   updatedAt: string
 }
@@ -5142,9 +5162,81 @@ export type BoardResolutionProgressList = {
   totalProgress: number
 }
 
+export const boardResolutionContractKinds = {
+  CONTRACTING: 'CONTRACTING',
+  GOODS_EQUIPMENT: 'GOODS_EQUIPMENT',
+  SERVICES: 'SERVICES',
+  CONSULTING: 'CONSULTING',
+  DESIGN_ENGINEERING: 'DESIGN_ENGINEERING',
+  INFORMATION_TECHNOLOGY: 'INFORMATION_TECHNOLOGY',
+  LEASE: 'LEASE',
+  PARTNERSHIP: 'PARTNERSHIP',
+  INVESTMENT: 'INVESTMENT',
+  OPERATION: 'OPERATION',
+  SUPPLY: 'SUPPLY',
+  TRANSPORT: 'TRANSPORT',
+  MARKETING: 'MARKETING',
+  OTHER: 'OTHER',
+} as const
+
+export type BoardResolutionContractKind =
+  (typeof boardResolutionContractKinds)[keyof typeof boardResolutionContractKinds]
+
+export const boardResolutionContractKindList = Object.values(boardResolutionContractKinds)
+
+export const boardResolutionContractStatuses = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  TERMINATED: 'TERMINATED',
+  SUSPENDED: 'SUSPENDED',
+} as const
+
+export type BoardResolutionContractStatus =
+  (typeof boardResolutionContractStatuses)[keyof typeof boardResolutionContractStatuses]
+
+export const boardResolutionContractStatusList = Object.values(boardResolutionContractStatuses)
+
+export type BoardResolutionContractFile = {
+  id: string
+  originalName: string | null
+  mimeType: string
+  byteSize: number
+}
+
+export type BoardResolutionContract = {
+  id: string
+  resolutionId: string
+  title: string
+  contractNo: string | null
+  contractorId: string | null
+  contractor: BoardResolutionContractorRef | null
+  kind: BoardResolutionContractKind | null
+  kindOther: string | null
+  amount: number | null
+  signedAt: string | null
+  duration: string | null
+  startDate: string | null
+  endDate: string | null
+  status: BoardResolutionContractStatus | null
+  paidAmount: number | null
+  supervisor: string | null
+  fileId: string | null
+  file: BoardResolutionContractFile | null
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type BoardResolutionContractList = {
+  items: BoardResolutionContract[]
+}
+
 export type BoardMinutesResolution = {
   id: string;
   minutesId: string;
+  requestId?: string | null;
+  request?: BoardMinutesLinkedRequest | null;
   title: string;
   description: string | null;
   status: BoardResolutionStatus;
@@ -5176,7 +5268,7 @@ export type BoardMinutesResolution = {
   };
 };
 
-export const boardSmartSearchMatchKinds = ['minutes', 'request', 'resolution'] as const
+export const boardSmartSearchMatchKinds = ['minutes', 'request', 'resolution', 'contract'] as const
 
 export type BoardSmartSearchMatchKind = (typeof boardSmartSearchMatchKinds)[number]
 
@@ -5184,6 +5276,7 @@ export type BoardSmartSearchResult = Paginated<BoardSmartSearchHit> & {
   minutesCount: number
   requestCount: number
   resolutionCount: number
+  contractCount: number
 }
 
 export type BoardSmartSearchMinutesHit = {
@@ -5194,12 +5287,20 @@ export type BoardSmartSearchMinutesHit = {
   subject: string
   heldAt: string
   body: string | null
+  createdBy?: BoardPerson
   request: BoardMinutesLinkedRequest | null
   requests?: BoardMinutesLinkedRequest[]
   resolutionCount: number
   matchIn: BoardSmartSearchMatchKind[]
   snippet: string | null
   matchedResolutions: { id: string; title: string }[]
+  matchedContracts: {
+    id: string
+    title: string
+    contractNo: string | null
+    contractorName: string | null
+    resolutionId: string
+  }[]
 }
 
 export type BoardSmartSearchRequestHit = {
@@ -5208,7 +5309,9 @@ export type BoardSmartSearchRequestHit = {
   subject: string
   requestedAt: string
   status: BoardRequestStatus
+  trackingNo?: string | null
   unit: { id: string; name: string }
+  createdBy?: BoardPerson
   snippet: string | null
   matchIn: BoardSmartSearchMatchKind[]
   minutesCount: number
@@ -5221,6 +5324,16 @@ export type BoardMinutesDossier = {
   request: BoardRequest | null
   requests?: BoardRequest[]
   resolutions: BoardMinutesResolution[]
+  contracts?: Array<
+    BoardResolutionContract & {
+      resolution: { id: string; title: string }
+    }
+  >
+  progressReports?: Array<
+    BoardResolutionProgressReport & {
+      resolution: { id: string; title: string }
+    }
+  >
 }
 
 export const portTicketQeshmondiStatuses = {

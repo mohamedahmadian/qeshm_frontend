@@ -50,6 +50,12 @@ export function getPageMeta(pathname: string): {
   if (pathname.startsWith('/stakeholders/inbox')) {
     return { titleKey: 'menus.stakeholderInbox', subtitleKey: 'stakeholders.inboxSubtitle' }
   }
+  if (pathname === '/stakeholders/reports/new') {
+    return { titleKey: 'stakeholders.progressCreate', subtitleKey: 'stakeholders.progressCreateSubtitle' }
+  }
+  if (pathname.endsWith('/edit') && pathname.startsWith('/stakeholders/reports/')) {
+    return { titleKey: 'stakeholders.progressEdit', subtitleKey: 'stakeholders.progressEditSubtitle' }
+  }
   if (pathname.startsWith('/stakeholders/reports/')) {
     return { titleKey: 'stakeholders.reportDetails', subtitleKey: 'stakeholders.reportDetailsSubtitle' }
   }

@@ -210,10 +210,10 @@ function FieldRow({
   className?: string
 }) {
   return (
-    <div className={['board-resolution-print-row', className].filter(Boolean).join(' ')}>
-      <div className="board-resolution-print-label">{label}</div>
-      <div className="board-resolution-print-value">{value || '\u00a0'}</div>
-    </div>
+    <tr className={['board-resolution-print-row', className].filter(Boolean).join(' ')}>
+      <th className="board-resolution-print-label">{label}</th>
+      <td className="board-resolution-print-value">{value || '\u00a0'}</td>
+    </tr>
   )
 }
 
@@ -296,7 +296,7 @@ function ResolutionPrintView({
   const heldAt = minutes.heldAt ? formatDate(minutes.heldAt, locale) : t('boardResolutions.printBlank')
 
   return (
-    <section className="board-resolution-print-sheet hidden print:block">
+    <section className="board-resolution-print-sheet hidden print:flex">
       <header className="board-resolution-print-head">
         <p className="board-resolution-print-office">{t('boardResolutions.printSecretariat')}</p>
         <p className="board-resolution-print-minutes">
@@ -310,51 +310,57 @@ function ResolutionPrintView({
           {t('boardResolutions.printClause', { name: clauseName(clauseIndex, t, locale) })}
         </p>
       </header>
-      <div className="board-resolution-print-table">
-        <FieldRow label={t('boardResolutions.printSubject')} value={item.title} />
-        <FieldRow
-          label={t('boardResolutions.status')}
-          value={t(`boardResolutions.statuses.${item.status}`)}
-        />
-        <FieldRow label={t('boardResolutions.proposer')} value={resolutionProposerLabel(item)} />
-        <FieldRow label={t('boardResolutions.legalBasis')} value={item.legalBasis} />
-        <FieldRow
-          label={t('boardResolutions.hasTopicHistory')}
-          value={
-            item.hasTopicHistory
-              ? t('boardResolutions.topicHistoryYes')
-              : t('boardResolutions.topicHistoryNo')
-          }
-        />
-        <FieldRow
-          className="board-resolution-print-notes"
-          label={t('boardResolutions.notes')}
-          value={item.notes}
-        />
-        <FieldRow
-          className="board-resolution-print-body"
-          label={t('boardResolutions.printBody')}
-          value={item.description}
-        />
-        <FieldRow
-          label={t('boardResolutions.printExecutor')}
-          value={resolutionExecutorNames(item, '')}
-        />
-        <FieldRow
-          label={t('boardResolutions.printDue')}
-          value={<BoardResolutionDueValue dueKind={item.dueKind} dueDate={item.dueDate} />}
-        />
-        <div className="board-resolution-print-row board-resolution-print-signs">
-          <div className="board-resolution-print-label">{t('boardResolutions.printSignPlace')}</div>
-          <div className="board-resolution-print-signs-cell">
-            <div className="board-resolution-print-sign-grid">
-              {rows.map((row) => (
-                <SignRow key={row.map((signer) => signer.id).join('-')} items={row} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <table className="board-resolution-print-table">
+        <colgroup>
+          <col className="board-resolution-print-label-col" />
+          <col />
+        </colgroup>
+        <tbody>
+          <FieldRow label={t('boardResolutions.printSubject')} value={item.title} />
+          <FieldRow
+            label={t('boardResolutions.status')}
+            value={t(`boardResolutions.statuses.${item.status}`)}
+          />
+          <FieldRow label={t('boardResolutions.proposer')} value={resolutionProposerLabel(item)} />
+          <FieldRow label={t('boardResolutions.legalBasis')} value={item.legalBasis} />
+          <FieldRow
+            label={t('boardResolutions.hasTopicHistory')}
+            value={
+              item.hasTopicHistory
+                ? t('boardResolutions.topicHistoryYes')
+                : t('boardResolutions.topicHistoryNo')
+            }
+          />
+          <FieldRow
+            className="board-resolution-print-notes"
+            label={t('boardResolutions.notes')}
+            value={item.notes}
+          />
+          <FieldRow
+            className="board-resolution-print-body"
+            label={t('boardResolutions.printBody')}
+            value={item.description}
+          />
+          <FieldRow
+            label={t('boardResolutions.printExecutor')}
+            value={resolutionExecutorNames(item, '')}
+          />
+          <FieldRow
+            label={t('boardResolutions.printDue')}
+            value={<BoardResolutionDueValue dueKind={item.dueKind} dueDate={item.dueDate} />}
+          />
+          <tr className="board-resolution-print-row board-resolution-print-signs">
+            <th className="board-resolution-print-label">{t('boardResolutions.printSignPlace')}</th>
+            <td className="board-resolution-print-signs-cell">
+              <div className="board-resolution-print-sign-grid">
+                {rows.map((row) => (
+                  <SignRow key={row.map((signer) => signer.id).join('-')} items={row} />
+                ))}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </section>
   )
 }

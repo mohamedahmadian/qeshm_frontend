@@ -36,6 +36,8 @@ export type StakeholderAttachment = {
 export type StakeholderProgressListItem = {
   id: string
   occurredAt: string | null
+  title?: string
+  body?: string | null
   progressPercent: number | null
   actionsDone: string | null
   nextPlan?: string | null
@@ -45,8 +47,22 @@ export type StakeholderProgressListItem = {
   project?: { id: string; systemName: string; code: string }
   contractor?: StakeholderParty
   createdBy?: StakeholderPerson
+  contract?: { id: string; title: string } | null
+  resolution?: { id: string; title: string; minutesId: string }
   _count?: { attachments: number }
   attachments?: StakeholderAttachment[]
+}
+
+export type StakeholderResolutionContract = {
+  id: string
+  title: string
+  contractNo: string | null
+  resolution: {
+    id: string
+    title: string
+    minutesId: string
+    minutes?: { id: string; minutesNo: string; subject: string }
+  }
 }
 
 export const stakeholderCorrespondenceKinds = [

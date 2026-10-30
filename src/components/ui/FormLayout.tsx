@@ -13,17 +13,17 @@ export const formToneClass: Record<FormTone, { wrap: string; icon: string; factI
   teal: {
     wrap: 'border-teal-100 bg-gradient-to-b from-teal-50 to-white',
     icon: 'bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)]',
-    factIcon: 'bg-teal-100 text-teal-500',
+    factIcon: 'bg-teal-100 text-teal-700',
   },
   mint: {
     wrap: 'border-mint-100 bg-gradient-to-b from-mint-50 to-white',
     icon: 'bg-mint-500 text-white shadow-[0_8px_16px_rgba(63,214,190),0.24)]',
-    factIcon: 'bg-mint-100 text-mint-500',
+    factIcon: 'bg-mint-100 text-mint-700',
   },
   ink: {
     wrap: 'border-line bg-gradient-to-b from-cream-50 to-white',
     icon: 'bg-ink-700 text-white',
-    factIcon: 'bg-cream-100 text-ink-500',
+    factIcon: 'bg-cream-100 text-ink-600',
   },
 }
 
@@ -188,7 +188,7 @@ export function FormMetaChip({
 export function FormSectionTitle({
   icon: Icon,
   children,
-  className = 'mb-2.5',
+  className = 'mb-3',
 }: {
   icon: LucideIcon
   children: ReactNode
@@ -196,10 +196,10 @@ export function FormSectionTitle({
 }) {
   return (
     <h3
-      className={`inline-flex items-center gap-2 text-xs font-semibold text-ink-600 ${className}`}
+      className={`inline-flex items-center gap-2.5 text-sm font-bold leading-snug text-ink-800 sm:text-base ${className}`}
     >
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-        <Icon className="size-3.5" aria-hidden />
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-teal-500 text-white shadow-[0_8px_16px_rgba(46,189,182,0.28)] sm:size-9">
+        <Icon className="size-4 sm:size-5" aria-hidden />
       </span>
       {children}
     </h3>
@@ -254,7 +254,7 @@ export function FormFactTile({
         <Icon className={large ? 'size-5' : compact ? 'size-3.5' : 'size-4'} aria-hidden />
       </span>
       <div className="min-w-0">
-        <p className={`font-medium text-ink-500 ${large ? 'text-sm' : 'text-[11px]'}`}>{label}</p>
+        <p className={`font-semibold text-ink-600 ${large ? 'text-sm' : 'text-xs'}`}>{label}</p>
         <div
           className={`font-semibold break-words ${
             large ? 'mt-1 text-2xl leading-tight' : compact ? 'mt-px text-[13px]' : 'mt-0.5 text-sm'

@@ -168,7 +168,6 @@ export function BoardMinutesForm({
       initial?.requests?.map((row) => row.id) ??
       (initial?.requestId ? [initial.requestId] : lockedRequestId ? [lockedRequestId] : []),
   )
-  const requestsInitialized = useRef(false)
   const membersSeeded = useRef(false)
   const [members, setMembers] = useState<MinutesMember[]>(
     () => initial?.members.map(draftFromSaved) ?? [],
@@ -213,12 +212,6 @@ export function BoardMinutesForm({
     }
     return items
   }, [initial?.requests, lockedRequestId, requests.data])
-
-  useEffect(() => {
-    if (requestsInitialized.current || !requests.data) return
-    requestsInitialized.current = true
-    setRequestIds(requestChoices.map((item) => item.id))
-  }, [requestChoices, requests.data])
 
   useEffect(() => {
     if (initial) {

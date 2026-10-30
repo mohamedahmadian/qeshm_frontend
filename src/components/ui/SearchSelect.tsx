@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Plus, Search } from 'lucide-react'
+import { Check, ChevronDown, Plus, Search, X } from 'lucide-react'
 import {
   useCallback,
   useEffect,
@@ -144,6 +144,7 @@ export function SearchSelect<T extends string = string>({
   placeholder,
   required,
   disabled,
+  allowClear,
   onCreate,
   createLabel,
 }: {
@@ -155,6 +156,7 @@ export function SearchSelect<T extends string = string>({
   placeholder?: string
   required?: boolean
   disabled?: boolean
+  allowClear?: boolean
   onCreate?: (query: string) => void
   createLabel?: (query: string) => string
 }) {
@@ -453,6 +455,8 @@ export function SearchSelect<T extends string = string>({
     </>
   )
 
+  const canClear = Boolean(allowClear && value && !disabled)
+
   return (
     <div ref={rootRef} className="relative">
       <button
@@ -462,18 +466,37 @@ export function SearchSelect<T extends string = string>({
         disabled={disabled}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className={`${fieldClassName} flex items-center justify-between gap-2 text-start disabled:cursor-not-allowed disabled:opacity-60`}
+        className={`${fieldClassName} flex items-center justify-between gap-2 text-start disabled:cursor-not-allowed disabled:opacity-60 ${
+          canClear ? 'pe-14' : ''
+        }`}
         onClick={() => {
           if (open) setOpen(false)
           else openMenu()
         }}
       >
-        <span className={selected ? 'text-ink-900' : 'text-ink-400'}>{display}</span>
+        <span className={`min-w-0 flex-1 truncate ${selected ? 'text-ink-900' : 'text-ink-400'}`}>
+          {display}
+        </span>
         <ChevronDown
           className={`size-4 shrink-0 text-teal-600 transition ${open ? 'rotate-180' : ''}`}
           aria-hidden
         />
       </button>
+      {canClear ? (
+        <button
+          type="button"
+          className="absolute end-10 top-1/2 z-10 inline-flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-ink-400 hover:bg-cream-100 hover:text-ink-700"
+          aria-label={t('common.clearSelection')}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation()
+            onChange('' as T)
+            setOpen(false)
+          }}
+        >
+          <X className="size-4" aria-hidden />
+        </button>
+      ) : null}
       <input
         name={name}
         value={value}
@@ -487,7 +510,7 @@ export function SearchSelect<T extends string = string>({
       {open
         ? createPortal(
             sheet ? (
-              <div className="fixed inset-0 z-[80]" data-enter-ignore>
+              <div className="fixed inset-0 z-[100]" data-enter-ignore>
                 <button
                   type="button"
                   className="absolute inset-0 bg-ink-900/30"
@@ -521,7 +544,7 @@ export function SearchSelect<T extends string = string>({
                   maxHeight: pos?.maxHeight,
                   visibility: pos ? 'visible' : 'hidden',
                 }}
-                className="fixed z-[80] flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-[0_16px_40px_rgba(20,40,40,0.12)]"
+                className="fixed z-[100] flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-[0_16px_40px_rgba(20,40,40,0.12)]"
               >
                 {menuInner}
               </div>
