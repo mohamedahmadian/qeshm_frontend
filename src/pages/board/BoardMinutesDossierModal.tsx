@@ -19,8 +19,9 @@ import {
   Users,
   Wallet,
   X,
+  type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useRef, useState, type LucideIcon, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'

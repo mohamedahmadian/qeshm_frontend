@@ -1,4 +1,4 @@
-import { Camera, FolderOpen, ImagePlus, Trash2 } from 'lucide-react'
+import { Camera, FolderOpen, ImagePlus, ScanLine, Trash2, X } from 'lucide-react'
 import {
   useEffect,
   useId,
@@ -7,11 +7,13 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { FileName } from './FileName'
 import { Button } from './Form'
 import { LoadingSpinner } from './LoadingState'
+import { ScanSettingsModal } from './ScanSettingsModal'
 
 const defaultMaxBytes = 8 * 1024 * 1024
 
@@ -36,9 +38,11 @@ export function FileDropField({
   accept = 'image/*',
   capture = 'user',
   allowCamera,
+  allowScan,
   previewUrl,
   uploading,
   hideUploadingHint,
+  previewClassName = 'mx-auto mb-4 h-28 w-28 rounded-2xl object-cover',
   maxBytes = defaultMaxBytes,
   hideLocalPreview,
   onFile,
@@ -48,9 +52,11 @@ export function FileDropField({
   accept?: string
   capture?: 'user' | 'environment'
   allowCamera?: boolean
+  allowScan?: boolean
   previewUrl?: string
   uploading?: boolean
   hideUploadingHint?: boolean
+  previewClassName?: string
   maxBytes?: number
   hideLocalPreview?: boolean
   onFile: (file: File) => void
@@ -66,7 +72,11 @@ export function FileDropField({
   const [dragging, setDragging] = useState(false)
   const [localPreview, setLocalPreview] = useState<string>()
   const [selectedName, setSelectedName] = useState<string>()
+  const [scanOpen, setScanOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const cameraEnabled = allowCamera ?? accept.includes('image')
+  const scanEnabled = allowScan ?? accept.includes('image')
+  const busy = Boolean(uploading)
 
   useEffect(() => {
     return () => {
@@ -158,11 +168,18 @@ export function FileDropField({
       ) : null}
 
       {preview ? (
-        <img
-          src={preview}
-          alt=""
-          className="mx-auto mb-4 h-28 w-28 rounded-2xl object-cover"
-        />
+        <button
+          type="button"
+          className="mx-auto block cursor-pointer"
+          aria-label={t('common.viewImage')}
+          onClick={() => setPreviewOpen(true)}
+        >
+          <img
+            src={preview}
+            alt=""
+            className={`${previewClassName} cursor-pointer ring-1 ring-transparent transition hover:ring-teal-400`}
+          />
+        </button>
       ) : (
         <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-white text-teal-600 shadow-sm">
           <ImagePlus className="size-6" aria-hidden />
@@ -182,18 +199,30 @@ export function FileDropField({
         <Button
           type="button"
           variant="ghost"
-          disabled={uploading}
+          disabled={busy}
           onClick={() => fileRef.current?.click()}
         >
           <FolderOpen className="size-4" aria-hidden />
           {t('common.selectFile')}
         </Button>
+        {scanEnabled ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="hidden lg:inline-flex"
+            disabled={busy}
+            onClick={() => setScanOpen(true)}
+          >
+            <ScanLine className="size-4" aria-hidden />
+            {t('common.scan')}
+          </Button>
+        ) : null}
         {cameraEnabled ? (
           <Button
             type="button"
             variant="ghost"
             className="hidden pointer-coarse:inline-flex"
-            disabled={uploading}
+            disabled={busy}
             onClick={() => cameraRef.current?.click()}
           >
             <Camera className="size-4" aria-hidden />
@@ -204,11 +233,12 @@ export function FileDropField({
           <Button
             type="button"
             variant="ghost"
-            disabled={uploading}
+            disabled={busy}
             onClick={() => {
               if (localPreview) URL.revokeObjectURL(localPreview)
               setLocalPreview(undefined)
               setSelectedName(undefined)
+              setPreviewOpen(false)
               onClear()
             }}
           >
@@ -218,12 +248,68 @@ export function FileDropField({
         ) : null}
       </div>
 
-      {uploading && !hideUploadingHint ? (
+      {busy && !hideUploadingHint ? (
         <div className="mt-3 flex flex-col items-center gap-2">
           <LoadingSpinner size="sm" />
           <p className="mt-1 text-xs text-teal-700">{t('common.uploading')}</p>
         </div>
       ) : null}
+      {scanOpen ? (
+        <ScanSettingsModal
+          onClose={() => setScanOpen(false)}
+          onFile={takeFile}
+        />
+      ) : null}
+      {previewOpen && preview ? (
+        <ImagePreviewOverlay src={preview} onClose={() => setPreviewOpen(false)} />
+      ) : null}
     </div>
+  )
+}
+
+function ImagePreviewOverlay({ src, onClose }: { src: string; onClose: () => void }) {
+  const { t } = useTranslation()
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.repeat) return
+      event.preventDefault()
+      event.stopPropagation()
+      onClose()
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', onKey, true)
+    }
+  }, [onClose])
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-ink-900/75 p-4"
+      data-nested-dialog
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('common.viewImage')}
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        className="absolute end-4 top-4 z-10 inline-flex size-10 cursor-pointer items-center justify-center rounded-full bg-white text-ink-800 shadow-md"
+        aria-label={t('common.close')}
+        onClick={onClose}
+      >
+        <X className="size-5" aria-hidden />
+      </button>
+      <img
+        src={src}
+        alt=""
+        className="max-h-[90vh] max-w-[min(92vw,72rem)] rounded-2xl object-contain shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      />
+    </div>,
+    document.body,
   )
 }

@@ -13,8 +13,9 @@ import {
   Stamp,
   Trash2,
   UserRound,
+  type LucideIcon,
 } from 'lucide-react'
-import { type FormEvent, type LucideIcon, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
